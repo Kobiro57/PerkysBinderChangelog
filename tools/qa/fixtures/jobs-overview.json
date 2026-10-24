@@ -1,0 +1,54 @@
+{
+    "settings": {
+        "dpi_scale": 1.25,
+        "auto_detect_dpi": false,
+        "ui_open_command_primary": "kb",
+        "ui_open_command_secondary": "keybinder",
+        "ui_toggle_hotkey": 113,
+        "theme_custom_accent": "#7B2CBF",
+        "kill_tracker_enabled": false,
+        "auto_hudscalefix": true,
+        "hitmarker_enabled": false,
+        "crosshair_enabled": false
+    },
+    "keybinds": [],
+    "jobs": {
+        "seed_events": [
+            {
+                "job_id": "landwirt",
+                "type": "earning",
+                "amount": 1250,
+                "source": "chat_auto",
+                "day_offset": 0
+            },
+            {
+                "job_id": "landwirt",
+                "type": "earning",
+                "amount": 980,
+                "source": "chat_auto",
+                "day_offset": -1
+            },
+            {
+                "job_id": "landwirt",
+                "type": "skill_level_absolute",
+                "level": 3,
+                "source": "chat_auto",
+                "day_offset": -5
+            },
+            {
+                "job_id": "landwirt",
+                "type": "earning",
+                "amount": 2100,
+                "source": "manual_add",
+                "day_offset": -2
+            },
+            {
+                "job_id": "landwirt",
+                "type": "earning",
+                "amount": 550,
+                "source": "chat_auto",
+                "day_offset": 0
+            }
+        ]
+    }
+}

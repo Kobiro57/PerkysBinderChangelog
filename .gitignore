@@ -1,0 +1,51 @@
+# Build outputs
+*.obj
+*.exe
+*.dll
+*.asi
+*.pdb
+*.ilk
+*.lib
+*.exp
+
+# Build directories
+build/
+x64/
+x86/
+Debug/
+Release/
+build_output.txt
+
+# Visual Studio
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.dotCover
+*.vcxproj.user
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+
+# Test artifacts
+*.log
+nul
+
+# IDE
+.idea/
+*.code-workspace
+.ruff_cache/
+
+# Agent/tooling artifacts
+.sisyphus/
+.claude/
+.omc/
+AGENTS.md
+
+# Python virtual environments
+.venv/
+venv/
+env/

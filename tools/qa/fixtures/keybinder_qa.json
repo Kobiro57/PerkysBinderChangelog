@@ -1,0 +1,56 @@
+{
+    "settings": {
+        "dpi_scale": 1.25,
+        "auto_detect_dpi": false,
+        "ui_open_command_primary": "kb",
+        "ui_open_command_secondary": "keybinder",
+        "ui_toggle_hotkey": 113,
+        "theme_name": "Dark",
+        "theme_custom_accent": "#7B2CBF",
+        "kill_tracker_enabled": true,
+        "kill_tracker_local_kill_message_enabled": true,
+        "kill_tracker_local_death_message_enabled": true,
+        "kill_tracker_server_kill_message_enabled": false,
+        "kill_tracker_server_death_message_enabled": false,
+        "kill_tracker_track_damage": true,
+        "kill_tracker_local_kill_message_template": "{FF6600}[Kill] {FFFFFF}{victim} {AAAAAA}mit {FFCC00}{weapon}",
+        "kill_tracker_local_death_message_template": "{FF3333}[Tod] {FFFFFF}{killer} {AAAAAA}mit {FFCC00}{weapon}",
+        "kill_tracker_allow_manual_edits": false,
+        "auto_hudscalefix": true,
+        "hitmarker_enabled": true,
+        "hitmarker_active_preset_index": 0,
+        "hitmarker_size": 25.0,
+        "hitmarker_color_r": 0.9,
+        "hitmarker_color_g": 0.9,
+        "hitmarker_color_b": 0.1,
+        "hitmarker_color_a": 1.0,
+        "hitmarker_kill_color_r": 1.0,
+        "hitmarker_kill_color_g": 0.0,
+        "hitmarker_kill_color_b": 0.0,
+        "hitmarker_kill_color_a": 1.0,
+        "hitmarker_opacity": 1.0,
+        "hitmarker_duration": 0.5,
+        "hitmarker_fade_out": true,
+        "hitmarker_shape": 0,
+        "crosshair_enabled": false,
+        "crosshair_texture_path": ""
+    },
+    "keybinds": [
+        {
+            "name": "QA Test Bind",
+            "key": 75,
+            "actions": [
+                { "type": "chat", "value": "/qa test passed" }
+            ]
+        },
+        {
+            "name": "QA Multi-Action",
+            "key": 76,
+            "actions": [
+                { "type": "command", "value": "/me testing keybinder" },
+                { "type": "delay", "value": "500" },
+                { "type": "chat", "value": "QA delay action ok" }
+            ]
+        }
+    ]
+}

@@ -1,0 +1,562 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>17.0</VCProjectVersion>
+    <Keyword>Win32Proj</Keyword>
+    <ProjectGuid>{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}</ProjectGuid>
+    <RootNamespace>Keybinder</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    <ProjectName>Keybinder</ProjectName>
+  </PropertyGroup>
+
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+
+  <!-- Release Configuration -->
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+
+  <!-- Debug Configuration -->
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings" />
+
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+
+  <!-- Output Directories -->
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <OutDir>$(ProjectDir)build\Release\</OutDir>
+    <IntDir>$(ProjectDir)build\obj\Release\</IntDir>
+    <TargetName>Keybinder</TargetName>
+    <TargetExt>.asi</TargetExt>
+    <GenerateManifest>false</GenerateManifest>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <OutDir>$(ProjectDir)build\Debug\</OutDir>
+    <IntDir>$(ProjectDir)build\obj\Debug\</IntDir>
+    <TargetName>Keybinder</TargetName>
+    <TargetExt>.asi</TargetExt>
+    <GenerateManifest>false</GenerateManifest>
+  </PropertyGroup>
+
+  <!-- ============================================================ -->
+  <!-- Compiler Settings: Release                                   -->
+  <!-- ============================================================ -->
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>false</SDLCheck>
+      <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <Optimization>MaxSpeed</Optimization>
+      <ForcedIncludeFiles>bit;memory;functional</ForcedIncludeFiles>
+      <PreprocessorDefinitions>
+        WIN32;NDEBUG;_WINDOWS;_USRDLL;
+        GTASA;PLUGIN_SGV_10US;RW;_DX9_SDK_INSTALLED;
+        _CRT_SECURE_NO_WARNINGS;_CRT_NON_CONFORMING_SWPRINTFS;
+        FT2_BUILD_LIBRARY;
+        %(PreprocessorDefinitions)
+      </PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>
+        $(ProjectDir)src;
+        $(ProjectDir)include;
+        $(ProjectDir)tests;
+        $(ProjectDir)include\plugin-sdk\shared;
+        $(ProjectDir)include\plugin-sdk\shared\game;
+        $(ProjectDir)include\plugin-sdk\plugin_sa;
+        $(ProjectDir)include\plugin-sdk\plugin_sa\game_sa;
+        $(ProjectDir)include\plugin-sdk\plugin_sa\game_sa\rw;
+        $(ProjectDir)include\plugin-sdk\hooking;
+        $(ProjectDir)include\plugin-sdk\injector;
+        $(ProjectDir)include\plugin-sdk\safetyhook;
+        $(ProjectDir)include\plugin-sdk\shared\dxsdk;
+        $(ProjectDir)include\SAMP-API\include;
+        $(ProjectDir)include\SAMP-API\src;
+        $(ProjectDir)include\RakHook\include;
+        $(ProjectDir)include\imgui-1.92.7;
+        $(ProjectDir)include\imgui-1.92.7\backends;
+        $(ProjectDir)third_party\freetype\include;
+        %(AdditionalIncludeDirectories)
+      </AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>
+        $(ProjectDir)include\plugin-sdk\output\lib;
+        $(ProjectDir)include\plugin-sdk\shared\dxsdk;
+        %(AdditionalLibraryDirectories)
+      </AdditionalLibraryDirectories>
+      <AdditionalDependencies>
+        plugin.lib;d3d9.lib;d3dx9.lib;winhttp.lib;xaudio2.lib;
+        %(AdditionalDependencies)
+      </AdditionalDependencies>
+      <ModuleDefinitionFile>
+      </ModuleDefinitionFile>
+      <ImportLibrary>$(IntDir)$(TargetName).lib</ImportLibrary>
+    </Link>
+  </ItemDefinitionGroup>
+
+  <!-- ============================================================ -->
+  <!-- Compiler Settings: Debug                                     -->
+  <!-- ============================================================ -->
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <SDLCheck>false</SDLCheck>
+      <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <Optimization>Disabled</Optimization>
+      <ForcedIncludeFiles>bit;memory;functional</ForcedIncludeFiles>
+      <PreprocessorDefinitions>
+        WIN32;_DEBUG;_WINDOWS;_USRDLL;DEBUG;
+        GTASA;PLUGIN_SGV_10US;RW;_DX9_SDK_INSTALLED;
+        _CRT_SECURE_NO_WARNINGS;_CRT_NON_CONFORMING_SWPRINTFS;
+        FT2_BUILD_LIBRARY;
+        %(PreprocessorDefinitions)
+      </PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>
+        $(ProjectDir)src;
+        $(ProjectDir)include;
+        $(ProjectDir)tests;
+        $(ProjectDir)include\plugin-sdk\shared;
+        $(ProjectDir)include\plugin-sdk\shared\game;
+        $(ProjectDir)include\plugin-sdk\plugin_sa;
+        $(ProjectDir)include\plugin-sdk\plugin_sa\game_sa;
+        $(ProjectDir)include\plugin-sdk\plugin_sa\game_sa\rw;
+        $(ProjectDir)include\plugin-sdk\hooking;
+        $(ProjectDir)include\plugin-sdk\injector;
+        $(ProjectDir)include\plugin-sdk\safetyhook;
+        $(ProjectDir)include\plugin-sdk\shared\dxsdk;
+        $(ProjectDir)include\SAMP-API\include;
+        $(ProjectDir)include\SAMP-API\src;
+        $(ProjectDir)include\RakHook\include;
+        $(ProjectDir)include\imgui-1.92.7;
+        $(ProjectDir)include\imgui-1.92.7\backends;
+        $(ProjectDir)third_party\freetype\include;
+        %(AdditionalIncludeDirectories)
+      </AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>
+        $(ProjectDir)include\plugin-sdk\output\lib;
+        $(ProjectDir)include\plugin-sdk\shared\dxsdk;
+        %(AdditionalLibraryDirectories)
+      </AdditionalLibraryDirectories>
+      <AdditionalDependencies>
+        plugin_d.lib;d3d9.lib;d3dx9.lib;winhttp.lib;xaudio2.lib;
+        %(AdditionalDependencies)
+      </AdditionalDependencies>
+      <ImportLibrary>$(IntDir)$(TargetName).lib</ImportLibrary>
+    </Link>
+  </ItemDefinitionGroup>
+
+  <!-- ============================================================ -->
+  <!-- Source Files: Keybinder                                      -->
+  <!-- ============================================================ -->
+  <ItemGroup>
+    <ClCompile Include="src\Main.cpp" />
+    <ClCompile Include="src\KeybindManager.cpp" />
+    <ClCompile Include="src\ImGuiOverlay.cpp" />
+    <ClCompile Include="src\SAMPBridge.cpp" />
+    <ClCompile Include="src\ActionExecutor.cpp" />
+    <ClCompile Include="src\InputManager.cpp" />
+    <ClCompile Include="src\Logger.cpp" />
+    <ClCompile Include="src\PersistentPaths.cpp" />
+    <ClCompile Include="src\KeybindListUI.cpp" />
+    <ClCompile Include="src\KeybindEditorUI.cpp" />
+    <ClCompile Include="src\Hitmarker.cpp" />
+    <ClCompile Include="src\HitmarkerRenderer.cpp" />
+    <ClCompile Include="src\HitmarkerUI.cpp" />
+    <ClCompile Include="src\HitsoundPlayer.cpp" />
+    <ClCompile Include="src\HitsoundUI.cpp" />
+    <ClCompile Include="src\InterfaceEditor.cpp" />
+    <ClCompile Include="src\InterfaceEditorUI.cpp" />
+    <ClCompile Include="src\CrosshairSwitcher.cpp" />
+    <ClCompile Include="src\CrosshairUI.cpp" />
+    <ClCompile Include="src\SquareMap.cpp" />
+    <ClCompile Include="src\SquareMapUI.cpp" />
+    <ClCompile Include="src\EmbeddedRwTexture.cpp" />
+    <ClCompile Include="src\HudSpriteManager.cpp" />
+    <ClCompile Include="src\HudSpriteUI.cpp" />
+    <ClCompile Include="src\TextureManager.cpp" />
+    <ClCompile Include="src\QuickMap.cpp" />
+    <ClCompile Include="src\TextDrawAdapter.cpp" />
+    <ClCompile Include="src\SpeedometerManager.cpp" />
+    <ClCompile Include="src\SpeedometerUI.cpp" />
+    <ClCompile Include="src\\MainWindowUI.cpp" />
+    <ClCompile Include="src\\SettingsManager.cpp" />
+    <ClCompile Include="src\UIComponents.cpp" />
+    <ClCompile Include="src\\ThemeManager.cpp" />
+    <ClCompile Include="src\\KillTracker.cpp" />
+    <ClCompile Include="src\RssParser.cpp" />
+    <ClCompile Include="src\RssTrackerUI.cpp" />
+    <ClCompile Include="src\ToastNotification.cpp" />
+    <ClCompile Include="src\\WeaponNames.cpp" />
+    <ClCompile Include="src\\StatsStorage.cpp" />
+    <ClCompile Include="src\\JobRegistry.cpp" />
+    <ClCompile Include="src\\JobChatAdapter.cpp" />
+    <ClCompile Include="src\\JobEventStore.cpp" />
+    <ClCompile Include="src\\JobParser.cpp" />
+    <ClCompile Include="src\\JobTracker.cpp" />
+    <ClCompile Include="src\\KillfeedAdapter.cpp" />
+    <ClCompile Include="src\\DamageRPCAdapter.cpp" />
+    <ClCompile Include="src\\DeathMessageRPCAdapter.cpp" />
+    <ClCompile Include="src\\KillTrackerUI.cpp" />
+    <ClCompile Include="src\\JobsUI.cpp" />
+    <ClCompile Include="src\RssHttpClient.cpp" />
+    <ClCompile Include="src\RssFeedManager.cpp" />
+    <ClCompile Include="src\OnlinePlayerInfoService.cpp" />
+    <ClCompile Include="src\OnlineUI.cpp" />
+    <ClCompile Include="src\OnlineDataManager.cpp" />
+    <ClCompile Include="src\OnlineOverlayRenderer.cpp" />
+    <ClCompile Include="src\OnlineEventDetector.cpp" />
+    <ClCompile Include="src\OnlineOverlayController.cpp" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ClCompile Include="include\RakHook\src\RakHook\offsets.cpp" />
+    <ClCompile Include="include\RakHook\src\RakHook\rakhook.cpp" />
+    <ClCompile Include="include\RakHook\src\RakHook\samp.cpp" />
+    <ClCompile Include="include\plugin-sdk\shared\Other.cpp" />
+    <ClCompile Include="include\plugin-sdk\safetyhook\safetyhook.cpp" />
+    <ClCompile Include="include\RakHook\src\RakNet\BitStream.cpp" />
+    <ClCompile Include="include\RakHook\src\RakNet\DS_HuffmanEncodingTree.cpp" />
+    <ClCompile Include="include\RakHook\src\RakNet\PluginInterface.cpp" />
+    <ClCompile Include="include\RakHook\src\RakNet\StringCompressor.cpp" />
+  </ItemGroup>
+
+  <!-- ============================================================ -->
+  <!-- Source Files: pugixml 1.14 (vendored, compiled directly)      -->
+  <!-- ============================================================ -->
+  <ItemGroup>
+    <ClCompile Include="include\pugixml\pugixml.cpp" />
+  </ItemGroup>
+
+  <!-- ============================================================ -->
+  <!-- Source Files: Dear ImGui (core + DX9/Win32 backends)         -->
+  <!-- ============================================================ -->
+  <ItemGroup>
+    <ClCompile Include="include\imgui-1.92.7\imgui.cpp" />
+    <ClCompile Include="include\imgui-1.92.7\imgui_draw.cpp" />
+    <ClCompile Include="include\imgui-1.92.7\imgui_tables.cpp" />
+    <ClCompile Include="include\imgui-1.92.7\imgui_widgets.cpp" />
+    <ClCompile Include="include\imgui-1.92.7\backends\imgui_impl_dx9.cpp" />
+    <ClCompile Include="include\imgui-1.92.7\backends\imgui_impl_win32.cpp" />
+    <ClCompile Include="include\imgui-1.92.7\misc\cpp\imgui_stdlib.cpp" />
+  </ItemGroup>
+
+  <!-- ============================================================ -->
+  <!-- Source Files: SAMP-API (common + 0.3.DL-1)                   -->
+  <!-- ============================================================ -->
+  <ItemGroup>
+    <!-- Common SAMP-API sources -->
+    <ClCompile Include="include\SAMP-API\src\sampapi\sampapi.cpp" />
+    <ClCompile Include="include\SAMP-API\src\sampapi\CRect.cpp" />
+    <ClCompile Include="include\SAMP-API\src\sampapi\CVector.cpp" />
+    <ClCompile Include="include\SAMP-API\src\sampapi\CPoint.cpp" />
+    <!-- 0.3.DL-1 version sources -->
+    <ClCompile Include="include\SAMP-API\src\sampapi\0.3.DL-1\AimStuff.cpp" />
+    <ClCompile Include="include\SAMP-API\src\sampapi\0.3.DL-1\CActor.cpp" />
+    <ClCompile Include="include\SAMP-API\src\sampapi\0.3.DL-1\CActorPool.cpp" />
+    <ClCompile Include="include\SAMP-API\src\sampapi\0.3.DL-1\CAudio.cpp" />
+    <ClCompile Include="include\SAMP-API\src\sampapi\0.3.DL-1\CAudioStream.cpp" />
+    <ClCompile Include="include\SAMP-API\src\sampapi\0.3.DL-1\CCamera.cpp" />
+    <ClCompile Include="include\SAMP-API\src\sampapi\0.3.DL-1\CChat.cpp" />
+    <ClCompile Include="include\SAMP-API\src\sampapi\0.3.DL-1\CChatBubble.cpp" />
+    <ClCompile Include="include\SAMP-API\src\sampapi\0.3.DL-1\CConfig.cpp" />
+    <ClCompile Include="include\SAMP-API\src\sampapi\0.3.DL-1\CCustomModels.cpp" />
+    <ClCompile Include="include\SAMP-API\src\sampapi\0.3.DL-1\CDeathWindow.cpp" />
+    <ClCompile Include="include\SAMP-API\src\sampapi\0.3.DL-1\CDialog.cpp" />
+    <ClCompile Include="include\SAMP-API\src\sampapi\0.3.DL-1\CDownloadWindow.cpp" />
+    <ClCompile Include="include\SAMP-API\src\sampapi\0.3.DL-1\CEntity.cpp" />
+    <ClCompile Include="include\SAMP-API\src\sampapi\0.3.DL-1\CFont.cpp" />
+    <ClCompile Include="include\SAMP-API\src\sampapi\0.3.DL-1\CFonts.cpp" />
+    <ClCompile Include="include\SAMP-API\src\sampapi\0.3.DL-1\CGame.cpp" />
+    <ClCompile Include="include\SAMP-API\src\sampapi\0.3.DL-1\CGangZonePool.cpp" />
+    <ClCompile Include="include\SAMP-API\src\sampapi\0.3.DL-1\CHelpDialog.cpp" />
+    <ClCompile Include="include\SAMP-API\src\sampapi\0.3.DL-1\CHttpClient.cpp" />
+    <ClCompile Include="include\SAMP-API\src\sampapi\0.3.DL-1\CInput.cpp" />
+    <ClCompile Include="include\SAMP-API\src\sampapi\0.3.DL-1\CLabel.cpp" />
+    <ClCompile Include="include\SAMP-API\src\sampapi\0.3.DL-1\CLabelPool.cpp" />
+    <ClCompile Include="include\SAMP-API\src\sampapi\0.3.DL-1\CLicensePlate.cpp" />
+    <ClCompile Include="include\SAMP-API\src\sampapi\0.3.DL-1\CLocalPlayer.cpp" />
+    <ClCompile Include="include\SAMP-API\src\sampapi\0.3.DL-1\CMenu.cpp" />
+    <ClCompile Include="include\SAMP-API\src\sampapi\0.3.DL-1\CMenuPool.cpp" />
+    <ClCompile Include="include\SAMP-API\src\sampapi\0.3.DL-1\CNetGame.cpp" />
+    <ClCompile Include="include\SAMP-API\src\sampapi\0.3.DL-1\CNetStats.cpp" />
+    <ClCompile Include="include\SAMP-API\src\sampapi\0.3.DL-1\CObject.cpp" />
+    <ClCompile Include="include\SAMP-API\src\sampapi\0.3.DL-1\CObjectEdit.cpp" />
+    <ClCompile Include="include\SAMP-API\src\sampapi\0.3.DL-1\CObjectMaterialText.cpp" />
+    <ClCompile Include="include\SAMP-API\src\sampapi\0.3.DL-1\CObjectPool.cpp" />
+    <ClCompile Include="include\SAMP-API\src\sampapi\0.3.DL-1\CObjectSelection.cpp" />
+    <ClCompile Include="include\SAMP-API\src\sampapi\0.3.DL-1\Commands.cpp" />
+    <ClCompile Include="include\SAMP-API\src\sampapi\0.3.DL-1\CPed.cpp" />
+    <ClCompile Include="include\SAMP-API\src\sampapi\0.3.DL-1\CPickupPool.cpp" />
+    <ClCompile Include="include\SAMP-API\src\sampapi\0.3.DL-1\CPlayerInfo.cpp" />
+    <ClCompile Include="include\SAMP-API\src\sampapi\0.3.DL-1\CPlayerPool.cpp" />
+    <ClCompile Include="include\SAMP-API\src\sampapi\0.3.DL-1\CPlayerTags.cpp" />
+    <ClCompile Include="include\SAMP-API\src\sampapi\0.3.DL-1\CRemotePlayer.cpp" />
+    <ClCompile Include="include\SAMP-API\src\sampapi\0.3.DL-1\CScoreboard.cpp" />
+    <ClCompile Include="include\SAMP-API\src\sampapi\0.3.DL-1\CSpawnScreen.cpp" />
+    <ClCompile Include="include\SAMP-API\src\sampapi\0.3.DL-1\CSrvNetStats.cpp" />
+    <ClCompile Include="include\SAMP-API\src\sampapi\0.3.DL-1\CTextDraw.cpp" />
+    <ClCompile Include="include\SAMP-API\src\sampapi\0.3.DL-1\CTextDrawPool.cpp" />
+    <ClCompile Include="include\SAMP-API\src\sampapi\0.3.DL-1\CTextDrawSelection.cpp" />
+    <ClCompile Include="include\SAMP-API\src\sampapi\0.3.DL-1\CVehicle.cpp" />
+    <ClCompile Include="include\SAMP-API\src\sampapi\0.3.DL-1\CVehiclePool.cpp" />
+    <ClCompile Include="include\SAMP-API\src\sampapi\0.3.DL-1\DebugScript.cpp" />
+    <ClCompile Include="include\SAMP-API\src\sampapi\0.3.DL-1\Exception.cpp" />
+    <ClCompile Include="include\SAMP-API\src\sampapi\0.3.DL-1\GUI.cpp" />
+    <ClCompile Include="include\SAMP-API\src\sampapi\0.3.DL-1\InputHandler.cpp" />
+    <ClCompile Include="include\SAMP-API\src\sampapi\0.3.DL-1\KeyStuff.cpp" />
+    <ClCompile Include="include\SAMP-API\src\sampapi\0.3.DL-1\RPCHandlers.cpp" />
+    <ClCompile Include="include\SAMP-API\src\sampapi\0.3.DL-1\Scripting.cpp" />
+    <ClCompile Include="include\SAMP-API\src\sampapi\0.3.DL-1\Settings.cpp" />
+  </ItemGroup>
+
+  <!-- ============================================================ -->
+  <!-- Source Files: FreeType 2.13.3 (vendored, compiled directly)  -->
+  <!-- All .c files force CompileAsC and clear C++ forced-includes  -->
+  <!-- ============================================================ -->
+  <ItemGroup>
+    <!-- FreeType base modules -->
+    <ClCompile Include="third_party\freetype\src\autofit\autofit.c">
+      <CompileAs>CompileAsC</CompileAs><ForcedIncludeFiles></ForcedIncludeFiles><ConformanceMode>false</ConformanceMode><DisableLanguageExtensions>false</DisableLanguageExtensions>
+    </ClCompile>
+    <ClCompile Include="third_party\freetype\src\base\ftbase.c">
+      <CompileAs>CompileAsC</CompileAs><ForcedIncludeFiles></ForcedIncludeFiles><ConformanceMode>false</ConformanceMode><DisableLanguageExtensions>false</DisableLanguageExtensions>
+    </ClCompile>
+    <ClCompile Include="third_party\freetype\src\base\ftbbox.c">
+      <CompileAs>CompileAsC</CompileAs><ForcedIncludeFiles></ForcedIncludeFiles><ConformanceMode>false</ConformanceMode><DisableLanguageExtensions>false</DisableLanguageExtensions>
+    </ClCompile>
+    <ClCompile Include="third_party\freetype\src\base\ftbdf.c">
+      <CompileAs>CompileAsC</CompileAs><ForcedIncludeFiles></ForcedIncludeFiles><ConformanceMode>false</ConformanceMode><DisableLanguageExtensions>false</DisableLanguageExtensions>
+    </ClCompile>
+    <ClCompile Include="third_party\freetype\src\base\ftbitmap.c">
+      <CompileAs>CompileAsC</CompileAs><ForcedIncludeFiles></ForcedIncludeFiles><ConformanceMode>false</ConformanceMode><DisableLanguageExtensions>false</DisableLanguageExtensions>
+    </ClCompile>
+    <ClCompile Include="third_party\freetype\src\base\ftcid.c">
+      <CompileAs>CompileAsC</CompileAs><ForcedIncludeFiles></ForcedIncludeFiles><ConformanceMode>false</ConformanceMode><DisableLanguageExtensions>false</DisableLanguageExtensions>
+    </ClCompile>
+    <ClCompile Include="third_party\freetype\src\base\ftfstype.c">
+      <CompileAs>CompileAsC</CompileAs><ForcedIncludeFiles></ForcedIncludeFiles><ConformanceMode>false</ConformanceMode><DisableLanguageExtensions>false</DisableLanguageExtensions>
+    </ClCompile>
+    <ClCompile Include="third_party\freetype\src\base\ftgasp.c">
+      <CompileAs>CompileAsC</CompileAs><ForcedIncludeFiles></ForcedIncludeFiles><ConformanceMode>false</ConformanceMode><DisableLanguageExtensions>false</DisableLanguageExtensions>
+    </ClCompile>
+    <ClCompile Include="third_party\freetype\src\base\ftglyph.c">
+      <CompileAs>CompileAsC</CompileAs><ForcedIncludeFiles></ForcedIncludeFiles><ConformanceMode>false</ConformanceMode><DisableLanguageExtensions>false</DisableLanguageExtensions>
+    </ClCompile>
+    <ClCompile Include="third_party\freetype\src\base\ftgxval.c">
+      <CompileAs>CompileAsC</CompileAs><ForcedIncludeFiles></ForcedIncludeFiles><ConformanceMode>false</ConformanceMode><DisableLanguageExtensions>false</DisableLanguageExtensions>
+    </ClCompile>
+    <ClCompile Include="third_party\freetype\src\base\ftinit.c">
+      <CompileAs>CompileAsC</CompileAs><ForcedIncludeFiles></ForcedIncludeFiles><ConformanceMode>false</ConformanceMode><DisableLanguageExtensions>false</DisableLanguageExtensions>
+    </ClCompile>
+    <ClCompile Include="third_party\freetype\src\base\ftmm.c">
+      <CompileAs>CompileAsC</CompileAs><ForcedIncludeFiles></ForcedIncludeFiles><ConformanceMode>false</ConformanceMode><DisableLanguageExtensions>false</DisableLanguageExtensions>
+    </ClCompile>
+    <ClCompile Include="third_party\freetype\src\base\ftotval.c">
+      <CompileAs>CompileAsC</CompileAs><ForcedIncludeFiles></ForcedIncludeFiles><ConformanceMode>false</ConformanceMode><DisableLanguageExtensions>false</DisableLanguageExtensions>
+    </ClCompile>
+    <ClCompile Include="third_party\freetype\src\base\ftpatent.c">
+      <CompileAs>CompileAsC</CompileAs><ForcedIncludeFiles></ForcedIncludeFiles><ConformanceMode>false</ConformanceMode><DisableLanguageExtensions>false</DisableLanguageExtensions>
+    </ClCompile>
+    <ClCompile Include="third_party\freetype\src\base\ftpfr.c">
+      <CompileAs>CompileAsC</CompileAs><ForcedIncludeFiles></ForcedIncludeFiles><ConformanceMode>false</ConformanceMode><DisableLanguageExtensions>false</DisableLanguageExtensions>
+    </ClCompile>
+    <ClCompile Include="third_party\freetype\src\base\ftstroke.c">
+      <CompileAs>CompileAsC</CompileAs><ForcedIncludeFiles></ForcedIncludeFiles><ConformanceMode>false</ConformanceMode><DisableLanguageExtensions>false</DisableLanguageExtensions>
+    </ClCompile>
+    <ClCompile Include="third_party\freetype\src\base\ftsynth.c">
+      <CompileAs>CompileAsC</CompileAs><ForcedIncludeFiles></ForcedIncludeFiles><ConformanceMode>false</ConformanceMode><DisableLanguageExtensions>false</DisableLanguageExtensions>
+    </ClCompile>
+    <ClCompile Include="third_party\freetype\src\base\fttype1.c">
+      <CompileAs>CompileAsC</CompileAs><ForcedIncludeFiles></ForcedIncludeFiles><ConformanceMode>false</ConformanceMode><DisableLanguageExtensions>false</DisableLanguageExtensions>
+    </ClCompile>
+    <ClCompile Include="third_party\freetype\src\base\ftwinfnt.c">
+      <CompileAs>CompileAsC</CompileAs><ForcedIncludeFiles></ForcedIncludeFiles><ConformanceMode>false</ConformanceMode><DisableLanguageExtensions>false</DisableLanguageExtensions>
+    </ClCompile>
+    <!-- FreeType font format modules -->
+    <ClCompile Include="third_party\freetype\src\bdf\bdf.c">
+      <CompileAs>CompileAsC</CompileAs><ForcedIncludeFiles></ForcedIncludeFiles><ConformanceMode>false</ConformanceMode><DisableLanguageExtensions>false</DisableLanguageExtensions>
+    </ClCompile>
+    <ClCompile Include="third_party\freetype\src\cache\ftcache.c">
+      <CompileAs>CompileAsC</CompileAs><ForcedIncludeFiles></ForcedIncludeFiles><ConformanceMode>false</ConformanceMode><DisableLanguageExtensions>false</DisableLanguageExtensions>
+    </ClCompile>
+    <ClCompile Include="third_party\freetype\src\cff\cff.c">
+      <CompileAs>CompileAsC</CompileAs><ForcedIncludeFiles></ForcedIncludeFiles><ConformanceMode>false</ConformanceMode><DisableLanguageExtensions>false</DisableLanguageExtensions>
+    </ClCompile>
+    <ClCompile Include="third_party\freetype\src\cid\type1cid.c">
+      <CompileAs>CompileAsC</CompileAs><ForcedIncludeFiles></ForcedIncludeFiles><ConformanceMode>false</ConformanceMode><DisableLanguageExtensions>false</DisableLanguageExtensions>
+    </ClCompile>
+    <ClCompile Include="third_party\freetype\src\gzip\ftgzip.c">
+      <CompileAs>CompileAsC</CompileAs><ForcedIncludeFiles></ForcedIncludeFiles><ConformanceMode>false</ConformanceMode><DisableLanguageExtensions>false</DisableLanguageExtensions>
+    </ClCompile>
+    <ClCompile Include="third_party\freetype\src\lzw\ftlzw.c">
+      <CompileAs>CompileAsC</CompileAs><ForcedIncludeFiles></ForcedIncludeFiles><ConformanceMode>false</ConformanceMode><DisableLanguageExtensions>false</DisableLanguageExtensions>
+    </ClCompile>
+    <ClCompile Include="third_party\freetype\src\pcf\pcf.c">
+      <CompileAs>CompileAsC</CompileAs><ForcedIncludeFiles></ForcedIncludeFiles><ConformanceMode>false</ConformanceMode><DisableLanguageExtensions>false</DisableLanguageExtensions>
+    </ClCompile>
+    <ClCompile Include="third_party\freetype\src\pfr\pfr.c">
+      <CompileAs>CompileAsC</CompileAs><ForcedIncludeFiles></ForcedIncludeFiles><ConformanceMode>false</ConformanceMode><DisableLanguageExtensions>false</DisableLanguageExtensions>
+    </ClCompile>
+    <ClCompile Include="third_party\freetype\src\psaux\psaux.c">
+      <CompileAs>CompileAsC</CompileAs><ForcedIncludeFiles></ForcedIncludeFiles><ConformanceMode>false</ConformanceMode><DisableLanguageExtensions>false</DisableLanguageExtensions>
+    </ClCompile>
+    <ClCompile Include="third_party\freetype\src\pshinter\pshinter.c">
+      <CompileAs>CompileAsC</CompileAs><ForcedIncludeFiles></ForcedIncludeFiles><ConformanceMode>false</ConformanceMode><DisableLanguageExtensions>false</DisableLanguageExtensions>
+    </ClCompile>
+    <ClCompile Include="third_party\freetype\src\psnames\psmodule.c">
+      <CompileAs>CompileAsC</CompileAs><ForcedIncludeFiles></ForcedIncludeFiles><ConformanceMode>false</ConformanceMode><DisableLanguageExtensions>false</DisableLanguageExtensions>
+    </ClCompile>
+    <ClCompile Include="third_party\freetype\src\raster\raster.c">
+      <CompileAs>CompileAsC</CompileAs><ForcedIncludeFiles></ForcedIncludeFiles><ConformanceMode>false</ConformanceMode><DisableLanguageExtensions>false</DisableLanguageExtensions>
+    </ClCompile>
+    <ClCompile Include="third_party\freetype\src\sfnt\sfnt.c">
+      <CompileAs>CompileAsC</CompileAs><ForcedIncludeFiles></ForcedIncludeFiles><ConformanceMode>false</ConformanceMode><DisableLanguageExtensions>false</DisableLanguageExtensions>
+    </ClCompile>
+    <ClCompile Include="third_party\freetype\src\smooth\smooth.c">
+      <CompileAs>CompileAsC</CompileAs><ForcedIncludeFiles></ForcedIncludeFiles><ConformanceMode>false</ConformanceMode><DisableLanguageExtensions>false</DisableLanguageExtensions>
+    </ClCompile>
+    <ClCompile Include="third_party\freetype\src\sdf\sdf.c">
+      <CompileAs>CompileAsC</CompileAs><ForcedIncludeFiles></ForcedIncludeFiles><ConformanceMode>false</ConformanceMode><DisableLanguageExtensions>false</DisableLanguageExtensions>
+    </ClCompile>
+    <ClCompile Include="third_party\freetype\src\svg\svg.c">
+      <CompileAs>CompileAsC</CompileAs><ForcedIncludeFiles></ForcedIncludeFiles><ConformanceMode>false</ConformanceMode><DisableLanguageExtensions>false</DisableLanguageExtensions>
+    </ClCompile>
+    <ClCompile Include="third_party\freetype\src\truetype\truetype.c">
+      <CompileAs>CompileAsC</CompileAs><ForcedIncludeFiles></ForcedIncludeFiles><ConformanceMode>false</ConformanceMode><DisableLanguageExtensions>false</DisableLanguageExtensions>
+    </ClCompile>
+    <ClCompile Include="third_party\freetype\src\type1\type1.c">
+      <CompileAs>CompileAsC</CompileAs><ForcedIncludeFiles></ForcedIncludeFiles><ConformanceMode>false</ConformanceMode><DisableLanguageExtensions>false</DisableLanguageExtensions>
+    </ClCompile>
+    <ClCompile Include="third_party\freetype\src\type42\type42.c">
+      <CompileAs>CompileAsC</CompileAs><ForcedIncludeFiles></ForcedIncludeFiles><ConformanceMode>false</ConformanceMode><DisableLanguageExtensions>false</DisableLanguageExtensions>
+    </ClCompile>
+    <ClCompile Include="third_party\freetype\src\winfonts\winfnt.c">
+      <CompileAs>CompileAsC</CompileAs><ForcedIncludeFiles></ForcedIncludeFiles><ConformanceMode>false</ConformanceMode><DisableLanguageExtensions>false</DisableLanguageExtensions>
+    </ClCompile>
+    <!-- Windows-specific platform files -->
+    <ClCompile Include="third_party\freetype\builds\windows\ftdebug.c">
+      <CompileAs>CompileAsC</CompileAs><ForcedIncludeFiles></ForcedIncludeFiles><ConformanceMode>false</ConformanceMode><DisableLanguageExtensions>false</DisableLanguageExtensions>
+    </ClCompile>
+    <ClCompile Include="third_party\freetype\builds\windows\ftsystem.c">
+      <CompileAs>CompileAsC</CompileAs><ForcedIncludeFiles></ForcedIncludeFiles><ConformanceMode>false</ConformanceMode><DisableLanguageExtensions>false</DisableLanguageExtensions>
+    </ClCompile>
+    <!-- dlg wrapper (FreeType logging) -->
+    <ClCompile Include="third_party\freetype\src\dlg\dlgwrap.c">
+      <CompileAs>CompileAsC</CompileAs><ForcedIncludeFiles></ForcedIncludeFiles><ConformanceMode>false</ConformanceMode><DisableLanguageExtensions>false</DisableLanguageExtensions>
+    </ClCompile>
+  </ItemGroup>
+
+  <!-- ============================================================ -->
+  <!-- Source Files: ImGui FreeType integration                     -->
+  <!-- ============================================================ -->
+  <ItemGroup>
+    <ClCompile Include="include\imgui-1.92.7\misc\freetype\imgui_freetype.cpp" />
+  </ItemGroup>
+
+  <!-- ============================================================ -->
+  <!-- Header Files (for IDE navigation)                            -->
+  <!-- ============================================================ -->
+  <ItemGroup>
+    <ClInclude Include="include\imgui-1.92.7\imgui.h" />
+    <ClInclude Include="include\imgui-1.92.7\imconfig.h" />
+    <ClInclude Include="include\imgui-1.92.7\imgui_internal.h" />
+    <ClInclude Include="include\imgui-1.92.7\backends\imgui_impl_dx9.h" />
+    <ClInclude Include="include\imgui-1.92.7\backends\imgui_impl_win32.h" />
+    <ClInclude Include="include\imgui-1.92.7\misc\freetype\imgui_freetype.h" />
+    <ClInclude Include="include\ImGuiOverlay.h" />
+    <ClInclude Include="include\RakHook\include\RakHook\rakhook.hpp" />
+    <ClInclude Include="include\SAMP-API\include\sampapi\sampapi.h" />
+    <ClInclude Include="include\SAMPBridge.h" />
+    <ClInclude Include="include\ActionExecutor.h" />
+    <ClInclude Include="include\InputManager.h" />
+    <ClInclude Include="include\Logger.h" />
+    <ClInclude Include="include\KeybindManager.h" />
+    <ClInclude Include="include\KeyInputUtils.h" />
+    <ClInclude Include="include\KeybindEditorUI.h" />
+    <ClInclude Include="include\KeybindListUI.h" />
+    <ClInclude Include="include\\MainWindowUI.h" />
+    <ClInclude Include="include\\Keybind.h" />
+    <ClInclude Include="include\\Action.h" />
+    <ClInclude Include="include\\SettingsManager.h" />
+    <ClInclude Include="include\\KillTrackerTypes.h" />
+    <ClInclude Include="include\\KillTracker.h" />
+    <ClInclude Include="include\\WeaponNames.h" />
+    <ClInclude Include="include\RssParser.h" />
+    <ClInclude Include="include\RssTrackerUI.h" />
+    <ClInclude Include="include\RssTypes.h" />
+    <ClInclude Include="include\RssFeedManager.h" />
+    <ClInclude Include="include\OnlineUI.h" />
+    <ClInclude Include="include\OnlineDataManager.h" />
+    <ClInclude Include="include\OnlineOverlayRenderer.h" />
+    <ClInclude Include="include\OnlineEventDetector.h" />
+    <ClInclude Include="include\OnlineOverlayController.h" />
+    <ClInclude Include="include\\StatsStorage.h" />
+    <ClInclude Include="include\\JobsTypes.h" />
+    <ClInclude Include="include\\JobRegistry.h" />
+    <ClInclude Include="include\\JobChatAdapter.h" />
+    <ClInclude Include="include\\JobEventStore.h" />
+    <ClInclude Include="include\\JobTracker.h" />
+    <ClInclude Include="include\\KillfeedAdapter.h" />
+    <ClInclude Include="include\\DamageRPCAdapter.h" />
+    <ClInclude Include="include\\HitsoundPlayer.h" />
+    <ClInclude Include="include\\HitsoundUI.h" />
+    <ClInclude Include="include\\KillTrackerUI.h" />
+    <ClInclude Include="include\\JobsUI.h" />
+    <ClInclude Include="include\\ResourceIds.h" />
+    <ClInclude Include="include\RadarSpriteResources.h" />
+    <ClInclude Include="include\EmbeddedRwTexture.h" />
+    <ClInclude Include="include\HudSpriteManager.h" />
+    <ClInclude Include="include\HudSpriteUI.h" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ResourceCompile Include="Keybinder.rc">
+      <AdditionalInputs>gtasamap.jpg;%(AdditionalInputs)</AdditionalInputs>
+    </ResourceCompile>
+  </ItemGroup>
+
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets" />
+</Project>

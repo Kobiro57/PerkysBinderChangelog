@@ -1,0 +1,27 @@
+{
+    "settings": {
+        "version": 1,
+        "ui_open_command_primary": "kb",
+        "ui_open_command_secondary": "keybinder",
+        "ui_toggle_hotkey": 113,
+        "theme_name": "Nova",
+        "theme_custom_accent": "",
+        "quickmap_enabled": true,
+        "quickmap_hotkey": 77,
+        "quickmap_mode": "toggle",
+        "quickmap_map_variant": "classic",
+        "auto_hudscalefix": true,
+        "hitmarker_enabled": false,
+        "crosshair_enabled": false,
+        "interface_editor_active_preset_index": 0
+    },
+    "keybinds": [
+        {
+            "name": "QA Nova Theme Marker",
+            "key": 78,
+            "actions": [
+                { "type": "chat", "value": "/qa nova theme" }
+            ]
+        }
+    ]
+}

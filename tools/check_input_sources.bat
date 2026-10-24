@@ -1,0 +1,3 @@
+@echo off
+call "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\Common7\Tools\VsDevCmd.bat" -arch=x86 || exit /b 1
+cl /nologo /c /std:c++latest /EHsc /MTd /DWIN32 /D_DEBUG /D_WINDOWS /D_USRDLL /DDEBUG /DGTASA /DPLUGIN_SGV_10US /DRW /D_DX9_SDK_INSTALLED /D_CRT_SECURE_NO_WARNINGS /D_CRT_NON_CONFORMING_SWPRINTFS /Iinclude /Iinclude\SAMP-API\include /Iinclude\SAMP-API\src /Iinclude\RakHook\include /Iinclude\imgui-1.92.7 /Iinclude\imgui-1.92.7\backends /Iplugin-sdk\shared /Iplugin-sdk\shared\game /Iplugin-sdk\plugin_sa /Iplugin-sdk\plugin_sa\game_sa /Iplugin-sdk\plugin_sa\game_sa\rw /Iplugin-sdk\hooking /Iplugin-sdk\injector /Iplugin-sdk\safetyhook /Iplugin-sdk\shared\dxsdk /Fo:build\obj\Debug\ src\Main.cpp src\InputManager.cpp src\SAMPBridge.cpp

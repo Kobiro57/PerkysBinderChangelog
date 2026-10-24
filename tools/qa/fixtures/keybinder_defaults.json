@@ -1,0 +1,14 @@
+{
+    "settings": {
+        "dpi_scale": 1.0,
+        "auto_detect_dpi": true,
+        "ui_open_command_primary": "kb",
+        "ui_open_command_secondary": "keybinder",
+        "ui_toggle_hotkey": 113,
+        "kill_tracker_enabled": false,
+        "auto_hudscalefix": true,
+        "hitmarker_enabled": false,
+        "crosshair_enabled": false
+    },
+    "keybinds": []
+}

@@ -1,0 +1,1106 @@
+{
+  "version": 2,
+  "jobs": [
+    {
+      "id": "frachtpilot",
+      "name": "Frachtpilot",
+      "enabled": true,
+      "icon": "work",
+      "parserRules": [
+        {
+          "pattern": "^Für das erfolgreiche Beenden deiner Tätigkeit erhältst du (\\d+)\\$ zum nächsten Zahltag\\.$",
+          "eventType": "earning",
+          "captureGroups": {
+            "amount": 1
+          }
+        },
+        {
+          "pattern": "^Du hast deinen Job-Skill auf (\\d+) verbessert\\.$",
+          "eventType": "skill_level_absolute",
+          "captureGroups": {
+            "level": 1
+          }
+        }
+      ],
+      "skillTree": [
+        {
+          "id": "frachtpilot_job_unlock",
+          "name": "Job Freigeschaltet",
+          "maxPoints": 25,
+          "unlockOrder": 1,
+          "perkType": "job_freigeschaltet",
+          "perkValue": "Pilot"
+        },
+        {
+          "id": "frachtpilot_skin_268",
+          "name": "Skin 268",
+          "maxPoints": 100,
+          "unlockOrder": 2,
+          "perkType": "skin",
+          "perkValue": "268"
+        },
+        {
+          "id": "frachtpilot_pakete_10",
+          "name": "10 Pakete gleichzeitig",
+          "maxPoints": 300,
+          "unlockOrder": 3,
+          "perkType": "effizienz",
+          "perkValue": "10 Pakete gleichzeitig ausliefern"
+        },
+        {
+          "id": "frachtpilot_lohn_25_1",
+          "name": "Lohn +25%",
+          "maxPoints": 500,
+          "unlockOrder": 4,
+          "perkType": "lohn_bonus",
+          "perkValue": "25%"
+        },
+        {
+          "id": "frachtpilot_lohn_25_2",
+          "name": "Lohn +25%",
+          "maxPoints": 1000,
+          "unlockOrder": 5,
+          "perkType": "lohn_bonus",
+          "perkValue": "25%"
+        },
+        {
+          "id": "frachtpilot_leviathan",
+          "name": "Privatfahrzeug Leviathan",
+          "maxPoints": 2000,
+          "unlockOrder": 6,
+          "perkType": "privatfahrzeug",
+          "perkValue": "Leviathan"
+        }
+      ]
+    },
+    {
+      "id": "flughafenmitarbeiter",
+      "name": "Flughafenmitarbeiter",
+      "enabled": true,
+      "icon": "work",
+      "speakerAliases": [
+        "Jason Bennett"
+      ],
+      "parserRules": [
+        {
+          "pattern": "^Hallo .+\\. Ich freue mich, dass du die San Andreas Airport Service tatkräftig unterstützt\\.$",
+          "eventType": "job_message"
+        },
+        {
+          "pattern": "^Für das erfolgreiche Beenden deiner Tätigkeit erhältst du (\\d+)\\$ zum nächsten Zahltag\\.$",
+          "eventType": "earning",
+          "captureGroups": {
+            "amount": 1
+          }
+        },
+        {
+          "pattern": "^Du hast deinen Job-Skill auf (\\d+) verbessert\\.$",
+          "eventType": "skill_level_absolute",
+          "captureGroups": {
+            "level": 1
+          }
+        }
+      ],
+      "skillTree": [
+        {
+          "id": "flughafen_frachtpilot",
+          "name": "Freigeschaltet: Frachtpilot",
+          "maxPoints": 25,
+          "unlockOrder": 1,
+          "perkType": "job_freigeschaltet",
+          "perkValue": "Frachtpilot"
+        },
+        {
+          "id": "flughafen_fast_travel",
+          "name": "Flugtickets kostenlos",
+          "maxPoints": 300,
+          "unlockOrder": 2,
+          "perkType": "fast_travel",
+          "perkValue": "Flugtickets kostenlos (Fast-Travel)"
+        },
+        {
+          "id": "flughafen_lohn_25_1",
+          "name": "Lohn +25%",
+          "maxPoints": 500,
+          "unlockOrder": 3,
+          "perkType": "lohn_bonus",
+          "perkValue": "25%"
+        },
+        {
+          "id": "flughafen_lohn_25_2",
+          "name": "Lohn +25%",
+          "maxPoints": 1000,
+          "unlockOrder": 4,
+          "perkType": "lohn_bonus",
+          "perkValue": "25%"
+        },
+        {
+          "id": "flughafen_baggage",
+          "name": "Privatfahrzeug: Baggage",
+          "maxPoints": 2000,
+          "unlockOrder": 5,
+          "perkType": "privatfahrzeug",
+          "perkValue": "Baggage"
+        }
+      ]
+    },
+    {
+      "id": "hochseefischer",
+      "name": "Hochseefischer",
+      "enabled": true,
+      "icon": "work",
+      "parserRules": [
+        {
+          "pattern": "^Für das erfolgreiche Beenden deiner Tätigkeit erhältst du (\\d+)\\$ zum nächsten Zahltag\\.$",
+          "eventType": "earning",
+          "captureGroups": {
+            "amount": 1
+          }
+        },
+        {
+          "pattern": "^Du hast deinen Job-Skill auf (\\d+) verbessert\\.$",
+          "eventType": "skill_level_absolute",
+          "captureGroups": {
+            "level": 1
+          }
+        }
+      ],
+      "skillTree": [
+        {
+          "id": "fischer_netz_1",
+          "name": "Effizienz +1 Netz",
+          "maxPoints": 25,
+          "unlockOrder": 1,
+          "perkType": "effizienz",
+          "perkValue": "+1 Netz"
+        },
+        {
+          "id": "fischer_netz_2",
+          "name": "Effizienz +2 Netz",
+          "maxPoints": 50,
+          "unlockOrder": 2,
+          "perkType": "effizienz",
+          "perkValue": "+2 Netz"
+        },
+        {
+          "id": "fischer_skin_291",
+          "name": "Skin 291",
+          "maxPoints": 100,
+          "unlockOrder": 3,
+          "perkType": "skin",
+          "perkValue": "291"
+        },
+        {
+          "id": "fischer_lohn_25_1",
+          "name": "Lohn +25%",
+          "maxPoints": 500,
+          "unlockOrder": 4,
+          "perkType": "lohn_bonus",
+          "perkValue": "25%"
+        },
+        {
+          "id": "fischer_lohn_25_2",
+          "name": "Lohn +25%",
+          "maxPoints": 1000,
+          "unlockOrder": 5,
+          "perkType": "lohn_bonus",
+          "perkValue": "25%"
+        },
+        {
+          "id": "fischer_tropic",
+          "name": "Privatfahrzeug Tropic",
+          "maxPoints": 2000,
+          "unlockOrder": 6,
+          "perkType": "privatfahrzeug",
+          "perkValue": "Tropic"
+        }
+      ]
+    },
+    {
+      "id": "pilot",
+      "name": "Pilot",
+      "enabled": true,
+      "icon": "work",
+      "parserRules": [
+        {
+          "pattern": "^Für das erfolgreiche Beenden deiner Tätigkeit erhältst du (\\d+)\\$ zum nächsten Zahltag\\.$",
+          "eventType": "earning",
+          "captureGroups": {
+            "amount": 1
+          }
+        },
+        {
+          "pattern": "^Du hast deinen Job-Skill auf (\\d+) verbessert\\.$",
+          "eventType": "skill_level_absolute",
+          "captureGroups": {
+            "level": 1
+          }
+        }
+      ],
+      "skillTree": [
+        {
+          "id": "pilot_schmuggler",
+          "name": "Spezial Mission: Schmuggler",
+          "maxPoints": 25,
+          "unlockOrder": 1,
+          "perkType": "spezial_mission",
+          "perkValue": "Schmuggler"
+        },
+        {
+          "id": "pilot_passagier",
+          "name": "Freischaltung: Passagierpilot",
+          "maxPoints": 50,
+          "unlockOrder": 2,
+          "perkType": "job_freigeschaltet",
+          "perkValue": "Passagierpilot"
+        },
+        {
+          "id": "pilot_skin_61",
+          "name": "Pilot Skin 61",
+          "maxPoints": 100,
+          "unlockOrder": 3,
+          "perkType": "skin",
+          "perkValue": "61"
+        },
+        {
+          "id": "pilot_lohn_25_1",
+          "name": "Lohn +25%",
+          "maxPoints": 500,
+          "unlockOrder": 4,
+          "perkType": "lohn_bonus",
+          "perkValue": "25%"
+        },
+        {
+          "id": "pilot_lohn_25_2",
+          "name": "Lohn +25%",
+          "maxPoints": 1000,
+          "unlockOrder": 5,
+          "perkType": "lohn_bonus",
+          "perkValue": "25%"
+        },
+        {
+          "id": "pilot_stuntplane",
+          "name": "Privatfahrzeug Stuntplane",
+          "maxPoints": 2000,
+          "unlockOrder": 6,
+          "perkType": "privatfahrzeug",
+          "perkValue": "Stuntplane"
+        }
+      ]
+    },
+    {
+      "id": "bergarbeiter",
+      "name": "Bergarbeiter",
+      "enabled": true,
+      "icon": "work",
+      "parserRules": [
+        {
+          "pattern": "^Für das erfolgreiche Beenden deiner Tätigkeit erhältst du (\\d+)\\$ zum nächsten Zahltag\\.$",
+          "eventType": "earning",
+          "captureGroups": {
+            "amount": 1
+          }
+        },
+        {
+          "pattern": "^Du hast deinen Job-Skill auf (\\d+) verbessert\\.$",
+          "eventType": "skill_level_absolute",
+          "captureGroups": {
+            "level": 1
+          }
+        }
+      ],
+      "skillTree": [
+        {
+          "id": "bergarbeiter_skin_27",
+          "name": "Bergarbeiter Skin 27",
+          "maxPoints": 100,
+          "unlockOrder": 1,
+          "perkType": "skin",
+          "perkValue": "27"
+        },
+        {
+          "id": "bergarbeiter_dumper",
+          "name": "Privatfahrzeug Dumper",
+          "maxPoints": 250,
+          "unlockOrder": 2,
+          "perkType": "privatfahrzeug",
+          "perkValue": "Dumper"
+        },
+        {
+          "id": "bergarbeiter_lohn_25_1",
+          "name": "Lohn +25%",
+          "maxPoints": 500,
+          "unlockOrder": 3,
+          "perkType": "lohn_bonus",
+          "perkValue": "25%"
+        },
+        {
+          "id": "bergarbeiter_lohn_25_2",
+          "name": "Lohn +25%",
+          "maxPoints": 1000,
+          "unlockOrder": 4,
+          "perkType": "lohn_bonus",
+          "perkValue": "25%"
+        },
+        {
+          "id": "bergarbeiter_dozer",
+          "name": "Privatfahrzeug Dozer",
+          "maxPoints": 2000,
+          "unlockOrder": 5,
+          "perkType": "privatfahrzeug",
+          "perkValue": "Dozer"
+        }
+      ]
+    },
+    {
+      "id": "beachpatrol",
+      "name": "Beachpatrol",
+      "enabled": true,
+      "icon": "work",
+      "parserRules": [
+        {
+          "pattern": "^Für das erfolgreiche Beenden deiner Tätigkeit erhältst du (\\d+)\\$ zum nächsten Zahltag\\.$",
+          "eventType": "earning",
+          "captureGroups": {
+            "amount": 1
+          }
+        },
+        {
+          "pattern": "^Du hast deinen Job-Skill auf (\\d+) verbessert\\.$",
+          "eventType": "skill_level_absolute",
+          "captureGroups": {
+            "level": 1
+          }
+        }
+      ],
+      "skillTree": [
+        {
+          "id": "beachpatrol_retter",
+          "name": "Job Erweiterung: Rettungsschwimmer",
+          "maxPoints": 25,
+          "unlockOrder": 1,
+          "perkType": "job_erweiterung",
+          "perkValue": "Rettungsschwimmer"
+        },
+        {
+          "id": "beachpatrol_surfer",
+          "name": "Spezial Mission: Surfer",
+          "maxPoints": 50,
+          "unlockOrder": 2,
+          "perkType": "spezial_mission",
+          "perkValue": "Surfer"
+        },
+        {
+          "id": "beachpatrol_skin_97",
+          "name": "Skin 97",
+          "maxPoints": 100,
+          "unlockOrder": 3,
+          "perkType": "skin",
+          "perkValue": "97"
+        }
+      ]
+    },
+    {
+      "id": "abschleppfahrer",
+      "name": "Abschleppfahrer",
+      "enabled": true,
+      "icon": "work",
+      "parserRules": [
+        {
+          "pattern": "^Für das erfolgreiche Beenden deiner Tätigkeit erhältst du (\\d+)\\$ zum nächsten Zahltag\\.$",
+          "eventType": "earning",
+          "captureGroups": {
+            "amount": 1
+          }
+        },
+        {
+          "pattern": "^Du hast deinen Job-Skill auf (\\d+) verbessert\\.$",
+          "eventType": "skill_level_absolute",
+          "captureGroups": {
+            "level": 1
+          }
+        }
+      ],
+      "skillTree": [
+        {
+          "id": "abschlepp_skin_42",
+          "name": "Skin 42",
+          "maxPoints": 100,
+          "unlockOrder": 1,
+          "perkType": "skin",
+          "perkValue": "42"
+        },
+        {
+          "id": "abschlepp_packer",
+          "name": "Privatfahrzeug Packer",
+          "maxPoints": 250,
+          "unlockOrder": 2,
+          "perkType": "privatfahrzeug",
+          "perkValue": "Packer"
+        },
+        {
+          "id": "abschlepp_lohn_25_1",
+          "name": "Lohn +25%",
+          "maxPoints": 500,
+          "unlockOrder": 3,
+          "perkType": "lohn_bonus",
+          "perkValue": "25%"
+        },
+        {
+          "id": "abschlepp_lohn_25_2",
+          "name": "Lohn +25%",
+          "maxPoints": 1000,
+          "unlockOrder": 4,
+          "perkType": "lohn_bonus",
+          "perkValue": "25%"
+        },
+        {
+          "id": "abschlepp_towtruck",
+          "name": "Privatfahrzeug Tow Truck",
+          "maxPoints": 2000,
+          "unlockOrder": 5,
+          "perkType": "privatfahrzeug",
+          "perkValue": "Tow Truck"
+        }
+      ]
+    },
+    {
+      "id": "strassenreiniger",
+      "name": "Straßenreiniger",
+      "enabled": true,
+      "icon": "work",
+      "parserRules": [
+        {
+          "pattern": "^Hey .+! Ich freue mich, dass du die Sanitary Andreas Corp\\. als Straßenreiniger unterstützt\\.$",
+          "eventType": "job_message"
+        },
+        {
+          "pattern": "^Für das erfolgreiche Beenden deiner Tätigkeit erhältst du (\\d+)\\$ zum nächsten Zahltag\\.$",
+          "eventType": "earning",
+          "captureGroups": {
+            "amount": 1
+          }
+        },
+        {
+          "pattern": "^Du hast deinen Job-Skill auf (\\d+) verbessert\\.$",
+          "eventType": "skill_level_absolute",
+          "captureGroups": {
+            "level": 1
+          }
+        }
+      ],
+      "skillTree": [
+        {
+          "id": "strasse_muellmann",
+          "name": "Freischaltung: Müllmann",
+          "maxPoints": 25,
+          "unlockOrder": 1,
+          "perkType": "job_freigeschaltet",
+          "perkValue": "Müllmann"
+        },
+        {
+          "id": "strasse_ozean",
+          "name": "Spezial Mission: Ozeanreinigung",
+          "maxPoints": 50,
+          "unlockOrder": 2,
+          "perkType": "spezial_mission",
+          "perkValue": "Ozeanreinigung"
+        },
+        {
+          "id": "strasse_skin_183",
+          "name": "Job Skin 183",
+          "maxPoints": 100,
+          "unlockOrder": 3,
+          "perkType": "skin",
+          "perkValue": "183"
+        },
+        {
+          "id": "strasse_lohn_25_1",
+          "name": "Lohn +25%",
+          "maxPoints": 500,
+          "unlockOrder": 4,
+          "perkType": "lohn_bonus",
+          "perkValue": "25%"
+        },
+        {
+          "id": "strasse_lohn_25_2",
+          "name": "Lohn +25%",
+          "maxPoints": 1000,
+          "unlockOrder": 5,
+          "perkType": "lohn_bonus",
+          "perkValue": "25%"
+        },
+        {
+          "id": "strasse_sweeper",
+          "name": "Privatfahrzeug Sweeper",
+          "maxPoints": 2000,
+          "unlockOrder": 6,
+          "perkType": "privatfahrzeug",
+          "perkValue": "Sweeper"
+        }
+      ],
+      "speakerAliases": [
+        "George Carter sagt"
+      ]
+    },
+    {
+      "id": "landwirt",
+      "name": "Landwirt",
+      "enabled": true,
+      "icon": "tractor",
+      "parserRules": [
+        {
+          "pattern": "^Die Kühe müssen gemolken werden\\. Begib dich zu den Kühen und melke sie\\.$",
+          "eventType": "job_message"
+        },
+        {
+          "pattern": "^Ein Feld muss mit neuem Weizen besäht werden\\.$",
+          "eventType": "job_message"
+        },
+        {
+          "pattern": "^Für das erfolgreiche Beenden deiner Tätigkeit erhältst du (\\d+)\\$ zum nächsten Zahltag\\.$",
+          "eventType": "earning",
+          "captureGroups": {
+            "amount": 1
+          }
+        },
+        {
+          "pattern": "^Du hast deinen Job-Skill auf (\\d+) verbessert\\.$",
+          "eventType": "skill_level_absolute",
+          "captureGroups": {
+            "level": 1
+          }
+        }
+      ],
+      "skillTree": [
+        {
+          "id": "landwirt_skin_34",
+          "name": "Skin 34",
+          "maxPoints": 100,
+          "unlockOrder": 1,
+          "perkType": "skin",
+          "perkValue": "34"
+        },
+        {
+          "id": "landwirt_lohn_25_1",
+          "name": "Lohn +25%",
+          "maxPoints": 500,
+          "unlockOrder": 2,
+          "perkType": "lohn_bonus",
+          "perkValue": "25%"
+        },
+        {
+          "id": "landwirt_lohn_25_2",
+          "name": "Lohn +25%",
+          "maxPoints": 1000,
+          "unlockOrder": 3,
+          "perkType": "lohn_bonus",
+          "perkValue": "25%"
+        },
+        {
+          "id": "landwirt_tractor",
+          "name": "Privatfahrzeug Tractor",
+          "maxPoints": 2000,
+          "unlockOrder": 4,
+          "perkType": "privatfahrzeug",
+          "perkValue": "Tractor"
+        }
+      ]
+    },
+    {
+      "id": "bestatter",
+      "name": "Bestatter",
+      "enabled": true,
+      "icon": "work",
+      "parserRules": [
+        {
+          "pattern": "^Für das erfolgreiche Beenden deiner Tätigkeit erhältst du (\\d+)\\$ zum nächsten Zahltag\\.$",
+          "eventType": "earning",
+          "captureGroups": {
+            "amount": 1
+          }
+        },
+        {
+          "pattern": "^Du hast deinen Job-Skill auf (\\d+) verbessert\\.$",
+          "eventType": "skill_level_absolute",
+          "captureGroups": {
+            "level": 1
+          }
+        }
+      ],
+      "skillTree": [
+        {
+          "id": "bestatter_skin_33",
+          "name": "Skin 33",
+          "maxPoints": 100,
+          "unlockOrder": 1,
+          "perkType": "skin",
+          "perkValue": "33"
+        },
+        {
+          "id": "bestatter_lohn_25_1",
+          "name": "Lohn +25%",
+          "maxPoints": 500,
+          "unlockOrder": 2,
+          "perkType": "lohn_bonus",
+          "perkValue": "25%"
+        },
+        {
+          "id": "bestatter_lohn_25_2",
+          "name": "Lohn +25%",
+          "maxPoints": 1000,
+          "unlockOrder": 3,
+          "perkType": "lohn_bonus",
+          "perkValue": "25%"
+        },
+        {
+          "id": "bestatter_romero",
+          "name": "Privatfahrzeug Romero",
+          "maxPoints": 2000,
+          "unlockOrder": 4,
+          "perkType": "privatfahrzeug",
+          "perkValue": "Romero"
+        }
+      ]
+    },
+    {
+      "id": "winterdienst",
+      "name": "Winterdienst",
+      "enabled": true,
+      "icon": "work",
+      "parserRules": [
+        {
+          "pattern": "^Für das erfolgreiche Beenden deiner Tätigkeit erhältst du (\\d+)\\$ zum nächsten Zahltag\\.$",
+          "eventType": "earning",
+          "captureGroups": {
+            "amount": 1
+          }
+        },
+        {
+          "pattern": "^Du hast deinen Job-Skill auf (\\d+) verbessert\\.$",
+          "eventType": "skill_level_absolute",
+          "captureGroups": {
+            "level": 1
+          }
+        }
+      ],
+      "skillTree": [
+        {
+          "id": "winterdienst_muellmann",
+          "name": "Freischaltung: Müllmann",
+          "maxPoints": 25,
+          "unlockOrder": 1,
+          "perkType": "job_freigeschaltet",
+          "perkValue": "Müllmann"
+        },
+        {
+          "id": "winterdienst_skin_6",
+          "name": "Skin 6",
+          "maxPoints": 100,
+          "unlockOrder": 2,
+          "perkType": "skin",
+          "perkValue": "6"
+        },
+        {
+          "id": "winterdienst_schnee_20",
+          "name": "Effizienz: 20 Schneehaufen",
+          "maxPoints": 250,
+          "unlockOrder": 3,
+          "perkType": "effizienz",
+          "perkValue": "20 Schneehaufen pro Runde"
+        },
+        {
+          "id": "winterdienst_schnee_30",
+          "name": "Effizienz: 30 Schneehaufen",
+          "maxPoints": 300,
+          "unlockOrder": 4,
+          "perkType": "effizienz",
+          "perkValue": "30 Schneehaufen pro Runde"
+        },
+        {
+          "id": "winterdienst_lohn_25_1",
+          "name": "Lohn +25%",
+          "maxPoints": 500,
+          "unlockOrder": 5,
+          "perkType": "lohn_bonus",
+          "perkValue": "25%"
+        },
+        {
+          "id": "winterdienst_lohn_25_2",
+          "name": "Lohn +25%",
+          "maxPoints": 1000,
+          "unlockOrder": 6,
+          "perkType": "lohn_bonus",
+          "perkValue": "25%"
+        },
+        {
+          "id": "winterdienst_dune",
+          "name": "Privatfahrzeug Dune",
+          "maxPoints": 2000,
+          "unlockOrder": 7,
+          "perkType": "privatfahrzeug",
+          "perkValue": "Dune"
+        }
+      ]
+    },
+    {
+      "id": "taxifahrer",
+      "name": "Taxifahrer",
+      "enabled": true,
+      "icon": "work",
+      "parserRules": [
+        {
+          "pattern": "^Für das erfolgreiche Beenden deiner Tätigkeit erhältst du (\\d+)\\$ zum nächsten Zahltag\\.$",
+          "eventType": "earning",
+          "captureGroups": {
+            "amount": 1
+          }
+        },
+        {
+          "pattern": "^Du hast deinen Job-Skill auf (\\d+) verbessert\\.$",
+          "eventType": "skill_level_absolute",
+          "captureGroups": {
+            "level": 1
+          }
+        }
+      ],
+      "skillTree": [
+        {
+          "id": "taxi_cabbie",
+          "name": "Dienstfahrzeug Cabbie",
+          "maxPoints": 25,
+          "unlockOrder": 1,
+          "perkType": "dienstfahrzeug",
+          "perkValue": "Cabbie"
+        },
+        {
+          "id": "taxi_vip",
+          "name": "Spezialmission VIP-Shuttle",
+          "maxPoints": 50,
+          "unlockOrder": 2,
+          "perkType": "spezial_mission",
+          "perkValue": "VIP-Shuttle"
+        },
+        {
+          "id": "taxi_skin_194",
+          "name": "Skin 194",
+          "maxPoints": 100,
+          "unlockOrder": 3,
+          "perkType": "skin",
+          "perkValue": "194"
+        },
+        {
+          "id": "taxi_privat",
+          "name": "Privatfahrzeug Taxi",
+          "maxPoints": 250,
+          "unlockOrder": 4,
+          "perkType": "privatfahrzeug",
+          "perkValue": "Taxi"
+        },
+        {
+          "id": "taxi_lohn_25_1",
+          "name": "Lohn +25%",
+          "maxPoints": 500,
+          "unlockOrder": 5,
+          "perkType": "lohn_bonus",
+          "perkValue": "25%"
+        },
+        {
+          "id": "taxi_lohn_25_2",
+          "name": "Lohn +25%",
+          "maxPoints": 1000,
+          "unlockOrder": 6,
+          "perkType": "lohn_bonus",
+          "perkValue": "25%"
+        },
+        {
+          "id": "taxi_stretch",
+          "name": "Privatfahrzeug Stretch",
+          "maxPoints": 2000,
+          "unlockOrder": 7,
+          "perkType": "privatfahrzeug",
+          "perkValue": "Stretch"
+        }
+      ]
+    },
+    {
+      "id": "jaeger",
+      "name": "Jäger",
+      "enabled": true,
+      "icon": "work",
+      "parserRules": [
+        {
+          "pattern": "^Hey .+! Ich freue mich, dass du uns als Jäger unterstützt, um die Wildpopulation zu kontrollieren\\.$",
+          "eventType": "job_message"
+        },
+        {
+          "pattern": "^Deine Ausrüstung ist bereits vorbereitet, um vier Wildtiere zu erlegen\\.$",
+          "eventType": "job_message"
+        },
+        {
+          "pattern": "^Du hast \\d+ Kg Fleisch von dem toten Tier aufgesammelt$",
+          "eventType": "job_message"
+        },
+        {
+          "pattern": "^Für das erfolgreiche Beenden deiner Tätigkeit erhältst du (\\d+)\\$ zum nächsten Zahltag\\.$",
+          "eventType": "earning",
+          "captureGroups": {
+            "amount": 1
+          }
+        },
+        {
+          "pattern": "^Du hast deinen Job-Skill auf (\\d+) verbessert\\.$",
+          "eventType": "skill_level_absolute",
+          "captureGroups": {
+            "level": 1
+          }
+        }
+      ],
+      "skillTree": [
+        {
+          "id": "jaeger_tier_25",
+          "name": "Effizienz: 25% großes Tier",
+          "maxPoints": 25,
+          "unlockOrder": 1,
+          "perkType": "effizienz",
+          "perkValue": "25% Chance auf großes Tier"
+        },
+        {
+          "id": "jaeger_tier_50",
+          "name": "Effizienz: 50% großes Tier",
+          "maxPoints": 50,
+          "unlockOrder": 2,
+          "perkType": "effizienz",
+          "perkValue": "50% Chance auf großes Tier"
+        },
+        {
+          "id": "jaeger_skin_298",
+          "name": "Skin 298",
+          "maxPoints": 100,
+          "unlockOrder": 3,
+          "perkType": "skin",
+          "perkValue": "298"
+        },
+        {
+          "id": "jaeger_bobcat",
+          "name": "Privatfahrzeug Bobcat",
+          "maxPoints": 250,
+          "unlockOrder": 4,
+          "perkType": "privatfahrzeug",
+          "perkValue": "Bobcat"
+        },
+        {
+          "id": "jaeger_tiere_7",
+          "name": "Erhöhung auf 7 erlegbare Tiere",
+          "maxPoints": 300,
+          "unlockOrder": 5,
+          "perkType": "effizienz",
+          "perkValue": "7 erlegbare Tiere"
+        },
+        {
+          "id": "jaeger_lohn_25_1",
+          "name": "Lohn +25%",
+          "maxPoints": 500,
+          "unlockOrder": 6,
+          "perkType": "lohn_bonus",
+          "perkValue": "25%"
+        },
+        {
+          "id": "jaeger_lohn_25_2",
+          "name": "Lohn +25%",
+          "maxPoints": 1000,
+          "unlockOrder": 7,
+          "perkType": "lohn_bonus",
+          "perkValue": "25%"
+        },
+        {
+          "id": "jaeger_rancher",
+          "name": "Privatfahrzeug Rancher Lure",
+          "maxPoints": 2000,
+          "unlockOrder": 8,
+          "perkType": "privatfahrzeug",
+          "perkValue": "Rancher Lure"
+        }
+      ],
+      "speakerAliases": [
+        "Jack Hunter sagt"
+      ]
+    },
+    {
+      "id": "busfahrer",
+      "name": "Busfahrer",
+      "enabled": true,
+      "icon": "work",
+      "parserRules": [
+        {
+          "pattern": "^Für das erfolgreiche Beenden deiner Tätigkeit erhältst du (\\d+)\\$ zum nächsten Zahltag\\.$",
+          "eventType": "earning",
+          "captureGroups": {
+            "amount": 1
+          }
+        },
+        {
+          "pattern": "^Du hast deinen Job-Skill auf (\\d+) verbessert\\.$",
+          "eventType": "skill_level_absolute",
+          "captureGroups": {
+            "level": 1
+          }
+        }
+      ],
+      "skillTree": [
+        {
+          "id": "bus_taxi",
+          "name": "Freischaltung: Taxifahrer",
+          "maxPoints": 25,
+          "unlockOrder": 1,
+          "perkType": "job_freigeschaltet",
+          "perkValue": "Taxifahrer"
+        },
+        {
+          "id": "bus_langstrecke",
+          "name": "Spezial-Mission: Langstreckenrouten",
+          "maxPoints": 50,
+          "unlockOrder": 2,
+          "perkType": "spezial_mission",
+          "perkValue": "Langstreckenrouten"
+        },
+        {
+          "id": "bus_skin_253",
+          "name": "Skin 253",
+          "maxPoints": 100,
+          "unlockOrder": 3,
+          "perkType": "skin",
+          "perkValue": "253"
+        },
+        {
+          "id": "bus_privat",
+          "name": "Privatfahrzeug Bus",
+          "maxPoints": 250,
+          "unlockOrder": 4,
+          "perkType": "privatfahrzeug",
+          "perkValue": "Bus"
+        },
+        {
+          "id": "bus_coach_dienst",
+          "name": "Dienstfahrzeug: Coach",
+          "maxPoints": 300,
+          "unlockOrder": 5,
+          "perkType": "dienstfahrzeug",
+          "perkValue": "Coach"
+        },
+        {
+          "id": "bus_lohn_25_1",
+          "name": "Lohn +25%",
+          "maxPoints": 500,
+          "unlockOrder": 6,
+          "perkType": "lohn_bonus",
+          "perkValue": "25%"
+        },
+        {
+          "id": "bus_lohn_25_2",
+          "name": "Lohn +25%",
+          "maxPoints": 1000,
+          "unlockOrder": 7,
+          "perkType": "lohn_bonus",
+          "perkValue": "25%"
+        },
+        {
+          "id": "bus_coach_privat",
+          "name": "Privatfahrzeug: Coach",
+          "maxPoints": 2000,
+          "unlockOrder": 8,
+          "perkType": "privatfahrzeug",
+          "perkValue": "Coach"
+        }
+      ]
+    },
+    {
+      "id": "kurier",
+      "name": "Kurier",
+      "enabled": true,
+      "icon": "work",
+      "parserRules": [
+        {
+          "pattern": "^Für das erfolgreiche Beenden deiner Tätigkeit erhältst du (\\d+)\\$ zum nächsten Zahltag\\.$",
+          "eventType": "earning",
+          "captureGroups": {
+            "amount": 1
+          }
+        },
+        {
+          "pattern": "^Du hast deinen Job-Skill auf (\\d+) verbessert\\.$",
+          "eventType": "skill_level_absolute",
+          "captureGroups": {
+            "level": 1
+          }
+        }
+      ],
+      "skillTree": [
+        {
+          "id": "kurier_trucker",
+          "name": "Freischaltung: Trucker",
+          "maxPoints": 25,
+          "unlockOrder": 1,
+          "perkType": "job_freigeschaltet",
+          "perkValue": "Trucker"
+        },
+        {
+          "id": "kurier_yosemite",
+          "name": "Dienstfahrzeug: Yosemite",
+          "maxPoints": 50,
+          "unlockOrder": 2,
+          "perkType": "dienstfahrzeug",
+          "perkValue": "Yosemite"
+        },
+        {
+          "id": "kurier_skin_202",
+          "name": "Skin 202",
+          "maxPoints": 100,
+          "unlockOrder": 3,
+          "perkType": "skin",
+          "perkValue": "202"
+        },
+        {
+          "id": "kurier_topfun",
+          "name": "Privatfahrzeug: Topfun Van",
+          "maxPoints": 250,
+          "unlockOrder": 4,
+          "perkType": "privatfahrzeug",
+          "perkValue": "Topfun Van"
+        },
+        {
+          "id": "kurier_mule",
+          "name": "Dienstfahrzeug: Mule (25 Pakete)",
+          "maxPoints": 300,
+          "unlockOrder": 5,
+          "perkType": "dienstfahrzeug",
+          "perkValue": "Mule (25 Pakete)"
+        },
+        {
+          "id": "kurier_lohn_25_1",
+          "name": "Lohn +25%",
+          "maxPoints": 500,
+          "unlockOrder": 6,
+          "perkType": "lohn_bonus",
+          "perkValue": "25%"
+        },
+        {
+          "id": "kurier_lohn_25_2",
+          "name": "Lohn +25%",
+          "maxPoints": 1000,
+          "unlockOrder": 7,
+          "perkType": "lohn_bonus",
+          "perkValue": "25%"
+        },
+        {
+          "id": "kurier_bmx",
+          "name": "Privatfahrzeug BMX",
+          "maxPoints": 2000,
+          "unlockOrder": 8,
+          "perkType": "privatfahrzeug",
+          "perkValue": "BMX"
+        }
+      ]
+    }
+  ]
+}
