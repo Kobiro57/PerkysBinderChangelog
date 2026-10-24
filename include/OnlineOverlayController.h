@@ -1,8 +1,12 @@
 #pragma once
 
 #include <chrono>
+#include <functional>
+#include <map>
 #include <string>
 #include <vector>
+
+class SAMPBridge;
 
 namespace keybinder {
 
@@ -26,6 +30,32 @@ enum class PersistentOverlayKind {
     OwnGang,
     GangsSummary,
     Wanted,
+    Location,
+    Transport,
+    Pedslots,
+    FriendsRadar,
+    EnemiesRadar,
+};
+
+struct OnlineMarkerPlayer {
+    int id = -1;
+    std::string name;
+};
+
+struct OnlineGameOverlayState {
+    bool connected = false;
+    int streamedPlayers = 0;
+    std::string location;
+    std::string transport;
+    std::vector<OnlineMarkerPlayer> players;
+};
+
+struct OnlineMarkerState {
+    std::string name;
+    std::string affiliation;
+    bool friendly = false;
+    bool online = false;
+    int playerId = -1;
 };
 
 // ---------------------------------------------------------------------------
@@ -64,6 +94,8 @@ struct PersistentOverlayData {
     std::vector<std::string> playerNames; // deduped by id, sorted by name
     std::vector<PersistentOverlayCountRow> countRows; // summary rows: label + online count
     int playerCount = 0;
+    bool showPlayerCount = true;
+    float minimumWidth = 0.0f;
 };
 
 // ---------------------------------------------------------------------------
@@ -86,6 +118,13 @@ public:
     const PersistentOverlayData& GetGangsOverlayData() const { return gangsOverlay_; }
     const PersistentOverlayData& GetWantedOverlayData() const { return wantedOverlay_; }
     const PersistentOverlayData& GetOwnGangOverlayData() const { return ownGangOverlay_; }
+    const std::vector<PersistentOverlayData>& GetGameOverlays() const { return gameOverlays_; }
+    const std::vector<OnlineMarkerState>& GetMarkerStates() const { return markerStates_; }
+    const OnlineGameOverlayState& GetGameState() const { return gameState_; }
+    void SetGameStateProvider(std::function<OnlineGameOverlayState()> provider);
+    static OnlineGameOverlayState CaptureGameState(SAMPBridge* bridge);
+    static std::string NormalizeMarkerName(const std::string& name);
+    static std::string ResolveMarkerAffiliation(const OnlineSnapshot& snapshot, const std::string& name);
 
     // Static helpers
     static OnlineOverlayAnchor ParseAnchor(const std::string& value);
@@ -100,6 +139,7 @@ private:
     void UpdateOwnGangOverlay();
     void UpdateGangsOverlay();
     void UpdateWantedOverlay();
+    void UpdateGameOverlays(float deltaTimeSeconds);
 
     // From the snapshot, find the bucket matching the local player's affiliation.
     const OnlineBucketSummary* FindLocalBucket(const OnlineSnapshot& snapshot) const;
@@ -110,6 +150,12 @@ private:
     PersistentOverlayData ownGangOverlay_;
     PersistentOverlayData gangsOverlay_;
     PersistentOverlayData wantedOverlay_;
+    std::vector<PersistentOverlayData> gameOverlays_;
+    OnlineGameOverlayState gameState_;
+    std::map<std::string, std::size_t> gamePlayerIndices_;
+    std::vector<OnlineMarkerState> markerStates_;
+    std::function<OnlineGameOverlayState()> gameStateProvider_;
+    float gameRefreshSeconds_ = 0.0f;
 
     // Cached settings
     bool localOverlayEnabled_ = false;

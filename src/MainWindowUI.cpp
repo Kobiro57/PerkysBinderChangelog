@@ -1,3 +1,4 @@
+#include "../include/MessageVariablesUI.h"
 #include "../include/MainWindowUI.h"
 #include "../include/imgui-1.92.7/imgui.h"
 #include "../include/Logger.h"
@@ -513,6 +514,8 @@ MainWindowUI::MainWindowUI() {
         const KillTrackerSettings& killTrackerSettings = killTrackerUI_.GetSettings();
         Settings& settings = settingsManager_->GetMutable();
         settings.kill_tracker_enabled = killTrackerSettings.enabled;
+        settings.kill_tracker_count_kills = killTrackerSettings.countKills;
+        settings.kill_tracker_count_deaths = killTrackerSettings.countDeaths;
         settings.kill_tracker_local_kill_message_enabled = killTrackerSettings.showLocalKillMessage;
         settings.kill_tracker_local_death_message_enabled = killTrackerSettings.showLocalDeathMessage;
         settings.kill_tracker_server_kill_message_enabled = killTrackerSettings.sendServerKillMessage;
@@ -523,6 +526,10 @@ MainWindowUI::MainWindowUI() {
         settings.kill_tracker_server_kill_message_template = killTrackerSettings.customServerKillMessage;
         settings.kill_tracker_server_death_message_template = killTrackerSettings.customServerDeathMessage;
         settings.kill_tracker_allow_manual_edits = killTrackerSettings.allowManualEdits;
+
+        if (bridge_ != nullptr) {
+            bridge_->SetSettingsManager(settingsManager_);
+        }
 
         if (keybindManager_ != nullptr) {
             keybindManager_->Save(settingsManager_);
@@ -589,19 +596,7 @@ void MainWindowUI::SetSettingsManager(SettingsManager* manager) {
     interfaceEditorUI_.SetSettingsManager(manager);
 
     if (settingsManager_ != nullptr) {
-        KillTrackerSettings settings = killTrackerUI_.GetSettings();
-        settings.enabled = settingsManager_->Get().kill_tracker_enabled;
-        settings.showLocalKillMessage = settingsManager_->Get().kill_tracker_local_kill_message_enabled;
-        settings.showLocalDeathMessage = settingsManager_->Get().kill_tracker_local_death_message_enabled;
-        settings.sendServerKillMessage = settingsManager_->Get().kill_tracker_server_kill_message_enabled;
-        settings.sendServerDeathMessage = settingsManager_->Get().kill_tracker_server_death_message_enabled;
-        settings.trackDamage = settingsManager_->Get().kill_tracker_track_damage;
-        settings.customLocalKillMessage = settingsManager_->Get().kill_tracker_local_kill_message_template;
-        settings.customLocalDeathMessage = settingsManager_->Get().kill_tracker_local_death_message_template;
-        settings.customServerKillMessage = settingsManager_->Get().kill_tracker_server_kill_message_template;
-        settings.customServerDeathMessage = settingsManager_->Get().kill_tracker_server_death_message_template;
-        settings.allowManualEdits = settingsManager_->Get().kill_tracker_allow_manual_edits;
-        killTrackerUI_.SetSettings(settings);
+        SyncKillTrackerSettings();
         hitmarkerUI_.SetSettingsManager(manager);
         crosshairUI_.SetSettingsManager(manager);
         squareMapUI_.SetSettingsManager(manager);
@@ -609,6 +604,25 @@ void MainWindowUI::SetSettingsManager(SettingsManager* manager) {
         hitsoundUI_.SetSettingsManager(manager);
         rssTrackerUI_.SetSettingsManager(manager);
     }
+}
+
+void MainWindowUI::SyncKillTrackerSettings() {
+    if (settingsManager_ == nullptr) return;
+    KillTrackerSettings settings = killTrackerUI_.GetSettings();
+    settings.enabled = settingsManager_->Get().kill_tracker_enabled;
+    settings.countKills = settingsManager_->Get().kill_tracker_count_kills;
+    settings.countDeaths = settingsManager_->Get().kill_tracker_count_deaths;
+    settings.showLocalKillMessage = settingsManager_->Get().kill_tracker_local_kill_message_enabled;
+    settings.showLocalDeathMessage = settingsManager_->Get().kill_tracker_local_death_message_enabled;
+    settings.sendServerKillMessage = settingsManager_->Get().kill_tracker_server_kill_message_enabled;
+    settings.sendServerDeathMessage = settingsManager_->Get().kill_tracker_server_death_message_enabled;
+    settings.trackDamage = settingsManager_->Get().kill_tracker_track_damage;
+    settings.customLocalKillMessage = settingsManager_->Get().kill_tracker_local_kill_message_template;
+    settings.customLocalDeathMessage = settingsManager_->Get().kill_tracker_local_death_message_template;
+    settings.customServerKillMessage = settingsManager_->Get().kill_tracker_server_kill_message_template;
+    settings.customServerDeathMessage = settingsManager_->Get().kill_tracker_server_death_message_template;
+    settings.allowManualEdits = settingsManager_->Get().kill_tracker_allow_manual_edits;
+    killTrackerUI_.SetSettings(settings);
 }
 
 void MainWindowUI::SetInterfaceEditor(InterfaceEditor* editor) {
@@ -893,7 +907,7 @@ void MainWindowUI::RenderSidebar() {
         }
         ImGui::PushStyleColor(ImGuiCol_Text, theme.GetColor(ThemeColorRole::TextMuted));
         ImGui::SetWindowFontScale(smallFontScale);
-        ImGui::TextUnformatted("NLBinder v" NLBINDER_VERSION " by perkys");
+        ImGui::TextUnformatted("NLBinder v." NLBINDER_VERSION " by KOBiRO");
         ImGui::SetWindowFontScale(1.0f);
         ImGui::PopStyleColor();
     }
@@ -1187,6 +1201,28 @@ void MainWindowUI::RenderSettingsGeneralTab() {
         ImGui::SetTooltip("Drückt automatisch die Z-Taste nach dem Einsteigen als Fahrer,\num den Motor sofort zu starten.");
     }
 
+    if (UIComponents::Toggle("Damagelog", &settings.damage_log_enabled)) {
+        persistSettings();
+    }
+    if (ImGui::IsItemHovered()) {
+        ImGui::SetTooltip("Zeigt erhaltenen Trefferschaden (HP und Weste) nur in deinem Chat.");
+    }
+
+    UIComponents::EndCard();
+
+    UIComponents::BeginCard("ReconnectSettingsCard", 0.0f, true);
+    UIComponents::CardHeader("Reconnect", "Spiel schließen und mit /reconnect neu verbinden");
+    if (UIComponents::Toggle("Benutzt du den Nova Launcher?", &settings.reconnect_use_nova_launcher)) {
+        persistSettings();
+    }
+    ImGui::TextWrapped(settings.reconnect_use_nova_launcher
+        ? "Nova Launcher wird geöffnet. Der Binder versucht dort den normalen Spielstart."
+        : "OpenMP startet das Spiel mit dem aktuellen Server, Spielernamen und Spielordner.");
+    std::string& launcherPath = settings.reconnect_use_nova_launcher
+        ? settings.reconnect_nova_launcher_path : settings.reconnect_openmp_launcher_path;
+    UIComponents::InputText("Launcher-Pfad (optional)", &launcherPath, "Leer lassen: automatisch erkennen");
+    if (ImGui::IsItemDeactivatedAfterEdit()) persistSettings();
+    ImGui::TextWrapped("Der nächste Start wird vorbereitet, bevor das Spiel beendet wird. Bei Nova können Anmeldung oder Launcher-Rückfragen einen eigenen Klick erfordern.");
     UIComponents::EndCard();
 
     bool saveUiOpenSettings = false;
@@ -1243,6 +1279,7 @@ void MainWindowUI::RenderSettingsGeneralTab() {
     }
     UIComponents::EndCard();
 
+    RenderSettingsKillCounterCard();
     RenderSettingsTachoCard();
 }
 
@@ -1459,6 +1496,66 @@ void MainWindowUI::RenderSettingsQuickMapTab() {
     UIComponents::EndCard();
 }
 
+void MainWindowUI::SaveKillCounterSettings() {
+    if (settingsManager_ == nullptr) return;
+    const Settings& settings = settingsManager_->Get();
+    if (bridge_ != nullptr) {
+        bridge_->SetSettingsManager(settingsManager_);
+        bridge_->SetKillTrackerEnabled(settings.kill_tracker_enabled);
+        bridge_->SetKillTrackerServerKillMessageEnabled(settings.kill_tracker_server_kill_message_enabled);
+        bridge_->SetKillTrackerServerKillMessageTemplate(settings.kill_tracker_server_kill_message_template);
+    }
+    SyncKillTrackerSettings();
+    if (keybindManager_ != nullptr) {
+        keybindManager_->Save(settingsManager_);
+    }
+}
+
+void MainWindowUI::RenderSettingsKillCounterCard() {
+    Settings& settings = settingsManager_->GetMutable();
+    UIComponents::BeginCard("KillCounterSettingsCard", 0.0f, true);
+    UIComponents::CardHeader("Kill- & Todeszähler", "Kills und Tode unabhängig erfassen");
+
+    bool killsEnabled = settings.kill_tracker_enabled && settings.kill_tracker_count_kills;
+    bool deathsEnabled = settings.kill_tracker_enabled && settings.kill_tracker_count_deaths;
+    bool changed = UIComponents::Toggle("Killzähler aktivieren", &killsEnabled);
+    changed |= UIComponents::Toggle("Todeszähler aktivieren", &deathsEnabled);
+    if (changed) {
+        settings.kill_tracker_count_kills = killsEnabled;
+        settings.kill_tracker_count_deaths = deathsEnabled;
+        settings.kill_tracker_enabled = killsEnabled || deathsEnabled;
+        SaveKillCounterSettings();
+    }
+
+    ImGui::TextWrapped("Der Todeszähler meldet jeden Tod nur lokal im Chat. Echte Gesamtstände werden aus empfangenen Serverstatistiken übernommen.");
+    UIComponents::Separator();
+    if (UIComponents::Toggle("Kill-Nachricht an Server senden", &settings.kill_tracker_server_kill_message_enabled)) {
+        SaveKillCounterSettings();
+    }
+    ImGui::TextUnformatted("Nachricht bei einem Kill");
+    const float buttonWidth = Scale(110.0f);
+    const float inputWidth = (std::max)(Scale(120.0f),
+        ImGui::GetContentRegionAvail().x - buttonWidth - ImGui::GetStyle().ItemSpacing.x);
+    if (UIComponents::InputText("##GeneralKillMessage", &settings.kill_tracker_server_kill_message_template,
+        "/f Ich habe einen Kill in {zone}. Meine Kills: {total_kills}", inputWidth)) {
+        if (bridge_ != nullptr) {
+            bridge_->SetKillTrackerServerKillMessageTemplate(settings.kill_tracker_server_kill_message_template);
+        }
+    }
+    if (ImGui::IsItemDeactivatedAfterEdit()) {
+        SaveKillCounterSettings();
+    }
+    ImGui::SameLine();
+    if (UIComponents::GhostButton("Variablen##GeneralKillMessage", ImVec2(buttonWidth, 0.0f))) {
+        showKillMessageVariables_ = true;
+    }
+    ImGui::TextColored(ThemeManager::Instance().GetColor(ThemeColorRole::TextMuted),
+        "%d / 144 Zeichen vor Ersetzung", static_cast<int>(settings.kill_tracker_server_kill_message_template.size()));
+    ImGui::TextWrapped("Beispiel: /f Ich habe einen Kill in {zone}. Meine Kills: {total_kills}");
+    UIComponents::EndCard();
+    RenderMessageVariablesModal("Verfügbare Variablen##GeneralKillVariables", &showKillMessageVariables_, true);
+}
+
 void MainWindowUI::RenderSettingsTachoCard() {
     auto& theme = ThemeManager::Instance();
     Settings& settings = settingsManager_->GetMutable();
@@ -1471,25 +1568,11 @@ void MainWindowUI::RenderSettingsTachoCard() {
     ImGui::PopStyleColor();
 
     UIComponents::Separator();
-    const bool customTachoAvailable = speedometer::kCustomTachoAvailable;
-    const char* customTachoDisabledTooltip = "Custom Tacho ist derzeit deaktiviert und kann nicht aus bestehenden Configs aktiviert werden.";
-    if (!customTachoAvailable) {
-        settings.speedometer_enabled = false;
-        ImGui::PushStyleColor(ImGuiCol_Text, theme.GetColor(ThemeColorRole::TextMuted));
-        ImGui::TextWrapped("Custom Tacho ist derzeit deaktiviert.");
-        ImGui::PopStyleColor();
-        ImGui::Spacing();
-    }
-
-    ImGui::BeginDisabled(!customTachoAvailable);
-
     if (UIComponents::Toggle("Tacho aktivieren", &settings.speedometer_enabled)) {
         SaveSpeedometerSettings();
     }
     if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) {
-        ImGui::SetTooltip(customTachoAvailable
-            ? "Zeigt das Custom Tacho nur als Fahrer eines Fahrzeugs an."
-            : customTachoDisabledTooltip);
+        ImGui::SetTooltip("Zeigt das Custom Tacho nur als Fahrer eines Fahrzeugs an.");
     }
 
     const speedometer::SpeedometerStyle speedometerStyle = speedometer::ParseSpeedometerStyle(settings.speedometer_style);
@@ -1515,12 +1598,8 @@ void MainWindowUI::RenderSettingsTachoCard() {
         SaveSpeedometerSettings();
     }
     if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) {
-        ImGui::SetTooltip(customTachoAvailable
-            ? "Tachometer Arc zeigt RPM; Analog Arc zeigt km/h als Rundinstrument; Minimal Tachometer zeigt km/h, Fuel und Motorzustand als schlanke HUD-Leiste."
-            : customTachoDisabledTooltip);
+        ImGui::SetTooltip("Tachometer Arc zeigt geschätzte RPM; Analog Arc zeigt km/h als Rundinstrument; Minimal Tachometer zeigt km/h, Fuel und Motorzustand als schlanke HUD-Leiste.");
     }
-
-    ImGui::EndDisabled();
 
     UIComponents::EndCard();
 }

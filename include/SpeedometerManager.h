@@ -4,6 +4,8 @@
 #include <cctype>
 #include <atomic>
 #include <chrono>
+#include <cstdint>
+#include <functional>
 #include <mutex>
 #include <string>
 #include <vector>
@@ -14,7 +16,7 @@ namespace keybinder {
 class TextDrawAdapter;
 
 namespace speedometer {
-inline constexpr bool kCustomTachoAvailable = false;
+inline constexpr bool kCustomTachoAvailable = true;
 
 enum class SpeedometerStyle {
     TachometerArc = 0,
@@ -142,6 +144,13 @@ struct SpeedometerState {
     char fuelDisplayText[16] = {};
 };
 
+struct VehicleRuntimeState {
+    bool connected = false;
+    bool isDriver = false;
+    std::uintptr_t vehicleIdentity = 0;
+    VehicleTelemetryInput input;
+};
+
 } // namespace speedometer
 
 class SpeedometerManager {
@@ -162,6 +171,10 @@ public:
 
     void OnSettingsChanged(bool enabled);
 
+#ifdef KEYBINDER_TESTING
+    void SetVehicleStateProviderForTesting(std::function<speedometer::VehicleRuntimeState()> provider);
+#endif
+
 private:
     void StoreState(const speedometer::SpeedometerState& state);
     void StoreClearedState();
@@ -176,6 +189,10 @@ private:
     speedometer::VehicleTelemetry lastTelemetry_{};
     std::chrono::steady_clock::time_point lastTelemetryTime_{};
     bool hasTelemetrySample_ = false;
+    std::uintptr_t lastVehicleIdentity_ = 0;
+#ifdef KEYBINDER_TESTING
+    std::function<speedometer::VehicleRuntimeState()> vehicleStateProvider_;
+#endif
     mutable std::mutex stateMutex_;
 };
 

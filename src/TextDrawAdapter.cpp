@@ -9,8 +9,9 @@
 #include "../include/SAMP-API/include/sampapi/0.3.DL-1/CNetGame.h"
 #include "../include/SAMP-API/include/sampapi/0.3.DL-1/CTextDrawPool.h"
 #include "../include/plugin-sdk/plugin_sa/game_sa/CPlayerPed.h"
-#include "../include/plugin-sdk/plugin_sa/game_sa/ePedState.h"
+#include "../include/plugin-sdk/plugin_sa/game_sa/enums/ePedState.h"
 #include "common.h"
+#include "safetyhook.hpp"
 #include <windows.h>
 #endif
 
@@ -754,6 +755,8 @@ struct TextDrawAdapterState {
     std::atomic<bool> isAlive{false};
     std::atomic<bool> speedometerEnabled{true};
     std::atomic<bool> inVehicleContext{false};
+    std::atomic<bool> renderSuppressionReady{false};
+    std::atomic<bool> renderHookAttempted{false};
     std::atomic<bool> fuelStale{false};
     std::atomic<bool> diagnosticsEnabled{false};
     std::atomic<unsigned long> diagnosticsEventCount{0};
@@ -767,42 +770,8 @@ struct TextDrawAdapterState {
 namespace {
 
 
-#ifndef KEYBINDER_TESTING
-bool IsLocalPlayerInVehicleNow() {
-    __try {
-        CPlayerPed* playerPed = FindPlayerPed(0);
-        if (playerPed == nullptr || playerPed->m_pVehicle == nullptr) {
-            return false;
-        }
-
-        if (playerPed->bInVehicle) {
-            return true;
-        }
-
-        const ePedState pedState = playerPed->m_ePedState;
-        return pedState == PEDSTATE_DRIVING
-            || pedState == PEDSTATE_PASSENGER
-            || pedState == PEDSTATE_TAXI_PASSENGER;
-    } __except (EXCEPTION_EXECUTE_HANDLER) {
-        return false;
-    }
-}
-#endif
-
 bool IsVehicleContextActive(const TextDrawAdapterState& state) {
-    if (!state.speedometerEnabled.load()) {
-        return false;
-    }
-
-    if (state.inVehicleContext.load()) {
-        return true;
-    }
-
-#ifndef KEYBINDER_TESTING
-    return IsLocalPlayerInVehicleNow();
-#else
-    return false;
-#endif
+    return state.speedometerEnabled.load() && state.inVehicleContext.load();
 }
 
 TextDrawClassification GetCachedShowClassification(const TextDrawAdapterState& state, int id);
@@ -1034,49 +1003,70 @@ void CacheFuelText(TextDrawAdapterState& state, const std::string& rawText) {
     state.fuelStale = false;
 }
 
+// Visibility is changed only for the duration of SA-MP's draw call. Objects,
+// strings and incoming RPCs remain owned by SA-MP, so disabling the replacement
+// immediately restores the current original display without replaying packets.
+template <typename Object, typename Classify, typename Draw>
+void DrawWithTemporaryVisibilityMask(int* visible, Object** objects, std::size_t count, Classify classify, Draw draw) {
+    struct RestoreVisibility {
+        struct Slot { std::size_t id; int visible; Object* object; };
+        int* visible;
+        Object** objects;
+        std::array<Slot, kMaxTextDrawId + 1> saved{};
+        std::size_t used = 0;
+        ~RestoreVisibility() {
+            for (std::size_t index = 0; index < used; ++index) {
+                const auto& slot = saved[index];
+                // Never revive a slot that SA-MP deleted/replaced while drawing.
+                if (objects[slot.id] == slot.object && visible[slot.id] == 0) visible[slot.id] = slot.visible;
+            }
+        }
+    } restore{visible, objects};
+    if (visible != nullptr && objects != nullptr) {
+        count = (std::min)(count, static_cast<std::size_t>(kMaxTextDrawId + 1));
+        for (std::size_t id = 0; id < count; ++id) {
+            if (visible[id] && objects[id] != nullptr && classify(static_cast<int>(id))) {
+                restore.saved[restore.used++] = {id, visible[id], objects[id]};
+                visible[id] = 0;
+            }
+        }
+    }
+    draw();
+}
+
 #ifndef KEYBINDER_TESTING
+safetyhook::InlineHook* g_textDrawPoolDrawHook = nullptr;
+std::weak_ptr<TextDrawAdapterState> g_textDrawRenderState;
 
-void HideTextDrawFromPool(sampapi::v03dl::CTextDrawPool* pool, int id) {
-    __try {
-        if (pool->m_bNotEmpty[id]) {
-            pool->Delete(id);
-        }
-    } __except (EXCEPTION_EXECUTE_HANDLER) {
-    }
-}
-
-void HideRpcTextDrawFromPool(int id) {
-    sampapi::v03dl::CTextDrawPool* pool = nullptr;
-    if (!TryGetTextDrawPool(&pool)) {
+void __fastcall DrawTextDrawPool(sampapi::v03dl::CTextDrawPool* pool, void*) {
+    auto state = g_textDrawRenderState.lock();
+    if (pool == nullptr || !state || !state->isAlive.load() || !IsVehicleContextActive(*state)) {
+        g_textDrawPoolDrawHook->thiscall<void>(pool);
         return;
     }
-
-    if (IsValidTextDrawId(id)) {
-        HideTextDrawFromPool(pool, id);
-    }
-
-    if (IsLocalPlayerTextDrawRpcId(id)) {
-        HideTextDrawFromPool(pool, ToAbsolutePlayerTextDrawId(id));
-    }
+    DrawWithTemporaryVisibilityMask(pool->m_bNotEmpty, pool->m_pObject, kMaxTextDrawId + 1,
+        [pool](int id) {
+            TextDrawSnapshot snapshot;
+            if (!TrySnapshotTextDraw(pool, id, &snapshot)) return false;
+            return LooksLikeNlSpeedometerTextDraw(id, snapshot)
+                || (id >= kPlayerTextDrawIdOffset && LooksLikeNlTachoV2PlayerSpeedValueTextDraw(snapshot, snapshot.rawText));
+        }, [pool]() { g_textDrawPoolDrawHook->thiscall<void>(pool); });
 }
 
-void HideConfiguredTextDrawsFromPool(sampapi::v03dl::CTextDrawPool* pool, const TextDrawAdapterState& state) {
-    if (pool == nullptr || !IsVehicleContextActive(state)) {
-        return;
+bool EnsureTextDrawRenderHook(const std::shared_ptr<TextDrawAdapterState>& state) {
+    if (rakhook::samp_version() != rakhook::samp_ver::v03dlr1 || sampapi::GetBase() == 0) return false;
+    g_textDrawRenderState = state;
+    if (g_textDrawPoolDrawHook != nullptr) return true;
+    if (state->renderHookAttempted.exchange(true)) return false;
+    auto hook = safetyhook::InlineHook::create(reinterpret_cast<void*>(sampapi::GetAddress(0x1E2F0)),
+        reinterpret_cast<void*>(&DrawTextDrawPool));
+    if (!hook.has_value()) {
+        Logger::Warning("[TextDrawAdapter] Tacho render hook unavailable; original Tacho retained");
+        return false;
     }
-
-    for (int id = kPlayerTextDrawIdOffset; id <= kMaxTextDrawId; ++id) {
-        TextDrawSnapshot snapshot;
-        if (!TrySnapshotTextDraw(pool, id, &snapshot)) {
-            continue;
-        }
-
-        const std::string rawText = BoundedCString(snapshot.rawText, sizeof(snapshot.rawText));
-        if (LooksLikeNlSpeedometerTextDraw(id, snapshot)
-            || LooksLikeNlTachoV2PlayerSpeedValueTextDraw(snapshot, rawText)) {
-            HideTextDrawFromPool(pool, id);
-        }
-    }
+    g_textDrawPoolDrawHook = new safetyhook::InlineHook(std::move(*hook));
+    Logger::Info("[TextDrawAdapter] Reversible TachoV2 render hook installed");
+    return true;
 }
 #endif
 
@@ -1101,12 +1091,16 @@ TextDrawAdapter::~TextDrawAdapter() {
 bool TextDrawAdapter::Initialize() {
     if (initialized_.load()) {
         state_->isAlive = true;
+#ifdef KEYBINDER_TESTING
+        state_->renderSuppressionReady = true;
+#endif
         return true;
     }
 
 #ifdef KEYBINDER_TESTING
     initialized_ = true;
     state_->isAlive = true;
+    state_->renderSuppressionReady = true;
     return true;
 #else
     // Register before RakHook starts receiving RPCs. The callback itself checks
@@ -1175,10 +1169,8 @@ bool TextDrawAdapter::Initialize() {
                 && parsedTextId == id
                 && ShouldSuppressSetStringTextDraw(*state, id, parsedRawText);
             LogTextDrawRpcDiagnostic(*state, rpcId, bs, id, isHideTextDraw, isFuelTextDraw, suppressSetString);
-            if (suppressSetString) {
-                HideRpcTextDrawFromPool(id);
-            }
-            return !suppressSetString;
+            // Keep the authoritative text current; the render hook hides it.
+            return true;
         }
 
         const int originalReadOffset = bs->GetReadOffset();
@@ -1200,11 +1192,6 @@ bool TextDrawAdapter::Initialize() {
             && parsedId == id
             && ShouldSuppressShowTextDraw(*state, id, snapshot);
         LogTextDrawRpcDiagnostic(*state, rpcId, bs, id, isHideTextDraw, isFuelTextDraw, suppressShow);
-        if (suppressShow) {
-            HideRpcTextDrawFromPool(id);
-            return false;
-        }
-
         return true;
     };
 
@@ -1225,6 +1212,8 @@ void TextDrawAdapter::Shutdown() {
 
     ClearFuelCache(state_);
     ClearShowClassificationCache(state_);
+    state_->inVehicleContext = false;
+    state_->renderSuppressionReady = false;
     state_->diagnosticsEnabled = false;
     // Keep initialized_ true: RakHook lambdas stay registered for process life.
 
@@ -1237,6 +1226,7 @@ void TextDrawAdapter::Shutdown() {
 void TextDrawAdapter::SetSpeedometerEnabled(bool enabled) {
     state_->speedometerEnabled = enabled;
     if (!enabled) {
+        state_->renderHookAttempted = false;
         state_->fuelStale = true;
         state_->inVehicleContext = false;
         ClearFuelCache(state_);
@@ -1251,6 +1241,15 @@ void TextDrawAdapter::SetVehicleContext(bool inVehicle) {
         ClearFuelCache(state_);
         ClearShowClassificationCache(state_);
     }
+#ifndef KEYBINDER_TESTING
+    if (inVehicle && state_->isAlive.load() && state_->speedometerEnabled.load()) {
+        state_->renderSuppressionReady = EnsureTextDrawRenderHook(state_);
+    }
+#endif
+}
+
+bool TextDrawAdapter::IsRenderSuppressionReady() const {
+    return initialized_.load() && state_->isAlive.load() && state_->renderSuppressionReady.load();
 }
 
 void TextDrawAdapter::SetDiagnosticsEnabled(bool enabled) {
@@ -1307,7 +1306,6 @@ float TextDrawAdapter::GetFuelValue() const {
         std::lock_guard<std::mutex> lock(state_->cacheMutex);
         if (!state_->cachedFuelText.empty()) {
             const float cachedValue = state_->cachedFuelValue;
-            HideConfiguredTextDrawsFromPool(pool, *state_);
             return cachedValue;
         }
     }
@@ -1324,8 +1322,6 @@ float TextDrawAdapter::GetFuelValue() const {
             break;
         }
     }
-
-    HideConfiguredTextDrawsFromPool(pool, *state_);
 
     if (foundFuelText) {
         return parsedFuelValue;
@@ -1444,6 +1440,12 @@ bool TextDrawAdapter::DumpAllTextDrawsToFile(const std::string& outputPath, std:
 }
 
 #ifdef KEYBINDER_TESTING
+void TextDrawAdapter::RenderVisibilityMaskForTesting(int* visible, void** objects, std::size_t count,
+    const std::vector<int>& hiddenIds, const std::function<void()>& draw) {
+    DrawWithTemporaryVisibilityMask(visible, objects, count,
+        [&hiddenIds](int id) { return std::find(hiddenIds.begin(), hiddenIds.end(), id) != hiddenIds.end(); }, draw);
+}
+
 std::string TextDrawAdapter::StripColorCodesForTesting(const std::string& text) {
     return StripTextDrawColorCodes(text);
 }

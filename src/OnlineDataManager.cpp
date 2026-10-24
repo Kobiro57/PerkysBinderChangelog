@@ -40,6 +40,7 @@ bool CaseInsensitiveEqual(const std::string& a, const std::string& b) {
 // LSPD = {"lspd", "los santos police department", "police department"}
 // Army = {"army", "national guard", "san andreas army"}
 // Fire Department = {"fire department", "feuerwehr", "lsfd"}
+// Red County Brotherhood = {"red county brotherhood", "rcb"}
 // ---------------------------------------------------------------------------
 struct FactionAlias {
     const char* canonicalName;
@@ -50,11 +51,12 @@ constexpr FactionAlias kFactionAliases[] = {
     {"LSPD",              {"lspd", "los santos police department", "police department", nullptr}},
     {"Army",              {"army", "national guard", "san andreas army", nullptr}},
     {"Fire Department",   {"fire department", "feuerwehr", "lsfd", nullptr}},
+    {"Red County Brotherhood", {"red county brotherhood", "rcb", "redcounty brotherhood", nullptr}},
 };
 
 // Canonical faction ordering for bucket output
-constexpr const char* kFactionOrder[] = {"LSPD", "Army", "Fire Department"};
-constexpr int kFactionOrderCount = 3;
+constexpr const char* kFactionOrder[] = {"LSPD", "Army", "Fire Department", "Red County Brotherhood"};
+constexpr int kFactionOrderCount = static_cast<int>(sizeof(kFactionOrder) / sizeof(kFactionOrder[0]));
 
 // Freedom Front — case-insensitive, never emitted as a gang bucket
 constexpr const char* kFreedomFrontAliases[] = {

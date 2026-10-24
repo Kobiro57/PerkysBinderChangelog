@@ -4,4 +4,4 @@
 */
 #pragma once
 
-#define NLBINDER_VERSION "1.2"
+#define NLBINDER_VERSION "0.1.1"

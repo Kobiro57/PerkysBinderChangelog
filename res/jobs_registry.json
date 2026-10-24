@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "jobs": [
     {
       "id": "frachtpilot",
@@ -8,7 +8,7 @@
       "icon": "work",
       "parserRules": [
         {
-          "pattern": "^Für das erfolgreiche Beenden deiner Tätigkeit erhältst du (\\d+)\\$ zum nächsten Zahltag\\.$",
+          "pattern": "^Für das erfolgreiche Beenden deiner Tätigkeit erhältst du (\\d+(?:\\.\\d{3})*)\\$ zum nächsten Zahltag\\.$",
           "eventType": "earning",
           "captureGroups": {
             "amount": 1
@@ -87,7 +87,7 @@
           "eventType": "job_message"
         },
         {
-          "pattern": "^Für das erfolgreiche Beenden deiner Tätigkeit erhältst du (\\d+)\\$ zum nächsten Zahltag\\.$",
+          "pattern": "^Für das erfolgreiche Beenden deiner Tätigkeit erhältst du (\\d+(?:\\.\\d{3})*)\\$ zum nächsten Zahltag\\.$",
           "eventType": "earning",
           "captureGroups": {
             "amount": 1
@@ -151,7 +151,7 @@
       "icon": "work",
       "parserRules": [
         {
-          "pattern": "^Für das erfolgreiche Beenden deiner Tätigkeit erhältst du (\\d+)\\$ zum nächsten Zahltag\\.$",
+          "pattern": "^Für das erfolgreiche Beenden deiner Tätigkeit erhältst du (\\d+(?:\\.\\d{3})*)\\$ zum nächsten Zahltag\\.$",
           "eventType": "earning",
           "captureGroups": {
             "amount": 1
@@ -223,7 +223,7 @@
       "icon": "work",
       "parserRules": [
         {
-          "pattern": "^Für das erfolgreiche Beenden deiner Tätigkeit erhältst du (\\d+)\\$ zum nächsten Zahltag\\.$",
+          "pattern": "^Für das erfolgreiche Beenden deiner Tätigkeit erhältst du (\\d+(?:\\.\\d{3})*)\\$ zum nächsten Zahltag\\.$",
           "eventType": "earning",
           "captureGroups": {
             "amount": 1
@@ -295,7 +295,7 @@
       "icon": "work",
       "parserRules": [
         {
-          "pattern": "^Für das erfolgreiche Beenden deiner Tätigkeit erhältst du (\\d+)\\$ zum nächsten Zahltag\\.$",
+          "pattern": "^Für das erfolgreiche Beenden deiner Tätigkeit erhältst du (\\d+(?:\\.\\d{3})*)\\$ zum nächsten Zahltag\\.$",
           "eventType": "earning",
           "captureGroups": {
             "amount": 1
@@ -359,7 +359,7 @@
       "icon": "work",
       "parserRules": [
         {
-          "pattern": "^Für das erfolgreiche Beenden deiner Tätigkeit erhältst du (\\d+)\\$ zum nächsten Zahltag\\.$",
+          "pattern": "^Für das erfolgreiche Beenden deiner Tätigkeit erhältst du (\\d+(?:\\.\\d{3})*)\\$ zum nächsten Zahltag\\.$",
           "eventType": "earning",
           "captureGroups": {
             "amount": 1
@@ -407,7 +407,7 @@
       "icon": "work",
       "parserRules": [
         {
-          "pattern": "^Für das erfolgreiche Beenden deiner Tätigkeit erhältst du (\\d+)\\$ zum nächsten Zahltag\\.$",
+          "pattern": "^Für das erfolgreiche Beenden deiner Tätigkeit erhältst du (\\d+(?:\\.\\d{3})*)\\$ zum nächsten Zahltag\\.$",
           "eventType": "earning",
           "captureGroups": {
             "amount": 1
@@ -475,7 +475,7 @@
           "eventType": "job_message"
         },
         {
-          "pattern": "^Für das erfolgreiche Beenden deiner Tätigkeit erhältst du (\\d+)\\$ zum nächsten Zahltag\\.$",
+          "pattern": "^Für das erfolgreiche Beenden deiner Tätigkeit erhältst du (\\d+(?:\\.\\d{3})*)\\$ zum nächsten Zahltag\\.$",
           "eventType": "earning",
           "captureGroups": {
             "amount": 1
@@ -558,7 +558,7 @@
           "eventType": "job_message"
         },
         {
-          "pattern": "^Für das erfolgreiche Beenden deiner Tätigkeit erhältst du (\\d+)\\$ zum nächsten Zahltag\\.$",
+          "pattern": "^Für das erfolgreiche Beenden deiner Tätigkeit erhältst du (\\d+(?:\\.\\d{3})*)\\$ zum nächsten Zahltag\\.$",
           "eventType": "earning",
           "captureGroups": {
             "amount": 1
@@ -614,7 +614,7 @@
       "icon": "work",
       "parserRules": [
         {
-          "pattern": "^Für das erfolgreiche Beenden deiner Tätigkeit erhältst du (\\d+)\\$ zum nächsten Zahltag\\.$",
+          "pattern": "^Für das erfolgreiche Beenden deiner Tätigkeit erhältst du (\\d+(?:\\.\\d{3})*)\\$ zum nächsten Zahltag\\.$",
           "eventType": "earning",
           "captureGroups": {
             "amount": 1
@@ -670,7 +670,7 @@
       "icon": "work",
       "parserRules": [
         {
-          "pattern": "^Für das erfolgreiche Beenden deiner Tätigkeit erhältst du (\\d+)\\$ zum nächsten Zahltag\\.$",
+          "pattern": "^Für das erfolgreiche Beenden deiner Tätigkeit erhältst du (\\d+(?:\\.\\d{3})*)\\$ zum nächsten Zahltag\\.$",
           "eventType": "earning",
           "captureGroups": {
             "amount": 1
@@ -750,7 +750,7 @@
       "icon": "work",
       "parserRules": [
         {
-          "pattern": "^Für das erfolgreiche Beenden deiner Tätigkeit erhältst du (\\d+)\\$ zum nächsten Zahltag\\.$",
+          "pattern": "^Für das erfolgreiche Beenden deiner Tätigkeit erhältst du (\\d+(?:\\.\\d{3})*)\\$ zum nächsten Zahltag\\.$",
           "eventType": "earning",
           "captureGroups": {
             "amount": 1
@@ -842,7 +842,7 @@
           "eventType": "job_message"
         },
         {
-          "pattern": "^Für das erfolgreiche Beenden deiner Tätigkeit erhältst du (\\d+)\\$ zum nächsten Zahltag\\.$",
+          "pattern": "^Für das erfolgreiche Beenden deiner Tätigkeit erhältst du (\\d+(?:\\.\\d{3})*)\\$ zum nächsten Zahltag\\.$",
           "eventType": "earning",
           "captureGroups": {
             "amount": 1
@@ -933,7 +933,7 @@
       "icon": "work",
       "parserRules": [
         {
-          "pattern": "^Für das erfolgreiche Beenden deiner Tätigkeit erhältst du (\\d+)\\$ zum nächsten Zahltag\\.$",
+          "pattern": "^Für das erfolgreiche Beenden deiner Tätigkeit erhältst du (\\d+(?:\\.\\d{3})*)\\$ zum nächsten Zahltag\\.$",
           "eventType": "earning",
           "captureGroups": {
             "amount": 1
@@ -1021,7 +1021,7 @@
       "icon": "work",
       "parserRules": [
         {
-          "pattern": "^Für das erfolgreiche Beenden deiner Tätigkeit erhältst du (\\d+)\\$ zum nächsten Zahltag\\.$",
+          "pattern": "^Für das erfolgreiche Beenden deiner Tätigkeit erhältst du (\\d+(?:\\.\\d{3})*)\\$ zum nächsten Zahltag\\.$",
           "eventType": "earning",
           "captureGroups": {
             "amount": 1
@@ -1099,6 +1099,166 @@
           "unlockOrder": 8,
           "perkType": "privatfahrzeug",
           "perkValue": "BMX"
+        }
+      ]
+    },
+    {
+      "id": "holzfaeller",
+      "name": "Holzfäller",
+      "enabled": true,
+      "icon": "work",
+      "speakerAliases": [
+        "Holzfaeller",
+        "Vince Redwood"
+      ],
+      "parserRules": [
+        {
+          "pattern": "^Für das erfolgreiche Beenden deiner Tätigkeit erhältst du (\\d+(?:\\.\\d{3})*)\\$ zum nächsten Zahltag\\.$",
+          "eventType": "earning",
+          "captureGroups": {
+            "amount": 1
+          }
+        },
+        {
+          "pattern": "^Du hast deinen Job-Skill auf (\\d+) verbessert\\.$",
+          "eventType": "skill_level_absolute",
+          "captureGroups": {
+            "level": 1
+          }
+        },
+        {
+          "pattern": "^Fälle \\d+ Bäume, zersäge sie und liefere das Holz ab\\.$",
+          "eventType": "job_message"
+        },
+        {
+          "pattern": "^Pflanze Setzlinge\\. Ziel: \\d+ \\(max\\. \\d+ pro Auftrag\\)\\.$",
+          "eventType": "job_message"
+        },
+        {
+          "pattern": "^Du hast zusätzlich \\d+ Holz gefunden\\.$",
+          "eventType": "job_message"
+        }
+      ],
+      "skillTree": [
+        {
+          "id": "holzfaeller_baeume_5",
+          "name": "5 Bäume fällen",
+          "maxPoints": 50,
+          "unlockOrder": 1,
+          "perkType": "effizienz",
+          "perkValue": "5 Bäume fällen"
+        },
+        {
+          "id": "holzfaeller_skin",
+          "name": "Holzfäller Skin freischalten",
+          "maxPoints": 100,
+          "unlockOrder": 2,
+          "perkType": "freischaltung",
+          "perkValue": "Holzfäller Skin freischalten"
+        },
+        {
+          "id": "holzfaeller_bobcat",
+          "name": "Privatfahrzeug: Bobcat",
+          "maxPoints": 250,
+          "unlockOrder": 3,
+          "perkType": "privatfahrzeug",
+          "perkValue": "Bobcat"
+        },
+        {
+          "id": "holzfaeller_lohn_10",
+          "name": "+10% Lohn",
+          "maxPoints": 500,
+          "unlockOrder": 4,
+          "perkType": "lohn_bonus",
+          "perkValue": "10%"
+        },
+        {
+          "id": "holzfaeller_lohn_25",
+          "name": "+25% Lohn",
+          "maxPoints": 1000,
+          "unlockOrder": 5,
+          "perkType": "lohn_bonus",
+          "perkValue": "25%"
+        },
+        {
+          "id": "holzfaeller_achievement",
+          "name": "Job-Achievement freigeschaltet",
+          "maxPoints": 1500,
+          "unlockOrder": 6,
+          "perkType": "achievement",
+          "perkValue": "Job-Achievement freigeschaltet"
+        }
+      ]
+    },
+    {
+      "id": "bauarbeiter",
+      "name": "Bauarbeiter",
+      "enabled": true,
+      "icon": "work",
+      "parserRules": [
+        {
+          "pattern": "^Für das erfolgreiche Beenden deiner Tätigkeit erhältst du (\\d+(?:\\.\\d{3})*)\\$ zum nächsten Zahltag\\.$",
+          "eventType": "earning",
+          "captureGroups": {
+            "amount": 1
+          }
+        },
+        {
+          "pattern": "^Du hast deinen Job-Skill auf (\\d+) verbessert\\.$",
+          "eventType": "skill_level_absolute",
+          "captureGroups": {
+            "level": 1
+          }
+        }
+      ],
+      "skillTree": [
+        {
+          "id": "bauarbeiter_grossbaustellen",
+          "name": "Großbaustellen werden freigeschaltet",
+          "maxPoints": 25,
+          "unlockOrder": 1,
+          "perkType": "freischaltung",
+          "perkValue": "Großbaustellen werden freigeschaltet"
+        },
+        {
+          "id": "bauarbeiter_skin",
+          "name": "Bauarbeiter Skin freischalten",
+          "maxPoints": 100,
+          "unlockOrder": 2,
+          "perkType": "freischaltung",
+          "perkValue": "Bauarbeiter Skin freischalten"
+        },
+        {
+          "id": "bauarbeiter_lohn_10",
+          "name": "+10% Lohn",
+          "maxPoints": 500,
+          "unlockOrder": 3,
+          "perkType": "lohn_bonus",
+          "perkValue": "10%"
+        },
+        {
+          "id": "bauarbeiter_blueberry_construction",
+          "name": "Business: Blueberry Construction",
+          "maxPoints": 750,
+          "unlockOrder": 4,
+          "perkType": "business",
+          "perkValue": "Business: Blueberry Construction"
+        },
+        {
+          "id": "bauarbeiter_lohn_25",
+          "name": "+25% Lohn",
+          "maxPoints": 1000,
+          "unlockOrder": 5,
+          "perkType": "lohn_bonus",
+          "perkValue": "25%"
+        },
+        {
+          "id": "bauarbeiter_achievement",
+          "name": "Job-Achievement freigeschaltet",
+          "maxPoints": 1500,
+          "unlockOrder": 6,
+          "perkType": "achievement",
+          "perkValue": "Job-Achievement freigeschaltet"
         }
       ]
     }

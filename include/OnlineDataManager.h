@@ -80,7 +80,7 @@ struct OnlineSnapshot {
     int totalPlayers = 0;
     int updatedAtMs = 0;
 
-    // Faction buckets in canonical order: LSPD, Army, Fire Department
+    // Faction buckets in canonical order: LSPD, Army, Fire Department, Red County Brotherhood
     std::vector<OnlineBucketSummary> factionBuckets;
 
     // Gang buckets: Zivilisten first, then ascending alphabetical

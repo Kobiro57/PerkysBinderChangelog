@@ -139,6 +139,9 @@ private:
     void RenderSettingsQuickMapTab();
     void RenderSettingsRssTrackerTab();
     void RenderSettingsTachoCard();
+    void RenderSettingsKillCounterCard();
+    void SaveKillCounterSettings();
+    void SyncKillTrackerSettings();
     void RenderHelpView();
     void RenderOnlineView();
     void SyncUiOpenSettingsBuffers();
@@ -194,6 +197,7 @@ private:
     std::function<void()> onKeybindsChanged_;
 
     bool closeRequested_ = false;
+    bool showKillMessageVariables_ = false;
 
     void HandleCreateKeybind();
     void HandleEditKeybind(const Keybind& keybind);

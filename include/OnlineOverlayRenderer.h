@@ -53,6 +53,10 @@ public:
     };
 
     void SetTestingHooks(const TestingHooks& hooks);
+    int CountFilteredPlayersForTesting(const struct OnlineSnapshot& snapshot) const { return CountFilteredPlayers(snapshot); }
+    void PersistMovedOverlayPositionForTesting(const PersistentOverlayData& data, const ImVec2& position, const ImVec2& size) {
+        PersistMovedOverlayPosition(data, position, size, 1.0f, 0.0f);
+    }
 #endif
 
 private:
@@ -96,6 +100,7 @@ private:
     bool showLspd_ = true;
     bool showArmy_ = true;
     bool showFireDepartment_ = true;
+    bool showRcb_ = true;
     bool showZivilisten_ = true;
     bool showAllGangs_ = true;
     std::vector<std::string> selectedGangs_;

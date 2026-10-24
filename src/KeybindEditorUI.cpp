@@ -1,3 +1,4 @@
+#include "../include/MessageVariablesUI.h"
 #include "../include/KeybindEditorUI.h"
 #include "../include/KeyInputUtils.h"
 #include "../include/ThemeManager.h"
@@ -430,41 +431,7 @@ void KeybindEditorUI::RenderDeleteConfirmation() {
 }
 
 void KeybindEditorUI::RenderVariablesModal() {
-    ImGui::SetNextWindowPos(ImGui::GetMainViewport()->GetCenter(), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
-    ImGui::SetNextWindowSize(ImVec2(Scale(580), Scale(500)), ImGuiCond_Appearing);
-    ImGui::OpenPopup("Verfügbare Variablen##Variables");
-    ImGui::PushStyleColor(ImGuiCol_PopupBg, Theme().GetColor(ThemeColorRole::SurfaceElevated));
-    if (ImGui::BeginPopupModal("Verfügbare Variablen##Variables", &m_showVariables, ImGuiWindowFlags_NoSavedSettings)) {
-        RenderMutedWrappedText("Verwende diese Variablen in Chat-Nachrichten oder Befehlen. Sie werden zur Laufzeit durch die aktuellen Werte ersetzt.");
-        ImGui::Spacing();
-
-        UIComponents::BeginCard("VariableList", 0.0f, false);
-
-        auto renderVar = [](const char* tag, const char* description) {
-            ImGui::TextColored(Theme().GetColor(ThemeColorRole::Accent), "{%s}", tag);
-            ImGui::SameLine(Scale(140));
-            ImGui::TextColored(Theme().GetColor(ThemeColorRole::TextSecondary), "%s", description);
-        };
-
-        renderVar("zone", "Aktueller Zonenname");
-        renderVar("hp", "Aktuelle Lebenspunkte");
-        renderVar("weste", "Aktuelle Weste (Rüstung)");
-        renderVar("carhp", "Fahrzeug-Lebenspunkte (0 wenn nicht im Fahrzeug)");
-        renderVar("carname", "Fahrzeugname (\"Zu Fuß\" wenn nicht im Fahrzeug)");
-        renderVar("total_kills", "Gesamtanzahl Kills");
-        renderVar("total_deaths", "Gesamtanzahl Tode");
-        renderVar("kd", "Kill/Death-Verhältnis");
-
-        UIComponents::EndCard();
-
-        ImGui::Spacing();
-        if (UIComponents::PrimaryButton("Schließen", ImVec2(Scale(120), 0))) {
-            m_showVariables = false;
-        }
-
-        ImGui::EndPopup();
-    }
-    ImGui::PopStyleColor();
+    RenderMessageVariablesModal("Verfügbare Variablen##Variables", &m_showVariables, false);
 }
 
 void KeybindEditorUI::RenderKeyCaptureUI() {

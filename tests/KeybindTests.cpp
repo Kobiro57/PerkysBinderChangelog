@@ -5,6 +5,8 @@
 #include "KeybindTests.h"
 
 int RunActionExecutorTests();
+int RunReconnectTests();
+int RunSpeedometerFocusedTests();
 int RunInterfaceEditorTests();
 int RunInputManagerTests();
 int RunRegressionTests();
@@ -50,6 +52,8 @@ int main() {
 
     const int keybind_failures = run_suite("Running KeybindTests...", RunKeybindTests);
     const int executor_failures = run_suite("Running ActionExecutorTests...", RunActionExecutorTests);
+    const int reconnect_failures = run_suite("Running ReconnectTests...", RunReconnectTests);
+    const int speedometer_failures = run_suite("Running SpeedometerFocusedTests...", RunSpeedometerFocusedTests);
     const int interface_editor_failures = run_suite("Running InterfaceEditorTests...", RunInterfaceEditorTests);
     const int input_failures = run_suite("Running InputManagerTests...", RunInputManagerTests);
     const int regression_failures = run_suite("Running RegressionTests...", RunRegressionTests);
@@ -79,5 +83,5 @@ int main() {
     const int source_contract_failures = run_suite("Running SourceContractTests...", RunSourceContractTests);
 
     log_line("All tests finished.");
-    return keybind_failures + executor_failures + interface_editor_failures + input_failures + regression_failures + samp_bridge_failures + imgui_overlay_failures + hitmarker_failures + hitsound_failures + theme_failures + quickmap_failures + job_registry_failures + job_chat_adapter_failures + job_event_store_failures + job_parser_failures + job_tracker_lifecycle_failures + main_window_jobs_nav_failures + jobs_ui_failures + jobs_correction_failures + job_adjustment_failures + online_ui_failures + online_data_manager_failures + online_settings_failures + online_overlay_renderer_failures + online_event_detector_failures + ui_components_failures + squaremap_failures + hud_sprite_failures + source_contract_failures;
+    return reconnect_failures + speedometer_failures + keybind_failures + executor_failures + interface_editor_failures + input_failures + regression_failures + samp_bridge_failures + imgui_overlay_failures + hitmarker_failures + hitsound_failures + theme_failures + quickmap_failures + job_registry_failures + job_chat_adapter_failures + job_event_store_failures + job_parser_failures + job_tracker_lifecycle_failures + main_window_jobs_nav_failures + jobs_ui_failures + jobs_correction_failures + job_adjustment_failures + online_ui_failures + online_data_manager_failures + online_settings_failures + online_overlay_renderer_failures + online_event_detector_failures + ui_components_failures + squaremap_failures + hud_sprite_failures + source_contract_failures;
 }

@@ -5,8 +5,11 @@
 #include "../include/SettingsManager.h"
 #include "../include/KillTracker.h"
 #include "../include/KillTrackerTypes.h"
+#include "../include/KillfeedAdapter.h"
 #include "../include/WeaponNames.h"
 #include "../include/StatsStorage.h"
+#include "../include/MessageVariables.h"
+#include "../include/RakHook/include/RakNet/BitStream.h"
 
 #include <cstdio>
 #include <cstring>
@@ -18,6 +21,7 @@
 #include <vector>
 #include <ctime>
 #include <fstream>
+#include <limits>
 
 namespace {
 
@@ -78,6 +82,8 @@ struct MockContext {
     int rakHookDestroyCalls = 0;
     std::string lastSent;
     std::string lastLocalMessage;
+    std::vector<std::string> serverMessages;
+    std::vector<std::string> localMessages;
     std::unordered_map<std::string, sampapi::CMDPROC> commandHandlers;
     std::vector<std::string> logs;
     std::function<void(sampapi::v03dl::CChat*, const char*, unsigned long, const char*)> incomingChatInterceptor;
@@ -114,12 +120,15 @@ struct MockContext {
             [this]() { return localPlayerReady ? localPlayer : nullptr; },
             [this](sampapi::v03dl::CInput*, const char* text) {
                 lastSent = text != nullptr ? text : "";
+                serverMessages.push_back(lastSent);
             },
             [this](sampapi::v03dl::CLocalPlayer*, const char* text) {
                 lastSent = text != nullptr ? text : "";
+                serverMessages.push_back(lastSent);
             },
             [this](sampapi::v03dl::CChat*, unsigned long, const char* text) {
                 lastLocalMessage = text != nullptr ? text : "";
+                localMessages.push_back(lastLocalMessage);
             },
             [this](sampapi::v03dl::CInput*, const char* name) -> sampapi::CMDPROC {
                 const auto it = commandHandlers.find(name != nullptr ? name : "");
@@ -139,6 +148,456 @@ struct MockContext {
         };
     }
 };
+
+struct CombatSoundContext : MockContext {
+    std::aligned_storage_t<sizeof(sampapi::v03dl::CNetGame), alignof(sampapi::v03dl::CNetGame)> netGameStorage{};
+    sampapi::v03dl::CNetGame* netGame = reinterpret_cast<sampapi::v03dl::CNetGame*>(&netGameStorage);
+    bool connectedObjectAvailable = true;
+    bool sampleAvailable = true;
+    float health = 100.0f;
+    float armour = 100.0f;
+    int damageSource = 24;
+    const void* pedIdentity = reinterpret_cast<const void*>(0x1000);
+    int samplesRead = 0;
+    unsigned long tick = 1000;
+
+    CombatSoundContext() {
+        std::memset(netGame, 0, sizeof(*netGame));
+        netGame->m_nGameState = sampapi::v03dl::CNetGame::GAME_MODE_CONNECTED;
+        localPlayer->m_pPed = reinterpret_cast<sampapi::v03dl::CPed*>(0x2000);
+        localPlayer->m_bIsActive = TRUE;
+    }
+
+    SAMPBridge::TestingHooks BuildCombatHooks() {
+        auto hooks = BuildHooks();
+        hooks.getNetGame = [this]() { return connectedObjectAvailable ? netGame : nullptr; };
+        hooks.getTickCount = [this]() { return tick; };
+        hooks.readLocalDamageSample = [this](float& outHealth, float& outArmour, int& outSource, const void*& outIdentity) {
+            ++samplesRead;
+            outHealth = health;
+            outArmour = armour;
+            outSource = damageSource;
+            outIdentity = pedIdentity;
+            return sampleAvailable;
+        };
+        return hooks;
+    }
+};
+
+bool EmitDamageRpc(SAMPBridge& bridge, float amount, bool incoming = true, int weapon = 24) {
+    RakNet::BitStream payload;
+    payload.Write(incoming); // RPC 115: 1 = take, 0 = give
+    payload.Write(static_cast<unsigned short>(7));
+    payload.Write(amount);
+    payload.Write(static_cast<unsigned int>(weapon));
+    payload.Write(static_cast<unsigned int>(9));
+    const int readOffset = payload.GetReadOffset();
+    bridge.ProcessDamageRpcForTesting(&payload);
+    return payload.GetReadOffset() == readOffset;
+}
+
+std::size_t DamageLogCount(const MockContext& context) {
+    return static_cast<std::size_t>(std::count_if(context.localMessages.begin(), context.localMessages.end(), [](const std::string& text) {
+        return text.find("HP Schaden erhalten.") != std::string::npos;
+    }));
+}
+
+bool TestDamageLogWorksWithoutCountersSoundsOrDamageTrackingAndMatchesEachShot() {
+    CombatSoundContext context;
+    SAMPBridge::SetTestingHooks(context.BuildCombatHooks());
+    keybinder::SettingsManager settings;
+    settings.GetMutable().damage_log_enabled = true;
+    settings.GetMutable().kill_tracker_count_kills = false;
+    settings.GetMutable().kill_tracker_count_deaths = false;
+    settings.GetMutable().hitsound_incoming_enabled = false;
+    settings.GetMutable().hitsound_outgoing_enabled = false;
+    SAMPBridge bridge;
+    bridge.SetSettingsManager(&settings);
+    bridge.SetKillTrackerEnabled(false);
+    bridge.SetKillTrackerTrackDamage(false);
+    ASSERT_TRUE(bridge.Initialize());
+    bridge.Update();
+
+    // Two client-reported shots in one frame must yield two local lines,
+    // backed by the same measured 37.5 HP+armour loss, with no poll duplicate.
+    ASSERT_TRUE(EmitDamageRpc(bridge, 25.0f));
+    ASSERT_TRUE(EmitDamageRpc(bridge, 12.5f));
+    context.health = 62.5f;
+    bridge.Update();
+    ASSERT_EQ(DamageLogCount(context), static_cast<std::size_t>(2));
+    ASSERT_TRUE(context.localMessages[0].find("[NL-BINDER]{FFFFFF} Du hast -25 HP Schaden erhalten.") != std::string::npos);
+    ASSERT_TRUE(context.localMessages[1].find("Du hast -12,5 HP Schaden erhalten.") != std::string::npos);
+    context.tick += 500;
+    bridge.Update();
+    ASSERT_EQ(DamageLogCount(context), static_cast<std::size_t>(2));
+    ASSERT_TRUE(context.serverMessages.empty());
+
+    // Enabling then disabling the statistics must not disable this pipeline.
+    bridge.SetKillTrackerEnabled(true);
+    bridge.SetKillTrackerEnabled(false);
+    ASSERT_TRUE(EmitDamageRpc(bridge, 0.25f));
+    context.armour -= 0.25f;
+    bridge.Update();
+    ASSERT_EQ(DamageLogCount(context), static_cast<std::size_t>(3));
+    ASSERT_TRUE(context.localMessages.back().find("Du hast -0,25 HP Schaden erhalten.") != std::string::npos);
+    ASSERT_TRUE(context.serverMessages.empty());
+    bridge.Shutdown();
+    SAMPBridge::ResetTestingHooks();
+    return true;
+}
+
+bool TestDamageLogPollingFallbackUsesActualLossAndStopsImmediatelyWhenDisabled() {
+    CombatSoundContext context;
+    SAMPBridge::SetTestingHooks(context.BuildCombatHooks());
+    keybinder::SettingsManager settings;
+    settings.GetMutable().damage_log_enabled = true;
+    SAMPBridge bridge;
+    bridge.SetSettingsManager(&settings);
+    ASSERT_TRUE(bridge.Initialize());
+    bridge.Update();
+    context.armour = 75.0f;
+    bridge.Update();
+    ASSERT_EQ(DamageLogCount(context), static_cast<std::size_t>(0));
+    context.tick += keybinder::IncomingDamageLog::kMatchWindowMs;
+    bridge.Update();
+    ASSERT_EQ(DamageLogCount(context), static_cast<std::size_t>(1));
+    ASSERT_TRUE(context.localMessages.back().find("Du hast -25 HP Schaden erhalten.") != std::string::npos);
+    // A fractional fallback drop is not subject to the hitsound's 0.5 HP threshold.
+    context.armour -= 0.25f;
+    bridge.Update();
+    context.tick += keybinder::IncomingDamageLog::kMatchWindowMs;
+    bridge.Update();
+    ASSERT_EQ(DamageLogCount(context), static_cast<std::size_t>(2));
+    ASSERT_TRUE(context.localMessages.back().find("Du hast -0,25 HP Schaden erhalten.") != std::string::npos);
+
+    context.health -= 10.0f;
+    bridge.Update();
+    settings.GetMutable().damage_log_enabled = false;
+    context.tick += 500;
+    bridge.Update();
+    ASSERT_TRUE(EmitDamageRpc(bridge, 20.0f));
+    context.health -= 20.0f;
+    bridge.Update();
+    ASSERT_EQ(DamageLogCount(context), static_cast<std::size_t>(2));
+    settings.GetMutable().damage_log_enabled = true;
+    bridge.Update();
+    context.tick += 500;
+    bridge.Update();
+    ASSERT_EQ(DamageLogCount(context), static_cast<std::size_t>(2));
+    ASSERT_TRUE(context.serverMessages.empty());
+    bridge.Shutdown();
+    SAMPBridge::ResetTestingHooks();
+    return true;
+}
+
+bool TestDamageLogReconcilesLateRpcScriptedServerHealthAndRejectsUnmeasuredDamage() {
+    CombatSoundContext context;
+    SAMPBridge::SetTestingHooks(context.BuildCombatHooks());
+    keybinder::SettingsManager settings;
+    settings.GetMutable().damage_log_enabled = true;
+    SAMPBridge bridge;
+    bridge.SetSettingsManager(&settings);
+    ASSERT_TRUE(bridge.Initialize());
+    bridge.Update();
+
+    // RPC alone (e.g. rejected/invulnerable hit) may not invent a loss.
+    ASSERT_TRUE(EmitDamageRpc(bridge, 50.0f));
+    context.tick += 500;
+    bridge.Update();
+    ASSERT_EQ(DamageLogCount(context), static_cast<std::size_t>(0));
+
+    // Server-applied health has a scripted flag, but a matching combat RPC
+    // confirms the actual measured loss, even if it arrives one frame later.
+    bridge.RequestScriptedHealthSuppressionForTesting();
+    context.health = 75.0f;
+    bridge.Update();
+    context.tick += 30;
+    ASSERT_TRUE(EmitDamageRpc(bridge, 25.0f));
+    bridge.Update();
+    ASSERT_EQ(DamageLogCount(context), static_cast<std::size_t>(1));
+    context.tick += 500;
+    bridge.Update();
+    ASSERT_EQ(DamageLogCount(context), static_cast<std::size_t>(1));
+
+    // If server-specific damage disagrees with a raw RPC's weapon amount,
+    // use only the measured loss; do not split it using guessed proportions.
+    ASSERT_TRUE(EmitDamageRpc(bridge, 46.2f));
+    bridge.RequestScriptedHealthSuppressionForTesting();
+    context.health = 50.0f;
+    bridge.Update();
+    context.tick += 200;
+    bridge.Update();
+    ASSERT_EQ(DamageLogCount(context), static_cast<std::size_t>(2));
+    ASSERT_TRUE(context.localMessages.back().find("Du hast -25 HP Schaden erhalten.") != std::string::npos);
+    ASSERT_TRUE(context.serverMessages.empty());
+    bridge.Shutdown();
+    SAMPBridge::ResetTestingHooks();
+    return true;
+}
+
+bool TestDamageLogCombatRpcConfirmsServerHealthWithStaleEnvironmentalSource() {
+    CombatSoundContext context;
+    SAMPBridge::SetTestingHooks(context.BuildCombatHooks());
+    keybinder::SettingsManager settings;
+    settings.GetMutable().damage_log_enabled = true;
+    SAMPBridge bridge;
+    bridge.SetSettingsManager(&settings);
+    ASSERT_TRUE(bridge.Initialize());
+    bridge.Update();
+    context.damageSource = 54; // retained from an earlier fall, not this gunshot
+    ASSERT_TRUE(EmitDamageRpc(bridge, 25.0f));
+    bridge.RequestScriptedHealthSuppressionForTesting();
+    context.health -= 25.0f;
+    bridge.Update();
+    ASSERT_EQ(DamageLogCount(context), static_cast<std::size_t>(1));
+    context.health -= 10.0f; // environmental loss without any combat report
+    bridge.Update();
+    context.tick += 500;
+    bridge.Update();
+    ASSERT_EQ(DamageLogCount(context), static_cast<std::size_t>(1));
+    ASSERT_TRUE(context.serverMessages.empty());
+    bridge.Shutdown();
+    SAMPBridge::ResetTestingHooks();
+    return true;
+}
+
+bool TestDamageLogEnableTransitionDiscardsOldDamageAndKeepsOutgoingFeedbackIndependent() {
+    CombatSoundContext context;
+    SAMPBridge::SetTestingHooks(context.BuildCombatHooks());
+    keybinder::SettingsManager settings;
+    SAMPBridge bridge;
+    bridge.SetSettingsManager(&settings);
+    bridge.SetKillTrackerEnabled(false);
+    bridge.SetKillTrackerTrackDamage(false);
+    int incomingSounds = 0;
+    int outgoingSounds = 0;
+    int hitmarkers = 0;
+    bridge.SetHitsoundIncomingCallback([&]() { ++incomingSounds; });
+    bridge.SetHitsoundDamageCallback([&](const killtracker::DamageEvent&) { ++outgoingSounds; });
+    bridge.SetHitmarkerDamageCallback([&](const killtracker::DamageEvent&) { ++hitmarkers; });
+    ASSERT_TRUE(bridge.Initialize());
+    bridge.Update(); // log off, but hitsound HP baseline is active
+    context.health -= 10.0f;
+    bridge.Update();
+    ASSERT_EQ(incomingSounds, 1);
+
+    ASSERT_TRUE(EmitDamageRpc(bridge, 12.5f));
+    context.health -= 12.5f;
+    settings.GetMutable().damage_log_enabled = true; // between the damage and its next poll
+    bridge.Update();
+    ASSERT_EQ(incomingSounds, 2);
+    context.tick += 500;
+    bridge.Update();
+    ASSERT_EQ(DamageLogCount(context), static_cast<std::size_t>(0));
+    ASSERT_TRUE(EmitDamageRpc(bridge, 5.0f));
+    context.health -= 5.0f;
+    bridge.Update();
+    ASSERT_EQ(DamageLogCount(context), static_cast<std::size_t>(1));
+    ASSERT_TRUE(context.localMessages.back().find("Du hast -5 HP Schaden erhalten.") != std::string::npos);
+
+    ASSERT_TRUE(EmitDamageRpc(bridge, 25.0f, false));
+    ASSERT_EQ(outgoingSounds, 1);
+    ASSERT_EQ(hitmarkers, 1);
+    context.tick += 500;
+    bridge.Update();
+    ASSERT_EQ(DamageLogCount(context), static_cast<std::size_t>(1));
+    ASSERT_TRUE(context.serverMessages.empty());
+    bridge.Shutdown();
+    SAMPBridge::ResetTestingHooks();
+    return true;
+}
+
+bool TestDamageLogFiltersLoginHealScriptResetEnvironmentalDamageAndRespawn() {
+    CombatSoundContext context;
+    SAMPBridge::SetTestingHooks(context.BuildCombatHooks());
+    keybinder::SettingsManager settings;
+    settings.GetMutable().damage_log_enabled = true;
+    SAMPBridge bridge;
+    bridge.SetSettingsManager(&settings);
+    ASSERT_TRUE(bridge.Initialize());
+    context.localPlayer->m_bDoesSpectating = TRUE;
+    bridge.Update();
+    ASSERT_TRUE(EmitDamageRpc(bridge, 50.0f));
+    context.health = 50.0f;
+    bridge.Update();
+    context.tick += 500;
+    bridge.Update();
+    context.localPlayer->m_bDoesSpectating = FALSE;
+    bridge.Update(); // first playing sample seeds, no login delta
+    context.health = 100.0f;
+    bridge.Update(); // healing
+    bridge.RequestScriptedHealthSuppressionForTesting();
+    context.health = 80.0f;
+    bridge.Update(); // pure scripted reset has no combat proof
+    context.tick += 500;
+    bridge.Update();
+    context.damageSource = 54;
+    ASSERT_TRUE(EmitDamageRpc(bridge, 10.0f, true, 54));
+    context.health = 70.0f;
+    bridge.Update();
+    context.tick += 500;
+    bridge.Update();
+    ASSERT_EQ(DamageLogCount(context), static_cast<std::size_t>(0));
+
+    // The final lethal hit is still measured once if SA-MP set Wasted before
+    // the poll. Reading HP=0 must not throw away the previous living baseline.
+    context.damageSource = 24;
+    context.armour = 0.0f;
+    bridge.RequestScriptedHealthSuppressionForTesting();
+    bridge.Update(); // discard armour reset before the fatal shot
+    context.tick += 500;
+    bridge.Update();
+    ASSERT_TRUE(EmitDamageRpc(bridge, 90.0f));
+    context.health = -20.0f;
+    context.localPlayer->m_bIsWasted = TRUE;
+    context.localPlayer->m_bIsActive = FALSE;
+    bridge.Update();
+    ASSERT_EQ(DamageLogCount(context), static_cast<std::size_t>(1));
+    ASSERT_TRUE(context.localMessages.back().find("Du hast -70 HP Schaden erhalten.") != std::string::npos);
+    context.tick += 500;
+    bridge.Update();
+    context.localPlayer->m_bIsWasted = FALSE;
+    context.localPlayer->m_bIsActive = TRUE;
+    context.health = 100.0f;
+    bridge.Update();
+    context.health = 50.0f;
+    bridge.RequestScriptedHealthSuppressionForTesting();
+    bridge.Update();
+    context.tick += 500;
+    bridge.Update();
+    ASSERT_EQ(DamageLogCount(context), static_cast<std::size_t>(1));
+    ASSERT_TRUE(context.serverMessages.empty());
+    bridge.Shutdown();
+    SAMPBridge::ResetTestingHooks();
+    return true;
+}
+
+bool TestHitsoundsIgnoreLoginPreviewAndResumeImmediatelyAfterSpawn() {
+    CombatSoundContext context;
+    SAMPBridge::SetTestingHooks(context.BuildCombatHooks());
+    SAMPBridge bridge;
+    int incoming = 0;
+    int outgoing = 0;
+    bridge.SetHitsoundIncomingCallback([&]() { ++incoming; });
+    bridge.SetHitsoundDamageCallback([&](const killtracker::DamageEvent&) { ++outgoing; });
+    ASSERT_TRUE(bridge.Initialize());
+
+    killtracker::DamageEvent event;
+    event.isOutgoing = true;
+    event.weaponId = 24;
+    event.damage = 25.0f;
+    const auto previewHealthChange = [&]() {
+        context.health = 100.0f;
+        bridge.Update();
+        context.health = 40.0f;
+        bridge.Update();
+        bridge.ProcessDamageFeedbackForTesting(event);
+        return incoming == 0 && outgoing == 0 && context.samplesRead == 0;
+    };
+
+    context.connectedObjectAvailable = false;
+    ASSERT_TRUE(previewHealthChange());
+    context.connectedObjectAvailable = true;
+    context.netGame->m_nGameState = sampapi::v03dl::CNetGame::GAME_MODE_CONNECTING;
+    ASSERT_TRUE(previewHealthChange());
+    context.netGame->m_nGameState = sampapi::v03dl::CNetGame::GAME_MODE_CONNECTED;
+    context.localPlayer->m_bIsActive = FALSE;
+    ASSERT_TRUE(previewHealthChange());
+    context.localPlayer->m_bIsActive = TRUE;
+    context.localPlayer->m_bDoesSpectating = TRUE;
+    ASSERT_TRUE(previewHealthChange());
+    context.localPlayer->m_bDoesSpectating = FALSE;
+    context.localPlayer->m_classSelection.m_bIsActive = TRUE;
+    ASSERT_TRUE(previewHealthChange());
+    context.localPlayer->m_classSelection.m_bIsActive = FALSE;
+    context.localPlayer->m_classSelection.m_bWaitingForSpawnRequestReply = TRUE;
+    ASSERT_TRUE(previewHealthChange());
+    context.localPlayer->m_classSelection.m_bWaitingForSpawnRequestReply = FALSE;
+    context.localPlayer->m_bIsWasted = TRUE;
+    ASSERT_TRUE(previewHealthChange());
+    context.localPlayer->m_bIsWasted = FALSE;
+    context.localPlayerReady = false;
+    ASSERT_TRUE(previewHealthChange());
+    context.localPlayerReady = true;
+    auto* savedPed = context.localPlayer->m_pPed;
+    context.localPlayer->m_pPed = nullptr;
+    ASSERT_TRUE(previewHealthChange());
+    context.localPlayer->m_pPed = savedPed;
+
+    // Spawn establishes the current HP baseline; a hit on the very next
+    // frame must work without a timed mute after logging in.
+    context.health = 30.0f;
+    bridge.Update();
+    ASSERT_EQ(incoming, 0);
+    context.health = 20.0f;
+    bridge.Update();
+    bridge.ProcessDamageFeedbackForTesting(event);
+    ASSERT_EQ(incoming, 1);
+    ASSERT_EQ(outgoing, 1);
+    bridge.Shutdown();
+    SAMPBridge::ResetTestingHooks();
+    return true;
+}
+
+bool TestIncomingHitsoundReseedsAcrossReconnectRespawnAndPedReplacement() {
+    CombatSoundContext context;
+    SAMPBridge::SetTestingHooks(context.BuildCombatHooks());
+    SAMPBridge bridge;
+    int incoming = 0;
+    bridge.SetHitsoundIncomingCallback([&]() { ++incoming; });
+    ASSERT_TRUE(bridge.Initialize());
+    bridge.Update();
+    context.health = 80.0f;
+    bridge.Update();
+    ASSERT_EQ(incoming, 1);
+
+    context.netGame->m_nGameState = sampapi::v03dl::CNetGame::GAME_MODE_RESTARTING;
+    bridge.Update();
+    context.netGame->m_nGameState = sampapi::v03dl::CNetGame::GAME_MODE_CONNECTED;
+    context.health = 60.0f;
+    bridge.Update();
+    ASSERT_EQ(incoming, 1);
+    context.health = 50.0f;
+    bridge.Update();
+    ASSERT_EQ(incoming, 2);
+
+    context.localPlayer->m_bIsWasted = TRUE;
+    bridge.Update();
+    context.localPlayer->m_bIsWasted = FALSE;
+    context.health = 40.0f;
+    bridge.Update();
+    ASSERT_EQ(incoming, 2);
+    context.health = 30.0f;
+    bridge.Update();
+    ASSERT_EQ(incoming, 3);
+
+    context.pedIdentity = reinterpret_cast<const void*>(0x3000);
+    context.health = 20.0f;
+    bridge.Update();
+    ASSERT_EQ(incoming, 3);
+    context.health = 10.0f;
+    bridge.Update();
+    ASSERT_EQ(incoming, 4);
+
+    // Invalid/unavailable native samples must not leave a stale HP baseline.
+    context.health = std::numeric_limits<float>::quiet_NaN();
+    bridge.Update();
+    context.health = 5.0f;
+    bridge.Update();
+    ASSERT_EQ(incoming, 4);
+    context.sampleAvailable = false;
+    bridge.Update();
+    context.sampleAvailable = true;
+    context.health = 2.0f;
+    bridge.Update();
+    ASSERT_EQ(incoming, 4);
+    context.health = 1.0f;
+    bridge.Update();
+    ASSERT_EQ(incoming, 5);
+    bridge.Shutdown();
+    SAMPBridge::ResetTestingHooks();
+    return true;
+}
 
 bool TestInitFailureWithoutSampModule() {
     MockContext context;
@@ -588,6 +1047,556 @@ bool TestKillTrackerCountsLocalDeathWithoutRpc55() {
     return true;
 }
 
+bool TestKillAndDeathCountersCanBeDisabledIndependently() {
+    killtracker::KillTracker tracker;
+    killtracker::KillEvent kill;
+    kill.killer = "LocalPlayer";
+    kill.victim = "Victim";
+    kill.weaponId = 24;
+    kill.timestamp = std::time(nullptr);
+    kill.isLocalPlayer = true;
+
+    tracker.SetCountKills(false);
+    tracker.SetCountDeaths(true);
+    ASSERT_TRUE(!tracker.ProcessKillEvent(kill));
+    tracker.RecordDeath("Enemy", 31);
+    ASSERT_EQ(tracker.GetTotalKills(), 0);
+    ASSERT_EQ(tracker.GetSessionKills(), 0);
+    ASSERT_TRUE(tracker.GetRecentKills().empty());
+    ASSERT_EQ(tracker.GetTotalDeaths(), 1);
+    ASSERT_EQ(tracker.GetSessionDeaths(), 1);
+
+    tracker.SetCountKills(true);
+    tracker.SetCountDeaths(false);
+    ASSERT_TRUE(tracker.ProcessKillEvent(kill));
+    tracker.RecordDeath("Enemy", 31);
+    ASSERT_EQ(tracker.GetTotalKills(), 1);
+    ASSERT_EQ(tracker.GetSessionKills(), 1);
+    ASSERT_EQ(tracker.GetTotalDeaths(), 1);
+    ASSERT_EQ(tracker.GetSessionDeaths(), 1);
+    ASSERT_EQ(tracker.GetRecentDeaths().size(), static_cast<std::size_t>(1));
+
+    tracker.SetEnabled(false);
+    tracker.SetCountDeaths(true);
+    kill.victim = "AnotherVictim";
+    ASSERT_TRUE(!tracker.ProcessKillEvent(kill));
+    tracker.RecordDeath("Enemy", 31);
+    ASSERT_EQ(tracker.GetTotalKills(), 1);
+    ASSERT_EQ(tracker.GetTotalDeaths(), 1);
+    return true;
+}
+
+bool TestCounterSettingsAppliedBeforeTrackerCreation() {
+    keybinder::SettingsManager settings;
+    settings.GetMutable().kill_tracker_count_kills = false;
+    settings.GetMutable().kill_tracker_count_deaths = false;
+
+    SAMPBridge bridge;
+    bridge.SetSettingsManager(&settings);
+    bridge.SetKillTrackerEnabled(true);
+    killtracker::KillEvent kill;
+    kill.killer = "LocalPlayer";
+    kill.victim = "Victim";
+    kill.weaponId = 24;
+    kill.timestamp = std::time(nullptr);
+    kill.isLocalPlayer = true;
+
+    ASSERT_TRUE(!bridge.GetKillTracker()->ProcessKillEvent(kill));
+    bridge.GetKillTracker()->RecordDeath("Enemy", 31);
+    ASSERT_EQ(bridge.GetTotalKills(), 0);
+    ASSERT_EQ(bridge.GetTotalDeaths(), 0);
+    return true;
+}
+
+bool TestDisabledDeathCounterSendsNoNotifications() {
+    MockContext context;
+    SAMPBridge::SetTestingHooks(context.BuildHooks());
+    keybinder::SettingsManager settings;
+    settings.GetMutable().kill_tracker_count_deaths = false;
+
+    SAMPBridge bridge;
+    bridge.SetKillTrackerEnabled(true);
+    bridge.SetSettingsManager(&settings);
+    bridge.SetKillTrackerLocalDeathMessageEnabled(true);
+    bridge.SetKillTrackerServerDeathMessageEnabled(true);
+    bridge.SetKillTrackerLocalDeathMessageTemplate("Death {killer}: {total_deaths}");
+    bridge.SetKillTrackerServerDeathMessageTemplate("/f Deaths: {total_deaths}");
+    ASSERT_TRUE(bridge.Initialize());
+
+    bridge.RecordLocalPlayerDeath("Enemy", 31);
+    ASSERT_EQ(bridge.GetTotalDeaths(), 0);
+    ASSERT_TRUE(bridge.GetKillTracker()->GetRecentDeaths().empty());
+    ASSERT_TRUE(context.lastLocalMessage.empty());
+    ASSERT_TRUE(context.lastSent.empty());
+
+    settings.GetMutable().kill_tracker_count_deaths = true;
+    bridge.SetSettingsManager(&settings);
+    bridge.RecordLocalPlayerDeath("Enemy", 31);
+    ASSERT_EQ(bridge.GetTotalDeaths(), 1);
+    ASSERT_EQ(context.lastLocalMessage, std::string("{33CCFF}[NL-BINDER]{FFFFFF} Du bist gestorben. Deine aktuelle Tode: 1"));
+    ASSERT_TRUE(context.lastSent.empty());
+
+    bridge.Shutdown();
+    SAMPBridge::ResetTestingHooks();
+    return true;
+}
+
+bool TestCombatMessageVariablesAndSlashCommandRouting() {
+    MockContext context;
+    auto hooks = context.BuildHooks();
+    hooks.getLocalPlayerId = []() { return 5; };
+    hooks.getLocalPlayerName = []() { return std::string("KOBiRO"); };
+    hooks.getPlayerName = [](int) { return std::string("Enemy"); };
+    SAMPBridge::SetTestingHooks(hooks);
+    SAMPBridge bridge;
+    bridge.SetKillTrackerEnabled(true);
+    bridge.SetKillTrackerServerKillMessageEnabled(true);
+    bridge.SetKillTrackerLocalKillMessageTemplate("{zone}|{ZONE}|{kd}|{KD}|{total_kills}|{total_deaths}|{session_kills}");
+    bridge.SetKillTrackerServerKillMessageTemplate("{FF0000}/f {killer} {weapon}: {total_kills}/{total_deaths} {kd} {KD}");
+    ASSERT_TRUE(bridge.Initialize());
+    bridge.ImportKillCount(7);
+    bridge.ImportDeathCount(4);
+
+    bridge.ProcessDeathMessageForTesting({5, 7, 31, std::time(nullptr), true});
+    ASSERT_EQ(context.lastLocalMessage, std::string("Unknown|UNKNOWN|2.00|2.00|8|4|1"));
+    ASSERT_EQ(context.lastSent, std::string("/f KOBiRO M4: 8/4 2.00 2.00"));
+
+    bridge.Shutdown();
+    SAMPBridge::ResetTestingHooks();
+    return true;
+}
+
+bool TestVitalsUseCurrentPedInsteadOfOldVehicleAndOnFootSync() {
+    CombatSoundContext context;
+    SAMPBridge::SetTestingHooks(context.BuildCombatHooks());
+    SAMPBridge bridge;
+    context.localPlayer->m_incarData.m_nDriverHealth = 99;
+    context.localPlayer->m_incarData.m_nDriverArmor = 88;
+    context.localPlayer->m_onfootData.m_nHealth = 55;
+    context.localPlayer->m_onfootData.m_nArmor = 44;
+    context.health = 75.0f;
+    context.armour = 25.0f;
+    ASSERT_EQ(bridge.GetPlayerHP(), 75.0f);
+    ASSERT_EQ(bridge.GetPlayerArmour(), 25.0f);
+    context.health = 40.0f;
+    context.armour = 0.0f;
+    ASSERT_EQ(bridge.GetPlayerHP(), 40.0f);
+    ASSERT_EQ(bridge.GetPlayerArmour(), 0.0f);
+    context.sampleAvailable = false;
+    ASSERT_EQ(bridge.GetPlayerHP(), 0.0f);
+    ASSERT_EQ(bridge.GetPlayerArmour(), 0.0f);
+    SAMPBridge::ResetTestingHooks();
+    return true;
+}
+
+bool TestEveryOfferedCombatVariableResolvesWithoutServerQueries() {
+    CombatSoundContext context;
+    context.health = 75.0f;
+    context.armour = 26.0f;
+    auto hooks = context.BuildCombatHooks();
+    hooks.getLocalPlayerId = []() { return 5; };
+    hooks.getLocalPlayerName = []() { return std::string("KOBiRO"); };
+    hooks.getPlayerName = [](int) { return std::string("Enemy"); };
+    SAMPBridge::SetTestingHooks(hooks);
+    SAMPBridge bridge;
+    bridge.SetKillTrackerEnabled(true);
+    bridge.SetKillTrackerServerKillMessageEnabled(false);
+    std::string message;
+    for (const auto& variable : keybinder::kCombatMessageVariables) {
+        const std::string tag = variable.tag;
+        ASSERT_TRUE(tag != "carhp" && tag != "carname");
+        if (!message.empty()) message += "|";
+        message += "{" + tag + "}";
+    }
+    bool vehicleSupportedInBindings = false;
+    for (const auto& variable : keybinder::kTextBindingVariables)
+        if (std::string(variable.tag) == "carname") vehicleSupportedInBindings = true;
+    ASSERT_TRUE(vehicleSupportedInBindings);
+    bridge.SetKillTrackerLocalKillMessageTemplate(message);
+    ASSERT_TRUE(bridge.Initialize());
+    bridge.ImportKillCount(7);
+    bridge.ImportDeathCount(4);
+    bridge.ProcessDeathMessageForTesting({5, 7, 31, std::time(nullptr), true});
+    ASSERT_EQ(context.lastLocalMessage, std::string("Enemy|KOBiRO|M4|Unknown|UNKNOWN|75|26|8|4|1|0|2.00|2.00"));
+    ASSERT_TRUE(context.serverMessages.empty());
+    bridge.SetKillTrackerLocalKillMessageTemplate("{victim}|{killer}|{weapon}");
+    bridge.ProcessDeathMessageForTesting({5, 9, -1, std::time(nullptr), true});
+    ASSERT_EQ(context.lastLocalMessage, std::string("Enemy|KOBiRO|Unbekannt"));
+    ASSERT_TRUE(context.serverMessages.empty());
+    bridge.Shutdown();
+    SAMPBridge::ResetTestingHooks();
+    return true;
+}
+
+bool TestCounterSettingsAndSlashTemplatesRoundTrip() {
+    keybinder::SettingsManager legacySettings;
+    ASSERT_TRUE(legacySettings.LoadFromJson("{\"kill_tracker_enabled\":true}"));
+    ASSERT_TRUE(legacySettings.Get().kill_tracker_count_kills);
+    ASSERT_TRUE(legacySettings.Get().kill_tracker_count_deaths);
+
+    for (bool countKills : {false, true}) {
+        for (bool countDeaths : {false, true}) {
+            keybinder::SettingsManager settings;
+            settings.GetMutable().kill_tracker_enabled = countKills || countDeaths;
+            settings.GetMutable().kill_tracker_count_kills = countKills;
+            settings.GetMutable().kill_tracker_count_deaths = countDeaths;
+            settings.GetMutable().kill_tracker_server_kill_message_enabled = true;
+            settings.GetMutable().kill_tracker_server_kill_message_template = "/f Kill in {zone}. Kills: {total_kills} \"confirmed\" C:\\logs";
+            settings.GetMutable().kill_tracker_server_death_message_template = "/f Deaths: {total_deaths}";
+
+            keybinder::SettingsManager restored;
+            ASSERT_TRUE(restored.LoadFromJson(settings.GetSettingsJson()));
+            ASSERT_EQ(restored.Get().kill_tracker_enabled, countKills || countDeaths);
+            ASSERT_EQ(restored.Get().kill_tracker_count_kills, countKills);
+            ASSERT_EQ(restored.Get().kill_tracker_count_deaths, countDeaths);
+            ASSERT_TRUE(restored.Get().kill_tracker_server_kill_message_enabled);
+            ASSERT_EQ(restored.Get().kill_tracker_server_kill_message_template,
+                settings.Get().kill_tracker_server_kill_message_template);
+            ASSERT_EQ(restored.Get().kill_tracker_server_death_message_template,
+                settings.Get().kill_tracker_server_death_message_template);
+        }
+    }
+    return true;
+}
+
+bool TestKillBinderWorksWithoutDamageTracking() {
+    MockContext context;
+    auto hooks = context.BuildHooks();
+    hooks.getLocalPlayerId = []() { return 5; };
+    hooks.getLocalPlayerName = []() { return std::string("KOBiRO"); };
+    hooks.getPlayerName = [](int id) { return id == 7 ? std::string("Victim") : std::string("Other"); };
+    SAMPBridge::SetTestingHooks(hooks);
+    SAMPBridge bridge;
+    bridge.SetKillTrackerEnabled(true);
+    bridge.SetKillTrackerTrackDamage(false);
+    bridge.SetKillTrackerServerKillMessageEnabled(true);
+    bridge.SetKillTrackerServerKillMessageTemplate("/f {killer} hat {victim} getoetet: {total_kills}");
+    ASSERT_TRUE(bridge.Initialize());
+    const killtracker::DeathMessageEvent death{5, 7, 24, std::time(nullptr), true};
+    bridge.ProcessDeathMessageForTesting(death);
+    ASSERT_EQ(bridge.GetTotalKills(), 1);
+    ASSERT_EQ(context.lastSent, std::string("/f KOBiRO hat Victim getoetet: 1"));
+    ASSERT_EQ(context.serverMessages.size(), std::size_t(1));
+    bridge.ProcessDeathMessageForTesting(death);
+    ASSERT_EQ(bridge.GetTotalKills(), 1);
+    ASSERT_EQ(context.serverMessages.size(), std::size_t(1));
+    bridge.SetKillTrackerServerKillMessageTemplate("");
+    bridge.ProcessDeathMessageForTesting({5, 9, 31, std::time(nullptr), true});
+    ASSERT_EQ(bridge.GetTotalKills(), 2);
+    ASSERT_EQ(context.serverMessages.size(), std::size_t(1));
+    bridge.Shutdown();
+    SAMPBridge::ResetTestingHooks();
+    return true;
+}
+
+bool TestReceivedServerTotalsAndKillfeedCountExactlyOnce() {
+    MockContext context;
+    auto hooks = context.BuildHooks();
+    hooks.getLocalPlayerId = []() { return 5; };
+    hooks.getLocalPlayerName = []() { return std::string("KOBiRO"); };
+    hooks.getPlayerName = [](int id) { return id == 7 ? std::string("Victim") : std::string("Other"); };
+    SAMPBridge::SetTestingHooks(hooks);
+    SAMPBridge bridge;
+    bridge.SetKillTrackerEnabled(true);
+    bridge.SetKillTrackerServerKillMessageEnabled(true);
+    bridge.SetKillTrackerLocalDeathMessageEnabled(false);
+    bridge.SetKillTrackerServerDeathMessageEnabled(true);
+    bridge.SetKillTrackerServerKillMessageTemplate("/f Kills: {total_kills}");
+    ASSERT_TRUE(bridge.Initialize());
+    ASSERT_TRUE(!!context.incomingChatInterceptor);
+    auto receiveStats = [&](int kills, int deaths) {
+        context.incomingChatInterceptor(context.chat, nullptr, 0, "*** KOBiRO ***");
+        const std::string line = "{FFFFFF}Kills: [" + std::to_string(kills) + "] Tode: [" +
+            std::to_string(deaths) + "] Fraktion: [Red County Brotherhood] Gang: [-]";
+        context.incomingChatInterceptor(context.chat, nullptr, 0, line.c_str());
+    };
+    receiveStats(63, 205);
+    ASSERT_EQ(bridge.GetTotalKills(), 63);
+    ASSERT_EQ(bridge.GetTotalDeaths(), 205);
+    ASSERT_TRUE(context.serverMessages.empty());
+    ASSERT_TRUE(context.localMessages.empty());
+    receiveStats(64, 205);
+    ASSERT_EQ(bridge.GetTotalKills(), 64);
+    ASSERT_EQ(bridge.GetKillTracker()->GetSessionKills(), 1);
+    ASSERT_EQ(context.serverMessages.size(), std::size_t(1));
+    ASSERT_EQ(context.lastSent, std::string("/f Kills: 64"));
+    receiveStats(64, 205);
+    bridge.ProcessDeathMessageForTesting({5, 7, 24, std::time(nullptr), true});
+    ASSERT_EQ(bridge.GetTotalKills(), 64);
+    ASSERT_EQ(context.serverMessages.size(), std::size_t(1));
+    ASSERT_EQ(bridge.GetKillTracker()->GetRecentKills().back().victim, std::string("Victim"));
+    ASSERT_EQ(bridge.GetKillTracker()->GetWeaponStats(24)->killCount, 1);
+    bridge.ProcessDeathMessageForTesting({5, 9, 31, std::time(nullptr), true});
+    ASSERT_EQ(bridge.GetTotalKills(), 65);
+    ASSERT_EQ(context.serverMessages.size(), std::size_t(2));
+    receiveStats(64, 205); // delayed old statistics must not undo the new RPC kill
+    ASSERT_EQ(bridge.GetTotalKills(), 65);
+    receiveStats(65, 205);
+    ASSERT_EQ(bridge.GetTotalKills(), 65);
+    ASSERT_EQ(context.serverMessages.size(), std::size_t(2));
+    receiveStats(65, 206);
+    ASSERT_EQ(bridge.GetTotalDeaths(), 206);
+    ASSERT_EQ(context.lastLocalMessage, std::string("{33CCFF}[NL-BINDER]{FFFFFF} Du bist gestorben. Deine aktuelle Tode: 206"));
+    ASSERT_EQ(context.serverMessages.size(), std::size_t(2));
+    bridge.Update();
+    bridge.ProcessDeathMessageForTesting({9, 5, 31, std::time(nullptr), true});
+    ASSERT_EQ(bridge.GetTotalDeaths(), 206);
+    bridge.NotifyIncomingChat("KOBiRO sagt: Kills: [999] Tode: [999] Fraktion: [LSPD]");
+    ASSERT_EQ(bridge.GetTotalKills(), 65);
+    ASSERT_EQ(bridge.GetTotalDeaths(), 206);
+    bridge.Shutdown();
+    SAMPBridge::ResetTestingHooks();
+    return true;
+}
+
+bool TestServerStatsRequireOwnPlayerHeaderAndConsumeContext() {
+    MockContext context;
+    unsigned long now = 1000;
+    auto hooks = context.BuildHooks();
+    hooks.getTickCount = [&]() { return now; };
+    hooks.getLocalPlayerId = []() { return 5; };
+    hooks.getLocalPlayerName = []() { return std::string("KOBiRO"); };
+    SAMPBridge::SetTestingHooks(hooks);
+    SAMPBridge bridge;
+    bridge.SetKillTrackerEnabled(true);
+    bridge.SetKillTrackerServerKillMessageEnabled(true);
+    bridge.SetKillTrackerServerKillMessageTemplate("Kills: {total_kills}");
+    ASSERT_TRUE(bridge.Initialize());
+
+    const std::string ownTotals = "Kills: [63] Tode: [205] Fraktion: [Red County Brotherhood] Gang: [-]";
+    const std::string increasedTotals = "Kills: [64] Tode: [206] Fraktion: [Red County Brotherhood] Gang: [-]";
+    bridge.NotifyIncomingChat(ownTotals); // a bare totals line cannot establish identity
+    ASSERT_EQ(bridge.GetTotalKills(), 0);
+    ASSERT_EQ(bridge.GetTotalDeaths(), 0);
+    bridge.NotifyIncomingChat("*** Victim ***");
+    bridge.NotifyIncomingChat(ownTotals);
+    ASSERT_EQ(bridge.GetTotalKills(), 0);
+    ASSERT_EQ(bridge.GetTotalDeaths(), 0);
+
+    bridge.NotifyIncomingChat("*** KOBiRO ***");
+    bridge.NotifyIncomingChat("Level:[17] Erfahrungspunkte [603/28176] Geschlecht: [Männlich]");
+    bridge.NotifyIncomingChat(ownTotals);
+    ASSERT_EQ(bridge.GetTotalKills(), 63);
+    ASSERT_EQ(bridge.GetTotalDeaths(), 205);
+    ASSERT_TRUE(context.serverMessages.empty());
+    ASSERT_TRUE(context.localMessages.empty());
+
+    bridge.NotifyIncomingChat(increasedTotals); // the preceding header was already consumed
+    ASSERT_EQ(bridge.GetTotalKills(), 63);
+    ASSERT_EQ(bridge.GetTotalDeaths(), 205);
+    bridge.NotifyIncomingChat("*** KOBiRO ***");
+    bridge.NotifyIncomingChat("*** Other ***"); // a foreign header invalidates the local context
+    bridge.NotifyIncomingChat(increasedTotals);
+    ASSERT_EQ(bridge.GetTotalKills(), 63);
+    ASSERT_EQ(bridge.GetTotalDeaths(), 205);
+    ASSERT_TRUE(context.serverMessages.empty());
+    ASSERT_TRUE(context.localMessages.empty());
+
+    bridge.NotifyIncomingChat("*** KOBiRO ***");
+    now += 3001;
+    bridge.NotifyIncomingChat(increasedTotals); // stale identity cannot authorize a later line
+    ASSERT_EQ(bridge.GetTotalKills(), 63);
+    ASSERT_EQ(bridge.GetTotalDeaths(), 205);
+    ASSERT_TRUE(context.serverMessages.empty());
+    ASSERT_TRUE(context.localMessages.empty());
+
+    bridge.NotifyIncomingChat("*** KOBiRO ***");
+    bridge.NotifyIncomingChat(increasedTotals);
+    ASSERT_EQ(bridge.GetTotalKills(), 64);
+    ASSERT_EQ(bridge.GetTotalDeaths(), 206);
+    ASSERT_EQ(context.serverMessages.size(), std::size_t(1));
+    ASSERT_EQ(context.localMessages.size(), std::size_t(2)); // local kill confirmation and death notice
+    context.localPlayer->m_bIsWasted = true;
+    bridge.Update();
+    context.localPlayer->m_bIsWasted = false;
+    bridge.Update();
+    bridge.ProcessDeathMessageForTesting({9, 5, 31, std::time(nullptr), true});
+    ASSERT_EQ(bridge.GetTotalDeaths(), 207); // a new life is not suppressed by the recent stats event
+    ASSERT_EQ(context.localMessages.size(), std::size_t(3));
+    bridge.Shutdown();
+    SAMPBridge::ResetTestingHooks();
+    return true;
+}
+
+bool TestKillfeedStartsWithBaselineAndDoesNotReplayAfterReset() {
+    killtracker::KillfeedAdapter adapter;
+    killtracker::DeathWindowEntry historical;
+    historical.killer = "KOBiRO";
+    historical.victim = "Historical";
+    historical.weaponId = 24;
+    historical.valid = true;
+    killtracker::DeathWindowEntry current = historical;
+    current.victim = "Current";
+    killtracker::DeathWindowEntry newest = historical;
+    newest.victim = "Newest";
+
+    ASSERT_TRUE(adapter.ProcessSnapshotForTesting({historical}).empty());
+    ASSERT_TRUE(adapter.ProcessSnapshotForTesting({historical}).empty());
+    const auto newKills = adapter.ProcessSnapshotForTesting({historical, current});
+    ASSERT_EQ(newKills.size(), std::size_t(1));
+    ASSERT_EQ(newKills.front().victim, std::string("Current"));
+    ASSERT_TRUE(adapter.ProcessSnapshotForTesting({historical, current}).empty());
+
+    adapter.ClearState();
+    ASSERT_TRUE(adapter.ProcessSnapshotForTesting({historical, current}).empty());
+    const auto afterReset = adapter.ProcessSnapshotForTesting({historical, current, newest});
+    ASSERT_EQ(afterReset.size(), std::size_t(1));
+    ASSERT_EQ(afterReset.front().victim, std::string("Newest"));
+
+    ASSERT_TRUE(adapter.ProcessSnapshotForTesting({}, false).empty()); // native window disabled/unavailable
+    ASSERT_TRUE(adapter.ProcessSnapshotForTesting({historical, current, newest}).empty()); // no history replay on return
+    ASSERT_TRUE(adapter.ProcessSnapshotForTesting({}, false).empty());
+    ASSERT_TRUE(adapter.ProcessSnapshotForTesting({current}).empty()); // unknown empty is not a readable empty baseline
+
+    adapter.ClearState();
+    ASSERT_TRUE(adapter.ProcessSnapshotForTesting({}).empty());
+    ASSERT_EQ(adapter.ProcessSnapshotForTesting({current}).size(), std::size_t(1));
+    return true;
+}
+
+bool TestDeathRpcBeforeWastedStateCountsOnceAndRespawnAllowsNextDeath() {
+    MockContext context;
+    auto deathNoticeCount = [&]() {
+        std::size_t count = 0;
+        for (const std::string& message : context.localMessages) {
+            if (message.find("Du bist gestorben.") != std::string::npos) ++count;
+        }
+        return count;
+    };
+    auto hooks = context.BuildHooks();
+    hooks.getLocalPlayerId = []() { return 5; };
+    hooks.getLocalPlayerName = []() { return std::string("KOBiRO"); };
+    hooks.getPlayerName = [](int) { return std::string("Other"); };
+    SAMPBridge::SetTestingHooks(hooks);
+    SAMPBridge bridge;
+    bridge.SetKillTrackerEnabled(true);
+    ASSERT_TRUE(bridge.Initialize());
+
+    bridge.ProcessDeathMessageForTesting({9, 5, 31, std::time(nullptr), true});
+    ASSERT_EQ(bridge.GetTotalDeaths(), 1);
+    ASSERT_EQ(deathNoticeCount(), std::size_t(1));
+    bridge.Update(); // RPC arrives one frame before local player state changes
+    context.localPlayer->m_bIsWasted = true;
+    for (int i = 0; i < 20; ++i) bridge.Update();
+    ASSERT_EQ(bridge.GetTotalDeaths(), 1);
+    ASSERT_EQ(deathNoticeCount(), std::size_t(1));
+    bridge.ProcessDeathMessageForTesting({9, 5, 31, std::time(nullptr), true});
+    ASSERT_EQ(bridge.GetTotalDeaths(), 1); // same life, duplicate RPC
+
+    context.localPlayer->m_bIsWasted = false;
+    bridge.Update(); // observed respawn, including a second death inside five seconds
+    bridge.ProcessDeathMessageForTesting({9, 5, 31, std::time(nullptr), true});
+    ASSERT_EQ(bridge.GetTotalDeaths(), 2);
+    ASSERT_EQ(deathNoticeCount(), std::size_t(2));
+    context.localPlayer->m_bIsWasted = true;
+    for (int i = 0; i < 20; ++i) bridge.Update();
+    ASSERT_EQ(bridge.GetTotalDeaths(), 2);
+    ASSERT_EQ(bridge.GetKillTracker()->GetSessionDeaths(), 2);
+    ASSERT_TRUE(context.serverMessages.empty());
+    bridge.Shutdown();
+    SAMPBridge::ResetTestingHooks();
+    return true;
+}
+
+bool TestAutoEngineStartUsesDriverTransitionsAndHeldInput() {
+    MockContext context;
+    unsigned long now = 1000;
+    unsigned short vehicle = 10;
+    bool driver = false;
+    bool engineOn = false;
+    bool inputAvailable = true;
+    std::vector<bool> keyStates;
+    auto hooks = context.BuildHooks();
+    hooks.getTickCount = [&]() { return now; };
+    hooks.getDriverVehicle = [&](unsigned short& id, bool& running) { id = vehicle; running = engineOn; return driver; };
+    hooks.isEngineInputAvailable = [&]() { return inputAvailable; };
+    hooks.setEngineStartKeyDown = [&](bool down) { keyStates.push_back(down); };
+    SAMPBridge::SetTestingHooks(hooks);
+    SAMPBridge bridge;
+    bridge.SetAutoEngineStart(true);
+    ASSERT_TRUE(bridge.Initialize());
+    bridge.Update();
+    ASSERT_TRUE(keyStates.empty());
+    driver = true; // no outgoing enter-vehicle RPC is needed
+    bridge.Update();
+    now = 2499;
+    bridge.Update();
+    ASSERT_TRUE(keyStates.empty());
+    now = 2500;
+    bridge.Update();
+    ASSERT_EQ(keyStates.size(), std::size_t(1));
+    ASSERT_TRUE(keyStates[0]);
+    now = 2600;
+    bridge.Update();
+    ASSERT_EQ(keyStates.size(), std::size_t(1));
+    now = 2650;
+    bridge.Update();
+    ASSERT_EQ(keyStates.size(), std::size_t(2));
+    ASSERT_TRUE(!keyStates[1]);
+    engineOn = true;
+    now = 6000;
+    bridge.Update();
+    ASSERT_EQ(keyStates.size(), std::size_t(2));
+    vehicle = 11;
+    bridge.Update();
+    now = 8000;
+    bridge.Update();
+    ASSERT_EQ(keyStates.size(), std::size_t(2)); // running engine must not be toggled off
+    engineOn = false;
+    vehicle = 12;
+    inputAvailable = false;
+    bridge.Update();
+    now = 10000;
+    bridge.Update();
+    ASSERT_EQ(keyStates.size(), std::size_t(2)); // chat/cursor/focus gating
+    inputAvailable = true;
+    bridge.Update();
+    ASSERT_EQ(keyStates.size(), std::size_t(3));
+    bridge.SetAutoEngineStart(false);
+    ASSERT_EQ(keyStates.size(), std::size_t(4));
+    ASSERT_TRUE(!keyStates.back());
+    now = 14000;
+    bridge.Update();
+    ASSERT_EQ(keyStates.size(), std::size_t(4));
+    bridge.Shutdown();
+    SAMPBridge::ResetTestingHooks();
+    return true;
+}
+
+bool TestAutoEngineStartDoesNotTypeIntoBinder() {
+    MockContext context;
+    auto hooks = context.BuildHooks();
+    unsigned long now = 1000;
+    bool binderOpen = true;
+    std::vector<bool> keys;
+    hooks.getTickCount = [&]() { return now; };
+    hooks.getDriverVehicle = [](unsigned short& id, bool& engineOn) { id = 10; engineOn = false; return true; };
+    hooks.isEngineInputAvailable = []() { return true; };
+    hooks.setEngineStartKeyDown = [&](bool down) { keys.push_back(down); };
+    SAMPBridge::SetTestingHooks(hooks);
+    SAMPBridge bridge;
+    bridge.SetEngineInputBlockedCallback([&]() { return binderOpen; });
+    bridge.SetAutoEngineStart(true);
+    ASSERT_TRUE(bridge.Initialize());
+    bridge.Update();
+    now = 3000;
+    bridge.Update();
+    ASSERT_TRUE(keys.empty());
+    binderOpen = false;
+    now = 3100;
+    bridge.Update();
+    ASSERT_EQ(keys.size(), std::size_t(1));
+    ASSERT_TRUE(keys.back());
+    binderOpen = true;
+    now = 3120;
+    bridge.Update();
+    ASSERT_EQ(keys.size(), std::size_t(2));
+    ASSERT_TRUE(!keys.back());
+    bridge.Shutdown();
+    SAMPBridge::ResetTestingHooks();
+    return true;
+}
+
 bool TestWeaponNamesKnownWeapons() {
     ASSERT_EQ(killtracker::GetWeaponName(0), std::string("Fist"));
     ASSERT_EQ(killtracker::GetWeaponName(24), std::string("Desert Eagle"));
@@ -732,6 +1741,14 @@ int RunSAMPBridgeTests() {
     RUN_TEST(TestFallbackInterceptorIgnoresPlainChatText);
     RUN_TEST(TestJobChatAdapterLifecycleHooksAreWired);
     RUN_TEST(TestTrackedIncomeShowsLocalKeybinderMessage);
+    RUN_TEST(TestDamageLogWorksWithoutCountersSoundsOrDamageTrackingAndMatchesEachShot);
+    RUN_TEST(TestDamageLogPollingFallbackUsesActualLossAndStopsImmediatelyWhenDisabled);
+    RUN_TEST(TestDamageLogReconcilesLateRpcScriptedServerHealthAndRejectsUnmeasuredDamage);
+    RUN_TEST(TestDamageLogCombatRpcConfirmsServerHealthWithStaleEnvironmentalSource);
+    RUN_TEST(TestDamageLogEnableTransitionDiscardsOldDamageAndKeepsOutgoingFeedbackIndependent);
+    RUN_TEST(TestDamageLogFiltersLoginHealScriptResetEnvironmentalDamageAndRespawn);
+    RUN_TEST(TestHitsoundsIgnoreLoginPreviewAndResumeImmediatelyAfterSpawn);
+    RUN_TEST(TestIncomingHitsoundReseedsAcrossReconnectRespawnAndPedReplacement);
     
     std::printf("\n--- Kill Tracker Tests ---\n");
     RUN_TEST(TestKillTrackerProcessKillEvent);
@@ -741,6 +1758,20 @@ int RunSAMPBridgeTests() {
     RUN_TEST(TestKillTrackerEnabledToggle);
     RUN_TEST(TestKillTrackerStaleVictimDamageCleanup);
     RUN_TEST(TestKillTrackerCountsLocalDeathWithoutRpc55);
+    RUN_TEST(TestKillAndDeathCountersCanBeDisabledIndependently);
+    RUN_TEST(TestCounterSettingsAppliedBeforeTrackerCreation);
+    RUN_TEST(TestDisabledDeathCounterSendsNoNotifications);
+    RUN_TEST(TestCombatMessageVariablesAndSlashCommandRouting);
+    RUN_TEST(TestVitalsUseCurrentPedInsteadOfOldVehicleAndOnFootSync);
+    RUN_TEST(TestEveryOfferedCombatVariableResolvesWithoutServerQueries);
+    RUN_TEST(TestCounterSettingsAndSlashTemplatesRoundTrip);
+    RUN_TEST(TestKillBinderWorksWithoutDamageTracking);
+    RUN_TEST(TestReceivedServerTotalsAndKillfeedCountExactlyOnce);
+    RUN_TEST(TestServerStatsRequireOwnPlayerHeaderAndConsumeContext);
+    RUN_TEST(TestKillfeedStartsWithBaselineAndDoesNotReplayAfterReset);
+    RUN_TEST(TestDeathRpcBeforeWastedStateCountsOnceAndRespawnAllowsNextDeath);
+    RUN_TEST(TestAutoEngineStartUsesDriverTransitionsAndHeldInput);
+    RUN_TEST(TestAutoEngineStartDoesNotTypeIntoBinder);
     
     std::printf("\n--- Weapon Names Tests ---\n");
     RUN_TEST(TestWeaponNamesKnownWeapons);

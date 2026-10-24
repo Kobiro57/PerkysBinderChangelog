@@ -504,9 +504,9 @@ void OnlineUI::RenderStatusHeader(const OnlineSnapshot& snapshot) {
 // ---------------------------------------------------------------------------
 
 void OnlineUI::RenderFactionSection(const OnlineSnapshot& snapshot) {
-    UIComponents::SectionHeader("Fraktionen", "LSPD, Army und Fire Department im selben Tabellenlayout");
+    UIComponents::SectionHeader("Fraktionen", "LSPD, Army, Fire Department und Red County Brotherhood");
 
-    constexpr const char* kFactionNames[] = {"LSPD", "Army", "Fire Department"};
+    constexpr const char* kFactionNames[] = {"LSPD", "Army", "Fire Department", "Red County Brotherhood"};
     std::vector<OnlineBucketCard> cards;
     cards.reserve(IM_ARRAYSIZE(kFactionNames));
     for (const char* factionName : kFactionNames) {
@@ -671,13 +671,22 @@ void OnlineUI::RenderFactionFilterGrid() {
     Settings& settings = settingsManager_->GetMutable();
     const float availableWidth = ImGui::GetContentRegionAvail().x;
     const float columnGap = Scale(8.0f);
-    const float columnWidth = (availableWidth - columnGap * 3.0f) * 0.25f;
+    const float columnWidth = (availableWidth - columnGap * 4.0f) * 0.2f;
 
-    // All four factions in one row
+    // Faction filters and civilians share the same compact row.
     ImGui::BeginGroup();
     ImGui::PushItemWidth(columnWidth);
     if (UIComponents::Toggle("LSPD", &settings.online_quick_overlay_show_lspd)) { PersistSettings(); ApplyLiveSettings(); }
     if (ImGui::IsItemHovered()) { ImGui::SetTooltip("LSPD-Spieler im Quick-Overlay anzeigen."); }
+    ImGui::PopItemWidth();
+    ImGui::EndGroup();
+
+    ImGui::SameLine(0.0f, columnGap);
+
+    ImGui::BeginGroup();
+    ImGui::PushItemWidth(columnWidth);
+    if (UIComponents::Toggle("RCB", &settings.online_quick_overlay_show_rcb)) { PersistSettings(); ApplyLiveSettings(); }
+    if (ImGui::IsItemHovered()) { ImGui::SetTooltip("Red County Brotherhood-Spieler im Quick-Overlay anzeigen."); }
     ImGui::PopItemWidth();
     ImGui::EndGroup();
 
@@ -959,8 +968,17 @@ void OnlineUI::RenderPersistentOverlaySettings() {
         ImGui::EndGroup();
     }
 
+    UIComponents::Separator();
+    UIComponents::SectionHeader("Spielinformationen", "Live-Anzeigen aus dem Spiel");
+    if (UIComponents::Toggle("Ort anzeigen", &settings.online_location_overlay_enabled)) { PersistSettings(); ApplyLiveSettings(); }
+    if (UIComponents::Toggle("Fortbewegungsmittel anzeigen", &settings.online_transport_overlay_enabled)) { PersistSettings(); ApplyLiveSettings(); }
+    if (UIComponents::Toggle("Pedslots anzeigen", &settings.online_pedslots_overlay_enabled)) { PersistSettings(); ApplyLiveSettings(); }
+    if (ImGui::IsItemHovered()) { ImGui::SetTooltip("Anzahl anderer Spieler, die aktuell in deinem Stream geladen sind."); }
+    if (UIComponents::Toggle("Freunde anzeigen", &settings.online_friends_overlay_enabled)) { PersistSettings(); ApplyLiveSettings(); }
+    if (UIComponents::Toggle("Feinde anzeigen", &settings.online_enemies_overlay_enabled)) { PersistSettings(); ApplyLiveSettings(); }
+
     ImGui::PushStyleColor(ImGuiCol_Text, theme.GetColor(ThemeColorRole::TextMuted));
-    ImGui::TextWrapped("Eigene Fraktion nutzt den Stil der Gang-\xC3\x9C" "bersicht.");
+    ImGui::TextWrapped("Darstellung und Position der eingeblendeten Informationen lassen sich unten anpassen.");
     ImGui::PopStyleColor();
 
     UIComponents::EndCard();
@@ -971,15 +989,16 @@ void OnlineUI::RenderPersistentOverlaySettings() {
     UIComponents::BeginCard("OverlayAppearanceCard", 0.0f, true);
     UIComponents::CardHeader("Darstellung", "Stil-Einstellungen f\xc3\xbc""r persistente Overlays");
 
-    const char* targetItems[] = { "Gang-\xc3\x9c" "bersicht", "Eigene Gang", "Wanted" };
+    const char* targetItems[] = { "Allgemeine Overlays", "Eigene Gang", "Wanted-Liste" };
     int targetIndex = static_cast<int>(currentStyleTarget_);
-    if (UIComponents::Combo("Ziel", &targetIndex, targetItems, IM_ARRAYSIZE(targetItems))) {
+    if (UIComponents::Combo("Darstellung anpassen f\xC3\xBC" "r", &targetIndex, targetItems, IM_ARRAYSIZE(targetItems))) {
         currentStyleTarget_ = static_cast<OnlinePersistentStyleTarget>(targetIndex);
     }
 
     UIComponents::Separator();
 
-    if (currentStyleTarget_ == OnlinePersistentStyleTarget::GangsOverview) {
+    if (currentStyleTarget_ == OnlinePersistentStyleTarget::GeneralOverlays) {
+        ImGui::TextWrapped("Gemeinsamer Stil f\xC3\xBC" "r eigene Fraktion, Gang-\xC3\x9C" "bersicht, Ort, Fortbewegungsmittel, Pedslots, Freunde-Radar und Feinde-Radar.");
         RenderPersistentOverlayStyleControls(
             settings.online_overlay_style,
             settings.online_overlay_opacity,
@@ -1017,6 +1036,110 @@ void OnlineUI::RenderPersistentOverlaySettings() {
     UIComponents::EndCard();
 }
 
+void OnlineUI::RenderPlayerMarkerSettings() {
+    if (settingsManager_ == nullptr) return;
+    Settings& settings = settingsManager_->GetMutable();
+    auto& theme = ThemeManager::Instance();
+    UIComponents::BeginCard("PlayerRadarSettings", 0.0f, true);
+    UIComponents::CardHeader("Freunde & Feinde", "Gespeicherte Freunde und Feinde im Online-\xC3\x9C" "berblick");
+    if (UIComponents::Toggle("Freunde anzeigen", &settings.online_friends_overlay_enabled)) { PersistSettings(); ApplyLiveSettings(); }
+    if (UIComponents::Toggle("Feinde anzeigen", &settings.online_enemies_overlay_enabled)) { PersistSettings(); ApplyLiveSettings(); }
+    ImGui::TextColored(theme.GetColor(ThemeColorRole::TextMuted), "Bis zu 20 gespeicherte Spieler mit Online-Status.");
+    ImGui::TextWrapped("Fraktion und Gang werden automatisch ermittelt. Freunde-Radar und Feinde-Radar lassen sich im Move-Modus getrennt verschieben.");
+    UIComponents::EndCard();
+
+    ImGui::Dummy(ImVec2(0.0f, theme.GetSpacing(ThemeSpacingRole::SectionGap) * 0.5f));
+    UIComponents::BeginCard("PlayerRadarEditor", 0.0f, true);
+    UIComponents::CardHeader("Spieler hinzuf\xC3\xBC" "gen", "Name eingeben oder aktuelle Spieler-ID verwenden");
+    UIComponents::InputText("Name", &markerName_, "Spielername");
+    UIComponents::InputInt("Spieler-ID", &markerPlayerId_, "-1 = Name verwenden");
+    const OnlineSnapshot snapshot = onlineDataManager_ != nullptr ? onlineDataManager_->GetSnapshot() : OnlineSnapshot{};
+    std::string previewName = markerName_;
+    if (markerPlayerId_ >= 0) {
+        previewName.clear();
+        if (overlayController_ != nullptr) {
+            for (const auto& player : overlayController_->GetGameState().players) {
+                if (player.id == markerPlayerId_) { previewName = player.name; break; }
+            }
+        }
+    }
+    const std::string previewAffiliation = OnlineOverlayController::ResolveMarkerAffiliation(snapshot, previewName);
+    UIComponents::InfoRow("Fraktion / Gang", previewAffiliation.c_str());
+    if (ImGui::RadioButton("Feind", !markerFriendly_)) markerFriendly_ = false;
+    ImGui::SameLine();
+    if (ImGui::RadioButton("Freund", markerFriendly_)) markerFriendly_ = true;
+    if (UIComponents::SecondaryButton("Hinzuf\xC3\xBC" "gen", ImVec2(Scale(160.0f), 0.0f))) {
+        std::string name = markerName_;
+        markerEditorMessage_.clear();
+        if (markerPlayerId_ >= 0) {
+            name.clear();
+            if (overlayController_ != nullptr) {
+                for (const auto& player : overlayController_->GetGameState().players) {
+                    if (player.id == markerPlayerId_) { name = player.name; break; }
+                }
+            }
+            if (name.empty()) markerEditorMessage_ = "Diese ID ist aktuell nicht verbunden.";
+        }
+        const std::size_t first = name.find_first_not_of(" \t\r\n");
+        if (first != std::string::npos) name = name.substr(first, name.find_last_not_of(" \t\r\n") - first + 1);
+        else name.clear();
+        const std::string normalized = OnlineOverlayController::NormalizeMarkerName(name);
+        if (markerEditorMessage_.empty() && (name.empty() || name.size() > 24 || name.find_first_of(" \t\r\n{}") != std::string::npos)) {
+            markerEditorMessage_ = "Bitte einen g\xC3\xBC" "ltigen Spielernamen mit maximal 24 Zeichen eingeben.";
+        }
+        for (const auto& marker : settings.online_player_markers) {
+            if (OnlineOverlayController::NormalizeMarkerName(marker.name) == normalized) {
+                markerEditorMessage_ = "Dieser Spieler ist bereits gespeichert.";
+                break;
+            }
+        }
+        if (markerEditorMessage_.empty() && settings.online_player_markers.size() >= 20) markerEditorMessage_ = "Die Spielerliste ist voll (20 Spieler).";
+        if (markerEditorMessage_.empty()) {
+            OnlinePlayerMarker marker;
+            marker.name = name;
+            marker.friendly = markerFriendly_;
+            settings.online_player_markers.push_back(std::move(marker));
+            markerName_.clear();
+            markerPlayerId_ = -1;
+            markerEditorMessage_ = name + " gespeichert.";
+            PersistSettings(); ApplyLiveSettings();
+        }
+    }
+    if (!markerEditorMessage_.empty()) ImGui::TextWrapped("%s", markerEditorMessage_.c_str());
+    UIComponents::EndCard();
+
+    ImGui::Dummy(ImVec2(0.0f, theme.GetSpacing(ThemeSpacingRole::SectionGap) * 0.5f));
+    UIComponents::BeginCard("PlayerRadarList", 0.0f, true);
+    UIComponents::CardHeader("Gespeicherte Spieler", "Online-Status und Zuordnung");
+    if (settings.online_player_markers.empty()) {
+        ImGui::TextColored(theme.GetColor(ThemeColorRole::TextMuted), "Noch keine Spieler gespeichert.");
+    }
+    int deleteIndex = -1;
+    for (std::size_t i = 0; i < settings.online_player_markers.size(); ++i) {
+        auto& marker = settings.online_player_markers[i];
+        ImGui::PushID(static_cast<int>(i));
+        const OnlineMarkerState* state = nullptr;
+        if (overlayController_ != nullptr) {
+            for (const auto& candidate : overlayController_->GetMarkerStates()) {
+                if (OnlineOverlayController::NormalizeMarkerName(candidate.name) == OnlineOverlayController::NormalizeMarkerName(marker.name)) { state = &candidate; break; }
+            }
+        }
+        std::string status = state != nullptr && state->online ? "Online | ID " + std::to_string(state->playerId) : "Offline";
+        UIComponents::InfoRow(marker.name.c_str(), status.c_str());
+        const std::string affiliation = OnlineOverlayController::ResolveMarkerAffiliation(snapshot, marker.name);
+        UIComponents::InfoRow("Fraktion / Gang", affiliation.c_str());
+        if (UIComponents::Toggle("Freund", &marker.friendly)) { PersistSettings(); ApplyLiveSettings(); }
+        if (UIComponents::SecondaryButton("L\xC3\xB6" "schen", ImVec2(Scale(120.0f), 0.0f))) deleteIndex = static_cast<int>(i);
+        if (i + 1 < settings.online_player_markers.size()) UIComponents::Separator();
+        ImGui::PopID();
+    }
+    if (deleteIndex >= 0) {
+        settings.online_player_markers.erase(settings.online_player_markers.begin() + deleteIndex);
+        PersistSettings(); ApplyLiveSettings();
+    }
+    UIComponents::EndCard();
+}
+
 // ---------------------------------------------------------------------------
 // Overlay settings tab (main entry)
 // ---------------------------------------------------------------------------
@@ -1033,6 +1156,9 @@ void OnlineUI::RenderOverlaySettingsTab() {
     if (UIComponents::SubTabItem("Dauerhaft", static_cast<int>(currentOverlaySection_) == 1)) {
         currentOverlaySection_ = OnlineOverlaySection::Persistent;
     }
+    if (UIComponents::SubTabItem("Freunde & Feinde", currentOverlaySection_ == OnlineOverlaySection::PlayerMarkers)) {
+        currentOverlaySection_ = OnlineOverlaySection::PlayerMarkers;
+    }
     UIComponents::EndSubTabs();
 
     switch (currentOverlaySection_) {
@@ -1044,6 +1170,9 @@ void OnlineUI::RenderOverlaySettingsTab() {
             break;
         case OnlineOverlaySection::Appearance:
             RenderPersistentOverlaySettings();
+            break;
+        case OnlineOverlaySection::PlayerMarkers:
+            RenderPlayerMarkerSettings();
             break;
     }
 }

@@ -1,5 +1,15 @@
 @echo off
-call "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Auxiliary\Build\vcvarsall.bat" x86 >nul 2>&1
+setlocal
+call "%~dp0setup_msvc.bat" || exit /b 1
+if not exist "%~dp0..\build" mkdir "%~dp0..\build"
+pushd "%~dp0.." || exit /b 1
+call :run_test_suite
+set "NLBINDER_TEST_RESULT=%ERRORLEVEL%"
+popd
+exit /b %NLBINDER_TEST_RESULT%
+
+:run_test_suite
+call "%~dp0build_reconnect_helper.bat" || exit /b 2
 
 echo === Compiling Tests ===
 rc.exe /nologo /fo "%~dp0..\build\KeybinderTests.res" "%~dp0..\Keybinder.rc"
@@ -10,7 +20,7 @@ if %ERRORLEVEL% NEQ 0 (
 
 set "KEYBINDER_TEST_RSP=%~dp0..\build\KeybinderTests.rsp"
 (
-    echo /nologo /EHsc /std:c++latest /W3 /MT /DKEYBINDER_TESTING /DWIN32 /D_CRT_SECURE_NO_WARNINGS /DGTASA /DPLUGIN_SGV_10US /DRW /D_DX9_SDK_INSTALLED
+    echo /nologo /MP4 /EHsc /std:c++latest /W3 /MT /DKEYBINDER_TESTING /DWIN32 /D_CRT_SECURE_NO_WARNINGS /DGTASA /DPLUGIN_SGV_10US /DRW /D_DX9_SDK_INSTALLED
     echo /I"%~dp0..\include"
     echo /I"%~dp0..\src"
     echo /I"%~dp0..\tests"
@@ -18,6 +28,7 @@ set "KEYBINDER_TEST_RSP=%~dp0..\build\KeybinderTests.rsp"
     echo /I"%~dp0..\include\plugin-sdk\shared\game"
     echo /I"%~dp0..\include\plugin-sdk\plugin_sa"
     echo /I"%~dp0..\include\plugin-sdk\plugin_sa\game_sa"
+    echo /I"%~dp0..\include\plugin-sdk\plugin_sa\game_sa\enums"
     echo /I"%~dp0..\include\plugin-sdk\plugin_sa\game_sa\rw"
     echo /I"%~dp0..\include\plugin-sdk\hooking"
     echo /I"%~dp0..\include\plugin-sdk\injector"
@@ -59,9 +70,12 @@ set "KEYBINDER_TEST_RSP=%~dp0..\build\KeybinderTests.rsp"
     echo "%~dp0..\tests\SquareMapTests.cpp"
     echo "%~dp0..\tests\HudSpriteManagerTests.cpp"
     echo "%~dp0..\tests\SourceContractTests.cpp"
+    echo "%~dp0..\tests\SpeedometerFocusedTests.cpp"
+    echo "%~dp0..\tests\ReconnectManagerTests.cpp"
     echo "%~dp0..\tests\ImGuiFreeTypeStubs.cpp"
     echo "%~dp0..\tests\TestStubs.cpp"
     echo "%~dp0..\\src\\Logger.cpp"
+    echo "%~dp0..\\src\\ReconnectManager.cpp"
     echo "%~dp0..\\src\\ActionExecutor.cpp"
     echo "%~dp0..\\src\\KeybindManager.cpp"
     echo "%~dp0..\\src\\PersistentPaths.cpp"
@@ -127,7 +141,7 @@ set "KEYBINDER_TEST_RSP=%~dp0..\build\KeybinderTests.rsp"
     echo "%~dp0..\include\imgui-1.92.7\backends\imgui_impl_dx9.cpp"
     echo "%~dp0..\include\imgui-1.92.7\backends\imgui_impl_win32.cpp"
     echo "%~dp0..\include\imgui-1.92.7\misc\cpp\imgui_stdlib.cpp"
-    echo "%~dp0..\build\KeybinderTests.res" /link user32.lib winhttp.lib xaudio2.lib ole32.lib
+    echo "%~dp0..\build\KeybinderTests.res" /link user32.lib winhttp.lib xaudio2.lib ole32.lib advapi32.lib shell32.lib
 ) > "%KEYBINDER_TEST_RSP%"
 cl.exe @"%KEYBINDER_TEST_RSP%"
 if %ERRORLEVEL% NEQ 0 (
@@ -146,6 +160,7 @@ cl.exe /nologo /EHsc /std:c++latest /W3 /MT /DKEYBINDER_TESTING /DWIN32 /D_CRT_S
     /I"%~dp0..\include\plugin-sdk\shared\game" ^
     /I"%~dp0..\include\plugin-sdk\plugin_sa" ^
     /I"%~dp0..\include\plugin-sdk\plugin_sa\game_sa" ^
+    /I"%~dp0..\include\plugin-sdk\plugin_sa\game_sa\enums" ^
     /I"%~dp0..\include\plugin-sdk\plugin_sa\game_sa\rw" ^
     /I"%~dp0..\include\plugin-sdk\hooking" ^
     /I"%~dp0..\include\plugin-sdk\injector" ^

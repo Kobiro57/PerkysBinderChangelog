@@ -26,10 +26,11 @@ enum class OnlineOverlaySection {
     Quick = 0,
     Persistent = 1,
     Appearance = 2,
+    PlayerMarkers = 3,
 };
 
 enum class OnlinePersistentStyleTarget {
-    GangsOverview = 0,
+    GeneralOverlays = 0,
     OwnGang = 1,
     Wanted = 2,
 };
@@ -71,7 +72,7 @@ private:
     std::string localPlayerName_;
     OnlineSubtab currentSubtab_ = OnlineSubtab::Overview;
     OnlineOverlaySection currentOverlaySection_ = OnlineOverlaySection::Quick;
-    OnlinePersistentStyleTarget currentStyleTarget_ = OnlinePersistentStyleTarget::GangsOverview;
+    OnlinePersistentStyleTarget currentStyleTarget_ = OnlinePersistentStyleTarget::GeneralOverlays;
 
     // Hotkey capture state
     bool hotkeyCaptureActive_ = false;
@@ -80,6 +81,10 @@ private:
 
     // Cached gang list from snapshot (preserves offline selections)
     std::vector<std::string> cachedGangList_;
+    std::string markerName_;
+    int markerPlayerId_ = -1;
+    bool markerFriendly_ = false;
+    std::string markerEditorMessage_;
 
     // Sub-tab rendering
     void RenderOverviewTab();
@@ -88,6 +93,7 @@ private:
     // Overlay settings helpers
     void RenderQuickOverlaySettings();
     void RenderPersistentOverlaySettings();
+    void RenderPlayerMarkerSettings();
     void RenderPersistentOverlayStyleControls(
         std::string& style,
         float& opacity,

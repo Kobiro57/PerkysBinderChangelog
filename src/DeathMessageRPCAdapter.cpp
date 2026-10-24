@@ -158,4 +158,11 @@ void DeathMessageRPCAdapter::SetDeathMessageCallback(DeathMessageCallback callba
     state_->callback = callback;
 }
 
+#ifdef KEYBINDER_TESTING
+void DeathMessageRPCAdapter::DispatchForTesting(const DeathMessageEvent& event) {
+    std::lock_guard<std::mutex> lock(state_->callbackMutex);
+    if (state_->isAlive.load() && state_->callback) state_->callback(event);
+}
+#endif
+
 } // namespace killtracker

@@ -61,6 +61,15 @@ static bool ParseDamageBitStream(RakNet::BitStream* bs, DamageEvent& event, bool
     return true;
 }
 
+static void DispatchDamageBitStream(const std::shared_ptr<DamageAdapterState>& state, RakNet::BitStream* bs) {
+    DamageEvent event;
+    bool isTake = false;
+    if (!ParseDamageBitStream(bs, event, isTake)) return;
+    event.isOutgoing = !isTake;
+    std::lock_guard<std::mutex> lock(state->callbackMutex);
+    if (state->isAlive.load() && state->callback) state->callback(event);
+}
+
 DamageRPCAdapter::DamageRPCAdapter()
     : initialized_(false)
     , state_(std::make_shared<DamageAdapterState>()) {
@@ -99,21 +108,7 @@ bool DamageRPCAdapter::Initialize() {
         }
         
         if (auto state = weakState.lock()) {
-            DamageEvent event;
-            bool isGive = false;
-            if (!ParseDamageBitStream(bs, event, isGive)) {
-                return true;
-            }
-
-            // RPC 115 reports local damage from the server's perspective.
-            // Keep the historical inversion so downstream combat features
-            // continue receiving the direction they already expect.
-            event.isOutgoing = !isGive;
-
-            std::lock_guard<std::mutex> lock(state->callbackMutex);
-            if (state->isAlive.load() && state->callback) {
-                state->callback(event);
-            }
+            DispatchDamageBitStream(state, bs);
         }
         return true;
     };
@@ -149,5 +144,11 @@ void DamageRPCAdapter::SetDamageCallback(DamageEventCallback callback) {
     std::lock_guard<std::mutex> lock(state_->callbackMutex);
     state_->callback = callback;
 }
+
+#ifdef KEYBINDER_TESTING
+void DamageRPCAdapter::ProcessRpcForTesting(RakNet::BitStream* payload) {
+    DispatchDamageBitStream(state_, payload);
+}
+#endif
 
 } // namespace killtracker

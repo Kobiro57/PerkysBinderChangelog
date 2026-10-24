@@ -766,6 +766,7 @@ bool SettingsManager::LoadFromJson(const std::string& json_content) {
     bool kill_tracker_allow_manual_edits = settings_.kill_tracker_allow_manual_edits;
     bool auto_hudscalefix = settings_.auto_hudscalefix;
     bool auto_engine_start = settings_.auto_engine_start;
+    bool damage_log_enabled = settings_.damage_log_enabled;
     bool quickmap_enabled = settings_.quickmap_enabled;
     int quickmap_hotkey = settings_.quickmap_hotkey;
     std::string quickmap_mode = settings_.quickmap_mode;
@@ -896,6 +897,7 @@ bool SettingsManager::LoadFromJson(const std::string& json_content) {
     bool found_manual_edits = false;
     bool found_auto_hudscalefix = false;
     bool found_auto_engine_start = false;
+    bool found_damage_log_enabled = false;
     bool found_quickmap_enabled = false;
     bool found_quickmap_hotkey = false;
     bool found_quickmap_mode = false;
@@ -1052,6 +1054,7 @@ bool SettingsManager::LoadFromJson(const std::string& json_content) {
     found_manual_edits = ParseBoolField(json_content, "\"kill_tracker_allow_manual_edits\"", kill_tracker_allow_manual_edits);
     found_auto_hudscalefix = ParseBoolField(json_content, "\"auto_hudscalefix\"", auto_hudscalefix);
     found_auto_engine_start = ParseBoolField(json_content, "\"auto_engine_start\"", auto_engine_start);
+    found_damage_log_enabled = ParseBoolField(json_content, "\"damage_log_enabled\"", damage_log_enabled);
     found_quickmap_enabled = ParseBoolField(json_content, "\"quickmap_enabled\"", quickmap_enabled);
     found_quickmap_hotkey = ParseIntField(json_content, "\"quickmap_hotkey\"", quickmap_hotkey);
     found_quickmap_mode = ParseStringField(json_content, "\"quickmap_mode\"", quickmap_mode);
@@ -1173,6 +1176,8 @@ bool SettingsManager::LoadFromJson(const std::string& json_content) {
         ? ui_window_height
         : 0.0f;
     settings_.kill_tracker_enabled = kill_tracker_enabled;
+    ParseBoolField(json_content, "\"kill_tracker_count_kills\"", settings_.kill_tracker_count_kills);
+    ParseBoolField(json_content, "\"kill_tracker_count_deaths\"", settings_.kill_tracker_count_deaths);
     settings_.kill_tracker_local_kill_message_enabled = kill_tracker_local_kill_message_enabled;
     settings_.kill_tracker_local_death_message_enabled = kill_tracker_local_death_message_enabled;
     settings_.kill_tracker_server_kill_message_enabled = kill_tracker_server_kill_message_enabled;
@@ -1185,6 +1190,7 @@ bool SettingsManager::LoadFromJson(const std::string& json_content) {
     settings_.kill_tracker_allow_manual_edits = kill_tracker_allow_manual_edits;
     settings_.auto_hudscalefix = auto_hudscalefix;
     settings_.auto_engine_start = auto_engine_start;
+    settings_.damage_log_enabled = damage_log_enabled;
     settings_.quickmap_enabled = quickmap_enabled;
     settings_.quickmap_hotkey = NormalizeQuickMapHotkey(quickmap_hotkey);
     settings_.quickmap_mode = quickmap_mode;
@@ -1559,6 +1565,97 @@ bool SettingsManager::LoadFromJson(const std::string& json_content) {
     // Assign selected_gangs now that parsing is complete
     settings_.online_quick_overlay_selected_gangs = DedupeGangSelection(std::move(online_quick_overlay_selected_gangs));
 
+    bool legacyMarkersEnabled = false;
+    ParseBoolField(json_content, "\"online_markers_overlay_enabled\"", legacyMarkersEnabled);
+    settings_.online_friends_overlay_enabled = legacyMarkersEnabled;
+    settings_.online_enemies_overlay_enabled = legacyMarkersEnabled;
+    ParseBoolField(json_content, "\"online_friends_overlay_enabled\"", settings_.online_friends_overlay_enabled);
+    ParseBoolField(json_content, "\"online_enemies_overlay_enabled\"", settings_.online_enemies_overlay_enabled);
+    ParseBoolField(json_content, "\"online_quick_overlay_show_rcb\"", settings_.online_quick_overlay_show_rcb);
+    ParseBoolField(json_content, "\"reconnect_use_nova_launcher\"", settings_.reconnect_use_nova_launcher);
+    ParseStringField(json_content, "\"reconnect_nova_launcher_path\"", settings_.reconnect_nova_launcher_path);
+    ParseStringField(json_content, "\"reconnect_openmp_launcher_path\"", settings_.reconnect_openmp_launcher_path);
+    ParseBoolField(json_content, "\"online_location_overlay_enabled\"", settings_.online_location_overlay_enabled);
+    ParseBoolField(json_content, "\"online_transport_overlay_enabled\"", settings_.online_transport_overlay_enabled);
+    ParseBoolField(json_content, "\"online_pedslots_overlay_enabled\"", settings_.online_pedslots_overlay_enabled);
+    // Split the old shared radar position into two independently saved panels.
+    // Keep friends at the old position and start enemies 120 px farther from
+    // the same edge. Explicit new values below always take precedence.
+    std::string legacyRadarAnchor = "top_left";
+    float legacyRadarX = 12.0f;
+    float legacyRadarY = 250.0f;
+    if (ParseStringField(json_content, "\"online_markers_overlay_anchor\"", legacyRadarAnchor)) {
+        settings_.online_friends_overlay_anchor = NormalizeOnlineOverlayAnchor(legacyRadarAnchor);
+        settings_.online_enemies_overlay_anchor = settings_.online_friends_overlay_anchor;
+    }
+    if (ParseFloatField(json_content, "\"online_markers_overlay_offset_x\"", legacyRadarX)) {
+        settings_.online_friends_overlay_offset_x = std::isfinite(legacyRadarX) ? legacyRadarX : 12.0f;
+        settings_.online_enemies_overlay_offset_x = settings_.online_friends_overlay_offset_x;
+    }
+    if (ParseFloatField(json_content, "\"online_markers_overlay_offset_y\"", legacyRadarY)) {
+        settings_.online_friends_overlay_offset_y = std::isfinite(legacyRadarY) ? legacyRadarY : 250.0f;
+        settings_.online_enemies_overlay_offset_y = settings_.online_friends_overlay_offset_y + 120.0f;
+    }
+    ParseStringField(json_content, "\"online_friends_overlay_anchor\"", settings_.online_friends_overlay_anchor);
+    settings_.online_friends_overlay_anchor = NormalizeOnlineOverlayAnchor(settings_.online_friends_overlay_anchor);
+    ParseFloatField(json_content, "\"online_friends_overlay_offset_x\"", settings_.online_friends_overlay_offset_x);
+    if (!std::isfinite(settings_.online_friends_overlay_offset_x)) settings_.online_friends_overlay_offset_x = 12.0f;
+    ParseFloatField(json_content, "\"online_friends_overlay_offset_y\"", settings_.online_friends_overlay_offset_y);
+    if (!std::isfinite(settings_.online_friends_overlay_offset_y)) settings_.online_friends_overlay_offset_y = 250.0f;
+    ParseStringField(json_content, "\"online_enemies_overlay_anchor\"", settings_.online_enemies_overlay_anchor);
+    settings_.online_enemies_overlay_anchor = NormalizeOnlineOverlayAnchor(settings_.online_enemies_overlay_anchor);
+    ParseFloatField(json_content, "\"online_enemies_overlay_offset_x\"", settings_.online_enemies_overlay_offset_x);
+    if (!std::isfinite(settings_.online_enemies_overlay_offset_x)) settings_.online_enemies_overlay_offset_x = 12.0f;
+    ParseFloatField(json_content, "\"online_enemies_overlay_offset_y\"", settings_.online_enemies_overlay_offset_y);
+    if (!std::isfinite(settings_.online_enemies_overlay_offset_y)) settings_.online_enemies_overlay_offset_y = 370.0f;
+    ParseStringField(json_content, "\"online_location_overlay_anchor\"", settings_.online_location_overlay_anchor);
+    settings_.online_location_overlay_anchor = NormalizeOnlineOverlayAnchor(settings_.online_location_overlay_anchor);
+    ParseFloatField(json_content, "\"online_location_overlay_offset_x\"", settings_.online_location_overlay_offset_x);
+    if (!std::isfinite(settings_.online_location_overlay_offset_x)) settings_.online_location_overlay_offset_x = 12.0f;
+    ParseFloatField(json_content, "\"online_location_overlay_offset_y\"", settings_.online_location_overlay_offset_y);
+    if (!std::isfinite(settings_.online_location_overlay_offset_y)) settings_.online_location_overlay_offset_y = 12.0f;
+    ParseStringField(json_content, "\"online_transport_overlay_anchor\"", settings_.online_transport_overlay_anchor);
+    settings_.online_transport_overlay_anchor = NormalizeOnlineOverlayAnchor(settings_.online_transport_overlay_anchor);
+    ParseFloatField(json_content, "\"online_transport_overlay_offset_x\"", settings_.online_transport_overlay_offset_x);
+    if (!std::isfinite(settings_.online_transport_overlay_offset_x)) settings_.online_transport_overlay_offset_x = 12.0f;
+    ParseFloatField(json_content, "\"online_transport_overlay_offset_y\"", settings_.online_transport_overlay_offset_y);
+    if (!std::isfinite(settings_.online_transport_overlay_offset_y)) settings_.online_transport_overlay_offset_y = 12.0f;
+    ParseStringField(json_content, "\"online_pedslots_overlay_anchor\"", settings_.online_pedslots_overlay_anchor);
+    settings_.online_pedslots_overlay_anchor = NormalizeOnlineOverlayAnchor(settings_.online_pedslots_overlay_anchor);
+    ParseFloatField(json_content, "\"online_pedslots_overlay_offset_x\"", settings_.online_pedslots_overlay_offset_x);
+    if (!std::isfinite(settings_.online_pedslots_overlay_offset_x)) settings_.online_pedslots_overlay_offset_x = 12.0f;
+    ParseFloatField(json_content, "\"online_pedslots_overlay_offset_y\"", settings_.online_pedslots_overlay_offset_y);
+    if (!std::isfinite(settings_.online_pedslots_overlay_offset_y)) settings_.online_pedslots_overlay_offset_y = 12.0f;
+
+    settings_.online_player_markers.clear();
+    std::string markersArray;
+    if (ExtractJsonArrayField(json_content, "\"online_player_markers\"", markersArray)) {
+        size_t pos = 0;
+        while (settings_.online_player_markers.size() < 20) {
+            const size_t start = markersArray.find('{', pos);
+            if (start == std::string::npos) break;
+            const size_t end = FindMatchingDelimiter(markersArray, start, '{', '}');
+            if (end == std::string::npos) break;
+            const std::string object = markersArray.substr(start, end - start + 1);
+            OnlinePlayerMarker marker;
+            ParseStringField(object, "\"name\"", marker.name);
+            ParseStringField(object, "\"affiliation\"", marker.affiliation);
+            ParseBoolField(object, "\"friendly\"", marker.friendly);
+            marker.name = TrimWhitespace(marker.name).substr(0, 24);
+            marker.affiliation = TrimWhitespace(marker.affiliation).substr(0, 48);
+            const auto sameName = [&marker](const OnlinePlayerMarker& other) {
+                if (marker.name.size() != other.name.size()) return false;
+                return std::equal(marker.name.begin(), marker.name.end(), other.name.begin(),
+                    [](unsigned char a, unsigned char b) { return std::tolower(a) == std::tolower(b); });
+            };
+            if (!marker.name.empty()
+                && std::none_of(settings_.online_player_markers.begin(), settings_.online_player_markers.end(), sameName)) {
+                settings_.online_player_markers.push_back(std::move(marker));
+            }
+            pos = end + 1;
+        }
+    }
+
     // Online: parse event_placeholders array
     {
         size_t phPos = json_content.find("\"online_event_placeholders\"");
@@ -1829,7 +1926,7 @@ bool SettingsManager::LoadFromJson(const std::string& json_content) {
         }
     }
 
-    if (found_dpi || found_auto || found_ui_open_command_primary || found_ui_open_command_secondary || found_ui_toggle_hotkey || found_ui_window_width || found_ui_window_height || found_ui_transparency || found_kill_tracker || found_local_kill_message_enabled || found_local_death_message_enabled || found_server_kill_message_enabled || found_server_death_message_enabled || found_track_damage || found_local_kill_message_template || found_local_death_message_template || found_server_kill_message_template || found_server_death_message_template || found_manual_edits || found_auto_hudscalefix || found_auto_engine_start || found_quickmap_enabled || found_quickmap_hotkey || found_quickmap_mode || found_quickmap_map_variant || found_quickmap_map_transparency || found_quickmap_radar_pack || found_hitmarker_enabled || found_hitmarker_active_preset_index || found_hitmarker_size || found_hitmarker_color_r || found_hitmarker_color_g || found_hitmarker_color_b || found_hitmarker_color_a || found_hitmarker_kill_color_r || found_hitmarker_kill_color_g || found_hitmarker_kill_color_b || found_hitmarker_kill_color_a || found_hitmarker_opacity || found_hitmarker_duration || found_hitmarker_fade_out || found_hitmarker_shape || found_hitmarker_custom_image_path || found_interface_editor_active_preset_index || found_interface_editor_saved_presets || found_crosshair_enabled || found_crosshair_texture_path || found_squaremap_enabled || found_fist_texture_path || found_hitsound_outgoing_enabled || found_hitsound_outgoing_path || found_hitsound_incoming_enabled || found_hitsound_incoming_path || found_rss_enabled || found_rss_notification_mode || found_rss_feeds || found_theme_name || found_legacy_theme_selected || found_legacy_theme_accent_mode || found_legacy_theme_accent_preset) {
+    if (found_dpi || found_auto || found_ui_open_command_primary || found_ui_open_command_secondary || found_ui_toggle_hotkey || found_ui_window_width || found_ui_window_height || found_ui_transparency || found_kill_tracker || found_local_kill_message_enabled || found_local_death_message_enabled || found_server_kill_message_enabled || found_server_death_message_enabled || found_track_damage || found_local_kill_message_template || found_local_death_message_template || found_server_kill_message_template || found_server_death_message_template || found_manual_edits || found_auto_hudscalefix || found_auto_engine_start || found_damage_log_enabled || found_quickmap_enabled || found_quickmap_hotkey || found_quickmap_mode || found_quickmap_map_variant || found_quickmap_map_transparency || found_quickmap_radar_pack || found_hitmarker_enabled || found_hitmarker_active_preset_index || found_hitmarker_size || found_hitmarker_color_r || found_hitmarker_color_g || found_hitmarker_color_b || found_hitmarker_color_a || found_hitmarker_kill_color_r || found_hitmarker_kill_color_g || found_hitmarker_kill_color_b || found_hitmarker_kill_color_a || found_hitmarker_opacity || found_hitmarker_duration || found_hitmarker_fade_out || found_hitmarker_shape || found_hitmarker_custom_image_path || found_interface_editor_active_preset_index || found_interface_editor_saved_presets || found_crosshair_enabled || found_crosshair_texture_path || found_squaremap_enabled || found_fist_texture_path || found_hitsound_outgoing_enabled || found_hitsound_outgoing_path || found_hitsound_incoming_enabled || found_hitsound_incoming_path || found_rss_enabled || found_rss_notification_mode || found_rss_feeds || found_theme_name || found_legacy_theme_selected || found_legacy_theme_accent_mode || found_legacy_theme_accent_preset) {
         Logger::Info("[SettingsManager] Loaded settings (ui_primary=/%s, ui_secondary=/%s, ui_hotkey=%d, kill_tracker_enabled=%s, local_kill=%s, local_death=%s, server_kill=%s, server_death=%s, kill_tracker_track_damage=%s, kill_tracker_allow_manual_edits=%s, auto_hudscalefix=%s, auto_engine_start=%s, hitmarker_enabled=%s)",
             settings_.ui_open_command_primary.c_str(),
             settings_.ui_open_command_secondary.c_str(),
@@ -1875,69 +1972,64 @@ std::string SettingsManager::GetSettingsJson() const {
         oss << "    \"ui_window_width\": " << settings_.ui_window_width << ",\n";
         oss << "    \"ui_window_height\": " << settings_.ui_window_height << ",\n";
     }
+    oss << "    \"kill_tracker_count_kills\": " << (settings_.kill_tracker_count_kills ? "true" : "false") << ",\n";
+    oss << "    \"kill_tracker_count_deaths\": " << (settings_.kill_tracker_count_deaths ? "true" : "false") << ",\n";
+    oss << "    \"online_friends_overlay_enabled\": " << (settings_.online_friends_overlay_enabled ? "true" : "false") << ",\n";
+    oss << "    \"online_enemies_overlay_enabled\": " << (settings_.online_enemies_overlay_enabled ? "true" : "false") << ",\n";
+    oss << "    \"online_quick_overlay_show_rcb\": " << (settings_.online_quick_overlay_show_rcb ? "true" : "false") << ",\n";
+    oss << "    \"reconnect_use_nova_launcher\": " << (settings_.reconnect_use_nova_launcher ? "true" : "false") << ",\n";
+    oss << "    \"reconnect_nova_launcher_path\": \"" << EscapeJsonString(settings_.reconnect_nova_launcher_path) << "\",\n";
+    oss << "    \"reconnect_openmp_launcher_path\": \"" << EscapeJsonString(settings_.reconnect_openmp_launcher_path) << "\",\n";
+    oss << "    \"online_location_overlay_enabled\": " << (settings_.online_location_overlay_enabled ? "true" : "false") << ",\n";
+    oss << "    \"online_transport_overlay_enabled\": " << (settings_.online_transport_overlay_enabled ? "true" : "false") << ",\n";
+    oss << "    \"online_pedslots_overlay_enabled\": " << (settings_.online_pedslots_overlay_enabled ? "true" : "false") << ",\n";
+    oss << "    \"online_friends_overlay_anchor\": \"" << EscapeJsonString(settings_.online_friends_overlay_anchor) << "\",\n";
+    oss << "    \"online_friends_overlay_offset_x\": " << settings_.online_friends_overlay_offset_x << ",\n";
+    oss << "    \"online_friends_overlay_offset_y\": " << settings_.online_friends_overlay_offset_y << ",\n";
+    oss << "    \"online_enemies_overlay_anchor\": \"" << EscapeJsonString(settings_.online_enemies_overlay_anchor) << "\",\n";
+    oss << "    \"online_enemies_overlay_offset_x\": " << settings_.online_enemies_overlay_offset_x << ",\n";
+    oss << "    \"online_enemies_overlay_offset_y\": " << settings_.online_enemies_overlay_offset_y << ",\n";
+    oss << "    \"online_location_overlay_anchor\": \"" << EscapeJsonString(settings_.online_location_overlay_anchor) << "\",\n";
+    oss << "    \"online_location_overlay_offset_x\": " << settings_.online_location_overlay_offset_x << ",\n";
+    oss << "    \"online_location_overlay_offset_y\": " << settings_.online_location_overlay_offset_y << ",\n";
+    oss << "    \"online_transport_overlay_anchor\": \"" << EscapeJsonString(settings_.online_transport_overlay_anchor) << "\",\n";
+    oss << "    \"online_transport_overlay_offset_x\": " << settings_.online_transport_overlay_offset_x << ",\n";
+    oss << "    \"online_transport_overlay_offset_y\": " << settings_.online_transport_overlay_offset_y << ",\n";
+    oss << "    \"online_pedslots_overlay_anchor\": \"" << EscapeJsonString(settings_.online_pedslots_overlay_anchor) << "\",\n";
+    oss << "    \"online_pedslots_overlay_offset_x\": " << settings_.online_pedslots_overlay_offset_x << ",\n";
+    oss << "    \"online_pedslots_overlay_offset_y\": " << settings_.online_pedslots_overlay_offset_y << ",\n";
+    oss << "    \"online_player_markers\": [";
+    bool firstMarker = true;
+    for (const auto& marker : settings_.online_player_markers) {
+        if (!firstMarker) oss << ", ";
+        oss << "{\"name\":\"" << EscapeJsonString(marker.name)
+            << "\",\"affiliation\":\"" << EscapeJsonString(marker.affiliation)
+            << "\",\"friendly\":" << (marker.friendly ? "true" : "false") << "}";
+        firstMarker = false;
+    }
+    oss << "],\n";
     oss << "    \"kill_tracker_enabled\": " << (settings_.kill_tracker_enabled ? "true" : "false") << ",\n";
     oss << "    \"kill_tracker_local_kill_message_enabled\": " << (settings_.kill_tracker_local_kill_message_enabled ? "true" : "false") << ",\n";
     oss << "    \"kill_tracker_local_death_message_enabled\": " << (settings_.kill_tracker_local_death_message_enabled ? "true" : "false") << ",\n";
     oss << "    \"kill_tracker_server_kill_message_enabled\": " << (settings_.kill_tracker_server_kill_message_enabled ? "true" : "false") << ",\n";
     oss << "    \"kill_tracker_server_death_message_enabled\": " << (settings_.kill_tracker_server_death_message_enabled ? "true" : "false") << ",\n";
     oss << "    \"kill_tracker_track_damage\": " << (settings_.kill_tracker_track_damage ? "true" : "false") << ",\n";
-    std::string escaped_template = settings_.kill_tracker_local_kill_message_template;
-    escaped_template.erase(std::remove(escaped_template.begin(), escaped_template.end(), '\r'), escaped_template.end());
     size_t pos = 0;
-    while ((pos = escaped_template.find('"', pos)) != std::string::npos) {
-        escaped_template.insert(pos, "\\");
-        pos += 2;
-    }
-    while ((pos = escaped_template.find('\n')) != std::string::npos) {
-        escaped_template.replace(pos, 1, "\\n");
-        pos += 2;
-    }
+    std::string escaped_template = EscapeJsonString(settings_.kill_tracker_local_kill_message_template);
     oss << "    \"kill_tracker_local_kill_message_template\": \"" << escaped_template << "\",\n";
 
-    std::string escaped_death_template = settings_.kill_tracker_local_death_message_template;
-    escaped_death_template.erase(std::remove(escaped_death_template.begin(), escaped_death_template.end(), '\r'), escaped_death_template.end());
-    pos = 0;
-    while ((pos = escaped_death_template.find('"', pos)) != std::string::npos) {
-        escaped_death_template.insert(pos, "\\");
-        pos += 2;
-    }
-    pos = 0;
-    while ((pos = escaped_death_template.find('\n')) != std::string::npos) {
-        escaped_death_template.replace(pos, 1, "\\n");
-        pos += 2;
-    }
+    std::string escaped_death_template = EscapeJsonString(settings_.kill_tracker_local_death_message_template);
     oss << "    \"kill_tracker_local_death_message_template\": \"" << escaped_death_template << "\",\n";
 
-    std::string escaped_server_template = settings_.kill_tracker_server_kill_message_template;
-    escaped_server_template.erase(std::remove(escaped_server_template.begin(), escaped_server_template.end(), '\r'), escaped_server_template.end());
-    pos = 0;
-    while ((pos = escaped_server_template.find('"', pos)) != std::string::npos) {
-        escaped_server_template.insert(pos, "\\");
-        pos += 2;
-    }
-    pos = 0;
-    while ((pos = escaped_server_template.find('\n')) != std::string::npos) {
-        escaped_server_template.replace(pos, 1, "\\n");
-        pos += 2;
-    }
+    std::string escaped_server_template = EscapeJsonString(settings_.kill_tracker_server_kill_message_template);
     oss << "    \"kill_tracker_server_kill_message_template\": \"" << escaped_server_template << "\",\n";
 
-    std::string escaped_server_death_template = settings_.kill_tracker_server_death_message_template;
-    escaped_server_death_template.erase(std::remove(escaped_server_death_template.begin(), escaped_server_death_template.end(), '\r'), escaped_server_death_template.end());
-    pos = 0;
-    while ((pos = escaped_server_death_template.find('"', pos)) != std::string::npos) {
-        escaped_server_death_template.insert(pos, "\\");
-        pos += 2;
-    }
-    pos = 0;
-    while ((pos = escaped_server_death_template.find('\n')) != std::string::npos) {
-        escaped_server_death_template.replace(pos, 1, "\\n");
-        pos += 2;
-    }
+    std::string escaped_server_death_template = EscapeJsonString(settings_.kill_tracker_server_death_message_template);
     oss << "    \"kill_tracker_server_death_message_template\": \"" << escaped_server_death_template << "\",\n";
     oss << "    \"kill_tracker_allow_manual_edits\": " << (settings_.kill_tracker_allow_manual_edits ? "true" : "false") << ",\n";
     oss << "    \"auto_hudscalefix\": " << (settings_.auto_hudscalefix ? "true" : "false") << ",\n";
     oss << "    \"auto_engine_start\": " << (settings_.auto_engine_start ? "true" : "false") << ",\n";
+    oss << "    \"damage_log_enabled\": " << (settings_.damage_log_enabled ? "true" : "false") << ",\n";
     oss << "    \"quickmap_enabled\": " << (settings_.quickmap_enabled ? "true" : "false") << ",\n";
     oss << "    \"quickmap_hotkey\": " << NormalizeQuickMapHotkey(settings_.quickmap_hotkey) << ",\n";
     oss << "    \"quickmap_mode\": \"" << EscapeJsonString(settings_.quickmap_mode) << "\",\n";

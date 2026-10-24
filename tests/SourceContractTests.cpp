@@ -175,6 +175,24 @@ bool TestSettingsSubtabEnumContract() {
     return true;
 }
 
+bool TestDamageLogUsesGameplayToggleImmediatelyAfterEngineStart() {
+    const std::string source = ReadTextFile("src/MainWindowUI.cpp");
+    const std::size_t generalTab = source.find("void MainWindowUI::RenderSettingsGeneralTab()");
+    ASSERT_TRUE(generalTab != std::string::npos);
+    const std::size_t gameplayCard = source.find("BeginCard(\"GameplaySettingsCard\"", generalTab);
+    const std::size_t gameplayEnd = source.find("UIComponents::EndCard();", gameplayCard);
+    ASSERT_TRUE(gameplayCard != std::string::npos && gameplayEnd != std::string::npos);
+    const std::string gameplay = source.substr(gameplayCard, gameplayEnd - gameplayCard);
+    const std::size_t engineToggle = gameplay.find("UIComponents::Toggle(\"Automatischer Motorstart\"");
+    const std::size_t damageToggle = gameplay.find("UIComponents::Toggle(\"Damagelog\", &settings.damage_log_enabled)");
+    ASSERT_TRUE(engineToggle != std::string::npos && damageToggle != std::string::npos);
+    ASSERT_EQ(gameplay.find("UIComponents::Toggle(", engineToggle + 1), damageToggle);
+    const std::size_t damageToggleEnd = gameplay.find('}', damageToggle);
+    ASSERT_TRUE(gameplay.find("persistSettings();", damageToggle) < damageToggleEnd);
+    ASSERT_TRUE(gameplay.find("Zeigt erhaltenen Trefferschaden (HP und Weste) nur in deinem Chat.", damageToggle) != std::string::npos);
+    return true;
+}
+
 bool TestSubTabMigrationContract() {
     const std::string mainWindow = ReadTextFile("src/MainWindowUI.cpp");
     const std::string uiComponents = ReadTextFile("src/UIComponents.cpp");
@@ -366,6 +384,7 @@ int RunSourceContractTests() {
     RUN_TEST(TestAppearanceSelectorSourceContract);
     RUN_TEST(TestNoRawNovaPaletteOutsideThemeManagerContracts);
     RUN_TEST(TestSettingsSubtabEnumContract);
+    RUN_TEST(TestDamageLogUsesGameplayToggleImmediatelyAfterEngineStart);
     RUN_TEST(TestSubTabMigrationContract);
     RUN_TEST(TestHudModsSubtabSourceContract);
     RUN_TEST(TestDarkTokenContractInThemeManager);

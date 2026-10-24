@@ -10,6 +10,7 @@
 namespace keybinder {
 
 namespace {
+float g_speedometerRenderScale = 0.0f;
 
 float Clamp01(float value) {
     if (!std::isfinite(value)) {
@@ -40,7 +41,8 @@ ImU32 ColorU32(ImVec4 color) {
 }
 
 float UiScale() {
-    return (std::max)(1.0f, ThemeManager::Instance().GetAppliedScale());
+    return g_speedometerRenderScale > 0.0f ? g_speedometerRenderScale
+        : (std::max)(1.0f, ThemeManager::Instance().GetAppliedScale());
 }
 
 float Scale(float value) {
@@ -316,6 +318,26 @@ ImVec4 SpeedometerUI::GetFuelColor(float fuelPct) {
 }
 
 void SpeedometerUI::Render(const speedometer::SpeedometerState& state, speedometer::SpeedometerStyle style) {
+    if (!state.isInVehicle) {
+        displayedArcPct_ = 0.0f;
+        displayedMinimalFuelPct_ = 0.0f;
+        displayedMinimalHealthPct_ = 0.0f;
+        return;
+    }
+    if (style != lastStyle_) displayedArcPct_ = 0.0f;
+    lastStyle_ = style;
+    const ImGuiViewport* viewport = ImGui::GetMainViewport();
+    if (viewport == nullptr || viewport->Size.x <= 0.0f || viewport->Size.y <= 0.0f) return;
+    const bool minimal = style == speedometer::SpeedometerStyle::MinimalDigital;
+    const float baseWidth = minimal ? 632.0f : 434.0f;
+    const float baseHeight = minimal ? 190.0f : 356.0f;
+    const float scale = (std::max)(0.1f, (std::min)((std::max)(1.0f, ThemeManager::Instance().GetAppliedScale()),
+        (std::min)(viewport->Size.x / baseWidth, viewport->Size.y / baseHeight)));
+    struct RestoreScale {
+        float previous;
+        ~RestoreScale() { g_speedometerRenderScale = previous; }
+    } restoreScale{g_speedometerRenderScale};
+    g_speedometerRenderScale = scale;
     switch (style) {
     case speedometer::SpeedometerStyle::TachometerArc:
         RenderTachometerArc(state);

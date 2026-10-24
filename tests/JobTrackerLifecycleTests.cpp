@@ -287,6 +287,52 @@ bool TestApplyJobSummaryAdjustmentsPersistAcrossReload() {
     return true;
 }
 
+bool TestNewJobSkillPointsPersistWithSkillTrees() {
+    const std::string filepath = MakeTempFilePath("new_job_skill_trees");
+    RemoveIfExists(filepath);
+
+    {
+        jobs::JobTracker tracker(filepath);
+        ASSERT_TRUE(tracker.Initialize());
+
+        for (const char* jobId : {"holzfaeller", "bauarbeiter"}) {
+            const std::string prefix = std::string(jobId) == "holzfaeller" ? "Holzfäller" : "Bauarbeiter";
+            jobs::JobChatEvent event;
+            event.rawLine = prefix + ": Du hast deinen Job-Skill auf 749 verbessert.";
+            event.timestampFreeLine = event.rawLine;
+            event.normalizedLine = event.rawLine;
+            event.jobPrefix = prefix;
+            event.arrivalTime = MakeLocalTimestamp(2026, 10, 24, 12, 0, 0);
+            ASSERT_EQ(tracker.HandleChatEvent(event).size(), static_cast<std::size_t>(1));
+            ASSERT_EQ(tracker.GetAdjustedHighestSkill(jobId), 749);
+        }
+        tracker.ApplyJobSummaryAdjustments("bauarbeiter", 0, 1);
+        ASSERT_EQ(tracker.GetAdjustedHighestSkill("bauarbeiter"), 750);
+        ASSERT_TRUE(tracker.Flush());
+        tracker.Shutdown();
+    }
+
+    {
+        jobs::JobTracker tracker(filepath);
+        ASSERT_TRUE(tracker.Initialize());
+        ASSERT_EQ(tracker.GetAdjustedHighestSkill("holzfaeller"), 749);
+        ASSERT_EQ(tracker.GetAdjustedHighestSkill("bauarbeiter"), 750);
+        ASSERT_EQ(tracker.GetJobEditSnapshot("bauarbeiter").skillOffset, 1);
+
+        for (const jobs::JobDefinition& job : tracker.GetJobs()) {
+            if (job.id != "holzfaeller" && job.id != "bauarbeiter") continue;
+            ASSERT_EQ(job.skillTree.size(), static_cast<std::size_t>(6));
+            jobs::JobStats stats;
+            ASSERT_TRUE(tracker.GetJobStats(job.id, stats));
+            ASSERT_EQ(stats.highestLevel, 749);
+        }
+        tracker.Shutdown();
+    }
+
+    RemoveIfExists(filepath);
+    return true;
+}
+
 } // namespace
 
 int RunJobTrackerLifecycleTests() {
@@ -298,6 +344,7 @@ int RunJobTrackerLifecycleTests() {
     RUN_TEST(TestChatPipelineIgnoresInfoAndStartLines);
     RUN_TEST(TestGetJobEditSnapshotReflectsAdjustments);
     RUN_TEST(TestApplyJobSummaryAdjustmentsPersistAcrossReload);
+    RUN_TEST(TestNewJobSkillPointsPersistWithSkillTrees);
 
     std::printf("JobTrackerLifecycleTests: %d passed, %d failed\n", g_state.passed, g_state.failed);
     return g_state.failed;

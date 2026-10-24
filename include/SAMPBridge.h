@@ -2,6 +2,7 @@
 
 #include <functional>
 #include <memory>
+#include <mutex>
 #include <string>
 #include <atomic>
 #include <tuple>
@@ -92,6 +93,7 @@ public:
     void SetKillTrackerServerDeathMessageTemplate(const std::string& messageTemplate);
     void SetAutoHudScaleFix(bool enabled);
     void SetAutoEngineStart(bool enabled);
+    void SetEngineInputBlockedCallback(std::function<bool()> callback) { engineInputBlocked_ = std::move(callback); }
 
     // Incoming chat line callback for external consumers (e.g. OnlineEventDetector)
     using IncomingChatCallback = std::function<void(const std::string&)>;
@@ -139,15 +141,35 @@ public:
         std::function<void(sampapi::v03dl::CInput*, sampapi::CMDPROC)> setDefaultCommand;
         std::function<void(const std::function<void(sampapi::v03dl::CChat*, const char*, unsigned long, const char*)>&)> installIncomingChatInterceptor;
         std::function<void(const std::string&)> logSink;
+        std::function<int()> getLocalPlayerId;
+        std::function<std::string()> getLocalPlayerName;
+        std::function<std::string(int)> getPlayerName;
+        std::function<unsigned long()> getTickCount;
+        std::function<bool(unsigned short&, bool&)> getDriverVehicle;
+        std::function<bool()> isEngineInputAvailable;
+        std::function<void(bool)> setEngineStartKeyDown;
+        std::function<bool()> hasEngineStartSuccessText;
+        std::function<bool(float&, float&, int&, const void*&)> readLocalDamageSample;
     };
 
     static void SetTestingHooks(const TestingHooks& hooks);
     static void ResetTestingHooks();
     static const TestingHooks& GetTestingHooks();
     static std::string BuildTrackedIncomeMessageForTesting(int amount, int todayTotal);
+    void ProcessDeathMessageForTesting(const killtracker::DeathMessageEvent& event);
+    void ProcessDamageFeedbackForTesting(const killtracker::DamageEvent& event);
+    void ProcessDamageRpcForTesting(RakNet::BitStream* payload);
+    void RequestScriptedHealthSuppressionForTesting();
 #endif
 
 private:
+    void HandleDeathMessage(const killtracker::DeathMessageEvent& event);
+    void HandleLocalKill(killtracker::KillEvent event);
+    void ObserveServerCombatStats(const std::string& text);
+    void UpdateAutoEngineStart(unsigned long now);
+    bool ReadDriverVehicle(unsigned short& vehicleId, bool& engineOn) const;
+    bool IsEngineInputAvailable() const;
+    void SetEngineStartKeyDown(bool down);
     struct CommandRegistration {
         std::string name;
         CommandCallback callback;
@@ -208,6 +230,13 @@ private:
     void EnsureKillTrackerRpcAdaptersRegistered();
     void RefreshDamageTracking();
     void PollLocalIncomingDamage();
+    bool ReadLocalDamageSample(float& health, float& armour, int& damageSource, const void*& pedIdentity) const;
+    bool IsLocalCombatActive(bool allowFinalDeathSample = false) const;
+    void ResetIncomingDamageState();
+    void NotifyDamageFeedback(const killtracker::DamageEvent& event);
+    void QueueIncomingDamageReport(const killtracker::DamageEvent& event);
+    void FlushIncomingDamageLog(unsigned long now, bool finishLife = false);
+    bool IsDamageLogEnabled() const;
     void InstallScriptedHealthRpcHook();
 
     // Shared state between SAMPBridge and the ScrSetPlayerHealth/Armour RPC
@@ -218,6 +247,7 @@ private:
     // value is a decrease, sets an atomic request that the game thread
     // consumes to arm the detector's one-shot suppression window.
     struct ScriptedHealthSuppressionState {
+        std::atomic<bool> active{false};
         std::atomic<float> lastKnownHealth{0.0f};
         std::atomic<float> lastKnownArmour{0.0f};
         std::atomic<bool> suppressionRequested{false};
@@ -268,6 +298,7 @@ private:
     bool hudScaleFixEnabled_;
 
     bool autoEngineStartEnabled_;
+    std::function<bool()> engineInputBlocked_;
     bool autoEngineStartPending_;
     unsigned long autoEngineStartScheduledAt_;
     unsigned long autoEngineStartNextAttemptAt_;
@@ -277,6 +308,7 @@ private:
     int autoEngineStartAttempts_;
     int autoEngineStartInjectedVk_;
     bool autoEngineStartReleasePending_;
+    unsigned short autoEngineObservedVehicle_ = 0xFFFF;
 
     bool killTrackerEnabled_;
     bool killTrackerLocalKillMessageEnabled_;
@@ -300,13 +332,29 @@ private:
     std::function<void(const killtracker::KillEvent&)> hitmarkerKillCallback_;
     std::function<void()> hitsoundIncomingCallback_;
     keybinder::IncomingDamageDetector incomingDamageDetector_;
+    keybinder::IncomingDamageLog incomingDamageLog_;
+    bool incomingDamageLogEnabledLastFrame_ = false;
+    struct IncomingDamageReport { float damage; unsigned long tick; };
+    std::mutex incomingDamageRpcMutex_;
+    std::vector<IncomingDamageReport> incomingDamageRpcQueue_;
+    const void* incomingDamagePed_ = nullptr;
     bool killTrackerInitialized_;
     bool localPlayerWasDead_;
     bool localDeathHandledForCurrentLife_;
     int localDeathFallbackDelayFrames_;
+    bool localDeathAwaitingNativeDead_ = false;
+    unsigned long localDeathAwaitDeadline_ = 0;
     bool jobTrackerInitialized_;
     
     std::function<bool(const std::string&)> slashCommandInterceptor_;
     std::vector<std::string> registeredSlashCommands_;
     IncomingChatCallback incomingChatCallback_;
+    bool serverCombatBaselineEstablished_ = false;
+    bool ownStatsContext_ = false;
+    unsigned long ownStatsContextTick_ = 0;
+    int ownStatsContextLines_ = 0;
+    int lastServerKillTotal_ = 0;
+    int lastServerDeathTotal_ = 0;
+    std::time_t lastLocalKillTime_ = 0;
+    std::time_t lastLocalDeathTime_ = 0;
 };

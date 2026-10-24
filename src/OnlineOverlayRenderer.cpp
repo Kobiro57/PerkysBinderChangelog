@@ -87,6 +87,7 @@ void OnlineOverlayRenderer::RefreshSettings() {
     showLspd_ = s.online_quick_overlay_show_lspd;
     showArmy_ = s.online_quick_overlay_show_army;
     showFireDepartment_ = s.online_quick_overlay_show_fire_department;
+    showRcb_ = s.online_quick_overlay_show_rcb;
     showZivilisten_ = s.online_quick_overlay_show_zivilisten;
     showAllGangs_ = s.online_quick_overlay_show_all_gangs;
     selectedGangs_ = s.online_quick_overlay_selected_gangs;
@@ -247,6 +248,9 @@ bool OnlineOverlayRenderer::ShouldShowFaction(const std::string& factionName) co
     }
     if (factionName == "Fire Department") {
         return showFireDepartment_;
+    }
+    if (factionName == "Red County Brotherhood") {
+        return showRcb_;
     }
     return true;
 }
@@ -412,12 +416,13 @@ void OnlineOverlayRenderer::RenderHeader(const OnlineSnapshot& snapshot, float p
 
 void OnlineOverlayRenderer::RenderSummaryLine(const OnlineSnapshot& snapshot, float panelWidth, float scale) {
     // Count per faction/gang category
-    int lspd = 0, army = 0, fd = 0, gangs = 0, ziv = 0;
+    int lspd = 0, army = 0, fd = 0, rcb = 0, gangs = 0, ziv = 0;
 
     for (const auto& bucket : snapshot.factionBuckets) {
         if (bucket.bucketName == "LSPD") lspd = bucket.playerCount;
         else if (bucket.bucketName == "Army") army = bucket.playerCount;
         else if (bucket.bucketName == "Fire Department") fd = bucket.playerCount;
+        else if (bucket.bucketName == "Red County Brotherhood") rcb = bucket.playerCount;
     }
 
     for (const auto& bucket : snapshot.gangBuckets) {
@@ -429,7 +434,7 @@ void OnlineOverlayRenderer::RenderSummaryLine(const OnlineSnapshot& snapshot, fl
     }
 
     ImGui::PushStyleColor(ImGuiCol_Text, ThemeManager::Instance().GetColor(ThemeColorRole::TextSecondary));
-    ImGui::Text("LSPD: %d | Army: %d | FD: %d | Gangs: %d | Ziv: %d", lspd, army, fd, gangs, ziv);
+    ImGui::Text("LSPD: %d | Army: %d | FD: %d | RCB: %d | Gangs: %d | Ziv: %d", lspd, army, fd, rcb, gangs, ziv);
     ImGui::PopStyleColor();
 }
 
@@ -587,6 +592,10 @@ void OnlineOverlayRenderer::RenderPersistentOverlays() {
         RenderSinglePersistentOverlay(wantedData, scale, stackedOffsetY);
     }
 
+    for (const auto& data : overlayController_->GetGameOverlays()) {
+        RenderSinglePersistentOverlay(data, scale, 0.0f);
+    }
+
     if (persistentOverlayMovedSinceSave_ && ImGui::IsMouseReleased(ImGuiMouseButton_Left)) {
         if (settingsPersistCallback_) {
             settingsPersistCallback_();
@@ -638,6 +647,9 @@ void OnlineOverlayRenderer::PersistMovedOverlayPosition(const PersistentOverlayD
     // the dropped position by 200 px on the next render.
     const float newStackedY = [&]() -> float {
         if (overlayController_ == nullptr) return 0.0f;
+        if (data.kind == PersistentOverlayKind::Location || data.kind == PersistentOverlayKind::Transport
+            || data.kind == PersistentOverlayKind::Pedslots || data.kind == PersistentOverlayKind::FriendsRadar
+            || data.kind == PersistentOverlayKind::EnemiesRadar) return 0.0f;
         if (data.kind == PersistentOverlayKind::LocalAffiliation) return 0.0f;
         const PersistentOverlayData& local = overlayController_->GetLocalOverlayData();
         const PersistentOverlayData& own = overlayController_->GetOwnGangOverlayData();
@@ -657,23 +669,51 @@ void OnlineOverlayRenderer::PersistMovedOverlayPosition(const PersistentOverlayD
     }();
 
     Settings& settings = settingsManager_->GetMutable();
-    float& storedOffsetX = data.kind == PersistentOverlayKind::OwnGang
-        ? settings.online_own_gang_overlay_offset_x
-        : (data.kind == PersistentOverlayKind::Wanted
-            ? settings.online_wanted_overlay_offset_x
-            : settings.online_overlay_offset_x);
-    float& storedOffsetY = data.kind == PersistentOverlayKind::OwnGang
-        ? settings.online_own_gang_overlay_offset_y
-        : (data.kind == PersistentOverlayKind::Wanted
-            ? settings.online_wanted_overlay_offset_y
-            : settings.online_overlay_offset_y);
-    std::string& storedAnchor = data.kind == PersistentOverlayKind::LocalAffiliation
-        ? settings.online_local_overlay_anchor
-        : (data.kind == PersistentOverlayKind::OwnGang
-            ? settings.online_own_gang_overlay_anchor
-            : (data.kind == PersistentOverlayKind::Wanted
-                ? settings.online_wanted_overlay_anchor
-                : settings.online_gangs_overlay_anchor));
+    float* storedX = &settings.online_overlay_offset_x;
+    float* storedY = &settings.online_overlay_offset_y;
+    std::string* anchor = &settings.online_gangs_overlay_anchor;
+    switch (data.kind) {
+    case PersistentOverlayKind::LocalAffiliation: anchor = &settings.online_local_overlay_anchor; break;
+    case PersistentOverlayKind::OwnGang:
+        storedX = &settings.online_own_gang_overlay_offset_x;
+        storedY = &settings.online_own_gang_overlay_offset_y;
+        anchor = &settings.online_own_gang_overlay_anchor;
+        break;
+    case PersistentOverlayKind::Wanted:
+        storedX = &settings.online_wanted_overlay_offset_x;
+        storedY = &settings.online_wanted_overlay_offset_y;
+        anchor = &settings.online_wanted_overlay_anchor;
+        break;
+    case PersistentOverlayKind::Location:
+        storedX = &settings.online_location_overlay_offset_x;
+        storedY = &settings.online_location_overlay_offset_y;
+        anchor = &settings.online_location_overlay_anchor;
+        break;
+    case PersistentOverlayKind::Transport:
+        storedX = &settings.online_transport_overlay_offset_x;
+        storedY = &settings.online_transport_overlay_offset_y;
+        anchor = &settings.online_transport_overlay_anchor;
+        break;
+    case PersistentOverlayKind::Pedslots:
+        storedX = &settings.online_pedslots_overlay_offset_x;
+        storedY = &settings.online_pedslots_overlay_offset_y;
+        anchor = &settings.online_pedslots_overlay_anchor;
+        break;
+    case PersistentOverlayKind::FriendsRadar:
+        storedX = &settings.online_friends_overlay_offset_x;
+        storedY = &settings.online_friends_overlay_offset_y;
+        anchor = &settings.online_friends_overlay_anchor;
+        break;
+    case PersistentOverlayKind::EnemiesRadar:
+        storedX = &settings.online_enemies_overlay_offset_x;
+        storedY = &settings.online_enemies_overlay_offset_y;
+        anchor = &settings.online_enemies_overlay_anchor;
+        break;
+    default: break;
+    }
+    float& storedOffsetX = *storedX;
+    float& storedOffsetY = *storedY;
+    std::string& storedAnchor = *anchor;
     float offsetX = 0.0f;
     float offsetY = 0.0f;
 
@@ -724,7 +764,7 @@ void OnlineOverlayRenderer::RenderSinglePersistentOverlay(const PersistentOverla
     }
 
     const float overlayScale = scale * data.scale;
-    const int columns = hasCountRows ? 1 : OnlineOverlayController::ComputeColumnCount(data.playerCount);
+    int columns = (hasCountRows || data.minimumWidth > 0.0f) ? 1 : OnlineOverlayController::ComputeColumnCount(data.playerCount);
     const float textScale = ((data.style == OnlineOverlayStyle::Dense) ? 0.9f : 1.0f) * data.scale;
     const float rowHeight = ImGui::GetTextLineHeightWithSpacing() * textScale;
 
@@ -734,10 +774,33 @@ void OnlineOverlayRenderer::RenderSinglePersistentOverlay(const PersistentOverla
     const float padding = 8.0f * overlayScale;
 
     const int rowCount = hasCountRows ? static_cast<int>(data.countRows.size()) : data.playerCount;
-    const float panelWidth = padding * 2.0f + static_cast<float>(columns) * colWidth;
-    const int rowsPerCol = (rowCount + columns - 1) / columns;
+    const int visibleRows = hasCountRows ? rowCount : static_cast<int>(data.playerNames.size());
+    const bool isRadar = data.kind == PersistentOverlayKind::FriendsRadar || data.kind == PersistentOverlayKind::EnemiesRadar;
+    const bool boundToViewport = data.kind == PersistentOverlayKind::Location
+        || data.kind == PersistentOverlayKind::Transport || data.kind == PersistentOverlayKind::Pedslots
+        || isRadar;
+    if (isRadar && rowHeight > 0.0f) {
+        const float availableHeight = (std::max)(rowHeight, viewport->Size.y - headerHeight - padding * 2.0f);
+        const int maxRowsPerColumn = (std::max)(1, static_cast<int>(availableHeight / rowHeight));
+        columns = (std::max)(1, (visibleRows + maxRowsPerColumn - 1) / maxRowsPerColumn);
+    }
+    float minimumWidth = data.minimumWidth * overlayScale * static_cast<float>(columns);
+    if (isRadar) {
+        // Include the automatically resolved faction and ID without clipping
+        // long names on normal viewports. Small viewports remain bounded.
+        float widestLine = 0.0f;
+        for (const auto& name : data.playerNames) {
+            widestLine = (std::max)(widestLine, ImGui::CalcTextSize(name.c_str()).x * textScale);
+        }
+        minimumWidth = (std::max)(minimumWidth,
+            static_cast<float>(columns) * (widestLine + 4.0f * overlayScale) + padding * 2.0f);
+    }
+    const float naturalWidth = (std::max)(minimumWidth, padding * 2.0f + static_cast<float>(columns) * colWidth);
+    const float panelWidth = boundToViewport ? (std::min)(viewport->Size.x, naturalWidth) : naturalWidth;
+    const int rowsPerCol = (visibleRows + columns - 1) / columns;
     const float panelContentHeight = static_cast<float>(rowsPerCol) * rowHeight;
-    const float panelHeight = headerHeight + panelContentHeight + padding * 2.0f;
+    const float naturalHeight = headerHeight + panelContentHeight + padding * 2.0f;
+    const float panelHeight = boundToViewport ? (std::min)(viewport->Size.y, naturalHeight) : naturalHeight;
 
     const float displayOffsetY = data.offsetY + stackedOffsetY;
     float posX = 0.0f;
@@ -760,6 +823,11 @@ void OnlineOverlayRenderer::RenderSinglePersistentOverlay(const PersistentOverla
         posX = viewport->Pos.x + viewport->Size.x - panelWidth - data.offsetX * scale;
         posY = viewport->Pos.y + viewport->Size.y - panelHeight - displayOffsetY * scale;
         break;
+    }
+
+    if (boundToViewport) {
+        posX = (std::max)(viewport->Pos.x, (std::min)(posX, viewport->Pos.x + viewport->Size.x - panelWidth));
+        posY = (std::max)(viewport->Pos.y, (std::min)(posY, viewport->Pos.y + viewport->Size.y - panelHeight));
     }
 
     if (!persistentOverlayMoveMode_) {
@@ -813,7 +881,8 @@ void OnlineOverlayRenderer::RenderSinglePersistentOverlay(const PersistentOverla
         if (hasHeader) {
             ImGui::PushStyleColor(ImGuiCol_Text, headerTextColor);
             ImGui::SetWindowFontScale(textScale * 1.1f);
-            const std::string headerText = data.title + " (" + std::to_string(data.playerCount) + ")";
+            const std::string headerText = data.showPlayerCount
+                ? data.title + " (" + std::to_string(data.playerCount) + ")" : data.title;
             RenderTruncatedOverlayText(headerText, headerTextColor, panelWidth - padding * 2.0f);
             ImGui::SetWindowFontScale(textScale);
             ImGui::PopStyleColor();

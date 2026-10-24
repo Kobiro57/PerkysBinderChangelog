@@ -2,7 +2,16 @@
 #include "../include/OnlineDataManager.h"
 #include "../include/SettingsManager.h"
 #include <algorithm>
+#include <cctype>
+#include <cmath>
 #include <utility>
+
+#ifndef KEYBINDER_TESTING
+#include "../include/SAMPBridge.h"
+#include "CPlayerPed.h"
+#include "CTheZones.h"
+#include "common.h"
+#endif
 
 namespace keybinder {
 
@@ -42,13 +51,17 @@ void OnlineOverlayController::Shutdown() {
     ownGangOverlay_.visible = false;
     gangsOverlay_.visible = false;
     wantedOverlay_.visible = false;
+    gameOverlays_.clear();
+    markerStates_.clear();
+    gameState_ = {};
+    gamePlayerIndices_.clear();
+    gameStateProvider_ = nullptr;
+    gameRefreshSeconds_ = 0.0f;
     settingsManager_ = nullptr;
     dataManager_ = nullptr;
 }
 
 void OnlineOverlayController::Update(float deltaTimeSeconds) {
-    (void)deltaTimeSeconds;
-
     if (settingsManager_ == nullptr || dataManager_ == nullptr) {
         return;
     }
@@ -58,6 +71,185 @@ void OnlineOverlayController::Update(float deltaTimeSeconds) {
     UpdateOwnGangOverlay();
     UpdateGangsOverlay();
     UpdateWantedOverlay();
+    UpdateGameOverlays(deltaTimeSeconds);
+}
+
+void OnlineOverlayController::SetGameStateProvider(std::function<OnlineGameOverlayState()> provider) {
+    gameStateProvider_ = std::move(provider);
+    gameRefreshSeconds_ = 0.0f;
+}
+
+std::string OnlineOverlayController::NormalizeMarkerName(const std::string& name) {
+    const std::size_t first = name.find_first_not_of(" \t\r\n");
+    if (first == std::string::npos) return {};
+    const std::size_t last = name.find_last_not_of(" \t\r\n");
+    std::string normalized = name.substr(first, last - first + 1);
+    std::transform(normalized.begin(), normalized.end(), normalized.begin(), [](unsigned char ch) {
+        return static_cast<char>(std::tolower(ch));
+    });
+    return normalized;
+}
+
+std::string OnlineOverlayController::ResolveMarkerAffiliation(const OnlineSnapshot& snapshot, const std::string& name) {
+    if (!snapshot.IsUsable()) return "Unbekannt";
+    const std::string normalizedName = NormalizeMarkerName(name);
+    for (const auto& player : snapshot.players) {
+        if (NormalizeMarkerName(player.name) == normalizedName) {
+            return player.affiliation == "Zivilisten" ? "Zivilist"
+                : (player.affiliation.empty() ? "Unbekannt" : player.affiliation);
+        }
+    }
+    return "Unbekannt";
+}
+
+OnlineGameOverlayState OnlineOverlayController::CaptureGameState(SAMPBridge* bridge) {
+    OnlineGameOverlayState state;
+#ifndef KEYBINDER_TESTING
+    if (bridge == nullptr || bridge->GetVersion() != SAMPBridge::Version::V03DLR1) return state;
+    auto* netGame = bridge->GetNetGame();
+    if (netGame == nullptr || netGame->m_nGameState != sampapi::v03dl::CNetGame::GAME_MODE_CONNECTED) return state;
+    auto* pool = netGame->GetPlayerPool();
+    if (pool == nullptr) return state;
+    state.connected = true;
+
+    // Read the native ped only after SA-MP has a current local ped. The
+    // connected state can already be set while the player is still spawning.
+    auto* localPlayer = pool->pLocalPlayer;
+    ::CPed* localPed = localPlayer != nullptr && localPlayer->m_pPed != nullptr
+        ? localPlayer->m_pPed->m_pGamePed : nullptr;
+    const CVector localPosition = localPed != nullptr ? localPed->GetPosition() : CVector();
+    const bool hasLocalPosition = localPed != nullptr && std::isfinite(localPosition.x)
+        && std::isfinite(localPosition.y) && std::isfinite(localPosition.z);
+    if (hasLocalPosition) {
+        const char* city = "San Andreas";
+        switch (CTheZones::GetLevelFromPosition(&localPosition)) {
+        case LEVEL_NAME_LOS_SANTOS: city = "Los Santos"; break;
+        case LEVEL_NAME_SAN_FIERRO: city = "San Fierro"; break;
+        case LEVEL_NAME_LAS_VENTURAS: city = "Las Venturas"; break;
+        default: city = "San Andreas"; break;
+        }
+        state.location = std::string(city) + " | " + bridge->GetCurrentZone();
+        state.transport = localPed->bInVehicle && localPed->m_pVehicle != nullptr
+            ? bridge->GetVehicleName() : "Zu Fu\xC3\x9F";
+    }
+
+    for (int id = 0; id < sampapi::v03dl::CPlayerPool::MAX_PLAYERS; ++id) {
+        if (id == pool->m_nLocalPlayerId || !pool->m_bNotEmpty[id]) continue;
+        auto* info = pool->m_pObject[id];
+        if (info == nullptr || info->m_szNick.empty()) continue;
+        OnlineMarkerPlayer player;
+        player.id = id;
+        player.name = info->m_szNick;
+        auto* remote = info->m_pPlayer;
+        if (remote != nullptr && remote->m_pPed != nullptr && remote->m_pPed->m_pGamePed != nullptr) {
+            ++state.streamedPlayers;
+        }
+        state.players.push_back(std::move(player));
+    }
+#endif
+    return state;
+}
+
+void OnlineOverlayController::UpdateGameOverlays(float deltaTimeSeconds) {
+    const float elapsed = std::isfinite(deltaTimeSeconds) ? (std::max)(0.0f, deltaTimeSeconds) : 0.0f;
+    gameOverlays_.clear();
+    markerStates_.clear();
+    const Settings& settings = settingsManager_->Get();
+    if (!settings.online_enabled) {
+        gameState_ = {};
+        gamePlayerIndices_.clear();
+        gameRefreshSeconds_ = 0.0f;
+        return;
+    }
+    gameRefreshSeconds_ -= elapsed;
+    if (gameStateProvider_ && gameRefreshSeconds_ <= 0.0f) {
+        gameState_ = gameStateProvider_();
+        gamePlayerIndices_.clear();
+        for (std::size_t i = 0; i < gameState_.players.size(); ++i) {
+            gamePlayerIndices_.emplace(NormalizeMarkerName(gameState_.players[i].name), i);
+        }
+        gameRefreshSeconds_ = 0.5f;
+    }
+
+    if (!gameState_.connected) {
+        return;
+    }
+
+    auto addOverlay = [&](PersistentOverlayKind kind, const char* title, bool enabled,
+                          const std::string& anchor, float x, float y, std::vector<std::string> lines) {
+        if (!enabled) return;
+        PersistentOverlayData data = localOverlay_;
+        data.kind = kind;
+        data.visible = true;
+        data.title = title;
+        data.anchor = ParseAnchor(anchor);
+        data.offsetX = x;
+        data.offsetY = y;
+        data.playerNames = std::move(lines);
+        data.countRows.clear();
+        data.playerCount = static_cast<int>(data.playerNames.size());
+        data.showPlayerCount = false;
+        data.minimumWidth = 240.0f;
+        gameOverlays_.push_back(std::move(data));
+    };
+
+    addOverlay(PersistentOverlayKind::Location, "Ort", settings.online_location_overlay_enabled,
+        settings.online_location_overlay_anchor, settings.online_location_overlay_offset_x,
+        settings.online_location_overlay_offset_y,
+        {gameState_.location.empty() ? "Position nicht verf\xC3\xBC" "gbar" : gameState_.location});
+    addOverlay(PersistentOverlayKind::Transport, "Fortbewegungsmittel", settings.online_transport_overlay_enabled,
+        settings.online_transport_overlay_anchor, settings.online_transport_overlay_offset_x,
+        settings.online_transport_overlay_offset_y,
+        {gameState_.transport.empty() ? "Nicht verf\xC3\xBC" "gbar" : gameState_.transport});
+    addOverlay(PersistentOverlayKind::Pedslots, "Pedslots", settings.online_pedslots_overlay_enabled,
+        settings.online_pedslots_overlay_anchor, settings.online_pedslots_overlay_offset_x,
+        settings.online_pedslots_overlay_offset_y,
+        {std::to_string(gameState_.streamedPlayers) + " Spieler im Stream"});
+
+    std::vector<std::string> savedNames;
+    std::vector<std::string> friends;
+    std::vector<std::string> enemies;
+    const OnlineSnapshot snapshot = dataManager_->GetSnapshot();
+    for (const auto& marker : settings.online_player_markers) {
+        const std::string normalizedName = NormalizeMarkerName(marker.name);
+        if (normalizedName.empty() || std::find(savedNames.begin(), savedNames.end(), normalizedName) != savedNames.end() || markerStates_.size() >= 20) continue;
+        savedNames.push_back(normalizedName);
+        OnlineMarkerState state;
+        state.name = marker.name;
+        state.affiliation = ResolveMarkerAffiliation(snapshot, marker.name);
+        state.friendly = marker.friendly;
+        const auto playerIndex = gamePlayerIndices_.find(normalizedName);
+        if (playerIndex != gamePlayerIndices_.end()) {
+            const auto& player = gameState_.players[playerIndex->second];
+            state.online = true;
+            state.name = player.name;
+            state.playerId = player.id;
+        }
+        const bool showCategory = state.friendly ? settings.online_friends_overlay_enabled : settings.online_enemies_overlay_enabled;
+        if (state.online && showCategory) {
+            std::string line = std::string(state.friendly ? "Freund: " : "Feind: ") + state.name;
+            line += " [" + state.affiliation + "] | ID " + std::to_string(state.playerId);
+            (state.friendly ? friends : enemies).push_back(std::move(line));
+        }
+        markerStates_.push_back(std::move(state));
+    }
+    auto addRadar = [&](PersistentOverlayKind kind, const char* title, bool enabled,
+                        const std::string& anchor, float x, float y, std::vector<std::string> lines,
+                        const char* emptyMessage) {
+        if (!enabled) return;
+        const int onlineCount = static_cast<int>(lines.size());
+        if (lines.empty()) lines.push_back(emptyMessage);
+        addOverlay(kind, title, true, anchor, x, y, std::move(lines));
+        gameOverlays_.back().playerCount = onlineCount;
+        gameOverlays_.back().showPlayerCount = true;
+        gameOverlays_.back().minimumWidth = 360.0f;
+    };
+    addRadar(PersistentOverlayKind::FriendsRadar, "Freunde-Radar", settings.online_friends_overlay_enabled,
+        settings.online_friends_overlay_anchor, settings.online_friends_overlay_offset_x,
+        settings.online_friends_overlay_offset_y, std::move(friends), "Keine gespeicherten Freunde online");
+    addRadar(PersistentOverlayKind::EnemiesRadar, "Feinde-Radar", settings.online_enemies_overlay_enabled,
+        settings.online_enemies_overlay_anchor, settings.online_enemies_overlay_offset_x,
+        settings.online_enemies_overlay_offset_y, std::move(enemies), "Keine gespeicherten Feinde online");
 }
 
 // ---------------------------------------------------------------------------

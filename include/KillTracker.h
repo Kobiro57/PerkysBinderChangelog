@@ -17,6 +17,7 @@ public:
 
     // Process a kill event (returns true if it was a new, valid kill)
     bool ProcessKillEvent(const KillEvent& event);
+    bool CompleteServerStatsKill(const KillEvent& event);
 
     // Process a damage event (accumulates into weapon stats)
     void ProcessDamageEvent(const DamageEvent& event);
@@ -56,6 +57,9 @@ public:
     // Enable/disable tracking
     void SetEnabled(bool enabled);
     bool IsEnabled() const;
+    void SetCountKills(bool enabled) { countKills_ = enabled; }
+    void SetCountDeaths(bool enabled) { countDeaths_ = enabled; }
+    bool IsCountingDeaths() const { return enabled_ && countDeaths_; }
 
     // Check if a kill event is a duplicate
     bool IsDuplicateKill(const KillEvent& event) const;
@@ -91,6 +95,8 @@ public:
 
 private:
     bool enabled_;
+    bool countKills_ = true;
+    bool countDeaths_ = true;
     int kills_;
     int deaths_;
     int sessionKills_;

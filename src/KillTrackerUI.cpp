@@ -1,3 +1,4 @@
+#include "../include/MessageVariablesUI.h"
 /*
     NLBinder - SA-MP 0.3.DL Keybinder Plugin
     Kill Tracker UI Implementation
@@ -78,10 +79,9 @@ void KillTrackerUI::RenderStatsTab() {
     // PERF: Cache all stats ONCE per frame instead of calling getters multiple times
     cachedStats_ = tracker->GetAllWeaponStats();
     cachedTotalDamage_ = 0.0f;
-    cachedTotalKills_ = 0;
+    cachedTotalKills_ = tracker->GetTotalKills();
     for (const auto& stat : cachedStats_) {
         cachedTotalDamage_ += stat.totalDamage;
-        cachedTotalKills_ += stat.killCount;
     }
     
     // Sort once for the table
@@ -214,6 +214,10 @@ void KillTrackerUI::RenderGeneralSettings() {
     ImGui::Spacing();
 
     // Track damage
+    bool countersChanged = UIComponents::Toggle("Kills erfassen", &settings_.countKills);
+    countersChanged |= UIComponents::Toggle("Tode erfassen", &settings_.countDeaths);
+    if (countersChanged && OnSettingsChanged) OnSettingsChanged();
+
     if (UIComponents::Toggle("Verursachten Schaden tracken", &settings_.trackDamage)) {
         if (bridge_) {
             bridge_->SetKillTrackerTrackDamage(settings_.trackDamage);
@@ -229,6 +233,10 @@ void KillTrackerUI::RenderMessageSettings() {
     auto& theme = ThemeManager::Instance();
 
     UIComponents::SectionHeader("Nachrichten");
+    if (UIComponents::GhostButton("Variablen##KillTrackerMessages")) {
+        showMessageVariables_ = true;
+    }
+    RenderMessageVariablesModal("Verfügbare Variablen##KillTrackerMessages", &showMessageVariables_, true);
 
     if (UIComponents::Toggle("Lokale Kill-Nachricht anzeigen", &settings_.showLocalKillMessage)) {
         if (bridge_) {
@@ -267,41 +275,7 @@ void KillTrackerUI::RenderMessageSettings() {
 
     ImGui::Spacing();
 
-    if (UIComponents::Toggle("Lokale Tod-Nachricht anzeigen", &settings_.showLocalDeathMessage)) {
-        if (bridge_) {
-            bridge_->SetKillTrackerLocalDeathMessageEnabled(settings_.showLocalDeathMessage);
-        }
-        if (OnSettingsChanged) OnSettingsChanged();
-    }
-
-    ImGui::TextColored(theme.GetColor(ThemeColorRole::Danger), "Lokale Tod-Nachricht");
-    
-    int localDeathLen = static_cast<int>(strlen(customLocalDeathMessageBuf_));
-    std::string strLocalDeath = customLocalDeathMessageBuf_;
-    if (UIComponents::InputText("##customlocaldeathmessage", &strLocalDeath)) {
-        strncpy(customLocalDeathMessageBuf_, strLocalDeath.c_str(), sizeof(customLocalDeathMessageBuf_) - 1);
-        customLocalDeathMessageBuf_[sizeof(customLocalDeathMessageBuf_) - 1] = '\0';
-    }
-    
-    ImVec4 localDeathLenColor = localDeathLen > 144 ? theme.GetColor(ThemeColorRole::Danger) : theme.GetColor(ThemeColorRole::TextMuted);
-    ImGui::TextColored(localDeathLenColor, "%d / 144 Zeichen", localDeathLen);
-
-    ImGui::PushID("LocalDeathActions");
-    if (UIComponents::PrimaryButton("Übernehmen")) {
-        settings_.customLocalDeathMessage = customLocalDeathMessageBuf_;
-        if (bridge_) bridge_->SetKillTrackerLocalDeathMessageTemplate(settings_.customLocalDeathMessage);
-        if (OnSettingsChanged) OnSettingsChanged();
-    }
-    ImGui::SameLine();
-    if (UIComponents::SecondaryButton("Standard")) {
-        settings_.customLocalDeathMessage = "{FF3333}[Tod] {FFFFFF}{killer} {AAAAAA}mit {FFCC00}{weapon}";
-        strncpy(customLocalDeathMessageBuf_, settings_.customLocalDeathMessage.c_str(), sizeof(customLocalDeathMessageBuf_) - 1);
-        customLocalDeathMessageBuf_[sizeof(customLocalDeathMessageBuf_) - 1] = '\0';
-        if (bridge_) bridge_->SetKillTrackerLocalDeathMessageTemplate(settings_.customLocalDeathMessage);
-        if (OnSettingsChanged) OnSettingsChanged();
-    }
-    ImGui::PopID();
-
+    UIComponents::InfoRow("Todeszähler", "Jeder erfasste Tod wird automatisch nur lokal gemeldet.");
     ImGui::Spacing();
 
     if (UIComponents::Toggle("Kill-Nachricht an Server senden", &settings_.sendServerKillMessage)) {
@@ -341,56 +315,12 @@ void KillTrackerUI::RenderMessageSettings() {
 
     ImGui::Spacing();
 
-    if (UIComponents::Toggle("Tod-Nachricht an Server senden", &settings_.sendServerDeathMessage)) {
-        if (bridge_) {
-            bridge_->SetKillTrackerServerDeathMessageEnabled(settings_.sendServerDeathMessage);
-        }
-        if (OnSettingsChanged) OnSettingsChanged();
-    }
-
-    ImGui::TextColored(theme.GetColor(ThemeColorRole::TextSecondary), "Server Tod-Nachricht");
-    
-    int serverDeathLen = static_cast<int>(strlen(customServerDeathMessageBuf_));
-    std::string strServerDeath = customServerDeathMessageBuf_;
-    if (UIComponents::InputText("##customserverdeathmessage", &strServerDeath)) {
-        strncpy(customServerDeathMessageBuf_, strServerDeath.c_str(), sizeof(customServerDeathMessageBuf_) - 1);
-        customServerDeathMessageBuf_[sizeof(customServerDeathMessageBuf_) - 1] = '\0';
-    }
-    
-    ImVec4 serverDeathLenColor = serverDeathLen > 144 ? theme.GetColor(ThemeColorRole::Danger) : theme.GetColor(ThemeColorRole::TextMuted);
-    ImGui::TextColored(serverDeathLenColor, "%d / 144 Zeichen", serverDeathLen);
-
-    ImGui::PushID("ServerDeathActions");
-    if (UIComponents::PrimaryButton("Übernehmen")) {
-        settings_.customServerDeathMessage = customServerDeathMessageBuf_;
-        if (bridge_) bridge_->SetKillTrackerServerDeathMessageTemplate(settings_.customServerDeathMessage);
-        if (OnSettingsChanged) OnSettingsChanged();
-    }
-    ImGui::SameLine();
-    if (UIComponents::SecondaryButton("Standard")) {
-        settings_.customServerDeathMessage = "Ich wurde von {killer} mit {weapon} getötet.";
-        strncpy(customServerDeathMessageBuf_, settings_.customServerDeathMessage.c_str(), sizeof(customServerDeathMessageBuf_) - 1);
-        customServerDeathMessageBuf_[sizeof(customServerDeathMessageBuf_) - 1] = '\0';
-        if (bridge_) bridge_->SetKillTrackerServerDeathMessageTemplate(settings_.customServerDeathMessage);
-        if (OnSettingsChanged) OnSettingsChanged();
-    }
-    ImGui::PopID();
-
-    ImGui::Spacing();
-
     ImGui::TextColored(theme.GetColor(ThemeColorRole::Info), "Verf\xC3\xBCgbare Variablen:");
     ImGui::Columns(2, "vars", false);
-    ImGui::TextDisabled("{victim}");        ImGui::NextColumn(); ImGui::TextDisabled("Name des Getoeteten");         ImGui::NextColumn();
-    ImGui::TextDisabled("{killer}");        ImGui::NextColumn(); ImGui::TextDisabled("Name des Killers");            ImGui::NextColumn();
-    ImGui::TextDisabled("{weapon}");        ImGui::NextColumn(); ImGui::TextDisabled("Waffenname");                  ImGui::NextColumn();
-    ImGui::TextDisabled("{zone}");          ImGui::NextColumn(); ImGui::TextDisabled("Aktuelle Zone");               ImGui::NextColumn();
-    ImGui::TextDisabled("{hp}");            ImGui::NextColumn(); ImGui::TextDisabled("HP nach dem Kill");            ImGui::NextColumn();
-    ImGui::TextDisabled("{weste}");         ImGui::NextColumn(); ImGui::TextDisabled("Weste nach dem Kill");         ImGui::NextColumn();
-    ImGui::TextDisabled("{total_kills}");   ImGui::NextColumn(); ImGui::TextDisabled("Gesamte Kills (gespeichert)"); ImGui::NextColumn();
-    ImGui::TextDisabled("{total_deaths}");  ImGui::NextColumn(); ImGui::TextDisabled("Gesamte Tode (gespeichert)"); ImGui::NextColumn();
-    ImGui::TextDisabled("{session_kills}"); ImGui::NextColumn(); ImGui::TextDisabled("Kills diese Session");         ImGui::NextColumn();
-    ImGui::TextDisabled("{session_deaths}");ImGui::NextColumn(); ImGui::TextDisabled("Tode diese Session");          ImGui::NextColumn();
-    ImGui::TextDisabled("{KD}");            ImGui::NextColumn(); ImGui::TextDisabled("K/D Verhaeltnis (gesamt)");    ImGui::NextColumn();
+    for (const auto& variable : kCombatMessageVariables) {
+        ImGui::TextDisabled("{%s}", variable.tag); ImGui::NextColumn();
+        ImGui::TextDisabled("%s", variable.description); ImGui::NextColumn();
+    }
     ImGui::Columns(1);
 
     ImGui::Spacing();

@@ -1,4 +1,5 @@
 #include "../include/KillTracker.h"
+#include <cmath>
 
 namespace killtracker {
 
@@ -13,7 +14,7 @@ KillTracker::KillTracker()
 KillTracker::~KillTracker() = default;
 
 bool KillTracker::ProcessKillEvent(const KillEvent& event) {
-    if (!enabled_) {
+    if (!enabled_ || !countKills_) {
         return false;
     }
 
@@ -25,7 +26,7 @@ bool KillTracker::ProcessKillEvent(const KillEvent& event) {
         return false;
     }
 
-    if (IsDuplicateKill(event)) {
+    if (!event.isServerStatsOnly && IsDuplicateKill(event)) {
         return false;
     }
 
@@ -50,10 +51,26 @@ bool KillTracker::ProcessKillEvent(const KillEvent& event) {
     recentKills_.push_back(killWithDamage);
     TrimRecentKills();
 
-    IncrementWeaponKill(event.weaponId);
+    if (event.isServerStatsOnly) {
+        ++kills_;
+    } else {
+        IncrementWeaponKill(event.weaponId);
+    }
     sessionKills_++;
 
     return true;
+}
+
+bool KillTracker::CompleteServerStatsKill(const KillEvent& event) {
+    for (auto it = recentKills_.rbegin(); it != recentKills_.rend(); ++it) {
+        if (!it->isServerStatsOnly || std::abs(std::difftime(event.timestamp, it->timestamp)) > DUPLICATE_TIME_WINDOW_SECONDS) continue;
+        *it = event;
+        auto& stats = weaponStats_[event.weaponId];
+        stats.weaponId = event.weaponId;
+        ++stats.killCount;
+        return true;
+    }
+    return false;
 }
 
 void KillTracker::ProcessDamageEvent(const DamageEvent& event) {
@@ -117,7 +134,7 @@ bool KillTracker::IsDuplicateKill(const KillEvent& event) const {
 }
 
 void KillTracker::RecordDeath(const std::string& killer, int weaponId) {
-    if (!enabled_) return;
+    if (!IsCountingDeaths()) return;
 
     deaths_++;
     sessionDeaths_++;

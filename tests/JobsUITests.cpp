@@ -341,7 +341,7 @@ bool TestEmptyJobsPlaceholder() {
 // ── kExpectedJobDefinitionCount ──
 
 bool TestExpectedJobCount() {
-    ASSERT_EQ(static_cast<std::size_t>(jobs::kExpectedJobDefinitionCount), 15u);
+    ASSERT_EQ(static_cast<std::size_t>(jobs::kExpectedJobDefinitionCount), 17u);
     return true;
 }
 

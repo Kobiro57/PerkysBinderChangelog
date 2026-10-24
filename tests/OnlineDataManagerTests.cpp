@@ -199,6 +199,8 @@ bool TestNormalizeFactionMatchesAliasesCaseInsensitively() {
     ASSERT_EQ(OnlineDataManager::NormalizeFaction("San Andreas Army"), std::string("Army"));
     ASSERT_EQ(OnlineDataManager::NormalizeFaction("Fire Department"), std::string("Fire Department"));
     ASSERT_EQ(OnlineDataManager::NormalizeFaction("Feuerwehr"), std::string("Fire Department"));
+    ASSERT_EQ(OnlineDataManager::NormalizeFaction("RCB"), std::string("Red County Brotherhood"));
+    ASSERT_EQ(OnlineDataManager::NormalizeFaction("rEd CoUnTy BrOtHeRhOoD"), std::string("Red County Brotherhood"));
     ASSERT_TRUE(OnlineDataManager::NormalizeFaction("Taxi") .empty());
     return true;
 }
@@ -246,15 +248,18 @@ bool TestBuildBucketsUsesCanonicalOrderingAndSortedNames() {
     players.push_back(OnlineDataManager::NormalizePlayer(BuildRawPlayer("5", "zulu", std::string(), "Grove")));
     players.push_back(OnlineDataManager::NormalizePlayer(BuildRawPlayer("6", "Echo", std::string(), "Ballas")));
     players.push_back(OnlineDataManager::NormalizePlayer(BuildRawPlayer("7", "foxtrot")));
+    players.push_back(OnlineDataManager::NormalizePlayer(BuildRawPlayer("8", "Brotherhood", "RCB")));
 
     std::vector<OnlineBucketSummary> factionBuckets;
     std::vector<OnlineBucketSummary> gangBuckets;
     OnlineDataManager::BuildBuckets(players, factionBuckets, gangBuckets);
 
-    ASSERT_EQ(factionBuckets.size(), static_cast<std::size_t>(3));
+    ASSERT_EQ(factionBuckets.size(), static_cast<std::size_t>(4));
     ASSERT_EQ(factionBuckets[0].bucketName, std::string("LSPD"));
     ASSERT_EQ(factionBuckets[1].bucketName, std::string("Army"));
     ASSERT_EQ(factionBuckets[2].bucketName, std::string("Fire Department"));
+    ASSERT_EQ(factionBuckets[3].bucketName, std::string("Red County Brotherhood"));
+    ASSERT_EQ(factionBuckets[3].playerNames[0], std::string("Brotherhood"));
     ASSERT_EQ(factionBuckets[0].playerNames.size(), static_cast<std::size_t>(2));
     ASSERT_EQ(factionBuckets[0].playerNames[0], std::string("alpha"));
     ASSERT_EQ(factionBuckets[0].playerNames[1], std::string("bravo"));

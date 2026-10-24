@@ -45,7 +45,7 @@ bool TestEmbeddedRegistryLoadsLandwirt() {
     jobs::JobRegistry::Snapshot snapshot;
 
     ASSERT_TRUE(registry.LoadEmbedded(snapshot));
-    ASSERT_EQ(snapshot.version, 2);
+    ASSERT_EQ(snapshot.version, 3);
     ASSERT_EQ(snapshot.jobs.size(), jobs::kExpectedJobDefinitionCount);
 
     const jobs::JobDefinition* landwirt = nullptr;
@@ -114,6 +114,70 @@ bool TestEmbeddedRegistryLoadsGatheredMessageSupport() {
     return true;
 }
 
+bool TestEmbeddedRegistryLoadsHolzfaellerAndBauarbeiter() {
+    jobs::JobRegistry registry;
+    jobs::JobRegistry::Snapshot snapshot;
+
+    ASSERT_TRUE(registry.LoadEmbedded(snapshot));
+
+    const jobs::JobDefinition* holzfaeller = nullptr;
+    const jobs::JobDefinition* bauarbeiter = nullptr;
+    for (const jobs::JobDefinition& definition : snapshot.jobs) {
+        if (definition.id == "holzfaeller") {
+            holzfaeller = &definition;
+        } else if (definition.id == "bauarbeiter") {
+            bauarbeiter = &definition;
+        }
+    }
+
+    ASSERT_TRUE(holzfaeller != nullptr);
+    ASSERT_TRUE(bauarbeiter != nullptr);
+    ASSERT_EQ(holzfaeller->name, std::string("Holzfäller"));
+    ASSERT_EQ(bauarbeiter->name, std::string("Bauarbeiter"));
+    ASSERT_TRUE(holzfaeller->enabled);
+    ASSERT_TRUE(bauarbeiter->enabled);
+    ASSERT_EQ(holzfaeller->speakerAliases.size(), static_cast<std::size_t>(2));
+    ASSERT_EQ(holzfaeller->speakerAliases[0], std::string("Holzfaeller"));
+    ASSERT_EQ(holzfaeller->speakerAliases[1], std::string("Vince Redwood"));
+    ASSERT_EQ(holzfaeller->parserRules.size(), static_cast<std::size_t>(5));
+    ASSERT_EQ(bauarbeiter->parserRules.size(), static_cast<std::size_t>(2));
+
+    for (const jobs::JobDefinition* definition : {holzfaeller, bauarbeiter}) {
+        ASSERT_EQ(definition->parserRules[0].eventType, std::string("earning"));
+        ASSERT_EQ(definition->parserRules[0].captureGroups.at("amount"), 1);
+        ASSERT_EQ(definition->parserRules[1].eventType, std::string("skill_level_absolute"));
+        ASSERT_EQ(definition->parserRules[1].captureGroups.at("level"), 1);
+        ASSERT_EQ(definition->skillTree.size(), static_cast<std::size_t>(6));
+        for (std::size_t i = 0; i < definition->skillTree.size(); ++i) {
+            ASSERT_EQ(definition->skillTree[i].unlockOrder, static_cast<int>(i + 1));
+        }
+    }
+
+    const int holzfaellerThresholds[] = {50, 100, 250, 500, 1000, 1500};
+    const char* holzfaellerRewards[] = {
+        "5 Bäume fällen", "Holzfäller Skin freischalten", "Privatfahrzeug: Bobcat",
+        "+10% Lohn", "+25% Lohn", "Job-Achievement freigeschaltet"
+    };
+    const int bauarbeiterThresholds[] = {25, 100, 500, 750, 1000, 1500};
+    const char* bauarbeiterRewards[] = {
+        "Großbaustellen werden freigeschaltet", "Bauarbeiter Skin freischalten", "+10% Lohn",
+        "Business: Blueberry Construction", "+25% Lohn", "Job-Achievement freigeschaltet"
+    };
+    for (std::size_t i = 0; i < 6; ++i) {
+        ASSERT_EQ(holzfaeller->skillTree[i].maxPoints, holzfaellerThresholds[i]);
+        ASSERT_EQ(holzfaeller->skillTree[i].name, std::string(holzfaellerRewards[i]));
+        ASSERT_EQ(bauarbeiter->skillTree[i].maxPoints, bauarbeiterThresholds[i]);
+        ASSERT_EQ(bauarbeiter->skillTree[i].name, std::string(bauarbeiterRewards[i]));
+    }
+    ASSERT_EQ(holzfaeller->skillTree[2].perkValue, std::string("Bobcat"));
+    ASSERT_EQ(holzfaeller->skillTree[3].perkValue, std::string("10%"));
+    ASSERT_EQ(holzfaeller->skillTree[4].perkValue, std::string("25%"));
+    ASSERT_EQ(bauarbeiter->skillTree[2].perkValue, std::string("10%"));
+    ASSERT_EQ(bauarbeiter->skillTree[3].perkValue, std::string("Business: Blueberry Construction"));
+    ASSERT_EQ(bauarbeiter->skillTree[4].perkValue, std::string("25%"));
+    return true;
+}
+
 bool TestEmbeddedRegistryDecodesUnicodeEscapesInPatterns() {
     jobs::JobRegistry registry;
     jobs::JobRegistry::Snapshot snapshot;
@@ -173,6 +237,7 @@ int RunJobRegistryTests() {
 
     RUN_TEST(TestEmbeddedRegistryLoadsLandwirt);
     RUN_TEST(TestEmbeddedRegistryLoadsGatheredMessageSupport);
+    RUN_TEST(TestEmbeddedRegistryLoadsHolzfaellerAndBauarbeiter);
     RUN_TEST(TestEmbeddedRegistryDecodesUnicodeEscapesInPatterns);
     RUN_TEST(TestInvalidRegistryFailsSafely);
 

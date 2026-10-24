@@ -688,14 +688,14 @@ void JobsUI::RenderJobDetail() {
             skillTreeAnimId_ = "JobsSkillTree:" + job.id;
             AnimationHelper::StartAnimation(skillTreeAnimId_, 0.65f);
             skillTreeAnimJobId_ = job.id;
-            skillTreeAnimLevel_ = stats.highestLevel;
+            skillTreeAnimLevel_ = adjustedSkillLevel;
         }
 
         lastJobsRenderFrame_ = currentFrame;
     }
 
     if (!job.skillTree.empty()) {
-        RenderDetailSkillTree(job.skillTree, stats.highestLevel);
+        RenderDetailSkillTree(job.skillTree, adjustedSkillLevel);
     }
 
     std::vector<jobs::JobEvent> events = tracker->GetEventsForJob(job.id, false);

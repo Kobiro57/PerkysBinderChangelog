@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <chrono>
 #include <atomic>
 #include <cstdio>
 #include <ctime>
@@ -34,6 +35,7 @@
 #include "../include/OnlineOverlayController.h"
 #include "../include/OnlineOverlayRenderer.h"
 #include "../include/PersistentPaths.h"
+#include "../include/ReconnectManager.h"
 #include "../include/QuickMap.h"
 #include "../include/ResourceIds.h"
 #include "../include/RssFeedManager.h"
@@ -427,7 +429,7 @@ public:
         // Enable info logging (change to Debug for verbose output)
         keybinder::Logger::SetMinLevel(keybinder::LogLevel::Info);
         
-        keybinder::Logger::Info("NLBinder v1.0 - SA-MP 0.3.DL Keybinder starting up");
+        keybinder::Logger::Info("NLBinder v0.1.1 by KOBiRO - SA-MP 0.3.DL Keybinder starting up");
         keybinder::Logger::Info("Crash handler installed");
 
         if (!keybindManager_.Load(&settingsManager_)) {
@@ -549,6 +551,10 @@ public:
         mainWindowUI_.SetKeybindManager(&keybindManager_);
         mainWindowUI_.SetSettingsManager(&settingsManager_);
         mainWindowUI_.SetSAMPBridge(&bridge_);
+        bridge_.SetEngineInputBlockedCallback([&]() {
+            return overlay_.IsVisible() || quickMap_.IsVisible()
+                || onlineOverlayRenderer_.IsPersistentOverlayMoveModeActive();
+        });
         mainWindowUI_.SetHitmarker(&hitmarker_);
         mainWindowUI_.SetHitsoundPlayer(&hitsoundPlayer_);
         mainWindowUI_.SetCrosshairSwitcher(&crosshairSwitcher_);
@@ -639,6 +645,9 @@ public:
 
         onlineEventDetector_.Initialize(&settingsManager_);
         onlineOverlayController_.Initialize(&settingsManager_, &onlineDataManager_);
+        onlineOverlayController_.SetGameStateProvider([&]() {
+            return keybinder::OnlineOverlayController::CaptureGameState(&bridge_);
+        });
         onlineOverlayRenderer_.SetOverlayController(&onlineOverlayController_);
         bridge_.SetIncomingChatCallback([&](const std::string& text) {
             onlineEventDetector_.OnChatLine(text);
@@ -657,6 +666,20 @@ public:
             }
 
             onlinePlayerInfoService_.QueueLookup(username);
+        });
+
+        bridge_.RegisterCommand("reconnect", [&](const std::string& params) {
+            if (params.find_first_not_of(" \t\r\n") != std::string::npos) {
+                bridge_.SendLocalMessage("{33CCFF}[NL-BINDER]{FFFFFF} Nutzung: /reconnect");
+                return;
+            }
+            std::string error;
+            if (!keybinder::RequestReconnect(settingsManager_.Get(), bridge_, [&]() {
+                    ExportKillTrackerStateToSettings();
+                    return keybindManager_.Save(&settingsManager_);
+                }, error)) {
+                bridge_.SendLocalMessage("{FF6600}[NL-BINDER]{FFFFFF} " + error);
+            }
         });
 
         auto runTextDrawDump = [&](const std::string&) {
@@ -733,7 +756,7 @@ public:
                 return true;
             }
 
-            if (command == "info") {
+            if (command == "info" || command == "reconnect") {
                 return false;
             }
             
@@ -830,7 +853,11 @@ public:
             }
 
             onlineOverlayRenderer_.Update();
-            onlineOverlayController_.Update(1.0f / 60.0f); // approximate frame delta
+            const auto onlineUpdateTime = std::chrono::steady_clock::now();
+            static auto previousOnlineUpdateTime = onlineUpdateTime;
+            const float onlineDelta = std::chrono::duration<float>(onlineUpdateTime - previousOnlineUpdateTime).count();
+            previousOnlineUpdateTime = onlineUpdateTime;
+            onlineOverlayController_.Update(onlineDelta);
 
             bool overlayVisible = overlay_.IsVisible();
             bool quickMapVisible = quickMap_.IsVisible();
@@ -897,6 +924,11 @@ public:
 
         };
         Events::gameProcessEvent += [&]() {
+            if (g_shutdown_phase.load() != 0) return;
+            std::string reconnectError;
+            if (keybinder::UpdateReconnect(reconnectError)) {
+                bridge_.QueueLocalMessage("{FF6600}[NL-BINDER]{FFFFFF} " + reconnectError);
+            }
             inputManager_.ApplyEarlySuppressedKeys();
 
             if (overlay_.IsVisible()) {

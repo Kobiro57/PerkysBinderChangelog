@@ -16,7 +16,7 @@
 #include "../include/plugin-sdk/plugin_sa/game_sa/rw/rwcore.h"
 #include "../include/plugin-sdk/plugin_sa/game_sa/CHud.h"
 #include "../include/plugin-sdk/plugin_sa/game_sa/CMenuManager.h"
-#include "../include/plugin-sdk/plugin_sa/game_sa/CVector2D.h"
+#include "../include/plugin-sdk/shared/game/CVector2D.h"
 #include "../include/plugin-sdk/shared/Patch.h"
 #endif
 

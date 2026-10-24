@@ -23,6 +23,13 @@ public:
 
     void ClearState();
 
+#ifdef KEYBINDER_TESTING
+    std::vector<KillEvent> ProcessSnapshotForTesting(const std::vector<DeathWindowEntry>& entries,
+                                                    bool snapshotAvailable = true) {
+        return ProcessSnapshot(entries, snapshotAvailable);
+    }
+#endif
+
 private:
     static constexpr int kPollIntervalFrames = 10;
     static constexpr int kLocalPlayerRefreshPolls = 30;
@@ -42,9 +49,11 @@ private:
 
     bool IsDuplicateEntry(const DeathWindowEntry& entry) const;
 
+    std::vector<KillEvent> ProcessSnapshot(std::vector<DeathWindowEntry> entries, bool snapshotAvailable);
+
     void* GetDeathWindow() const;
 
-    std::vector<DeathWindowEntry> ReadDeathWindow(void* deathWindow) const;
+    std::vector<DeathWindowEntry> ReadDeathWindow(void* deathWindow, bool* snapshotAvailable = nullptr) const;
 };
 
 } // namespace killtracker

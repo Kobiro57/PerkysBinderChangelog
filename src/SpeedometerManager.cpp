@@ -13,7 +13,7 @@
 #ifndef KEYBINDER_TESTING
 #include "../include/plugin-sdk/plugin_sa/game_sa/CPlayerPed.h"
 #include "../include/plugin-sdk/plugin_sa/game_sa/CVehicle.h"
-#include "../include/plugin-sdk/plugin_sa/game_sa/ePedState.h"
+#include "../include/plugin-sdk/plugin_sa/game_sa/enums/ePedState.h"
 #include "common.h"
 #endif
 
@@ -149,6 +149,44 @@ void FormatGearText(unsigned char gear, char* destination, std::size_t destinati
     std::snprintf(destination, destinationSize, "%u", static_cast<unsigned int>(gear));
 }
 
+#ifndef KEYBINDER_TESTING
+speedometer::VehicleRuntimeState CaptureVehicleRuntimeState(SAMPBridge* bridge) {
+    speedometer::VehicleRuntimeState result;
+    if (bridge == nullptr || bridge->GetVersion() != SAMPBridge::Version::V03DLR1) return result;
+    auto* netGame = bridge->GetNetGame();
+    if (netGame == nullptr || netGame->m_nGameState != sampapi::v03dl::CNetGame::GAME_MODE_CONNECTED) return result;
+    result.connected = true;
+    auto* localPlayer = bridge->GetLocalPlayer();
+    ::CPed* ped = localPlayer != nullptr && localPlayer->m_pPed != nullptr
+        ? localPlayer->m_pPed->m_pGamePed : nullptr;
+    if (ped == nullptr || !ped->bInVehicle || ped->m_pVehicle == nullptr || ped->m_fHealth <= 0.0f) return result;
+    CVehicle* vehicle = ped->m_pVehicle;
+    // The seat owner is authoritative; SA-MP's passenger flag and ped animation
+    // state can lag while entering, leaving or being placed into a vehicle.
+    result.isDriver = vehicle->m_pDriver == ped;
+    result.vehicleIdentity = reinterpret_cast<std::uintptr_t>(vehicle);
+    auto& input = result.input;
+    input.isInVehicle = true;
+    input.speedKmh = vehicle->m_vecMoveSpeed.Magnitude() * kSpeedMultiplierKmh;
+    input.vehicleHealth = vehicle->m_fHealth;
+    input.currentGear = vehicle->m_nCurrentGear;
+    input.engineOn = vehicle->bEngineOn;
+    input.audioChangingGear = vehicle->bAudioChangingGear;
+    input.hasThrottleValue = true;
+    input.throttleValue = vehicle->m_fGasPedal;
+    if (vehicle->m_pHandlingData != nullptr && input.currentGear > 0) {
+        const cTransmission& transmission = vehicle->m_pHandlingData->m_transmissionData;
+        const unsigned int gearIndex = static_cast<unsigned int>(input.currentGear - 1);
+        if (gearIndex < static_cast<unsigned int>(transmission.m_nNumberOfGears) && gearIndex < kMaxDisplayGear) {
+            const tTransmissionGear& gear = transmission.m_aGears[gearIndex];
+            input.currentGearMinSpeedKmh = gear.m_fChangeDownVelocity * kSpeedMultiplierKmh;
+            input.currentGearMaxSpeedKmh = gear.m_fMaxVelocity * kSpeedMultiplierKmh;
+        }
+    }
+    return result;
+}
+#endif
+
 } // namespace
 
 SpeedometerManager::SpeedometerManager() = default;
@@ -212,7 +250,7 @@ speedometer::VehicleTelemetry SpeedometerManager::BuildTelemetry(
     telemetry.vehicleHealth = ClampFinite(input.vehicleHealth, 0.0f, kMaxVehicleHealth);
     telemetry.vehicleHealthPct = Clamp01(telemetry.vehicleHealth / kMaxVehicleHealth);
     telemetry.dlPct = telemetry.vehicleHealthPct;
-    telemetry.hasFuel = input.fuelValue >= 0.0f;
+    telemetry.hasFuel = std::isfinite(input.fuelValue) && input.fuelValue >= 0.0f;
     telemetry.fuelValue = telemetry.hasFuel ? ClampFinite(input.fuelValue, 0.0f, 100.0f) : -1.0f;
     telemetry.fuelPct = telemetry.hasFuel ? Clamp01(telemetry.fuelValue / 100.0f) : 0.0f;
     telemetry.currentGear = input.currentGear;
@@ -224,7 +262,7 @@ speedometer::VehicleTelemetry SpeedometerManager::BuildTelemetry(
         ? Clamp01(std::fabs(input.throttleValue))
         : 0.0f;
 
-    if (previousTelemetry != nullptr && previousTelemetry->isInVehicle && deltaSeconds > 0.001f) {
+    if (previousTelemetry != nullptr && previousTelemetry->isInVehicle && std::isfinite(deltaSeconds) && deltaSeconds > 0.001f) {
         telemetry.accelerationKmhPerSecond = (telemetry.speedKmh - previousTelemetry->speedKmh) / deltaSeconds;
         telemetry.accelerationPct = telemetry.accelerationKmhPerSecond > 0.0f
             ? Clamp01(telemetry.accelerationKmhPerSecond / kMaxAccelerationKmhPerSecond)
@@ -275,6 +313,7 @@ void SpeedometerManager::ResetTelemetrySample() {
     hasTelemetrySample_ = false;
     lastTelemetry_ = speedometer::VehicleTelemetry{};
     lastTelemetryTime_ = std::chrono::steady_clock::time_point{};
+    lastVehicleIdentity_ = 0;
 }
 
 void SpeedometerManager::StoreClearedState() {
@@ -296,63 +335,39 @@ void SpeedometerManager::Update() {
         return;
     }
 
-#ifdef KEYBINDER_TESTING
-    StoreClearedState();
-    return;
-#else
     if (bridge_ == nullptr || adapter_ == nullptr) {
         StoreClearedState();
         return;
     }
 
-    auto* localPlayer = bridge_->GetLocalPlayer();
-    if (localPlayer == nullptr || localPlayer->m_pPed == nullptr) {
+    speedometer::VehicleRuntimeState runtime;
+#ifdef KEYBINDER_TESTING
+    if (vehicleStateProvider_) runtime = vehicleStateProvider_();
+#else
+    runtime = CaptureVehicleRuntimeState(bridge_);
+#endif
+    if (!runtime.connected || !runtime.isDriver || !runtime.input.isInVehicle || runtime.vehicleIdentity == 0) {
         StoreClearedState();
         return;
     }
-
-    CPlayerPed* playerPed = FindPlayerPed(0);
-    if (playerPed == nullptr || !playerPed->bInVehicle || playerPed->m_pVehicle == nullptr) {
-        StoreClearedState();
-        return;
+    if (lastVehicleIdentity_ != runtime.vehicleIdentity) {
+        adapter_->SetVehicleContext(false);
+        ResetTelemetrySample();
+        lastVehicleIdentity_ = runtime.vehicleIdentity;
     }
-
-    if (localPlayer->m_pPed->IsPassenger() || playerPed->m_ePedState != PEDSTATE_DRIVING) {
-        StoreClearedState();
-        return;
-    }
-
-    CVehicle* vehicle = playerPed->m_pVehicle;
     adapter_->SetVehicleContext(true);
+    if (!adapter_->IsRenderSuppressionReady()) {
+        StoreClearedState();
+        return;
+    }
 
     const auto now = std::chrono::steady_clock::now();
     const float deltaSeconds = hasTelemetrySample_
         ? std::chrono::duration<float>(now - lastTelemetryTime_).count()
         : 0.0f;
 
-    speedometer::VehicleTelemetryInput telemetryInput;
-    telemetryInput.isInVehicle = true;
-    telemetryInput.speedKmh = vehicle->m_vecMoveSpeed.Magnitude() * kSpeedMultiplierKmh;
-    telemetryInput.vehicleHealth = bridge_->GetLocalPlayerCarHP();
+    speedometer::VehicleTelemetryInput telemetryInput = runtime.input;
     telemetryInput.fuelValue = adapter_->GetFuelValue();
-    telemetryInput.currentGear = vehicle->m_nCurrentGear;
-    telemetryInput.engineOn = vehicle->bEngineOn;
-    telemetryInput.audioChangingGear = vehicle->bAudioChangingGear;
-    telemetryInput.hasThrottleValue = true;
-    telemetryInput.throttleValue = vehicle->m_fGasPedal;
-    if (vehicle->m_pHandlingData != nullptr && telemetryInput.currentGear > 0) {
-        const cTransmission& transmission = vehicle->m_pHandlingData->m_transmissionData;
-        const unsigned int gearIndex = static_cast<unsigned int>(telemetryInput.currentGear - 1);
-
-        if (gearIndex < static_cast<unsigned int>(transmission.m_nNumberOfGears) && gearIndex < kMaxDisplayGear) {
-            const tTransmissionGear& gear = transmission.m_aGears[gearIndex];
-            const float changeDownSpeedKmh = gear.m_fChangeDownVelocity * kSpeedMultiplierKmh;
-            const float maxSpeedKmh = gear.m_fMaxVelocity * kSpeedMultiplierKmh;
-
-            telemetryInput.currentGearMinSpeedKmh = changeDownSpeedKmh;
-            telemetryInput.currentGearMaxSpeedKmh = maxSpeedKmh;
-        }
-    }
 
     speedometer::SpeedometerState nextState;
     nextState.isInVehicle = true;
@@ -379,8 +394,13 @@ void SpeedometerManager::Update() {
     }
 
     StoreState(nextState);
-#endif
 }
+
+#ifdef KEYBINDER_TESTING
+void SpeedometerManager::SetVehicleStateProviderForTesting(std::function<speedometer::VehicleRuntimeState()> provider) {
+    vehicleStateProvider_ = std::move(provider);
+}
+#endif
 
 speedometer::SpeedometerState SpeedometerManager::GetState() const {
     std::lock_guard<std::mutex> lock(stateMutex_);

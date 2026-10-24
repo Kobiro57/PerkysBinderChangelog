@@ -538,6 +538,7 @@ bool TestSettingsRoundTrip() {
     settingsMgr.GetMutable().ui_window_width = 1320.0f;
     settingsMgr.GetMutable().ui_window_height = 880.0f;
     settingsMgr.GetMutable().quickmap_enabled = false;
+    settingsMgr.GetMutable().damage_log_enabled = true;
     settingsMgr.GetMutable().quickmap_hotkey = 'Q';
     settingsMgr.GetMutable().quickmap_mode = "hold";
     settingsMgr.GetMutable().theme_name = "Dark";
@@ -581,6 +582,7 @@ bool TestSettingsRoundTrip() {
     ASSERT_TRUE(savedJson.find("\"ui_window_width\": ") != std::string::npos);
     ASSERT_TRUE(savedJson.find("\"ui_window_height\": ") != std::string::npos);
     ASSERT_TRUE(savedJson.find("\"quickmap_enabled\": false") != std::string::npos);
+    ASSERT_TRUE(savedJson.find("\"damage_log_enabled\": true") != std::string::npos);
     ASSERT_TRUE(savedJson.find("\"quickmap_hotkey\": 81") != std::string::npos);
     ASSERT_TRUE(savedJson.find("\"quickmap_mode\": \"hold\"") != std::string::npos);
     ASSERT_TRUE(savedJson.find("\"theme_name\": \"Dark\"") != std::string::npos);
@@ -606,6 +608,7 @@ bool TestSettingsRoundTrip() {
     ASSERT_TRUE(settingsMgr2.Get().ui_window_width > 1319.9f && settingsMgr2.Get().ui_window_width < 1320.1f);
     ASSERT_TRUE(settingsMgr2.Get().ui_window_height > 879.9f && settingsMgr2.Get().ui_window_height < 880.1f);
     ASSERT_EQ(settingsMgr2.Get().quickmap_enabled, false);
+    ASSERT_TRUE(settingsMgr2.Get().damage_log_enabled);
     ASSERT_EQ(settingsMgr2.Get().quickmap_hotkey, 'Q');
     ASSERT_EQ(settingsMgr2.Get().quickmap_mode, std::string("hold"));
     ASSERT_EQ(settingsMgr2.Get().theme_name, std::string("Dark"));
@@ -637,6 +640,31 @@ bool TestSettingsRoundTrip() {
     std::remove("test_settings_roundtrip.json");
     std::remove("test_settings_rt.log");
     ClearCapturedLogs();
+    return true;
+}
+
+bool TestDamageLogSettingsDefaultAndRoundTrip() {
+    keybinder::SettingsManager defaults;
+    ASSERT_TRUE(!defaults.Get().damage_log_enabled);
+    ASSERT_TRUE(defaults.LoadFromJson(R"({"auto_engine_start":true})"));
+    ASSERT_TRUE(!defaults.Get().damage_log_enabled);
+
+    keybinder::SettingsManager enabled;
+    ASSERT_TRUE(enabled.LoadFromJson(R"({"damage_log_enabled":true,"auto_engine_start":false,"kill_tracker_enabled":false})"));
+    ASSERT_TRUE(enabled.Get().damage_log_enabled);
+    ASSERT_TRUE(!enabled.Get().auto_engine_start);
+    ASSERT_TRUE(!enabled.Get().kill_tracker_enabled);
+    ASSERT_TRUE(enabled.GetSettingsJson().find("\"damage_log_enabled\": true") != std::string::npos);
+    keybinder::SettingsManager reloaded;
+    ASSERT_TRUE(reloaded.LoadFromJson(enabled.GetSettingsJson()));
+    ASSERT_TRUE(reloaded.Get().damage_log_enabled);
+
+    enabled.GetMutable().damage_log_enabled = false;
+    ASSERT_TRUE(enabled.GetSettingsJson().find("\"damage_log_enabled\": false") != std::string::npos);
+    ASSERT_TRUE(reloaded.LoadFromJson(enabled.GetSettingsJson()));
+    ASSERT_TRUE(!reloaded.Get().damage_log_enabled);
+    ASSERT_TRUE(reloaded.LoadFromJson(R"({"damage_log_enabled":"yes"})"));
+    ASSERT_TRUE(!reloaded.Get().damage_log_enabled);
     return true;
 }
 
@@ -1119,13 +1147,13 @@ bool TestSettingsSpeedometerDefaultsAndRoundTrip() {
   "speedometer_fuel_textdraw_ids": [20]
 })json"));
 
-    ASSERT_EQ(settingsManager.Get().speedometer_enabled, false);
+    ASSERT_EQ(settingsManager.Get().speedometer_enabled, true);
     ASSERT_EQ(settingsManager.Get().speedometer_style, std::string("tachometer_arc"));
-    ASSERT_TRUE(settingsManager.GetSettingsJson().find("\"speedometer_enabled\": false") != std::string::npos);
+    ASSERT_TRUE(settingsManager.GetSettingsJson().find("\"speedometer_enabled\": true") != std::string::npos);
 
     keybinder::SettingsManager roundTripManager;
     ASSERT_TRUE(roundTripManager.LoadFromJson(settingsManager.GetSettingsJson()));
-    ASSERT_EQ(roundTripManager.Get().speedometer_enabled, false);
+    ASSERT_EQ(roundTripManager.Get().speedometer_enabled, true);
     ASSERT_EQ(roundTripManager.Get().speedometer_style, std::string("tachometer_arc"));
 
     keybinder::SettingsManager minimalStyleManager;
@@ -1877,6 +1905,7 @@ int RunRegressionTests() {
     RUN_TEST(TestPersistentPathsRecursiveHitmarkerTempDirectoryCreation);
     RUN_TEST(TestSettingsExtraction);
     RUN_TEST(TestSettingsRoundTrip);
+    RUN_TEST(TestDamageLogSettingsDefaultAndRoundTrip);
     RUN_TEST(TestSquareMapFistAndQuickMapRadarPackRoundTrip);
     RUN_TEST(TestThemeNameSavedToJson);
     RUN_TEST(TestUiTransparencyClampsAndRoundTrips);

@@ -1,5 +1,9 @@
 #pragma once
 
+#include <algorithm>
+#include <cmath>
+#include <vector>
+
 namespace keybinder {
 
 // GTA:SA eWeaponType values that CPed::m_nLastWeaponDamage reports for
@@ -28,6 +32,13 @@ inline bool IsNonCombatDamageSource(int weaponType) {
             return false;
     }
 }
+
+struct IncomingDamageObservation {
+    float damage = 0.0f;
+    bool environmental = false;
+    bool scripted = false;
+    bool IsCombat() const { return damage > 0.0f && !environmental && !scripted; }
+};
 
 // Detects incoming combat damage by watching the local player's combined
 // health+armour for decreases each frame. This works on every server,
@@ -59,11 +70,19 @@ public:
     // advances to the latest value, so a suppressed environmental drop does
     // not mask the next genuine combat hit.
     bool Observe(bool alive, float combinedHp, bool environmental) {
-        if (!alive) {
+        const auto observation = ObserveDetailed(alive, combinedHp, environmental);
+        return observation.IsCombat() && observation.damage > kDamageEpsilon;
+    }
+
+    // Keep the measured amount for the damage log, including fractional hits.
+    // Scripted drops remain distinguishable so only a nearby combat RPC may
+    // confirm one; a SetHealth reset alone must never produce a log message.
+    IncomingDamageObservation ObserveDetailed(bool alive, float combinedHp, bool environmental) {
+        if (!alive || !std::isfinite(combinedHp) || combinedHp < 0.0f) {
             initialized_ = false;
             scriptedSuppressionArmed_ = false;
             scriptedSuppressionFramesLeft_ = 0;
-            return false;
+            return {};
         }
 
         if (!initialized_) {
@@ -71,18 +90,18 @@ public:
             lastCombinedHp_ = combinedHp;
             scriptedSuppressionArmed_ = false;
             scriptedSuppressionFramesLeft_ = 0;
-            return false;
+            return {};
         }
 
-        const bool decreased = combinedHp < lastCombinedHp_ - kDamageEpsilon;
+        const float decrease = lastCombinedHp_ - combinedHp;
         lastCombinedHp_ = combinedHp;
 
-        if (!decreased) {
+        if (decrease <= 0.0001f) {
             // No drop this frame; only expire an armed window, never fire.
             if (scriptedSuppressionArmed_ && --scriptedSuppressionFramesLeft_ <= 0) {
                 scriptedSuppressionArmed_ = false;
             }
-            return false;
+            return {};
         }
 
         // A real HP drop arrived. Environmental drops (fall/collision/drown)
@@ -95,7 +114,7 @@ public:
             if (scriptedSuppressionArmed_ && --scriptedSuppressionFramesLeft_ <= 0) {
                 scriptedSuppressionArmed_ = false;
             }
-            return false;
+            return {decrease, true, false};
         }
 
         // A combat-like HP drop. If a scripted-suppression window is armed
@@ -104,10 +123,10 @@ public:
         if (scriptedSuppressionArmed_) {
             scriptedSuppressionArmed_ = false;
             scriptedSuppressionFramesLeft_ = 0;
-            return false;
+            return {decrease, false, true};
         }
 
-        return true;
+        return {decrease, false, false};
     }
 
     // Arms a one-shot suppression for the next observed combined-HP decrease.
@@ -134,6 +153,111 @@ private:
     float lastCombinedHp_ = 0.0f;
     bool scriptedSuppressionArmed_ = false;
     int scriptedSuppressionFramesLeft_ = 0;
+};
+
+// Only measured losses may become chat lines. RPCs can split a measured loss
+// into individual shots when their sum agrees; a lone RPC never invents HP
+// damage. A brief window accommodates RPC/health updates arriving in either
+// order. Without matching RPCs, each eligible sampled loss is logged once.
+class IncomingDamageLog {
+public:
+    static constexpr unsigned long kMatchWindowMs = 180;
+
+    void Report(float damage, unsigned long tick) {
+        if (std::isfinite(damage) && damage > 0.0001f) {
+            reports_.push_back({damage, tick, false});
+            if (reports_.size() > 64) reports_.erase(reports_.begin());
+        }
+    }
+
+    void Observe(const IncomingDamageObservation& observation, unsigned long tick) {
+        if (observation.damage > 0.0001f && std::isfinite(observation.damage)) {
+            // A server-applied hit can retain an old environmental weapon ID.
+            // Only an accompanying combat RPC may confirm such a loss.
+            losses_.push_back({observation.damage, tick, !observation.scripted && !observation.environmental});
+        }
+    }
+
+    std::vector<float> Drain(unsigned long now, bool finishLife = false) {
+        std::vector<float> result;
+        while (!losses_.empty()) {
+            bool matched = false;
+            float measuredSum = 0.0f;
+            for (std::size_t lossCount = 1; lossCount <= losses_.size() && !matched; ++lossCount) {
+                measuredSum += losses_[lossCount - 1].damage;
+                if (!WithinWindow(losses_.front().tick, losses_[lossCount - 1].tick)) break;
+                for (std::size_t firstReport = 0; firstReport < reports_.size() && !matched; ++firstReport) {
+                    float reportedSum = 0.0f;
+                    for (std::size_t reportCount = 1; firstReport + reportCount <= reports_.size(); ++reportCount) {
+                        const auto& report = reports_[firstReport + reportCount - 1];
+                        if (!WithinWindow(report.tick, losses_.front().tick)
+                            || !WithinWindow(report.tick, losses_[lossCount - 1].tick)) break;
+                        reportedSum += report.damage;
+                        if (std::fabs(measuredSum - reportedSum) <= 0.001f) {
+                            float emitted = 0.0f;
+                            for (std::size_t index = 0; index < reportCount; ++index) {
+                                // Preserve the exact measured total despite float rounding.
+                                const float amount = index + 1 == reportCount
+                                    ? measuredSum - emitted : reports_[firstReport + index].damage;
+                                if (amount > 0.0001f) result.push_back(amount);
+                                emitted += amount;
+                            }
+                            losses_.erase(losses_.begin(), losses_.begin() + lossCount);
+                            reports_.erase(reports_.begin() + firstReport,
+                                           reports_.begin() + firstReport + reportCount);
+                            matched = true;
+                            break;
+                        }
+                        if (reportedSum > measuredSum + 0.001f) break;
+                    }
+                }
+            }
+            if (matched) continue;
+            if (!finishLife && now - losses_.front().tick < kMatchWindowMs) break;
+            const auto proof = std::find_if(reports_.begin(), reports_.end(), [this](const Entry& report) {
+                return WithinWindow(report.tick, losses_.front().tick);
+            });
+            if (proof != reports_.end()) {
+                // Server rules/overkill may make raw weapon damage disagree
+                // with HP actually lost. The RPC confirms combat, but cannot
+                // justify inventing per-shot values: report the measured sum.
+                const unsigned long firstTick = losses_.front().tick;
+                const unsigned long proofTick = proof->tick;
+                float measured = 0.0f;
+                std::size_t count = 0;
+                while (count < losses_.size() && WithinWindow(firstTick, losses_[count].tick)
+                       && WithinWindow(proofTick, losses_[count].tick)) {
+                    measured += losses_[count++].damage;
+                }
+                result.push_back(measured);
+                losses_.erase(losses_.begin(), losses_.begin() + count);
+                reports_.erase(std::remove_if(reports_.begin(), reports_.end(), [firstTick](const Entry& report) {
+                    return WithinWindow(firstTick, report.tick);
+                }), reports_.end());
+                continue;
+            }
+            if (losses_.front().allowFallback) result.push_back(losses_.front().damage);
+            losses_.erase(losses_.begin());
+        }
+        reports_.erase(std::remove_if(reports_.begin(), reports_.end(), [now](const Entry& report) {
+            return now - report.tick > kMatchWindowMs;
+        }), reports_.end());
+        return result;
+    }
+
+    void Reset() { losses_.clear(); reports_.clear(); }
+
+private:
+    struct Entry {
+        float damage;
+        unsigned long tick;
+        bool allowFallback;
+    };
+    static bool WithinWindow(unsigned long first, unsigned long second) {
+        return (std::min)(first - second, second - first) <= kMatchWindowMs;
+    }
+    std::vector<Entry> reports_;
+    std::vector<Entry> losses_;
 };
 
 }  // namespace keybinder

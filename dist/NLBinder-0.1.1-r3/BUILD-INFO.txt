@@ -1,0 +1,32 @@
+NLBinder v.0.1.1 by KOBiRO – Überarbeitung 3 mit Damagelog
+Erstellt: 24.10.2026 21:32:53
+Datei: Keybinder.asi
+Format: Win32 Release, PE32/x86 DLL
+Größe: 18295296 Bytes
+SHA256: fc27a8a39fc2f78c40f1b686d5a71dcc0c2956854d1250278a84bd79200c7cef
+
+Verifikation:
+- Vollständige automatisierte Tests: Exitcode 0
+- Release-Build: Exitcode 0
+- ASI-Format, Windows-Imports und eingebetteter Helfer geprüft
+- Eingebetteter Reconnect-Helfer stimmt mit dem geprüften Helfer überein
+- Nativer Reconnect-Helfer: 18 Prüfungen, 0 Fehler
+- Dafür ausschließlich harmlose Testprozesse verwendet
+- Kein echtes Spiel und kein installierter Launcher gestartet oder beendet
+- Kein Ingame-Test durchgeführt
+
+Neue Änderungen:
+- Eigenständige Freunde-Radar- und Feinde-Radar-Overlays, getrennt verschiebbar
+- AFK-Abfrage und AFK-Anzeige vollständig entfernt
+- Hitsound beim Login sowie Vergleichswerte bei Spawn/Pedwechsel korrigiert
+- Reconnect über lokale Client-Beenden-Funktion, mit asynchronem Zeitlimit
+- Damagelog unter General / Gameplay, unabhängig schaltbar und gespeichert
+- Killtext-Variablenliste bereinigt; HP/Weste direkt vom aktuellen Spieler
+
+Alle bisherigen Job-, Skilltree-, Fraktions-, Zähler-, Tacho- und Motorstart-
+Anpassungen sind enthalten. Die ursprüngliche Oberfläche bleibt Grundlage.
+Der Reconnect-Helfer ist in der ASI enthalten.
+
+Grenzen: Eigene Server-Gesamtstände müssen tatsächlich empfangen werden.
+Nova kann bei Anmeldung, Updates oder fehlendem Spielstartknopf einen eigenen
+Klick erfordern. Details zum Damagelog und zur Installation stehen in LIESMICH.md.

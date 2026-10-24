@@ -235,6 +235,107 @@ bool TestTracksUnknownConfiguredLine() {
     return true;
 }
 
+bool TestEmbeddedHolzfaellerAndBauarbeiterCompletionAndSkill() {
+    jobs::JobRegistry registry;
+    jobs::JobRegistry::Snapshot snapshot;
+    ASSERT_TRUE(registry.LoadEmbedded(snapshot));
+    jobs::JobParser parser;
+
+    const std::string completion = ": Für das erfolgreiche Beenden deiner Tätigkeit erhältst du 325$ zum nächsten Zahltag.";
+    const std::string skill = ": Du hast deinen Job-Skill auf 42 verbessert.";
+    for (const std::string& prefix : {std::string("Holzfäller"), std::string("Holzfaeller"), std::string("Bauarbeiter")}) {
+        const std::string expectedId = prefix == "Bauarbeiter" ? "bauarbeiter" : "holzfaeller";
+        const auto earnings = parser.Parse(BuildChatEvent(prefix + completion, prefix), snapshot);
+        ASSERT_EQ(earnings.size(), static_cast<std::size_t>(1));
+        ASSERT_EQ(earnings[0].jobId, expectedId);
+        ASSERT_EQ(earnings[0].type, std::string("earning"));
+        ASSERT_EQ(earnings[0].source, std::string("chat_auto"));
+        ASSERT_EQ(earnings[0].amount, 325);
+        ASSERT_EQ(earnings[0].timestamp, static_cast<std::time_t>(1713045600));
+
+        const auto levels = parser.Parse(BuildChatEvent(prefix + skill, prefix), snapshot);
+        ASSERT_EQ(levels.size(), static_cast<std::size_t>(1));
+        ASSERT_EQ(levels[0].jobId, expectedId);
+        ASSERT_EQ(levels[0].type, std::string("skill_level_absolute"));
+        ASSERT_EQ(levels[0].level, 42);
+        ASSERT_EQ(parser.GetUnmatchedCount(expectedId), 0);
+    }
+    return true;
+}
+
+bool TestNewJobsRejectUnrecognizedAndDisabledMessages() {
+    jobs::JobRegistry registry;
+    jobs::JobRegistry::Snapshot snapshot;
+    ASSERT_TRUE(registry.LoadEmbedded(snapshot));
+    jobs::JobParser parser;
+
+    ASSERT_TRUE(parser.Parse(BuildChatEvent("Holzfäller: Der Baum ist bereit.", "Holzfäller"), snapshot).empty());
+    ASSERT_EQ(parser.GetUnmatchedCount("holzfaeller"), 1);
+    ASSERT_EQ(parser.GetUnmatchedCount("bauarbeiter"), 0);
+
+    const std::string completion = ": Für das erfolgreiche Beenden deiner Tätigkeit erhältst du 325$ zum nächsten Zahltag.";
+    ASSERT_TRUE(parser.Parse(BuildChatEvent("Spieler sagt" + completion, "Spieler sagt"), snapshot).empty());
+    for (jobs::JobDefinition& definition : snapshot.jobs) {
+        if (definition.id == "bauarbeiter") {
+            definition.enabled = false;
+        }
+    }
+    ASSERT_TRUE(parser.Parse(BuildChatEvent("Bauarbeiter" + completion, "Bauarbeiter"), snapshot).empty());
+    ASSERT_EQ(parser.GetUnmatchedCount("bauarbeiter"), 0);
+    return true;
+}
+
+bool TestEmbeddedHolzfaellerMessagesFromServerChatlog() {
+    jobs::JobRegistry registry;
+    jobs::JobRegistry::Snapshot snapshot;
+    ASSERT_TRUE(registry.LoadEmbedded(snapshot));
+    jobs::JobParser parser;
+
+    struct Message {
+        const char* prefix;
+        const char* payload;
+    };
+    const Message messages[] = {
+        {"Vince Redwood", "Fälle 5 Bäume, zersäge sie und liefere das Holz ab."},
+        {"Vince Redwood", "Pflanze Setzlinge. Ziel: 5 (max. 5 pro Auftrag)."},
+        {"Vince Redwood", "Pflanze Setzlinge. Ziel: 3 (max. 5 pro Auftrag)."},
+        {"Holzfäller", "Du hast zusätzlich 2 Holz gefunden."},
+        {"Holzfäller", "Du hast zusätzlich 1 Holz gefunden."}
+    };
+    for (const Message& message : messages) {
+        const auto events = parser.Parse(BuildChatEvent(
+            std::string(message.prefix) + ": " + message.payload, message.prefix), snapshot);
+        ASSERT_EQ(events.size(), static_cast<std::size_t>(1));
+        ASSERT_EQ(events[0].jobId, std::string("holzfaeller"));
+        ASSERT_EQ(events[0].type, std::string("job_message"));
+        ASSERT_EQ(events[0].note, std::string(message.payload));
+        ASSERT_EQ(events[0].amount, 0);
+    }
+    ASSERT_EQ(parser.GetUnmatchedCount("holzfaeller"), 0);
+    return true;
+}
+
+bool TestEmbeddedJobEarningsWithGermanThousandsSeparator() {
+    jobs::JobRegistry registry;
+    jobs::JobRegistry::Snapshot snapshot;
+    ASSERT_TRUE(registry.LoadEmbedded(snapshot));
+    jobs::JobParser parser;
+
+    for (const jobs::JobDefinition& definition : snapshot.jobs) {
+        const auto earnings = parser.Parse(BuildChatEvent(definition.name +
+            ": Für das erfolgreiche Beenden deiner Tätigkeit erhältst du 2.940$ zum nächsten Zahltag.",
+            definition.name), snapshot);
+        ASSERT_EQ(earnings.size(), static_cast<std::size_t>(1));
+        ASSERT_EQ(earnings[0].jobId, definition.id);
+        ASSERT_EQ(earnings[0].type, std::string("earning"));
+        ASSERT_EQ(earnings[0].amount, 2940);
+    }
+    ASSERT_TRUE(parser.Parse(BuildChatEvent(
+        "Holzfäller: Für das erfolgreiche Beenden deiner Tätigkeit erhältst du 2.94$ zum nächsten Zahltag.",
+        "Holzfäller"), snapshot).empty());
+    return true;
+}
+
 } // namespace
 
 int RunJobParserTests() {
@@ -243,6 +344,10 @@ int RunJobParserTests() {
     RUN_TEST(TestParsesCompletionRulesForConfiguredJobs);
     RUN_TEST(TestParsesConfiguredStartAndProgressLinesAsVisibleEvents);
     RUN_TEST(TestTracksUnknownConfiguredLine);
+    RUN_TEST(TestEmbeddedHolzfaellerAndBauarbeiterCompletionAndSkill);
+    RUN_TEST(TestNewJobsRejectUnrecognizedAndDisabledMessages);
+    RUN_TEST(TestEmbeddedHolzfaellerMessagesFromServerChatlog);
+    RUN_TEST(TestEmbeddedJobEarningsWithGermanThousandsSeparator);
 
     std::printf("JobParserTests: %d passed, %d failed\n", g_state.passed, g_state.failed);
     return g_state.failed;

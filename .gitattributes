@@ -1,0 +1,12 @@
+* text=auto
+*.cpp text eol=lf
+*.h text eol=lf
+*.md text eol=lf
+*.json text eol=lf
+*.bat text eol=crlf
+*.asi binary
+*.png binary
+*.ttf binary
+*.lib binary
+*.exe binary
+*.dll binary

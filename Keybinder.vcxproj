@@ -79,6 +79,7 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <Optimization>MaxSpeed</Optimization>
+      <DebugInformationFormat>None</DebugInformationFormat>
       <ForcedIncludeFiles>bit;memory;functional</ForcedIncludeFiles>
       <PreprocessorDefinitions>
         WIN32;NDEBUG;_WINDOWS;_USRDLL;
@@ -95,6 +96,7 @@
         $(ProjectDir)include\plugin-sdk\shared\game;
         $(ProjectDir)include\plugin-sdk\plugin_sa;
         $(ProjectDir)include\plugin-sdk\plugin_sa\game_sa;
+        $(ProjectDir)include\plugin-sdk\plugin_sa\game_sa\enums;
         $(ProjectDir)include\plugin-sdk\plugin_sa\game_sa\rw;
         $(ProjectDir)include\plugin-sdk\hooking;
         $(ProjectDir)include\plugin-sdk\injector;
@@ -157,6 +159,7 @@
         $(ProjectDir)include\plugin-sdk\shared\game;
         $(ProjectDir)include\plugin-sdk\plugin_sa;
         $(ProjectDir)include\plugin-sdk\plugin_sa\game_sa;
+        $(ProjectDir)include\plugin-sdk\plugin_sa\game_sa\enums;
         $(ProjectDir)include\plugin-sdk\plugin_sa\game_sa\rw;
         $(ProjectDir)include\plugin-sdk\hooking;
         $(ProjectDir)include\plugin-sdk\injector;
@@ -192,6 +195,7 @@
   <!-- ============================================================ -->
   <ItemGroup>
     <ClCompile Include="src\Main.cpp" />
+    <ClCompile Include="src\ReconnectManager.cpp" />
     <ClCompile Include="src\KeybindManager.cpp" />
     <ClCompile Include="src\ImGuiOverlay.cpp" />
     <ClCompile Include="src\SAMPBridge.cpp" />
@@ -553,10 +557,15 @@
 
   <ItemGroup>
     <ResourceCompile Include="Keybinder.rc">
-      <AdditionalInputs>gtasamap.jpg;%(AdditionalInputs)</AdditionalInputs>
+      <AdditionalInputs>gtasamap.jpg;$(ProjectDir)build\ReconnectHelper.exe;%(AdditionalInputs)</AdditionalInputs>
     </ResourceCompile>
   </ItemGroup>
 
+  <Target Name="BuildReconnectHelper" BeforeTargets="ResourceCompile"
+          Inputs="$(ProjectDir)tools\ReconnectHelper.cpp;$(ProjectDir)include\ReconnectManager.h;$(ProjectDir)tools\build_reconnect_helper.bat;$(ProjectDir)tools\setup_msvc.bat"
+          Outputs="$(ProjectDir)build\ReconnectHelper.exe">
+    <Exec Command="&quot;$(ProjectDir)tools\build_reconnect_helper.bat&quot;" WorkingDirectory="$(ProjectDir)" />
+  </Target>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets" />
 </Project>

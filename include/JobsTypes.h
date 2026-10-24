@@ -11,7 +11,7 @@ namespace jobs {
 
 using JobId = std::string;
 
-constexpr std::size_t kExpectedJobDefinitionCount = 15;
+constexpr std::size_t kExpectedJobDefinitionCount = 17;
 
 struct JobEvent {
     std::string id;

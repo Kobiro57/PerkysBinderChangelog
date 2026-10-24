@@ -484,6 +484,139 @@ bool TestWantedOverlayDefaultsWhenAbsent() {
     return true;
 }
 
+bool TestPlayerRadarAndGameHudSettingsRoundtrip() {
+    SettingsManager manager;
+    Settings& s = manager.GetMutable();
+    s.online_friends_overlay_enabled = true;
+    s.online_enemies_overlay_enabled = false;
+    s.online_quick_overlay_show_rcb = false;
+    s.online_friends_overlay_anchor = "bottom_left";
+    s.online_friends_overlay_offset_x = 123.0f;
+    s.online_friends_overlay_offset_y = 234.0f;
+    s.online_enemies_overlay_anchor = "top_right";
+    s.online_enemies_overlay_offset_x = 345.0f;
+    s.online_enemies_overlay_offset_y = 456.0f;
+    s.online_location_overlay_enabled = true;
+    s.online_location_overlay_anchor = "bottom_right";
+    s.online_location_overlay_offset_x = 17.0f;
+    s.online_location_overlay_offset_y = 28.0f;
+    s.online_transport_overlay_enabled = true;
+    s.online_transport_overlay_anchor = "top_right";
+    s.online_transport_overlay_offset_x = 39.0f;
+    s.online_transport_overlay_offset_y = 40.0f;
+    s.online_pedslots_overlay_enabled = true;
+    s.online_pedslots_overlay_anchor = "bottom_left";
+    s.online_pedslots_overlay_offset_x = 51.0f;
+    s.online_pedslots_overlay_offset_y = 62.0f;
+    s.online_player_markers.push_back({"Some_Player", "Gang \"Blue\"", true});
+    SettingsManager reloaded;
+    ASSERT_TRUE(reloaded.LoadFromJson(manager.GetSettingsJson()));
+    const Settings& r = reloaded.Get();
+    ASSERT_TRUE(r.online_friends_overlay_enabled);
+    ASSERT_TRUE(!r.online_enemies_overlay_enabled);
+    ASSERT_TRUE(!r.online_quick_overlay_show_rcb);
+    ASSERT_EQ(r.online_friends_overlay_anchor, std::string("bottom_left"));
+    ASSERT_EQ(r.online_friends_overlay_offset_x, 123.0f);
+    ASSERT_EQ(r.online_friends_overlay_offset_y, 234.0f);
+    ASSERT_EQ(r.online_enemies_overlay_anchor, std::string("top_right"));
+    ASSERT_EQ(r.online_enemies_overlay_offset_x, 345.0f);
+    ASSERT_EQ(r.online_enemies_overlay_offset_y, 456.0f);
+    ASSERT_TRUE(r.online_location_overlay_enabled && r.online_transport_overlay_enabled && r.online_pedslots_overlay_enabled);
+    ASSERT_EQ(r.online_location_overlay_anchor, std::string("bottom_right"));
+    ASSERT_EQ(r.online_transport_overlay_anchor, std::string("top_right"));
+    ASSERT_EQ(r.online_pedslots_overlay_anchor, std::string("bottom_left"));
+    ASSERT_EQ(r.online_location_overlay_offset_x, 17.0f);
+    ASSERT_EQ(r.online_location_overlay_offset_y, 28.0f);
+    ASSERT_EQ(r.online_transport_overlay_offset_x, 39.0f);
+    ASSERT_EQ(r.online_transport_overlay_offset_y, 40.0f);
+    ASSERT_EQ(r.online_pedslots_overlay_offset_x, 51.0f);
+    ASSERT_EQ(r.online_pedslots_overlay_offset_y, 62.0f);
+    ASSERT_EQ(r.online_player_markers.size(), std::size_t(1));
+    ASSERT_EQ(r.online_player_markers[0].name, std::string("Some_Player"));
+    ASSERT_EQ(r.online_player_markers[0].affiliation, std::string("Gang \"Blue\""));
+    ASSERT_TRUE(r.online_player_markers[0].friendly);
+    return true;
+}
+
+bool TestPlayerMarkersNormalizeDeduplicateAndLimitEntries() {
+    SettingsManager manager;
+    std::string json = R"({"online_player_markers":[{"name":" Alpha ","affiliation":" LSPD ","friendly":true},{"name":"alpha"},{"name":"  "},{"name":"LongPlayerNameThatExceedsTwentyFourCharacters","affiliation":"01234567890123456789012345678901234567890123456789012345"})";
+    for (int i = 0; i < 30; ++i) json += ",{\"name\":\"Player" + std::to_string(i) + "\"}";
+    json += "]}";
+    ASSERT_TRUE(manager.LoadFromJson(json));
+    const Settings& s = manager.Get();
+    ASSERT_EQ(s.online_player_markers.size(), std::size_t(20));
+    ASSERT_EQ(s.online_player_markers[0].name, std::string("Alpha"));
+    ASSERT_EQ(s.online_player_markers[0].affiliation, std::string("LSPD"));
+    ASSERT_TRUE(s.online_player_markers[0].friendly);
+    ASSERT_EQ(s.online_player_markers[1].name.size(), std::size_t(24));
+    ASSERT_EQ(s.online_player_markers[1].affiliation.size(), std::size_t(48));
+    ASSERT_TRUE(manager.LoadFromJson(R"({"online_player_markers":[]})"));
+    ASSERT_TRUE(manager.Get().online_player_markers.empty());
+    return true;
+}
+
+bool TestLegacyRadarSettingsOnlyMigrateDisplaySelections() {
+    SettingsManager manager;
+    ASSERT_TRUE(manager.LoadFromJson(R"({"online_markers_overlay_enabled":true,"online_marker_watcher_enabled":true,"online_marker_chat_alert_enabled":true,"online_marker_sound_alert_enabled":true,"online_marker_refresh_seconds":2})"));
+    ASSERT_TRUE(manager.Get().online_friends_overlay_enabled);
+    ASSERT_TRUE(manager.Get().online_enemies_overlay_enabled);
+    const std::string saved = manager.GetSettingsJson();
+    ASSERT_TRUE(saved.find("online_markers_overlay_enabled") == std::string::npos);
+    ASSERT_TRUE(saved.find("online_marker_watcher_enabled") == std::string::npos);
+    ASSERT_TRUE(saved.find("online_marker_chat_alert_enabled") == std::string::npos);
+    ASSERT_TRUE(saved.find("online_marker_sound_alert_enabled") == std::string::npos);
+    ASSERT_TRUE(saved.find("online_marker_refresh_seconds") == std::string::npos);
+
+    SettingsManager explicitlyDisabled;
+    ASSERT_TRUE(explicitlyDisabled.LoadFromJson(R"({"online_markers_overlay_enabled":true,"online_friends_overlay_enabled":false,"online_enemies_overlay_enabled":false})"));
+    ASSERT_TRUE(!explicitlyDisabled.Get().online_friends_overlay_enabled);
+    ASSERT_TRUE(!explicitlyDisabled.Get().online_enemies_overlay_enabled);
+    SettingsManager onlyRemovedOptions;
+    ASSERT_TRUE(onlyRemovedOptions.LoadFromJson(R"({"online_marker_watcher_enabled":true,"online_marker_chat_alert_enabled":true,"online_marker_sound_alert_enabled":true})"));
+    ASSERT_TRUE(!onlyRemovedOptions.Get().online_friends_overlay_enabled);
+    ASSERT_TRUE(!onlyRemovedOptions.Get().online_enemies_overlay_enabled);
+    ASSERT_TRUE(onlyRemovedOptions.Get().online_quick_overlay_show_rcb);
+    return true;
+}
+
+bool TestSeparateRadarPositionsMigrateLegacyValuesAndRespectExplicitPlacements() {
+    SettingsManager defaults;
+    ASSERT_EQ(defaults.Get().online_friends_overlay_anchor, std::string("top_left"));
+    ASSERT_EQ(defaults.Get().online_enemies_overlay_anchor, std::string("top_left"));
+    ASSERT_EQ(defaults.Get().online_friends_overlay_offset_y, 250.0f);
+    ASSERT_EQ(defaults.Get().online_enemies_overlay_offset_y, 370.0f);
+
+    SettingsManager legacy;
+    ASSERT_TRUE(legacy.LoadFromJson(R"({"online_markers_overlay_anchor":"bottom_left","online_markers_overlay_offset_x":42,"online_markers_overlay_offset_y":83})"));
+    ASSERT_EQ(legacy.Get().online_friends_overlay_anchor, std::string("bottom_left"));
+    ASSERT_EQ(legacy.Get().online_enemies_overlay_anchor, std::string("bottom_left"));
+    ASSERT_EQ(legacy.Get().online_friends_overlay_offset_x, 42.0f);
+    ASSERT_EQ(legacy.Get().online_enemies_overlay_offset_x, 42.0f);
+    ASSERT_EQ(legacy.Get().online_friends_overlay_offset_y, 83.0f);
+    ASSERT_EQ(legacy.Get().online_enemies_overlay_offset_y, 203.0f);
+    const std::string saved = legacy.GetSettingsJson();
+    ASSERT_TRUE(saved.find("online_markers_overlay_anchor") == std::string::npos);
+    ASSERT_TRUE(saved.find("online_markers_overlay_offset_") == std::string::npos);
+
+    SettingsManager mixed;
+    ASSERT_TRUE(mixed.LoadFromJson(R"({"online_markers_overlay_anchor":"bottom_left","online_markers_overlay_offset_x":42,"online_markers_overlay_offset_y":83,"online_friends_overlay_anchor":"top_right","online_friends_overlay_offset_x":100,"online_friends_overlay_offset_y":101,"online_enemies_overlay_anchor":"bottom_right","online_enemies_overlay_offset_x":200,"online_enemies_overlay_offset_y":201})"));
+    ASSERT_EQ(mixed.Get().online_friends_overlay_anchor, std::string("top_right"));
+    ASSERT_EQ(mixed.Get().online_friends_overlay_offset_x, 100.0f);
+    ASSERT_EQ(mixed.Get().online_friends_overlay_offset_y, 101.0f);
+    ASSERT_EQ(mixed.Get().online_enemies_overlay_anchor, std::string("bottom_right"));
+    ASSERT_EQ(mixed.Get().online_enemies_overlay_offset_x, 200.0f);
+    ASSERT_EQ(mixed.Get().online_enemies_overlay_offset_y, 201.0f);
+
+    SettingsManager partial;
+    ASSERT_TRUE(partial.LoadFromJson(R"({"online_markers_overlay_offset_x":42,"online_markers_overlay_offset_y":83,"online_friends_overlay_offset_x":111,"online_enemies_overlay_offset_y":222})"));
+    ASSERT_EQ(partial.Get().online_friends_overlay_offset_x, 111.0f);
+    ASSERT_EQ(partial.Get().online_friends_overlay_offset_y, 83.0f);
+    ASSERT_EQ(partial.Get().online_enemies_overlay_offset_x, 42.0f);
+    ASSERT_EQ(partial.Get().online_enemies_overlay_offset_y, 222.0f);
+    return true;
+}
+
 int RunOnlineSettingsTests() {
     std::printf("\n=== Online Settings Tests ===\n");
     RUN_TEST(TestOnlineDefaultsWhenEmpty);
@@ -506,6 +639,10 @@ int RunOnlineSettingsTests() {
     RUN_TEST(TestWantedOverlayInvertedRangeNormalizesToSwapped);
     RUN_TEST(TestWantedOverlayMaxZeroPreservedAsNoLimit);
     RUN_TEST(TestWantedOverlayDefaultsWhenAbsent);
+    RUN_TEST(TestPlayerRadarAndGameHudSettingsRoundtrip);
+    RUN_TEST(TestPlayerMarkersNormalizeDeduplicateAndLimitEntries);
+    RUN_TEST(TestLegacyRadarSettingsOnlyMigrateDisplaySelections);
+    RUN_TEST(TestSeparateRadarPositionsMigrateLegacyValuesAndRespectExplicitPlacements);
     std::printf("Online Settings: %d passed, %d failed\n", g_state.passed, g_state.failed);
     return g_state.failed;
 }

@@ -49,3 +49,16 @@ AGENTS.md
 .venv/
 venv/
 env/
+
+# Personal Binder runtime data must never be published.
+keybinder.json
+jobs_data.json
+imgui.ini
+
+# Reviewed binaries and bundled build dependencies.
+!dist/NLBinder-*/Keybinder.asi
+!include/plugin-sdk/shared/**/*.lib
+!include/plugin-sdk/shared/**/*.dll
+!include/plugin-sdk/tools/**/*.exe
+!include/plugin-sdk/tools/**/*.dll
+!include/plugin-sdk/installer-launcher.exe

@@ -44,14 +44,18 @@ public:
     // Check if adapter is initialized
     bool IsInitialized() const { return initialized_.load(); }
 
+#ifdef KEYBINDER_TESTING
+    void ProcessRpcForTesting(RakNet::BitStream* payload);
+#endif
+
 private:
     std::atomic<bool> initialized_;
     std::shared_ptr<DamageAdapterState> state_;
 
     // SA-MP RPC 115 (RPC_GIVETAKEDAMAGE) carries both give and take damage; a
     // leading bool flag (0 = give/outgoing, 1 = take/incoming) selects which.
-    // We hook only outgoing sends; incoming damage is detected from local
-    // health changes (see SAMPBridge::PollLocalIncomingDamage).
+    // Both events are client-sent RPCs. Local health monitoring confirms the
+    // incoming amounts and provides a fallback when the server emits no RPC.
     static const unsigned char RPC_SEND_GIVE_DAMAGE = 115;
 };
 

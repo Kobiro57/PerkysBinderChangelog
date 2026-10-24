@@ -45,6 +45,9 @@ public:
     void Shutdown();
 
     void SetDeathMessageCallback(DeathMessageCallback callback);
+#ifdef KEYBINDER_TESTING
+    void DispatchForTesting(const DeathMessageEvent& event);
+#endif
 
 private:
     std::atomic<bool> initialized_;

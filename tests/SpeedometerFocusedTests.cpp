@@ -3,11 +3,15 @@
 #include "../include/TextDrawAdapter.h"
 #include "../include/TextDrawRPC.h"
 #include "../include/Logger.h"
+#include "../include/SAMPBridge.h"
+#include "../include/SpeedometerUI.h"
+#include "../include/imgui-1.92.7/imgui_internal.h"
 
 #include <cmath>
 #include <cstdio>
 #include <limits>
 #include <string>
+#include <stdexcept>
 
 namespace {
 
@@ -65,12 +69,12 @@ bool TestSpeedometerFocusedSettingsRoundTrip() {
   "speedometer_hide_textdraw_ids": [5, 10, 15],
   "speedometer_fuel_textdraw_ids": [20]
 })json"));
-    ASSERT_EQ(settingsManager.Get().speedometer_enabled, false);
-    ASSERT_TRUE(settingsManager.GetSettingsJson().find("\"speedometer_enabled\": false") != std::string::npos);
+    ASSERT_EQ(settingsManager.Get().speedometer_enabled, true);
+    ASSERT_TRUE(settingsManager.GetSettingsJson().find("\"speedometer_enabled\": true") != std::string::npos);
 
     keybinder::SettingsManager roundTrip;
     ASSERT_TRUE(roundTrip.LoadFromJson(settingsManager.GetSettingsJson()));
-    ASSERT_EQ(roundTrip.Get().speedometer_enabled, false);
+    ASSERT_EQ(roundTrip.Get().speedometer_enabled, true);
     ASSERT_EQ(roundTrip.Get().speedometer_style, std::string("tachometer_arc"));
     ASSERT_TRUE(roundTrip.GetSettingsJson().find("\"speedometer_hide_textdraw_ids\"") == std::string::npos);
     ASSERT_TRUE(roundTrip.GetSettingsJson().find("\"speedometer_fuel_textdraw_ids\"") == std::string::npos);
@@ -252,7 +256,147 @@ bool TestSpeedometerFocusedTelemetryBoundaryValues() {
     return true;
 }
 
-int main() {
+bool TestSpeedometerDriverLifecycleAndVehicleSwitch() {
+    keybinder::TextDrawAdapter adapter;
+    ASSERT_TRUE(adapter.Initialize());
+    SAMPBridge bridge;
+    keybinder::SpeedometerManager manager;
+    ASSERT_TRUE(manager.Initialize(&adapter, &bridge));
+    keybinder::speedometer::VehicleRuntimeState runtime;
+    runtime.connected = true;
+    runtime.isDriver = true;
+    runtime.vehicleIdentity = 1;
+    runtime.input.isInVehicle = true;
+    runtime.input.speedKmh = 75.0f;
+    runtime.input.vehicleHealth = 640.0f;
+    runtime.input.currentGear = 3;
+    runtime.input.engineOn = true;
+    manager.SetVehicleStateProviderForTesting([&]() { return runtime; });
+    manager.OnSettingsChanged(true);
+    manager.Update();
+    ASSERT_TRUE(manager.GetState().isInVehicle);
+    ASSERT_EQ(std::string(manager.GetState().speedText), std::string("75 km/h"));
+    ASSERT_EQ(std::string(manager.GetState().healthText), std::string("64%"));
+    runtime.isDriver = false;
+    manager.Update();
+    ASSERT_TRUE(!manager.GetState().isInVehicle);
+    runtime.isDriver = true;
+    manager.Update();
+    ASSERT_TRUE(manager.GetState().isInVehicle);
+    runtime.input.currentGear = 4;
+    runtime.input.speedKmh = 95.0f;
+    manager.Update();
+    ASSERT_NEAR(manager.GetState().telemetry.observedGearStartSpeedKmh, 95.0f, 0.01f);
+    runtime.vehicleIdentity = 2;
+    runtime.input.speedKmh = 40.0f;
+    manager.Update();
+    ASSERT_NEAR(manager.GetState().telemetry.accelerationKmhPerSecond, 0.0f, 0.01f);
+    ASSERT_TRUE(manager.GetState().telemetry.observedGearStartSpeedKmh < 95.0f);
+    manager.OnSettingsChanged(false);
+    manager.Update();
+    ASSERT_TRUE(!manager.GetState().isInVehicle);
+    manager.OnSettingsChanged(true);
+    manager.Update();
+    ASSERT_TRUE(manager.GetState().isInVehicle);
+    runtime.connected = false;
+    manager.Update();
+    ASSERT_TRUE(!manager.GetState().isInVehicle);
+    runtime.connected = true;
+    manager.Update();
+    ASSERT_TRUE(manager.GetState().isInVehicle);
+    ASSERT_NEAR(manager.GetState().telemetry.accelerationKmhPerSecond, 0.0f, 0.01f);
+    runtime.input.isInVehicle = false;
+    manager.Update();
+    ASSERT_TRUE(!manager.GetState().isInVehicle);
+    return true;
+}
+
+bool TestSpeedometerRenderMaskRestoresOriginalAndKeepsUpdates() {
+    int firstObject = 1, secondObject = 2, replacementObject = 3;
+    int visible[] = {7, 1, 0};
+    void* objects[] = {&firstObject, &secondObject, &firstObject};
+    std::string fuel = "40%";
+    bool hiddenDuringDraw = false;
+    keybinder::TextDrawAdapter::RenderVisibilityMaskForTesting(visible, objects, 3, {0, 0, 2}, [&]() {
+        hiddenDuringDraw = visible[0] == 0 && visible[1] == 1 && visible[2] == 0;
+        fuel = "39%";
+    });
+    ASSERT_TRUE(hiddenDuringDraw);
+    ASSERT_EQ(visible[0], 7);
+    ASSERT_EQ(visible[1], 1);
+    ASSERT_EQ(visible[2], 0);
+    ASSERT_EQ(objects[0], static_cast<void*>(&firstObject));
+    ASSERT_EQ(fuel, std::string("39%"));
+    keybinder::TextDrawAdapter::RenderVisibilityMaskForTesting(visible, objects, 3, {}, [&]() {
+        hiddenDuringDraw = visible[0] == 7 && visible[1] == 1;
+    });
+    ASSERT_TRUE(hiddenDuringDraw);
+    try {
+        keybinder::TextDrawAdapter::RenderVisibilityMaskForTesting(visible, objects, 3, {0}, [&]() {
+            throw std::runtime_error("draw failed");
+        });
+    } catch (const std::runtime_error&) {}
+    ASSERT_EQ(visible[0], 7);
+    keybinder::TextDrawAdapter::RenderVisibilityMaskForTesting(visible, objects, 3, {0}, [&]() {
+        objects[0] = &replacementObject;
+    });
+    ASSERT_EQ(visible[0], 0);
+    ASSERT_EQ(objects[0], static_cast<void*>(&replacementObject));
+    return true;
+}
+
+bool TestSpeedometerRejectsNonFiniteFuelAndTime() {
+    keybinder::speedometer::VehicleTelemetryInput input;
+    input.isInVehicle = true;
+    input.speedKmh = 60.0f;
+    input.fuelValue = std::numeric_limits<float>::infinity();
+    const auto previous = keybinder::SpeedometerManager::BuildTelemetry(input);
+    ASSERT_TRUE(!previous.hasFuel);
+    input.speedKmh = 120.0f;
+    const auto telemetry = keybinder::SpeedometerManager::BuildTelemetry(input, &previous,
+        std::numeric_limits<float>::infinity());
+    ASSERT_NEAR(telemetry.accelerationKmhPerSecond, 0.0f, 0.01f);
+    return true;
+}
+
+bool TestSpeedometerStylesFitSmallViewport() {
+    struct ImGuiScope {
+        ImGuiScope() {
+            if (ImGui::GetCurrentContext()) ImGui::DestroyContext();
+            ImGui::CreateContext();
+            ImGui::GetIO().IniFilename = nullptr;
+            unsigned char* pixels;
+            int width, height;
+            ImGui::GetIO().Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);
+        }
+        ~ImGuiScope() { ImGui::DestroyContext(); }
+    } context;
+    keybinder::speedometer::SpeedometerState state;
+    state.isInVehicle = true;
+    state.telemetry.isInVehicle = true;
+    state.telemetry.speedKmh = 100.0f;
+    keybinder::SpeedometerUI ui;
+    const keybinder::speedometer::SpeedometerStyle styles[] = {
+        keybinder::speedometer::SpeedometerStyle::TachometerArc,
+        keybinder::speedometer::SpeedometerStyle::AnalogArc,
+        keybinder::speedometer::SpeedometerStyle::MinimalDigital};
+    const char* names[] = {"##SpeedometerTachometerArc", "##SpeedometerAnalogArc", "##SpeedometerMinimalDigital"};
+    for (int index = 0; index < 3; ++index) {
+        ImGui::GetIO().DisplaySize = ImVec2(640, 360);
+        ImGui::GetIO().DeltaTime = 1.0f / 60.0f;
+        ImGui::NewFrame();
+        ui.Render(state, styles[index]);
+        ImGuiWindow* window = ImGui::FindWindowByName(names[index]);
+        const bool fits = window && window->Pos.x >= -0.5f && window->Pos.y >= -0.5f
+            && window->Pos.x + window->Size.x <= 640.5f && window->Pos.y + window->Size.y <= 360.5f;
+        ImGui::Render();
+        ASSERT_TRUE(fits);
+    }
+    return true;
+}
+
+int RunSpeedometerFocusedTests() {
+    g_results = {};
     std::printf("=== Speedometer Focused Tests ===\n\n");
     keybinder::Logger::Initialize("test_speedometer_focused.log");
     keybinder::Logger::SetMinLevel(keybinder::LogLevel::Debug);
@@ -266,9 +410,17 @@ int main() {
     RUN_TEST(TestSpeedometerFocusedTelemetryAccelerationUsesPreviousSample);
     RUN_TEST(TestSpeedometerFocusedTelemetryInvalidValuesClampSafely);
     RUN_TEST(TestSpeedometerFocusedTelemetryBoundaryValues);
+    RUN_TEST(TestSpeedometerDriverLifecycleAndVehicleSwitch);
+    RUN_TEST(TestSpeedometerRenderMaskRestoresOriginalAndKeepsUpdates);
+    RUN_TEST(TestSpeedometerRejectsNonFiniteFuelAndTime);
+    RUN_TEST(TestSpeedometerStylesFitSmallViewport);
 
     keybinder::Logger::Shutdown();
     std::remove("test_speedometer_focused.log");
     std::printf("\n=== Speedometer Focused Results: %d passed, %d failed ===\n", g_results.passed, g_results.failed);
     return g_results.failed;
 }
+
+#ifdef SPEEDOMETER_FOCUSED_TEST_MAIN
+int main() { return RunSpeedometerFocusedTests(); }
+#endif

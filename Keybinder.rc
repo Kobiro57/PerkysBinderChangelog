@@ -1,5 +1,7 @@
 #include "include/ResourceIds.h"
 
+IDR_RECONNECT_HELPER RCDATA "build\\ReconnectHelper.exe"
+
 IDR_FONT_INTER RCDATA "third_party\\assets\\fonts\\Inter_28pt-Regular.ttf"
 IDR_FONT_MATERIAL_SYMBOLS RCDATA "third_party\\assets\\fonts\\icons\\MaterialSymbols.ttf"
 IDR_IMAGE_NL_LOGO RCDATA "res\\NLLogo.png"

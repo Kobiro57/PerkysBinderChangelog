@@ -4,6 +4,8 @@
 #include <cstddef>
 #include <memory>
 #include <string>
+#include <functional>
+#include <vector>
 
 namespace RakNet {
 class BitStream;
@@ -27,6 +29,7 @@ public:
     void SetDiagnosticsEnabled(bool enabled);
     bool IsDiagnosticsEnabled() const;
     unsigned long GetDiagnosticsEventCount() const;
+    bool IsRenderSuppressionReady() const;
 
     std::string GetFuelText() const;
     float GetFuelValue() const;
@@ -34,6 +37,8 @@ public:
     bool DumpAllTextDrawsToFile(const std::string& outputPath, std::size_t* dumpedCount = nullptr) const;
 
 #ifdef KEYBINDER_TESTING
+    static void RenderVisibilityMaskForTesting(int* visible, void** objects, std::size_t count,
+        const std::vector<int>& hiddenIds, const std::function<void()>& draw);
     static std::string StripColorCodesForTesting(const std::string& text);
     static float ParseFuelValueForTesting(const std::string& text);
     static bool TryParseRpcTextForTesting(unsigned char rpcId, RakNet::BitStream* bs, int& textDrawId, std::string& text);

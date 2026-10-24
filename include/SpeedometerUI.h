@@ -21,6 +21,7 @@ private:
     float displayedArcPct_ = 0.0f;
     float displayedMinimalFuelPct_ = 0.0f;
     float displayedMinimalHealthPct_ = 0.0f;
+    speedometer::SpeedometerStyle lastStyle_ = speedometer::SpeedometerStyle::AnalogArc;
 };
 
 } // namespace keybinder

@@ -77,20 +77,21 @@ std::vector<KillEvent> KillfeedAdapter::PollForNewKills() {
 
     auto* deathWindow = GetDeathWindow();
     if (!deathWindow) {
-        return newKills;
+        return ProcessSnapshot({}, false);
     }
 
     // If the death window pointer previously caused an access violation,
     // stop polling entirely. The kill tracker still works via RPC adapters.
     if (deathWindowFaulted_) {
-        return newKills;
+        return ProcessSnapshot({}, false);
     }
 
     if (!RefreshLocalPlayerName()) {
-        return newKills;
+        return ProcessSnapshot({}, false);
     }
 
-    std::vector<DeathWindowEntry> currentState = ReadDeathWindow(deathWindow);
+    bool snapshotAvailable = false;
+    std::vector<DeathWindowEntry> currentState = ReadDeathWindow(deathWindow, &snapshotAvailable);
     static int logCounter = 0;
     logCounter++;
     if (!currentState.empty() || logCounter >= 60) {
@@ -98,6 +99,27 @@ std::vector<KillEvent> KillfeedAdapter::PollForNewKills() {
             keybinder::Logger::Debug("[KillfeedAdapter] Read %zu entries from death window", currentState.size());
         }
         logCounter = 0;
+    }
+
+    return ProcessSnapshot(std::move(currentState), snapshotAvailable);
+}
+
+std::vector<KillEvent> KillfeedAdapter::ProcessSnapshot(std::vector<DeathWindowEntry> currentState,
+                                                      bool snapshotAvailable) {
+    std::vector<KillEvent> newKills;
+    if (!snapshotAvailable) {
+        // A disabled, missing or faulted window is unknown, rather than a
+        // confirmed empty feed. Seed again once a readable feed reappears.
+        lastKnownState_.clear();
+        initialized_ = false;
+        return newKills;
+    }
+    if (!initialized_) {
+        // The first readable window may already contain earlier kills. Seed the
+        // baseline without replaying history when the tracker is enabled.
+        lastKnownState_ = std::move(currentState);
+        initialized_ = true;
+        return newKills;
     }
 
     newKills.reserve(currentState.size());
@@ -245,8 +267,9 @@ bool KillfeedAdapter::IsDuplicateEntry(const DeathWindowEntry& entry) const {
     return false;
 }
 
-std::vector<DeathWindowEntry> KillfeedAdapter::ReadDeathWindow(void* deathWindow) const {
+std::vector<DeathWindowEntry> KillfeedAdapter::ReadDeathWindow(void* deathWindow, bool* snapshotAvailable) const {
     std::vector<DeathWindowEntry> entries;
+    if (snapshotAvailable) *snapshotAvailable = false;
 
 #ifndef KEYBINDER_TESTING
     if (!deathWindow) {
@@ -326,6 +349,7 @@ std::vector<DeathWindowEntry> KillfeedAdapter::ReadDeathWindow(void* deathWindow
         dwEntry.valid = true;
         entries.push_back(std::move(dwEntry));
     }
+    if (snapshotAvailable) *snapshotAvailable = true;
 #endif
 
     return entries;

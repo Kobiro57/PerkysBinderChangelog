@@ -16,6 +16,7 @@ struct KillEvent {
     bool isSuicide;
     bool isSystem;
     float damageDealt;  // Total damage dealt to victim in this kill
+    bool isServerStatsOnly = false;
 
     KillEvent()
         : weaponId(-1)

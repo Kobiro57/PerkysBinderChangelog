@@ -79,9 +79,9 @@ struct ImGuiScope {
         }
     }
 
-    void BeginFrame() {
+    void BeginFrame(float width = 1920.0f, float height = 1080.0f) {
         ImGuiIO& io = ImGui::GetIO();
-        io.DisplaySize = ImVec2(1920.0f, 1080.0f);
+        io.DisplaySize = ImVec2(width, height);
         io.DeltaTime = 1.0f / 60.0f;
         ImGui::NewFrame();
     }
@@ -626,6 +626,346 @@ bool TestWantedOverlayDisabledByDefault() {
     return true;
 }
 
+bool TestGameHudUsesLiveStateAndOriginalAppearance() {
+    SettingsManager settings;
+    Settings& s = settings.GetMutable();
+    s.online_location_overlay_enabled = true;
+    s.online_transport_overlay_enabled = true;
+    s.online_pedslots_overlay_enabled = true;
+    s.online_friends_overlay_enabled = true;
+    s.online_enemies_overlay_enabled = true;
+    s.online_overlay_style = "dense";
+    s.online_overlay_scale = 1.2f;
+    s.online_player_markers.push_back({"Alpha", "LSPD", true});
+    OnlineGameOverlayState game;
+    game.connected = true;
+    game.location = "Los Santos | Idlewood";
+    game.transport = "Sultan";
+    game.streamedPlayers = 7;
+    game.players.push_back({42, "Alpha"});
+    OnlineDataManager manager;
+    PopulateUsableSnapshot(manager);
+    OnlineOverlayController controller;
+    controller.Initialize(&settings, &manager);
+    controller.SetGameStateProvider([&]() { return game; });
+    controller.Update(0.0f);
+    const auto& overlays = controller.GetGameOverlays();
+    ASSERT_EQ(overlays.size(), std::size_t(5));
+    ASSERT_EQ(overlays[0].kind, PersistentOverlayKind::Location);
+    ASSERT_EQ(overlays[0].playerNames[0], game.location);
+    ASSERT_TRUE(!overlays[0].showPlayerCount);
+    ASSERT_EQ(overlays[1].playerNames[0], std::string("Sultan"));
+    ASSERT_EQ(overlays[2].playerNames[0], std::string("7 Spieler im Stream"));
+    ASSERT_EQ(overlays[3].playerCount, 1);
+    ASSERT_EQ(overlays[3].playerNames[0], std::string("Freund: Alpha [LSPD] | ID 42"));
+    ASSERT_EQ(overlays[3].kind, PersistentOverlayKind::FriendsRadar);
+    ASSERT_EQ(overlays[4].kind, PersistentOverlayKind::EnemiesRadar);
+    ASSERT_EQ(overlays[4].playerCount, 0);
+    ASSERT_EQ(overlays[0].style, OnlineOverlayStyle::Dense);
+    ASSERT_EQ(overlays[0].scale, 1.2f);
+
+    OnlineOverlayRenderer renderer;
+    renderer.Initialize(&settings, &manager);
+    renderer.SetOverlayController(&controller);
+    ImGuiScope scope;
+    scope.BeginFrame();
+    renderer.RenderPersistentOverlays();
+    scope.EndFrame();
+    ASSERT_TRUE(FindWindow("##PersistentOverlay_Ort") != nullptr);
+    ASSERT_TRUE(FindWindow("##PersistentOverlay_Fortbewegungsmittel") != nullptr);
+    ASSERT_TRUE(FindWindow("##PersistentOverlay_Pedslots") != nullptr);
+    ASSERT_TRUE(FindWindow("##PersistentOverlay_Freunde-Radar") != nullptr);
+    ASSERT_TRUE(FindWindow("##PersistentOverlay_Feinde-Radar") != nullptr);
+    ASSERT_TRUE(FindWindow("##PersistentOverlay_Spieler-Radar") == nullptr);
+    return true;
+}
+
+bool TestPlayerListsRespectIndependentFriendAndEnemyVisibility() {
+    SettingsManager settings;
+    Settings& s = settings.GetMutable();
+    s.online_player_markers.push_back({"Enemy", "Ballas", false});
+    s.online_player_markers.push_back({"Friend", "LSPD", true});
+    OnlineGameOverlayState game;
+    game.connected = true;
+    game.players.push_back({9, "fRiEnD"});
+    game.players.push_back({15, "enemy"});
+    OnlineDataManager manager;
+    manager.UpdateFromPlayers({BuildRawPlayer("f", "Friend", "LSPD"), BuildRawPlayer("e", "Enemy", "", "Ballas")}, 0);
+    OnlineOverlayController controller;
+    controller.Initialize(&settings, &manager);
+    controller.SetGameStateProvider([&]() { return game; });
+    controller.Update(0.0f);
+    ASSERT_TRUE(controller.GetGameOverlays().empty());
+    ASSERT_EQ(controller.GetMarkerStates().size(), std::size_t(2));
+    ASSERT_TRUE(controller.GetMarkerStates()[0].online);
+    ASSERT_TRUE(controller.GetMarkerStates()[1].online);
+
+    s.online_friends_overlay_enabled = true;
+    controller.Update(0.0f);
+    ASSERT_EQ(controller.GetGameOverlays().size(), std::size_t(1));
+    ASSERT_EQ(controller.GetGameOverlays()[0].playerCount, 1);
+    ASSERT_EQ(controller.GetGameOverlays()[0].kind, PersistentOverlayKind::FriendsRadar);
+    ASSERT_EQ(controller.GetGameOverlays()[0].playerNames[0], std::string("Freund: fRiEnD [LSPD] | ID 9"));
+
+    s.online_friends_overlay_enabled = false;
+    s.online_enemies_overlay_enabled = true;
+    controller.Update(0.0f);
+    ASSERT_EQ(controller.GetGameOverlays()[0].playerCount, 1);
+    ASSERT_EQ(controller.GetGameOverlays()[0].kind, PersistentOverlayKind::EnemiesRadar);
+    ASSERT_EQ(controller.GetGameOverlays()[0].playerNames[0], std::string("Feind: enemy [Ballas] | ID 15"));
+
+    s.online_friends_overlay_enabled = true;
+    controller.Update(0.0f);
+    ASSERT_EQ(controller.GetGameOverlays().size(), std::size_t(2));
+    ASSERT_EQ(controller.GetGameOverlays()[0].kind, PersistentOverlayKind::FriendsRadar);
+    ASSERT_EQ(controller.GetGameOverlays()[1].kind, PersistentOverlayKind::EnemiesRadar);
+    ASSERT_EQ(controller.GetGameOverlays()[0].playerCount, 1);
+    ASSERT_EQ(controller.GetGameOverlays()[1].playerCount, 1);
+    ASSERT_EQ(controller.GetGameOverlays()[0].playerNames[0], std::string("Freund: fRiEnD [LSPD] | ID 9"));
+    ASSERT_EQ(controller.GetGameOverlays()[1].playerNames[0], std::string("Feind: enemy [Ballas] | ID 15"));
+    return true;
+}
+
+bool TestPlayerListsRefreshPresenceAndClearOnDisconnectOrDisable() {
+    SettingsManager settings;
+    settings.GetMutable().online_enemies_overlay_enabled = true;
+    settings.GetMutable().online_player_markers.push_back({"Enemy", "", false});
+    OnlineDataManager manager;
+    OnlineOverlayController controller;
+    OnlineGameOverlayState game;
+    game.connected = true;
+    controller.Initialize(&settings, &manager);
+    int captures = 0;
+    controller.SetGameStateProvider([&]() { ++captures; return game; });
+    controller.Update(0.0f);
+    ASSERT_EQ(controller.GetGameOverlays()[0].playerCount, 0);
+    ASSERT_TRUE(!controller.GetMarkerStates()[0].online);
+
+    game.players.push_back({3, "Enemy"});
+    controller.Update(0.6f);
+    ASSERT_EQ(controller.GetGameOverlays()[0].playerNames[0], std::string("Feind: Enemy [Unbekannt] | ID 3"));
+    ASSERT_TRUE(controller.GetMarkerStates()[0].online);
+    game.players.clear();
+    controller.Update(0.6f);
+    ASSERT_EQ(controller.GetGameOverlays()[0].playerCount, 0);
+    ASSERT_TRUE(!controller.GetMarkerStates()[0].online);
+
+    game = {};
+    controller.Update(0.6f);
+    ASSERT_TRUE(controller.GetGameOverlays().empty());
+    ASSERT_TRUE(controller.GetMarkerStates().empty());
+    game.connected = true;
+    game.players.push_back({4, "Enemy"});
+    controller.Update(0.6f);
+    ASSERT_TRUE(controller.GetMarkerStates()[0].online);
+    const int capturesBeforeDisable = captures;
+    settings.GetMutable().online_enabled = false;
+    controller.Update(2.1f);
+    ASSERT_TRUE(controller.GetGameOverlays().empty());
+    ASSERT_TRUE(controller.GetGameState().players.empty());
+    ASSERT_EQ(captures, capturesBeforeDisable);
+    return true;
+}
+bool TestNewGameHudRemainsInsideSmallViewportWithTwentyMarkers() {
+    SettingsManager settings;
+    Settings& s = settings.GetMutable();
+    s.online_location_overlay_enabled = true;
+    s.online_transport_overlay_enabled = true;
+    s.online_pedslots_overlay_enabled = true;
+    s.online_friends_overlay_enabled = true;
+    s.online_enemies_overlay_enabled = true;
+    s.online_overlay_scale = 1.5f;
+    s.online_location_overlay_offset_x = -500.0f;
+    s.online_transport_overlay_offset_y = 5000.0f;
+    OnlineGameOverlayState game;
+    game.connected = true;
+    game.location = "Los Santos | Idlewood";
+    game.transport = "Sultan";
+    for (int i = 0; i < 20; ++i) {
+        const std::string name = "Player" + std::to_string(i);
+        s.online_player_markers.push_back({name, "Ballas", false});
+        game.players.push_back({i, name});
+    }
+    OnlineDataManager manager;
+    OnlineOverlayController controller;
+    controller.Initialize(&settings, &manager);
+    controller.SetGameStateProvider([&]() { return game; });
+    controller.Update(0.0f);
+    OnlineOverlayRenderer renderer;
+    renderer.Initialize(&settings, &manager);
+    renderer.SetOverlayController(&controller);
+    ImGuiScope scope;
+    const ImVec2 dimensions[] = {ImVec2(1280.0f, 720.0f), ImVec2(640.0f, 360.0f)};
+    for (const ImVec2& dimensionsForFrame : dimensions) {
+        scope.BeginFrame(dimensionsForFrame.x, dimensionsForFrame.y);
+        renderer.RenderPersistentOverlays();
+        scope.EndFrame();
+        for (const char* name : {"##PersistentOverlay_Ort", "##PersistentOverlay_Fortbewegungsmittel", "##PersistentOverlay_Pedslots", "##PersistentOverlay_Freunde-Radar", "##PersistentOverlay_Feinde-Radar"}) {
+            const ImGuiWindow* window = FindWindow(name);
+            ASSERT_TRUE(window != nullptr);
+            ASSERT_TRUE(window->Pos.x >= 0.0f && window->Pos.y >= 0.0f);
+            ASSERT_TRUE(window->Pos.x + window->Size.x <= dimensionsForFrame.x + 0.5f);
+            ASSERT_TRUE(window->Pos.y + window->Size.y <= dimensionsForFrame.y + 0.5f);
+        }
+    }
+    return true;
+}
+
+bool TestPlayerAffiliationAlwaysUsesCurrentSnapshotRatherThanSavedNotes() {
+    SettingsManager settings;
+    settings.GetMutable().online_friends_overlay_enabled = true;
+    settings.GetMutable().online_player_markers.push_back({"Friend", "Old manual note", true});
+    OnlineDataManager manager;
+    manager.UpdateFromPlayers({BuildRawPlayer("account", "fRiEnD", "Police Department")}, 0);
+    OnlineOverlayController controller;
+    OnlineGameOverlayState game;
+    game.connected = true;
+    game.players.push_back({12, "FRIEND"});
+    controller.Initialize(&settings, &manager);
+    controller.SetGameStateProvider([&]() { return game; });
+    controller.Update(0.0f);
+    ASSERT_EQ(controller.GetGameOverlays()[0].playerNames[0], std::string("Freund: FRIEND [LSPD] | ID 12"));
+
+    manager.UpdateFromPlayers({BuildRawPlayer("account", "Friend", "", "Ballas")}, 0);
+    controller.Update(0.0f);
+    ASSERT_EQ(controller.GetMarkerStates()[0].affiliation, std::string("Ballas"));
+    ASSERT_EQ(controller.GetGameOverlays()[0].playerNames[0], std::string("Freund: FRIEND [Ballas] | ID 12"));
+
+    manager.UpdateFromPlayers({BuildRawPlayer("account", "Friend")}, 0);
+    game.players[0].id = 9;
+    controller.Update(0.6f);
+    ASSERT_EQ(controller.GetGameOverlays()[0].playerNames[0], std::string("Freund: FRIEND [Zivilist] | ID 9"));
+
+    manager.UpdateFromPlayers({BuildRawPlayer("account", "Friend", "Red County Brotherhood")}, 0);
+    controller.Update(0.0f);
+    ASSERT_EQ(controller.GetMarkerStates()[0].affiliation, std::string("Red County Brotherhood"));
+    OnlineSnapshot snapshot = manager.GetSnapshot();
+    snapshot.fetchStatus = OnlineFetchStatus::Offline;
+    manager.SetSnapshotForTesting(snapshot);
+    controller.Update(0.0f);
+    ASSERT_EQ(controller.GetMarkerStates()[0].affiliation, std::string("Unbekannt"));
+    ASSERT_EQ(OnlineOverlayController::ResolveMarkerAffiliation(OnlineSnapshot{}, "missing"), std::string("Unbekannt"));
+    return true;
+}
+
+bool TestFriendAndEnemyRadarMoveAndPersistIndependently() {
+    SettingsManager settings;
+    auto& s = settings.GetMutable();
+    s.online_friends_overlay_enabled = true;
+    s.online_enemies_overlay_enabled = true;
+    s.online_friends_overlay_anchor = "top_left";
+    s.online_friends_overlay_offset_x = 40.0f;
+    s.online_friends_overlay_offset_y = 80.0f;
+    s.online_enemies_overlay_anchor = "bottom_right";
+    s.online_enemies_overlay_offset_x = 25.0f;
+    s.online_enemies_overlay_offset_y = 35.0f;
+    s.online_player_markers.push_back({"Alpha", "", true});
+    s.online_player_markers.push_back({"Berta", "", false});
+    OnlineDataManager manager;
+    PopulateUsableSnapshot(manager);
+    OnlineGameOverlayState game;
+    game.connected = true;
+    game.players = {{5, "Alpha"}, {6, "Berta"}};
+    OnlineOverlayController controller;
+    controller.Initialize(&settings, &manager);
+    controller.SetGameStateProvider([&]() { return game; });
+    controller.Update(0.0f);
+    OnlineOverlayRenderer renderer;
+    renderer.Initialize(&settings, &manager);
+    renderer.SetOverlayController(&controller);
+
+    ImGuiScope scope;
+    scope.BeginFrame();
+    renderer.RenderPersistentOverlays();
+    scope.EndFrame();
+    const ImGuiWindow* friends = FindWindow("##PersistentOverlay_Freunde-Radar");
+    const ImGuiWindow* enemies = FindWindow("##PersistentOverlay_Feinde-Radar");
+    ASSERT_TRUE(friends != nullptr && enemies != nullptr && friends != enemies);
+    ASSERT_EQ(friends->Pos.x, 40.0f);
+    ASSERT_EQ(friends->Pos.y, 80.0f);
+    ASSERT_EQ(enemies->Pos.x, 1920.0f - enemies->Size.x - 25.0f);
+    ASSERT_EQ(enemies->Pos.y, 1080.0f - enemies->Size.y - 35.0f);
+    const ImVec2 friendSize = friends->Size;
+    const ImVec2 enemySize = enemies->Size;
+
+    renderer.SetPersistentOverlayMoveMode(true);
+    scope.BeginFrame();
+    renderer.RenderPersistentOverlays();
+    ASSERT_TRUE((friends->Flags & ImGuiWindowFlags_NoMove) == 0);
+    ASSERT_TRUE((enemies->Flags & ImGuiWindowFlags_NoMove) == 0);
+    renderer.PersistMovedOverlayPositionForTesting(controller.GetGameOverlays()[0], ImVec2(1300.0f, 800.0f), friendSize);
+    ASSERT_EQ(s.online_friends_overlay_anchor, std::string("bottom_right"));
+    ASSERT_EQ(s.online_friends_overlay_offset_x, 620.0f - friendSize.x);
+    ASSERT_EQ(s.online_friends_overlay_offset_y, 280.0f - friendSize.y);
+    ASSERT_EQ(s.online_enemies_overlay_anchor, std::string("bottom_right"));
+    ASSERT_EQ(s.online_enemies_overlay_offset_x, 25.0f);
+    ASSERT_EQ(s.online_enemies_overlay_offset_y, 35.0f);
+    renderer.PersistMovedOverlayPositionForTesting(controller.GetGameOverlays()[1], ImVec2(100.0f, 160.0f), enemySize);
+    ASSERT_EQ(s.online_enemies_overlay_anchor, std::string("top_left"));
+    ASSERT_EQ(s.online_enemies_overlay_offset_x, 100.0f);
+    ASSERT_EQ(s.online_enemies_overlay_offset_y, 160.0f);
+    ASSERT_EQ(s.online_friends_overlay_offset_x, 620.0f - friendSize.x);
+    ASSERT_EQ(s.online_friends_overlay_offset_y, 280.0f - friendSize.y);
+    scope.EndFrame();
+
+    SettingsManager reloaded;
+    ASSERT_TRUE(reloaded.LoadFromJson(settings.GetSettingsJson()));
+    ASSERT_EQ(reloaded.Get().online_friends_overlay_anchor, std::string("bottom_right"));
+    ASSERT_EQ(reloaded.Get().online_enemies_overlay_anchor, std::string("top_left"));
+    ASSERT_EQ(reloaded.Get().online_friends_overlay_offset_x, s.online_friends_overlay_offset_x);
+    ASSERT_EQ(reloaded.Get().online_enemies_overlay_offset_x, 100.0f);
+    renderer.SetPersistentOverlayMoveMode(false);
+    controller.Update(0.0f);
+    scope.BeginFrame();
+    renderer.RenderPersistentOverlays();
+    scope.EndFrame();
+    ASSERT_EQ(friends->Pos.x, 1300.0f);
+    ASSERT_EQ(friends->Pos.y, 800.0f);
+    ASSERT_EQ(enemies->Pos.x, 100.0f);
+    ASSERT_EQ(enemies->Pos.y, 160.0f);
+    return true;
+}
+
+bool TestRedCountyBrotherhoodMembershipAndQuickFilter() {
+    SettingsManager settings;
+    Settings& s = settings.GetMutable();
+    s.online_local_overlay_enabled = true;
+    s.online_own_gang_overlay_enabled = true;
+    s.online_quick_overlay_show_lspd = false;
+    s.online_quick_overlay_show_army = false;
+    s.online_quick_overlay_show_fire_department = false;
+    s.online_quick_overlay_show_rcb = false;
+    s.online_quick_overlay_show_zivilisten = false;
+    s.online_quick_overlay_show_all_gangs = false;
+    OnlineDataManager manager;
+    std::vector<OnlinePlayerInfo> players;
+    players.push_back(BuildRawPlayer("1", "Brother", "RCB", "Ballas"));
+    players.push_back(BuildRawPlayer("2", "Sister", "Red County Brotherhood"));
+    players.push_back(BuildRawPlayer("3", "Officer", "LSPD"));
+    players.push_back(BuildRawPlayer("4", "Civilian"));
+    manager.UpdateFromPlayers(players, 12345, "brother");
+    const OnlineSnapshot snapshot = manager.GetSnapshot();
+    ASSERT_TRUE(snapshot.localAffiliation.isFaction);
+    ASSERT_EQ(snapshot.localAffiliation.name, std::string("Red County Brotherhood"));
+    ASSERT_TRUE(snapshot.players[0].isFaction);
+    ASSERT_TRUE(!snapshot.players[0].isGang);
+
+    OnlineOverlayController controller;
+    controller.Initialize(&settings, &manager);
+    controller.Update(0.0f);
+    ASSERT_TRUE(controller.GetLocalOverlayData().visible);
+    ASSERT_EQ(controller.GetLocalOverlayData().title, std::string("Red County Brotherhood"));
+    ASSERT_EQ(controller.GetLocalOverlayData().playerCount, 2);
+    ASSERT_TRUE(!controller.GetOwnGangOverlayData().visible);
+    OnlineOverlayRenderer renderer;
+    renderer.Initialize(&settings, &manager);
+    ASSERT_EQ(renderer.CountFilteredPlayersForTesting(snapshot), 0);
+    s.online_quick_overlay_show_rcb = true;
+    renderer.Update();
+    ASSERT_EQ(renderer.CountFilteredPlayersForTesting(snapshot), 2);
+    return true;
+}
+
 } // namespace
 
 int RunOnlineOverlayRendererTests() {
@@ -647,6 +987,13 @@ int RunOnlineOverlayRendererTests() {
     RUN_TEST(TestWantedOverlayMaxZeroMeansNoUpperLimit);
     RUN_TEST(TestWantedOverlaySwapsInvertedRange);
     RUN_TEST(TestWantedOverlayDisabledByDefault);
+    RUN_TEST(TestGameHudUsesLiveStateAndOriginalAppearance);
+    RUN_TEST(TestPlayerListsRespectIndependentFriendAndEnemyVisibility);
+    RUN_TEST(TestPlayerListsRefreshPresenceAndClearOnDisconnectOrDisable);
+    RUN_TEST(TestNewGameHudRemainsInsideSmallViewportWithTwentyMarkers);
+    RUN_TEST(TestPlayerAffiliationAlwaysUsesCurrentSnapshotRatherThanSavedNotes);
+    RUN_TEST(TestFriendAndEnemyRadarMoveAndPersistIndependently);
+    RUN_TEST(TestRedCountyBrotherhoodMembershipAndQuickFilter);
     std::printf("OnlineOverlayRendererTests: %d passed, %d failed\n", g_state.passed, g_state.failed);
     return g_state.failed;
 }

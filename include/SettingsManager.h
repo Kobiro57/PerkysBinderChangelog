@@ -37,6 +37,12 @@ struct OnlineEventPlaceholder {
     std::vector<std::string> patterns;
 };
 
+struct OnlinePlayerMarker {
+    std::string name;
+    std::string affiliation;
+    bool friendly = false;
+};
+
 struct Settings {
     float dpi_scale = 1.0f;
     bool auto_detect_dpi = true;
@@ -46,18 +52,24 @@ struct Settings {
     float ui_window_width = 0.0f;
     float ui_window_height = 0.0f;
     bool kill_tracker_enabled = false;
+    bool kill_tracker_count_kills = true;
+    bool kill_tracker_count_deaths = true;
     bool kill_tracker_local_kill_message_enabled = true;
     bool kill_tracker_local_death_message_enabled = true;
     bool kill_tracker_server_kill_message_enabled = false;
     bool kill_tracker_server_death_message_enabled = false;
     bool kill_tracker_track_damage = true;
     std::string kill_tracker_local_kill_message_template = "{FF6600}[Kill] {FFFFFF}{victim} {AAAAAA}mit {FFCC00}{weapon}";
-    std::string kill_tracker_local_death_message_template = "{FF3333}[Tod] {FFFFFF}{killer} {AAAAAA}mit {FFCC00}{weapon}";
+    std::string kill_tracker_local_death_message_template = "{33CCFF}[NL-BINDER]{FFFFFF} Du bist gestorben. Deine aktuelle Tode: {total_deaths}";
     std::string kill_tracker_server_kill_message_template = "Ich habe {victim} mit {weapon} getoetet.";
     std::string kill_tracker_server_death_message_template = "Ich wurde von {killer} mit {weapon} getoetet.";
     bool kill_tracker_allow_manual_edits = false;
     bool auto_hudscalefix = true;
     bool auto_engine_start = false;
+    bool damage_log_enabled = false;
+    bool reconnect_use_nova_launcher = true;
+    std::string reconnect_nova_launcher_path;
+    std::string reconnect_openmp_launcher_path;
 
     bool quickmap_enabled = true;
     int quickmap_hotkey = VK_M;
@@ -118,6 +130,27 @@ struct Settings {
     std::vector<RssFeedConfig> rss_feeds;
 
     // Online feature settings
+    std::vector<OnlinePlayerMarker> online_player_markers;
+    bool online_friends_overlay_enabled = false;
+    bool online_enemies_overlay_enabled = false;
+    std::string online_friends_overlay_anchor = "top_left";
+    float online_friends_overlay_offset_x = 12.0f;
+    float online_friends_overlay_offset_y = 250.0f;
+    std::string online_enemies_overlay_anchor = "top_left";
+    float online_enemies_overlay_offset_x = 12.0f;
+    float online_enemies_overlay_offset_y = 370.0f;
+    bool online_location_overlay_enabled = false;
+    std::string online_location_overlay_anchor = "top_left";
+    float online_location_overlay_offset_x = 12.0f;
+    float online_location_overlay_offset_y = 45.0f;
+    bool online_transport_overlay_enabled = false;
+    std::string online_transport_overlay_anchor = "top_left";
+    float online_transport_overlay_offset_x = 12.0f;
+    float online_transport_overlay_offset_y = 115.0f;
+    bool online_pedslots_overlay_enabled = false;
+    std::string online_pedslots_overlay_anchor = "top_left";
+    float online_pedslots_overlay_offset_x = 12.0f;
+    float online_pedslots_overlay_offset_y = 185.0f;
     bool online_enabled = true;
     bool online_quick_overlay_enabled = true;
     int online_quick_overlay_hotkey = 0;
@@ -125,6 +158,7 @@ struct Settings {
     bool online_quick_overlay_show_lspd = true;
     bool online_quick_overlay_show_army = true;
     bool online_quick_overlay_show_fire_department = true;
+    bool online_quick_overlay_show_rcb = true;
     bool online_quick_overlay_show_zivilisten = true;
     bool online_quick_overlay_show_all_gangs = true;
     std::vector<std::string> online_quick_overlay_selected_gangs;

@@ -19,6 +19,8 @@ namespace keybinder {
 // Kill tracker settings
 struct KillTrackerSettings {
     bool enabled = false;
+    bool countKills = true;
+    bool countDeaths = true;
     bool showLocalKillMessage = true;
     bool showLocalDeathMessage = true;
     bool sendServerKillMessage = false;
@@ -57,6 +59,7 @@ private:
     
     // UI state
     int selectedTab_ = 0; // 0 = Stats, 1 = History, 2 = Settings
+    bool showMessageVariables_ = false;
     char customLocalKillMessageBuf_[512] = {0};
     char customLocalDeathMessageBuf_[512] = {0};
     char customServerKillMessageBuf_[512] = {0};

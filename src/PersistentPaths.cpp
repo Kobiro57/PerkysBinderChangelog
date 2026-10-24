@@ -112,6 +112,16 @@ bool EnsureDirectoryRecursive(const std::string& rawPath) {
 }
 
 std::string DocumentsDir() {
+#ifdef KEYBINDER_TESTING
+    // The standalone harness must never create or remove assets in the user's
+    // actual game profile. Keep each test process in its own temporary tree.
+    char temporaryPath[MAX_PATH] = {};
+    const DWORD length = GetTempPathA(MAX_PATH, temporaryPath);
+    if (length == 0 || length >= MAX_PATH) {
+        return {};
+    }
+    return JoinPath(temporaryPath, "NLBinderTests-" + std::to_string(GetCurrentProcessId()));
+#else
     char documentsPath[MAX_PATH] = {};
     const HRESULT result = SHGetFolderPathA(nullptr, CSIDL_PERSONAL, nullptr, SHGFP_TYPE_CURRENT, documentsPath);
     if (FAILED(result) || documentsPath[0] == '\0') {
@@ -119,6 +129,7 @@ std::string DocumentsDir() {
     }
 
     return TrimTrailingSeparators(documentsPath);
+#endif
 }
 
 } // namespace
