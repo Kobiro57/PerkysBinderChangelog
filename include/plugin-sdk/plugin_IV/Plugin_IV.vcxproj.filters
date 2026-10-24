@@ -1,0 +1,1642 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="..">
+      <UniqueIdentifier>{61705900-4DFC-870B-B6AA-880BA255880B}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="..\hooking">
+      <UniqueIdentifier>{9FBCB08E-8B74-F2DB-F47B-CB37E0528DCC}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="..\injector">
+      <UniqueIdentifier>{2E5BF6F7-9A10-6FED-2305-69C48FB965F1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="..\injector\gvm">
+      <UniqueIdentifier>{C7CD0775-3359-7539-3C6A-F82DA874D139}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="..\safetyhook">
+      <UniqueIdentifier>{EDD10884-5992-84BA-22CD-CD378E4CC996}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="..\shared">
+      <UniqueIdentifier>{8798108A-F302-C500-3C41-76A6A8EAA255}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="..\shared\bass">
+      <UniqueIdentifier>{9FEDA122-8BBB-9528-744F-064F60BC718D}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="..\shared\comp">
+      <UniqueIdentifier>{C5B4A222-B182-9628-9A16-074F8683728D}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="..\shared\comp\plugins">
+      <UniqueIdentifier>{B6F2D6D9-A2EC-FF2B-8B59-963C77F26598}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="..\shared\dxsdk">
+      <UniqueIdentifier>{B46D1077-20F9-7D3B-290A-01309514DA3B}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="..\shared\extender">
+      <UniqueIdentifier>{3573E407-2157-A55D-8AB7-9FB076BA8FDF}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="..\shared\extensions">
+      <UniqueIdentifier>{66B7DF93-5246-695D-FB64-7D58E7D27903}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="..\shared\extensions\scripting">
+      <UniqueIdentifier>{0844F652-F469-C0B9-DDAF-4585C974E585}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="..\shared\game">
+      <UniqueIdentifier>{B0AAA422-9C78-9828-850C-094F7179748D}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="..\shared\rwd3d9">
+      <UniqueIdentifier>{B339AB79-9F32-CACB-C864-AF50B4BCA9D7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="game_IV">
+      <UniqueIdentifier>{1DE39FE6-89C2-1E82-92DA-A958FE3885E3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="game_IV\Collision">
+      <UniqueIdentifier>{7860D171-E476-CF07-2DEE-5A299943A08F}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="game_IV\Core">
+      <UniqueIdentifier>{958124AC-81E4-B350-2A6A-EC0616AC7FD3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="game_IV\Entity">
+      <UniqueIdentifier>{C9ACE44B-B57A-D851-9E0E-49788A7BB4B6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="game_IV\Entity\Object">
+      <UniqueIdentifier>{2F3E7D1F-9BAA-381A-649E-D077D0C95A82}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="game_IV\Entity\Ped">
+      <UniqueIdentifier>{D110ABD4-BDF4-6B2A-2655-667D125856AC}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="game_IV\Entity\Vehicle">
+      <UniqueIdentifier>{1827DA30-0421-0383-ED8D-9993D92669EF}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="game_IV\Enums">
+      <UniqueIdentifier>{1467D830-8027-5467-4962-9DE4B5E19843}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="game_IV\Models">
+      <UniqueIdentifier>{3032975E-1C00-8B64-0594-FB8AF10067C9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="game_IV\Scripts">
+      <UniqueIdentifier>{54975CE4-C022-CAA8-C933-4D9D353E26A9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="game_IV\Tasks">
+      <UniqueIdentifier>{F2ACE031-5E6D-5C68-27A8-A5E59327A144}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="game_IV\Tasks\TaskTypes">
+      <UniqueIdentifier>{29FA3775-9531-800C-9E3B-E42F0AF2A605}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="game_IV\rage">
+      <UniqueIdentifier>{6B0A3EAC-576D-CD50-00F3-0507EC3499D3}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\hooking\Hooking.Patterns.h">
+      <Filter>..\hooking</Filter>
+    </ClInclude>
+    <ClInclude Include="..\injector\assembly.hpp">
+      <Filter>..\injector</Filter>
+    </ClInclude>
+    <ClInclude Include="..\injector\calling.hpp">
+      <Filter>..\injector</Filter>
+    </ClInclude>
+    <ClInclude Include="..\injector\gvm\gvm.hpp">
+      <Filter>..\injector\gvm</Filter>
+    </ClInclude>
+    <ClInclude Include="..\injector\gvm\translator.hpp">
+      <Filter>..\injector\gvm</Filter>
+    </ClInclude>
+    <ClInclude Include="..\injector\hooking.hpp">
+      <Filter>..\injector</Filter>
+    </ClInclude>
+    <ClInclude Include="..\injector\injector.hpp">
+      <Filter>..\injector</Filter>
+    </ClInclude>
+    <ClInclude Include="..\injector\utility.hpp">
+      <Filter>..\injector</Filter>
+    </ClInclude>
+    <ClInclude Include="..\safetyhook\safetyhook.hpp">
+      <Filter>..\safetyhook</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\ArgPicker.h">
+      <Filter>..\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\Audio.h">
+      <Filter>..\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\Base.h">
+      <Filter>..\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\Color.h">
+      <Filter>..\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\DynAddress.h">
+      <Filter>..\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\Error.h">
+      <Filter>..\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\EventList.h">
+      <Filter>..\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\Events.h">
+      <Filter>..\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\Extender.h">
+      <Filter>..\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\GameVersion.h">
+      <Filter>..\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\GameVersionMessage.h">
+      <Filter>..\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\Image.h">
+      <Filter>..\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\Maths.h">
+      <Filter>..\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\Other.h">
+      <Filter>..\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\Patch.h">
+      <Filter>..\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\Pattern.h">
+      <Filter>..\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\PluginBase.h">
+      <Filter>..\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\RefList.h">
+      <Filter>..\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\RefListUtils.h">
+      <Filter>..\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\RenderWare.h">
+      <Filter>..\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\SpriteLoader.h">
+      <Filter>..\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\StringUtils.h">
+      <Filter>..\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\TextLoader.h">
+      <Filter>..\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\Timer.h">
+      <Filter>..\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\Types.h">
+      <Filter>..\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\VersionsMacro.h">
+      <Filter>..\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\bass\bass.h">
+      <Filter>..\shared\bass</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\common_sdk.h">
+      <Filter>..\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\comp\PluginSupport.h">
+      <Filter>..\shared\comp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\comp\PluginsCompatibility.h">
+      <Filter>..\shared\comp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\comp\plugins\LimitAdjusterSupport.h">
+      <Filter>..\shared\comp\plugins</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\D2D1.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\D2D1Helper.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\D2DBaseTypes.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\D2Derr.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\D3D10.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\D3D10_1.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\D3D10_1shader.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\D3D10effect.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\D3D10shader.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\D3D11.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\D3D11SDKLayers.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\D3D11Shader.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\D3DCSX.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\D3DX10.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\D3DX10core.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\D3DX10math.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\D3DX10mesh.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\D3DX10tex.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\D3DX11.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\D3DX11async.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\D3DX11core.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\D3DX11tex.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\D3Dcommon.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\D3Dcompiler.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\DWrite.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\DXGI.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\DXGIFormat.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\DXGIType.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\Dcommon.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\DxErr.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\PIXPlugin.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\X3DAudio.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\XAPO.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\XAPOBase.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\XAPOFX.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\XAudio2.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\XAudio2fx.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\XDSP.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\XInput.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\audiodefs.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\comdecl.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3d.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3d10misc.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3d10sdklayers.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3d8.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3d8caps.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3d8types.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3d9.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3d9caps.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3d9types.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3dcaps.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3dres.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3drm.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3drmdef.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3drmobj.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3drmwin.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3dtypes.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3dutil.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3dx.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3dx10async.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3dx8.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3dx8core.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3dx8effect.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3dx8math.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3dx8mesh.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3dx8shape.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3dx8tex.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3dx9.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3dx9anim.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3dx9core.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3dx9effect.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3dx9math.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3dx9mesh.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3dx9shader.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3dx9shape.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3dx9tex.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3dx9xof.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3dxcore.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3dxerr.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3dxmath.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3dxshapes.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3dxsprite.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\dinput.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\dinputd.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\dsconf.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\dsetup.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\dsound.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\dxdiag.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\dxfile.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\dxsdkver.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\gameux.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\rmxfguid.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\rmxftmpl.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\rpcsal.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\xact3.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\xact3d3.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\xact3wb.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\xma2defs.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\xnamath.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\extender\ObjectExtender.h">
+      <Filter>..\shared\extender</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\extender\PedExtender.h">
+      <Filter>..\shared\extender</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\extender\VehicleExtender.h">
+      <Filter>..\shared\extender</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\extensions\Config.h">
+      <Filter>..\shared\extensions</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\extensions\DynamicResource.h">
+      <Filter>..\shared\extensions</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\extensions\FontPrint.h">
+      <Filter>..\shared\extensions</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\extensions\KeyCheck.h">
+      <Filter>..\shared\extensions</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\extensions\Paths.h">
+      <Filter>..\shared\extensions</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\extensions\PoolIterator.h">
+      <Filter>..\shared\extensions</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\extensions\Screen.h">
+      <Filter>..\shared\extensions</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\extensions\ScriptCommands.h">
+      <Filter>..\shared\extensions</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\extensions\Shader.h">
+      <Filter>..\shared\extensions</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\extensions\scripting\ScriptCommandNames.h">
+      <Filter>..\shared\extensions\scripting</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\game\CRGBA.h">
+      <Filter>..\shared\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\game\CVector.h">
+      <Filter>..\shared\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\game\CVector2D.h">
+      <Filter>..\shared\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\game\CVector2DImplementation.h">
+      <Filter>..\shared\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\game\CVectorImplementation.h">
+      <Filter>..\shared\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\game\CompressedVector.h">
+      <Filter>..\shared\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\game\CompressedVector2D.h">
+      <Filter>..\shared\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\plugin.h">
+      <Filter>..\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\rpplugin.h">
+      <Filter>..\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\rwd3d9\rwd3d9.h">
+      <Filter>..\shared\rwd3d9</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\stdafx.h">
+      <Filter>..\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CAmmoData.h">
+      <Filter>game_IV</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CAutomobile.h">
+      <Filter>game_IV\Entity\Vehicle</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CBaseDC.h">
+      <Filter>game_IV</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CBike.h">
+      <Filter>game_IV\Entity\Vehicle</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CBoat.h">
+      <Filter>game_IV\Entity\Vehicle</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CCam.h">
+      <Filter>game_IV</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CCamFollowPed.h">
+      <Filter>game_IV</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CCamFollowVehicle.h">
+      <Filter>game_IV</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CCamGame.h">
+      <Filter>game_IV</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CCamIdle.h">
+      <Filter>game_IV</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CCamScriptInstruction.h">
+      <Filter>game_IV</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CCamera.h">
+      <Filter>game_IV</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CCheat.h">
+      <Filter>game_IV</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CClock.h">
+      <Filter>game_IV</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CColPoint.h">
+      <Filter>game_IV\Collision</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CControl.h">
+      <Filter>game_IV</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CControlMgr.h">
+      <Filter>game_IV</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CCoronas.h">
+      <Filter>game_IV</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CCredits.h">
+      <Filter>game_IV</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CCutsceneMgr.h">
+      <Filter>game_IV</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CDrawRadarCircleDC.h">
+      <Filter>game_IV</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CDrawRectDC.h">
+      <Filter>game_IV</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CDrawSpriteDC.h">
+      <Filter>game_IV</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CDynamicEntity.h">
+      <Filter>game_IV</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CEntity.h">
+      <Filter>game_IV\Entity</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CEntityScanner.h">
+      <Filter>game_IV</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CEventGroup.h">
+      <Filter>game_IV</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CEventHandler.h">
+      <Filter>game_IV</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CEventScanner.h">
+      <Filter>game_IV</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CEventScannerNY.h">
+      <Filter>game_IV</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CFileLoader.h">
+      <Filter>game_IV</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CFileType.h">
+      <Filter>game_IV</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CFont.h">
+      <Filter>game_IV</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CGame.h">
+      <Filter>game_IV</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CGeneral.h">
+      <Filter>game_IV</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CGrcState_SetCullMode.h">
+      <Filter>game_IV</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CGrcState_SetDepthWrite.h">
+      <Filter>game_IV</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CGrcState_SetLightingMode.h">
+      <Filter>game_IV</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CHeli.h">
+      <Filter>game_IV\Entity\Vehicle</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CHud.h">
+      <Filter>game_IV</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CHudColours.h">
+      <Filter>game_IV</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CHudComponent.h">
+      <Filter>game_IV</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CIkManager.h">
+      <Filter>game_IV</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CKeyboard.h">
+      <Filter>game_IV</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CMatrix.h">
+      <Filter>game_IV\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CMenuManager.h">
+      <Filter>game_IV</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CModelInfo.h">
+      <Filter>game_IV\Models</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CObject.h">
+      <Filter>game_IV\Entity\Object</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CPad.h">
+      <Filter>game_IV</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CPed.h">
+      <Filter>game_IV\Entity\Ped</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CPedFactory.h">
+      <Filter>game_IV</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CPedFactoryNY.h">
+      <Filter>game_IV</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CPedIntelligence.h">
+      <Filter>game_IV</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CPedIntelligenceNY.h">
+      <Filter>game_IV</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CPhysical.h">
+      <Filter>game_IV\Entity</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CPlane.h">
+      <Filter>game_IV\Entity\Vehicle</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CPlayerData.h">
+      <Filter>game_IV</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CPlayerInfo.h">
+      <Filter>game_IV</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CPlayerPed.h">
+      <Filter>game_IV\Entity\Ped</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CPool.h">
+      <Filter>game_IV\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CPools.h">
+      <Filter>game_IV</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CPortalTracker.h">
+      <Filter>game_IV</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CPtrNodeDouble.h">
+      <Filter>game_IV\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CPtrNodeSingle.h">
+      <Filter>game_IV\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CRAGE_SetRenderStateDC.h">
+      <Filter>game_IV</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CRadar.h">
+      <Filter>game_IV</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CRadioHud.h">
+      <Filter>game_IV</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CRect.h">
+      <Filter>game_IV\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CRenderFontBufferDC.h">
+      <Filter>game_IV</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CReplay.h">
+      <Filter>game_IV</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CScriptCommands.h">
+      <Filter>game_IV</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CScriptCommandsNY.h">
+      <Filter>game_IV</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CSetCurrentViewportToNULL.h">
+      <Filter>game_IV</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CSimpleIkManager.h">
+      <Filter>game_IV</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CSimpleTransform.h">
+      <Filter>game_IV</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CSprite2d.h">
+      <Filter>game_IV</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CStats.h">
+      <Filter>game_IV</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CStreaming.h">
+      <Filter>game_IV</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CTask.h">
+      <Filter>game_IV\Tasks</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CTaskComplex.h">
+      <Filter>game_IV\Tasks</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CTaskComplexAimAndThrowProjectile.h">
+      <Filter>game_IV\Tasks\TaskTypes</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CTaskComplexCombat.h">
+      <Filter>game_IV\Tasks\TaskTypes</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CTaskComplexGun.h">
+      <Filter>game_IV\Tasks\TaskTypes</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CTaskManager.h">
+      <Filter>game_IV\Tasks</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CTaskSimple.h">
+      <Filter>game_IV\Tasks</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CTaskSimpleAimGun.h">
+      <Filter>game_IV\Tasks\TaskTypes</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CTaskSimpleFireGun.h">
+      <Filter>game_IV\Tasks\TaskTypes</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CTaskTimer.h">
+      <Filter>game_IV\Tasks</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CText.h">
+      <Filter>game_IV</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CTheScripts.h">
+      <Filter>game_IV\Scripts</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CTimeCycle.h">
+      <Filter>game_IV</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CTimer.h">
+      <Filter>game_IV</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CTrain.h">
+      <Filter>game_IV\Entity\Vehicle</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CTxdStore.h">
+      <Filter>game_IV</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CUserDisplay.h">
+      <Filter>game_IV</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CVehicle.h">
+      <Filter>game_IV\Entity\Vehicle</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CVehicleFactory.h">
+      <Filter>game_IV</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CVehicleFactoryNY.h">
+      <Filter>game_IV</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CViewport.h">
+      <Filter>game_IV</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CViewportRadar.h">
+      <Filter>game_IV</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CVirtualBase.h">
+      <Filter>game_IV</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CWanted.h">
+      <Filter>game_IV</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CWeapon.h">
+      <Filter>game_IV</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CWeaponData.h">
+      <Filter>game_IV</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CWeaponInfo.h">
+      <Filter>game_IV</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CWeather.h">
+      <Filter>game_IV</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\CWorld.h">
+      <Filter>game_IV</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\C_PcSave.h">
+      <Filter>game_IV</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\Rage.h">
+      <Filter>game_IV</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\T_CB_Generic.h">
+      <Filter>game_IV</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\audAmbientAudioEntity.h">
+      <Filter>game_IV</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\audFrontendAudioEntity.h">
+      <Filter>game_IV</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\audGtaAudioEntity.h">
+      <Filter>game_IV</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\audLoopingSound.h">
+      <Filter>game_IV</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\audNorthAudioEngine.h">
+      <Filter>game_IV</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\audRadioAudioEntity.h">
+      <Filter>game_IV</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\audRadioStation.h">
+      <Filter>game_IV</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\audVehicleAudioEntity.h">
+      <Filter>game_IV</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\audWeaponAudioEvent.h">
+      <Filter>game_IV</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\cHandlingDataMgr.h">
+      <Filter>game_IV</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\common.h">
+      <Filter>game_IV</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\eModelHashes.h">
+      <Filter>game_IV\Enums</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\eTasks.h">
+      <Filter>game_IV\Enums</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\phInstGta.h">
+      <Filter>game_IV</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\rage\BlockMap.h">
+      <Filter>game_IV\rage</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\rage\CPostFX.h">
+      <Filter>game_IV\rage</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\rage\CTextureDecodeRequestDesc.h">
+      <Filter>game_IV\rage</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\rage\Color32.h">
+      <Filter>game_IV\rage</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\rage\Math.h">
+      <Filter>game_IV\rage</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\rage\Matrix34.h">
+      <Filter>game_IV\rage</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\rage\Matrix44.h">
+      <Filter>game_IV\rage</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\rage\Quaternion.h">
+      <Filter>game_IV\rage</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\rage\Vector2.h">
+      <Filter>game_IV\rage</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\rage\Vector3.h">
+      <Filter>game_IV\rage</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\rage\Vector4.h">
+      <Filter>game_IV\rage</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\rage\atReferenceCounter.h">
+      <Filter>game_IV\rage</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\rage\audController.h">
+      <Filter>game_IV\rage</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\rage\audEntity.h">
+      <Filter>game_IV\rage</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\rage\audSound.h">
+      <Filter>game_IV\rage</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\rage\audSoundInitParams.h">
+      <Filter>game_IV\rage</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\rage\audWaveSlot.h">
+      <Filter>game_IV\rage</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\rage\crFrame.h">
+      <Filter>game_IV\rage</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\rage\crFrameBuffer.h">
+      <Filter>game_IV\rage</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\rage\crmtObserver.h">
+      <Filter>game_IV\rage</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\rage\datBase.h">
+      <Filter>game_IV\rage</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\rage\fiAssetManager.h">
+      <Filter>game_IV\rage</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\rage\fiDevice.h">
+      <Filter>game_IV\rage</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\rage\fiStream.h">
+      <Filter>game_IV\rage</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\rage\fwPool.h">
+      <Filter>game_IV\rage</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\rage\fwRect.h">
+      <Filter>game_IV\rage</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\rage\grcDevice.h">
+      <Filter>game_IV\rage</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\rage\grcDrawMode.h">
+      <Filter>game_IV\rage</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\rage\grcEffect.h">
+      <Filter>game_IV\rage</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\rage\grcImage.h">
+      <Filter>game_IV\rage</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\rage\grcRenderState.h">
+      <Filter>game_IV\rage</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\rage\grcRenderTarget.h">
+      <Filter>game_IV\rage</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\rage\grcTexture.h">
+      <Filter>game_IV\rage</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\rage\grcTextureFactory.h">
+      <Filter>game_IV\rage</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\rage\grcVertexBuffer.h">
+      <Filter>game_IV\rage</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\rage\grcViewport.h">
+      <Filter>game_IV\rage</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\rage\grcWindow.h">
+      <Filter>game_IV\rage</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\rage\grmShader.h">
+      <Filter>game_IV\rage</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\rage\grmShaderFactory.h">
+      <Filter>game_IV\rage</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\rage\ioKeyboard.h">
+      <Filter>game_IV\rage</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\rage\ioMapper.h">
+      <Filter>game_IV\rage</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\rage\ioMouse.h">
+      <Filter>game_IV\rage</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\rage\ioSource.h">
+      <Filter>game_IV\rage</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\rage\ioValue.h">
+      <Filter>game_IV\rage</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\rage\pgBase.h">
+      <Filter>game_IV\rage</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\rage\pgCollection.h">
+      <Filter>game_IV\rage</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\rage\pgDictionary.h">
+      <Filter>game_IV\rage</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\rage\pgPtr.h">
+      <Filter>game_IV\rage</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\rage\pgPtrCollection.h">
+      <Filter>game_IV\rage</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\rage\pgRef.h">
+      <Filter>game_IV\rage</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\rage\pgStreamableBase.h">
+      <Filter>game_IV\rage</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\rage\phCollider.h">
+      <Filter>game_IV\rage</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\rage\phConstrainedCollider.h">
+      <Filter>game_IV\rage</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\rage\phInst.h">
+      <Filter>game_IV\rage</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\rage\ptxRule.h">
+      <Filter>game_IV\rage</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\rage\ptxSprite.h">
+      <Filter>game_IV\rage</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\rage\scrProgram.h">
+      <Filter>game_IV\rage</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\rage\scrThread.h">
+      <Filter>game_IV\rage</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\rage\sysArray.h">
+      <Filter>game_IV\rage</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\rage\sysMemAllocator.h">
+      <Filter>game_IV\rage</Filter>
+    </ClInclude>
+    <ClInclude Include="game_IV\rage\sysUseAllocator.h">
+      <Filter>game_IV\rage</Filter>
+    </ClInclude>
+    <ClInclude Include="plugin_IV.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\hooking\Hooking.Patterns.cpp">
+      <Filter>..\hooking</Filter>
+    </ClCompile>
+    <ClCompile Include="..\safetyhook\Zydis.c">
+      <Filter>..\safetyhook</Filter>
+    </ClCompile>
+    <ClCompile Include="..\safetyhook\safetyhook.cpp">
+      <Filter>..\safetyhook</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\Audio.cpp">
+      <Filter>..\shared</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\Color.cpp">
+      <Filter>..\shared</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\DynAddress.cpp">
+      <Filter>..\shared</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\GameVersion.cpp">
+      <Filter>..\shared</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\Image.cpp">
+      <Filter>..\shared</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\Other.cpp">
+      <Filter>..\shared</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\Patch.cpp">
+      <Filter>..\shared</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\Pattern.cpp">
+      <Filter>..\shared</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\PluginBase.cpp">
+      <Filter>..\shared</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\SpriteLoader.cpp">
+      <Filter>..\shared</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\StringUtils.cpp">
+      <Filter>..\shared</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\TextLoader.cpp">
+      <Filter>..\shared</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\common_sdk.cpp">
+      <Filter>..\shared</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\comp\PluginSupport.cpp">
+      <Filter>..\shared\comp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\comp\PluginsCompatibility.cpp">
+      <Filter>..\shared\comp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\comp\plugins\LimitAdjusterSupport.cpp">
+      <Filter>..\shared\comp\plugins</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\extensions\Config.cpp">
+      <Filter>..\shared\extensions</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\extensions\DynamicResource.cpp">
+      <Filter>..\shared\extensions</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\extensions\FontPrint.cpp">
+      <Filter>..\shared\extensions</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\extensions\KeyCheck.cpp">
+      <Filter>..\shared\extensions</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\extensions\Paths.cpp">
+      <Filter>..\shared\extensions</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\extensions\Screen.cpp">
+      <Filter>..\shared\extensions</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\extensions\ScriptCommands.cpp">
+      <Filter>..\shared\extensions</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\extensions\Shader.cpp">
+      <Filter>..\shared\extensions</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\game\CRGBA.cpp">
+      <Filter>..\shared\game</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\game\CVector.cpp">
+      <Filter>..\shared\game</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\game\CompressedVector.cpp">
+      <Filter>..\shared\game</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\game\CompressedVector2D.cpp">
+      <Filter>..\shared\game</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\plugin.cpp">
+      <Filter>..\shared</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\stdafx.cpp">
+      <Filter>..\shared</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\CAmmoData.cpp">
+      <Filter>game_IV</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\CAutomobile.cpp">
+      <Filter>game_IV\Entity\Vehicle</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\CBaseDC.cpp">
+      <Filter>game_IV</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\CBike.cpp">
+      <Filter>game_IV\Entity\Vehicle</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\CBoat.cpp">
+      <Filter>game_IV\Entity\Vehicle</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\CCam.cpp">
+      <Filter>game_IV</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\CCamFollowPed.cpp">
+      <Filter>game_IV</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\CCamFollowVehicle.cpp">
+      <Filter>game_IV</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\CCamGame.cpp">
+      <Filter>game_IV</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\CCamIdle.cpp">
+      <Filter>game_IV</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\CCamScriptInstruction.cpp">
+      <Filter>game_IV</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\CCamera.cpp">
+      <Filter>game_IV</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\CCheat.cpp">
+      <Filter>game_IV</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\CClock.cpp">
+      <Filter>game_IV</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\CControl.cpp">
+      <Filter>game_IV</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\CControlMgr.cpp">
+      <Filter>game_IV</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\CCoronas.cpp">
+      <Filter>game_IV</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\CCredits.cpp">
+      <Filter>game_IV</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\CCutsceneMgr.cpp">
+      <Filter>game_IV</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\CDrawRadarCircleDC.cpp">
+      <Filter>game_IV</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\CDrawRectDC.cpp">
+      <Filter>game_IV</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\CDrawSpriteDC.cpp">
+      <Filter>game_IV</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\CDynamicEntity.cpp">
+      <Filter>game_IV</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\CEntity.cpp">
+      <Filter>game_IV\Entity</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\CEntityScanner.cpp">
+      <Filter>game_IV</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\CEventHandler.cpp">
+      <Filter>game_IV</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\CEventScannerNY.cpp">
+      <Filter>game_IV</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\CFileLoader.cpp">
+      <Filter>game_IV</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\CFileType.cpp">
+      <Filter>game_IV</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\CFont.cpp">
+      <Filter>game_IV</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\CGame.cpp">
+      <Filter>game_IV</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\CGeneral.cpp">
+      <Filter>game_IV</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\CGrcState_SetCullMode.cpp">
+      <Filter>game_IV</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\CGrcState_SetDepthWrite.cpp">
+      <Filter>game_IV</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\CGrcState_SetLightingMode.cpp">
+      <Filter>game_IV</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\CHeli.cpp">
+      <Filter>game_IV\Entity\Vehicle</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\CHud.cpp">
+      <Filter>game_IV</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\CHudColours.cpp">
+      <Filter>game_IV</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\CHudComponent.cpp">
+      <Filter>game_IV</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\CIkManager.cpp">
+      <Filter>game_IV</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\CKeyboard.cpp">
+      <Filter>game_IV</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\CMenuManager.cpp">
+      <Filter>game_IV</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\CModelInfo.cpp">
+      <Filter>game_IV\Models</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\CObject.cpp">
+      <Filter>game_IV\Entity\Object</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\CPad.cpp">
+      <Filter>game_IV</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\CPed.cpp">
+      <Filter>game_IV\Entity\Ped</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\CPedFactory.cpp">
+      <Filter>game_IV</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\CPedFactoryNY.cpp">
+      <Filter>game_IV</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\CPedIntelligence.cpp">
+      <Filter>game_IV</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\CPedIntelligenceNY.cpp">
+      <Filter>game_IV</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\CPhysical.cpp">
+      <Filter>game_IV\Entity</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\CPlane.cpp">
+      <Filter>game_IV\Entity\Vehicle</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\CPlayerData.cpp">
+      <Filter>game_IV</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\CPlayerInfo.cpp">
+      <Filter>game_IV</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\CPlayerPed.cpp">
+      <Filter>game_IV\Entity\Ped</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\CPool.cpp">
+      <Filter>game_IV\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\CPools.cpp">
+      <Filter>game_IV</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\CRAGE_SetRenderStateDC.cpp">
+      <Filter>game_IV</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\CRadar.cpp">
+      <Filter>game_IV</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\CRadioHud.cpp">
+      <Filter>game_IV</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\CRenderFontBufferDC.cpp">
+      <Filter>game_IV</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\CReplay.cpp">
+      <Filter>game_IV</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\CScriptCommands.cpp">
+      <Filter>game_IV</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\CScriptCommandsNY.cpp">
+      <Filter>game_IV</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\CSetCurrentViewportToNULL.cpp">
+      <Filter>game_IV</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\CSimpleIkManager.cpp">
+      <Filter>game_IV</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\CSimpleTransform.cpp">
+      <Filter>game_IV</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\CSprite2d.cpp">
+      <Filter>game_IV</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\CStreaming.cpp">
+      <Filter>game_IV</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\CTask.cpp">
+      <Filter>game_IV\Tasks</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\CTaskComplex.cpp">
+      <Filter>game_IV\Tasks</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\CTaskComplexAimAndThrowProjectile.cpp">
+      <Filter>game_IV\Tasks\TaskTypes</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\CTaskComplexCombat.cpp">
+      <Filter>game_IV\Tasks\TaskTypes</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\CTaskComplexGun.cpp">
+      <Filter>game_IV\Tasks\TaskTypes</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\CTaskManager.cpp">
+      <Filter>game_IV\Tasks</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\CTaskSimple.cpp">
+      <Filter>game_IV\Tasks</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\CTaskSimpleAimGun.cpp">
+      <Filter>game_IV\Tasks\TaskTypes</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\CTaskSimpleFireGun.cpp">
+      <Filter>game_IV\Tasks\TaskTypes</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\CTaskTimer.cpp">
+      <Filter>game_IV\Tasks</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\CText.cpp">
+      <Filter>game_IV</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\CTheScripts.cpp">
+      <Filter>game_IV\Scripts</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\CTimeCycle.cpp">
+      <Filter>game_IV</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\CTimer.cpp">
+      <Filter>game_IV</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\CTrain.cpp">
+      <Filter>game_IV\Entity\Vehicle</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\CTxdStore.cpp">
+      <Filter>game_IV</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\CUserDisplay.cpp">
+      <Filter>game_IV</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\CVehicle.cpp">
+      <Filter>game_IV\Entity\Vehicle</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\CVehicleFactory.cpp">
+      <Filter>game_IV</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\CVehicleFactoryNY.cpp">
+      <Filter>game_IV</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\CViewport.cpp">
+      <Filter>game_IV</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\CViewportRadar.cpp">
+      <Filter>game_IV</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\CVirtualBase.cpp">
+      <Filter>game_IV</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\CWanted.cpp">
+      <Filter>game_IV</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\CWeapon.cpp">
+      <Filter>game_IV</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\CWeaponData.cpp">
+      <Filter>game_IV</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\CWeaponInfo.cpp">
+      <Filter>game_IV</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\CWeather.cpp">
+      <Filter>game_IV</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\CWorld.cpp">
+      <Filter>game_IV</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\C_PcSave.cpp">
+      <Filter>game_IV</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\Rage.cpp">
+      <Filter>game_IV</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\T_CB_Generic.cpp">
+      <Filter>game_IV</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\audAmbientAudioEntity.cpp">
+      <Filter>game_IV</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\audFrontendAudioEntity.cpp">
+      <Filter>game_IV</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\audGtaAudioEntity.cpp">
+      <Filter>game_IV</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\audLoopingSound.cpp">
+      <Filter>game_IV</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\audNorthAudioEngine.cpp">
+      <Filter>game_IV</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\audRadioAudioEntity.cpp">
+      <Filter>game_IV</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\audRadioStation.cpp">
+      <Filter>game_IV</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\audVehicleAudioEntity.cpp">
+      <Filter>game_IV</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\audWeaponAudioEvent.cpp">
+      <Filter>game_IV</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\cHandlingDataMgr.cpp">
+      <Filter>game_IV</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\common.cpp">
+      <Filter>game_IV</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\rage\CPostFX.cpp">
+      <Filter>game_IV\rage</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\rage\audController.cpp">
+      <Filter>game_IV\rage</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\rage\audEntity.cpp">
+      <Filter>game_IV\rage</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\rage\audSound.cpp">
+      <Filter>game_IV\rage</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\rage\audSoundInitParams.cpp">
+      <Filter>game_IV\rage</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\rage\audWaveSlot.cpp">
+      <Filter>game_IV\rage</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\rage\fiAssetManager.cpp">
+      <Filter>game_IV\rage</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\rage\fiDevice.cpp">
+      <Filter>game_IV\rage</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\rage\fiStream.cpp">
+      <Filter>game_IV\rage</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\rage\grcDevice.cpp">
+      <Filter>game_IV\rage</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\rage\grcImage.cpp">
+      <Filter>game_IV\rage</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\rage\grcTextureFactory.cpp">
+      <Filter>game_IV\rage</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\rage\grcVertexBuffer.cpp">
+      <Filter>game_IV\rage</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\rage\grcViewport.cpp">
+      <Filter>game_IV\rage</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\rage\grcWindow.cpp">
+      <Filter>game_IV\rage</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\rage\grmShaderFactory.cpp">
+      <Filter>game_IV\rage</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\rage\ioKeyboard.cpp">
+      <Filter>game_IV\rage</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\rage\ioMouse.cpp">
+      <Filter>game_IV\rage</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\rage\ioValue.cpp">
+      <Filter>game_IV\rage</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\rage\pgDictionary.cpp">
+      <Filter>game_IV\rage</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\rage\pgRef.cpp">
+      <Filter>game_IV\rage</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\rage\scrProgram.cpp">
+      <Filter>game_IV\rage</Filter>
+    </ClCompile>
+    <ClCompile Include="game_IV\rage\scrThread.cpp">
+      <Filter>game_IV\rage</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>

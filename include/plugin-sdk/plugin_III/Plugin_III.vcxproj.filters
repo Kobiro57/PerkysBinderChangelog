@@ -1,0 +1,2965 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="..">
+      <UniqueIdentifier>{61705900-4DFC-870B-B6AA-880BA255880B}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="..\hooking">
+      <UniqueIdentifier>{9FBCB08E-8B74-F2DB-F47B-CB37E0528DCC}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="..\injector">
+      <UniqueIdentifier>{2E5BF6F7-9A10-6FED-2305-69C48FB965F1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="..\injector\gvm">
+      <UniqueIdentifier>{C7CD0775-3359-7539-3C6A-F82DA874D139}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="..\safetyhook">
+      <UniqueIdentifier>{EDD10884-5992-84BA-22CD-CD378E4CC996}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="..\shared">
+      <UniqueIdentifier>{8798108A-F302-C500-3C41-76A6A8EAA255}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="..\shared\bass">
+      <UniqueIdentifier>{9FEDA122-8BBB-9528-744F-064F60BC718D}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="..\shared\comp">
+      <UniqueIdentifier>{C5B4A222-B182-9628-9A16-074F8683728D}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="..\shared\comp\plugins">
+      <UniqueIdentifier>{B6F2D6D9-A2EC-FF2B-8B59-963C77F26598}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="..\shared\dxsdk">
+      <UniqueIdentifier>{B46D1077-20F9-7D3B-290A-01309514DA3B}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="..\shared\extender">
+      <UniqueIdentifier>{3573E407-2157-A55D-8AB7-9FB076BA8FDF}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="..\shared\extensions">
+      <UniqueIdentifier>{66B7DF93-5246-695D-FB64-7D58E7D27903}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="..\shared\extensions\scripting">
+      <UniqueIdentifier>{0844F652-F469-C0B9-DDAF-4585C974E585}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="..\shared\game">
+      <UniqueIdentifier>{B0AAA422-9C78-9828-850C-094F7179748D}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="..\shared\rwd3d9">
+      <UniqueIdentifier>{B339AB79-9F32-CACB-C864-AF50B4BCA9D7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="game_III">
+      <UniqueIdentifier>{59459CBA-4512-F7C5-6E2B-E56D5A572C54}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="game_III\Animation">
+      <UniqueIdentifier>{88418675-7425-47CB-DD85-411EC988314D}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="game_III\Collision">
+      <UniqueIdentifier>{B4BDEA2F-A0A1-AB85-0902-A6D8F5049607}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="game_III\Core">
+      <UniqueIdentifier>{51A92383-BD69-9FB9-86A4-E836F223E495}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="game_III\Entity">
+      <UniqueIdentifier>{85B34CDF-F13E-BAA3-FA4F-3D98665A16A4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="game_III\Entity\Dummy">
+      <UniqueIdentifier>{A0817B91-0CEE-368C-D5E1-CEE9410D59F4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="game_III\Entity\Object">
+      <UniqueIdentifier>{6BD93AD9-57D3-632B-4040-FA3B2CD9C997}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="game_III\Entity\Ped">
+      <UniqueIdentifier>{8D15F055-F976-CD63-82E4-1316EE440423}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="game_III\Entity\Vehicle">
+      <UniqueIdentifier>{D4294B22-4061-93B9-496B-F7DCB521BAB2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="game_III\Enums">
+      <UniqueIdentifier>{5086BCE7-3C54-B0ED-25E8-201411558C52}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="game_III\Models">
+      <UniqueIdentifier>{EC38FFF1-58C4-6CB6-61D5-EFAACDDFC8B6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="game_III\Plugins">
+      <UniqueIdentifier>{2A3F0A13-1638-2965-3F6A-0EEA2BC20871}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="game_III\RenderWare">
+      <UniqueIdentifier>{577A4544-C3DB-2252-4C49-6904B8A95911}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="game_III\RenderWare\rw">
+      <UniqueIdentifier>{0FC63BDD-FBBF-642F-E42C-FB3FD0C5CA9B}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="game_III\Scripts">
+      <UniqueIdentifier>{9075C5E4-7C6E-E436-A5A0-C9BB91F8C342}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="game_III\enums">
+      <UniqueIdentifier>{7096FFE9-5C64-F3EF-45F8-63163165CF54}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="game_III\meta">
+      <UniqueIdentifier>{EF863A83-5B47-B6B9-2482-FF369001FB95}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\hooking\Hooking.Patterns.h">
+      <Filter>..\hooking</Filter>
+    </ClInclude>
+    <ClInclude Include="..\injector\assembly.hpp">
+      <Filter>..\injector</Filter>
+    </ClInclude>
+    <ClInclude Include="..\injector\calling.hpp">
+      <Filter>..\injector</Filter>
+    </ClInclude>
+    <ClInclude Include="..\injector\gvm\gvm.hpp">
+      <Filter>..\injector\gvm</Filter>
+    </ClInclude>
+    <ClInclude Include="..\injector\gvm\translator.hpp">
+      <Filter>..\injector\gvm</Filter>
+    </ClInclude>
+    <ClInclude Include="..\injector\hooking.hpp">
+      <Filter>..\injector</Filter>
+    </ClInclude>
+    <ClInclude Include="..\injector\injector.hpp">
+      <Filter>..\injector</Filter>
+    </ClInclude>
+    <ClInclude Include="..\injector\utility.hpp">
+      <Filter>..\injector</Filter>
+    </ClInclude>
+    <ClInclude Include="..\safetyhook\safetyhook.hpp">
+      <Filter>..\safetyhook</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\ArgPicker.h">
+      <Filter>..\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\Audio.h">
+      <Filter>..\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\Base.h">
+      <Filter>..\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\Color.h">
+      <Filter>..\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\DynAddress.h">
+      <Filter>..\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\Error.h">
+      <Filter>..\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\EventList.h">
+      <Filter>..\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\Events.h">
+      <Filter>..\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\Extender.h">
+      <Filter>..\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\GameVersion.h">
+      <Filter>..\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\GameVersionMessage.h">
+      <Filter>..\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\Image.h">
+      <Filter>..\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\Maths.h">
+      <Filter>..\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\Other.h">
+      <Filter>..\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\Patch.h">
+      <Filter>..\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\Pattern.h">
+      <Filter>..\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\PluginBase.h">
+      <Filter>..\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\RefList.h">
+      <Filter>..\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\RefListUtils.h">
+      <Filter>..\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\RenderWare.h">
+      <Filter>..\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\SpriteLoader.h">
+      <Filter>..\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\StringUtils.h">
+      <Filter>..\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\TextLoader.h">
+      <Filter>..\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\Timer.h">
+      <Filter>..\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\Types.h">
+      <Filter>..\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\VersionsMacro.h">
+      <Filter>..\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\bass\bass.h">
+      <Filter>..\shared\bass</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\common_sdk.h">
+      <Filter>..\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\comp\PluginSupport.h">
+      <Filter>..\shared\comp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\comp\PluginsCompatibility.h">
+      <Filter>..\shared\comp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\comp\plugins\LimitAdjusterSupport.h">
+      <Filter>..\shared\comp\plugins</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\D2D1.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\D2D1Helper.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\D2DBaseTypes.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\D2Derr.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\D3D10.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\D3D10_1.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\D3D10_1shader.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\D3D10effect.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\D3D10shader.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\D3D11.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\D3D11SDKLayers.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\D3D11Shader.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\D3DCSX.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\D3DX10.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\D3DX10core.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\D3DX10math.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\D3DX10mesh.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\D3DX10tex.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\D3DX11.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\D3DX11async.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\D3DX11core.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\D3DX11tex.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\D3Dcommon.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\D3Dcompiler.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\DWrite.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\DXGI.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\DXGIFormat.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\DXGIType.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\Dcommon.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\DxErr.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\PIXPlugin.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\X3DAudio.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\XAPO.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\XAPOBase.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\XAPOFX.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\XAudio2.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\XAudio2fx.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\XDSP.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\XInput.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\audiodefs.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\comdecl.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3d.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3d10misc.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3d10sdklayers.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3d8.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3d8caps.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3d8types.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3d9.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3d9caps.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3d9types.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3dcaps.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3dres.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3drm.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3drmdef.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3drmobj.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3drmwin.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3dtypes.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3dutil.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3dx.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3dx10async.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3dx8.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3dx8core.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3dx8effect.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3dx8math.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3dx8mesh.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3dx8shape.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3dx8tex.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3dx9.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3dx9anim.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3dx9core.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3dx9effect.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3dx9math.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3dx9mesh.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3dx9shader.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3dx9shape.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3dx9tex.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3dx9xof.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3dxcore.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3dxerr.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3dxmath.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3dxshapes.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3dxsprite.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\dinput.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\dinputd.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\dsconf.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\dsetup.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\dsound.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\dxdiag.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\dxfile.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\dxsdkver.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\gameux.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\rmxfguid.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\rmxftmpl.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\rpcsal.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\xact3.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\xact3d3.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\xact3wb.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\xma2defs.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\xnamath.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\extender\ObjectExtender.h">
+      <Filter>..\shared\extender</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\extender\PedExtender.h">
+      <Filter>..\shared\extender</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\extender\VehicleExtender.h">
+      <Filter>..\shared\extender</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\extensions\Config.h">
+      <Filter>..\shared\extensions</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\extensions\DynamicResource.h">
+      <Filter>..\shared\extensions</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\extensions\FontPrint.h">
+      <Filter>..\shared\extensions</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\extensions\KeyCheck.h">
+      <Filter>..\shared\extensions</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\extensions\Paths.h">
+      <Filter>..\shared\extensions</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\extensions\PoolIterator.h">
+      <Filter>..\shared\extensions</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\extensions\Screen.h">
+      <Filter>..\shared\extensions</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\extensions\ScriptCommands.h">
+      <Filter>..\shared\extensions</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\extensions\Shader.h">
+      <Filter>..\shared\extensions</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\extensions\scripting\ScriptCommandNames.h">
+      <Filter>..\shared\extensions\scripting</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\game\CRGBA.h">
+      <Filter>..\shared\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\game\CVector.h">
+      <Filter>..\shared\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\game\CVector2D.h">
+      <Filter>..\shared\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\game\CVector2DImplementation.h">
+      <Filter>..\shared\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\game\CVectorImplementation.h">
+      <Filter>..\shared\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\game\CompressedVector.h">
+      <Filter>..\shared\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\game\CompressedVector2D.h">
+      <Filter>..\shared\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\plugin.h">
+      <Filter>..\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\rpplugin.h">
+      <Filter>..\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\rwd3d9\rwd3d9.h">
+      <Filter>..\shared\rwd3d9</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\stdafx.h">
+      <Filter>..\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\AnimBlendFrameData.h">
+      <Filter>game_III\Animation</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\C2dEffect.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\C2deffectsModelInfo.h">
+      <Filter>game_III\Models</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\C3dMarker.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\C3dMarkers.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CAccident.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CAccidentManager.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CAnimBlendAssocGroup.h">
+      <Filter>game_III\Animation</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CAnimBlendAssociation.h">
+      <Filter>game_III\Animation</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CAnimBlendClumpData.h">
+      <Filter>game_III\Animation</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CAnimBlendHierarchy.h">
+      <Filter>game_III\Animation</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CAnimBlendLink.h">
+      <Filter>game_III\Animation</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CAnimBlendNode.h">
+      <Filter>game_III\Animation</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CAnimBlendSequence.h">
+      <Filter>game_III\Animation</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CAnimBlock.h">
+      <Filter>game_III\Animation</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CAnimManager.h">
+      <Filter>game_III\Animation</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CAnimationStyleDescriptor.h">
+      <Filter>game_III\Animation</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CAntenna.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CAntennas.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CAudioHydrant.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CAutoPilot.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CAutomobile.h">
+      <Filter>game_III\Entity\Vehicle</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CBaseModelInfo.h">
+      <Filter>game_III\Models</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CBoat.h">
+      <Filter>game_III\Entity\Vehicle</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CBox.h">
+      <Filter>game_III\Collision</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CBridge.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CBrightLight.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CBrightLights.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CBuilding.h">
+      <Filter>game_III\Entity</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CBulletInfo.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CBulletTrace.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CBulletTraces.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CCam.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CCamera.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CCarAI.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CCarCtrl.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CCarGenerator.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CCheat.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CCivilianPed.h">
+      <Filter>game_III\Entity\Ped</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CClock.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CClouds.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CClumpModelInfo.h">
+      <Filter>game_III\Models</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CColBox.h">
+      <Filter>game_III\Collision</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CColLine.h">
+      <Filter>game_III\Collision</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CColModel.h">
+      <Filter>game_III\Collision</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CColPoint.h">
+      <Filter>game_III\Collision</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CColSphere.h">
+      <Filter>game_III\Collision</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CColTriangle.h">
+      <Filter>game_III\Collision</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CColTrianglePlane.h">
+      <Filter>game_III\Collision</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CCollision.h">
+      <Filter>game_III\Collision</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CControllerConfigManager.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CControllerState.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CCopPed.h">
+      <Filter>game_III\Entity\Ped</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CCoronas.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CCrane.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CCranes.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CCredits.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CCurrentVehicle.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CCurves.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CCutsceneHead.h">
+      <Filter>game_III\Entity\Object</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CCutsceneMgr.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CCutsceneObject.h">
+      <Filter>game_III\Entity\Object</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CDamageManager.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CDarkel.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CDate.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CDigitalClock.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CDirectory.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CDoor.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CDraw.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CDummy.h">
+      <Filter>game_III\Entity\Dummy</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CDummyObject.h">
+      <Filter>game_III\Entity\Dummy</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CEmergencyPed.h">
+      <Filter>game_III\Entity\Ped</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CEntity.h">
+      <Filter>game_III\Entity</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CEntryInfoList.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CEventList.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CExplosion.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CFallingGlassPane.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CFileLoader.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CFileMgr.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CFire.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CFireManager.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CFont.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CFontDetails.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CGame.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CGameLogic.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CGangInfo.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CGangs.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CGarage.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CGarages.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CGeneral.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CGlass.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CHeli.h">
+      <Filter>game_III\Entity\Vehicle</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CHud.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CIniFile.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CInstance.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CKeyboardState.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CLines.h">
+      <Filter>game_III\Collision</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CLink.h">
+      <Filter>game_III\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CLinkList.h">
+      <Filter>game_III\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CMBlur.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CMatrix.h">
+      <Filter>game_III\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CMenuManager.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CMessages.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CMissionCleanup.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CMloModelInfo.h">
+      <Filter>game_III\Models</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CModelInfo.h">
+      <Filter>game_III\Models</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CMoneyMessage.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CMoneyMessages.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CMotionBlurStreaks.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CMouseControllerState.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CMousePointerStateHelper.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CMovie.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CMovingThing.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CMovingThings.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CNodeAddress.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CObject.h">
+      <Filter>game_III\Entity\Object</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CObjectData.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\COneSheet.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\COnscreenTimer.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\COnscreenTimerEntry.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CPacManPickup.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CPacManPickups.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CPad.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CPager.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CParticle.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CParticleObject.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CPathFind.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CPathNode.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CPathSplines.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CPed.h">
+      <Filter>game_III\Entity\Ped</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CPedIK.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CPedModelInfo.h">
+      <Filter>game_III\Models</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CPedPath.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CPedPathNode.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CPedPlacement.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CPedStats.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CPedType.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CPhone.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CPhoneInfo.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CPhysical.h">
+      <Filter>game_III\Entity</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CPickup.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CPickups.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CPlaceName.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CPlaceable.h">
+      <Filter>game_III\Entity</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CPlane.h">
+      <Filter>game_III\Entity\Vehicle</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CPlayerInfo.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CPlayerPed.h">
+      <Filter>game_III\Entity\Ped</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CPlayerSkin.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CPointLights.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CPool.h">
+      <Filter>game_III\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CPools.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CPopulation.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CProjectile.h">
+      <Filter>game_III\Entity\Object</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CProjectileInfo.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CPtrList.h">
+      <Filter>game_III\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CPtrNode.h">
+      <Filter>game_III\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CQuaternion.h">
+      <Filter>game_III\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CRadar.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CRange2D.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CRecordDataForChase.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CRecordDataForGame.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CRect.h">
+      <Filter>game_III\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CReference.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CReferences.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CRegisteredCorona.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CRegisteredMotionBlurStreak.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CRegisteredShinyText.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CRemote.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CRenderer.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CReplay.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CRestart.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CRoadBlocks.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CRouteNode.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CRubbish.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CRunningScript.h">
+      <Filter>game_III\Scripts</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CScene.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CSceneEdit.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CScrollBar.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CSector.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CShadows.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CShinyTexts.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CShotInfo.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CSimpleModelInfo.h">
+      <Filter>game_III\Models</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CSkidmark.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CSkidmarks.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CSpecialFX.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CSpecialParticleStuff.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CSphere.h">
+      <Filter>game_III\Collision</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CSprite.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CSprite2d.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CStats.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CStore.h">
+      <Filter>game_III\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CStoredCar.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CStoredCollPoly.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CStreaming.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CStreamingInfo.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CStuckCarCheck.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CSurfaceTable.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CTempColModels.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CTempNode.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CText.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CTheCarGenerators.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CTheScripts.h">
+      <Filter>game_III\Scripts</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CTheZones.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CTimeCycle.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CTimeModelInfo.h">
+      <Filter>game_III\Models</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CTimeStep.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CTimer.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CTowerClock.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CTrafficLights.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CTrain.h">
+      <Filter>game_III\Entity\Vehicle</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CTrainCamNode.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CTrainDoor.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CTreadable.h">
+      <Filter>game_III\Entity</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CTxdStore.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CUpsideDownCarCheck.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CUserDisplay.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CVehicle.h">
+      <Filter>game_III\Entity\Vehicle</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CVehicleModelInfo.h">
+      <Filter>game_III\Models</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CVisibilityPlugins.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CWanted.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CWaterCannon.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CWaterCannons.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CWaterLevel.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CWeapon.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CWeaponEffects.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CWeaponInfo.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CWeather.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CWorld.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CXtraCompsModelInfo.h">
+      <Filter>game_III\Models</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CZone.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\CZoneInfo.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\C_PcSave.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\GenericGameStorage.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\NodeName.h">
+      <Filter>game_III\Plugins</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\RenderBuffer.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\RpAnimBlend.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\RwObjectNameIdAssocation.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\TxdDef.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\cAudioCollision.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\cAudioCollisionManager.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\cAudioManager.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\cAudioScriptObject.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\cBuoyancy.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\cDMAudio.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\cHandlingDataMgr.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\cMusicManager.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\cParticleSystemMgr.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\cSampleManager.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\cTransmission.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\common.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\enums\eAnimations.h">
+      <Filter>game_III\enums</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\enums\eAudioType.h">
+      <Filter>game_III\enums</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\enums\eBodyParts.h">
+      <Filter>game_III\enums</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\enums\eBridgeState.h">
+      <Filter>game_III\enums</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\enums\eCarMission.h">
+      <Filter>game_III\enums</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\enums\eCopType.h">
+      <Filter>game_III\enums</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\enums\eCoronaType.h">
+      <Filter>game_III\enums</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\enums\eCrimeType.h">
+      <Filter>game_III\enums</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\enums\eEntityStatus.h">
+      <Filter>game_III\enums</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\enums\eEventEntity.h">
+      <Filter>game_III\enums</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\enums\eEventStatus.h">
+      <Filter>game_III\enums</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\enums\eEventType.h">
+      <Filter>game_III\enums</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\enums\eExplosionType.h">
+      <Filter>game_III\enums</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\enums\eGangType.h">
+      <Filter>game_III\enums</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\enums\eGarageID.h">
+      <Filter>game_III\enums</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\enums\eGarageState.h">
+      <Filter>game_III\enums</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\enums\eGarageType.h">
+      <Filter>game_III\enums</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\enums\eHandlingIndex.h">
+      <Filter>game_III\enums</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\enums\eLevelName.h">
+      <Filter>game_III\enums</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\enums\eModelID.h">
+      <Filter>game_III\enums</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\enums\eModelInfoType.h">
+      <Filter>game_III\enums</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\enums\eParticleObjectType.h">
+      <Filter>game_III\enums</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\enums\ePedModel.h">
+      <Filter>game_III\enums</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\enums\ePedStats.h">
+      <Filter>game_III\enums</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\enums\ePedType.h">
+      <Filter>game_III\enums</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\enums\ePhoneState.h">
+      <Filter>game_III\enums</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\enums\eRadioStations.h">
+      <Filter>game_III\enums</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\enums\eSceneCommands.h">
+      <Filter>game_III\enums</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\enums\eScriptCommands.h">
+      <Filter>game_III\enums</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\enums\eVehicleHandlingModelFlags.h">
+      <Filter>game_III\enums</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\enums\eVehicleType.h">
+      <Filter>game_III\enums</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\enums\eWeaponFire.h">
+      <Filter>game_III\enums</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\enums\eWeaponModel.h">
+      <Filter>game_III\enums</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\enums\eWeaponType.h">
+      <Filter>game_III\enums</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\enums\eWeather.h">
+      <Filter>game_III\enums</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\enums\eWheelModel.h">
+      <Filter>game_III\enums</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\enums\eZoneType.h">
+      <Filter>game_III\enums</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.C2dEffect.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.C2deffectsModelInfo.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.C3dMarker.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.C3dMarkers.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CAccident.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CAccidentManager.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CAnimBlendAssocGroup.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CAnimBlendAssociation.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CAnimBlendClumpData.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CAnimBlendHierarchy.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CAnimBlendNode.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CAnimBlendSequence.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CAnimManager.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CAntenna.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CAntennas.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CAudioHydrant.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CAutomobile.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CBaseModelInfo.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CBoat.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CBridge.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CBrightLight.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CBrightLights.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CBuilding.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CBulletInfo.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CBulletTrace.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CBulletTraces.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CCamera.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CCarAI.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CCarCtrl.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CCarGenerator.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CCheat.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CCivilianPed.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CClock.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CClouds.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CClumpModelInfo.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CColBox.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CColLine.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CColModel.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CColPoint.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CColSphere.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CColTriangle.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CColTrianglePlane.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CCopPed.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CCoronas.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CCrane.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CCranes.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CCredits.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CCurrentVehicle.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CCurves.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CCutsceneHead.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CCutsceneObject.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CDamageManager.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CDarkel.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CDate.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CDigitalClock.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CDirectory.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CDraw.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CDummy.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CDummyObject.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CEmergencyPed.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CEntity.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CEventList.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CFallingGlassPane.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CFileMgr.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CFire.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CFireManager.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CGame.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CGameLogic.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CGangInfo.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CGangs.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CGeneral.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CGlass.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CHeli.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CIniFile.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CInstance.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CLines.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CMBlur.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CMatrix.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CMissionCleanup.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CMloModelInfo.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CModelInfo.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CMoneyMessage.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CMoneyMessages.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CMotionBlurStreaks.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CMouseControllerState.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CMousePointerStateHelper.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CMovie.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CMovingThing.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CMovingThings.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CObject.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CObjectData.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.COneSheet.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.COnscreenTimer.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.COnscreenTimerEntry.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CPacManPickup.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CPacManPickups.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CParticle.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CParticleObject.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CPathFind.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CPathNode.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CPed.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CPedIK.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CPedModelInfo.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CPedPath.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CPedPlacement.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CPedStats.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CPhone.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CPhoneInfo.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CPhysical.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CPickup.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CPickups.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CPlaceName.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CPlaceable.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CPlane.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CPlayerPed.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CPlayerSkin.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CPools.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CPopulation.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CProjectile.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CQuaternion.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CRadar.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CRange2D.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CRecordDataForChase.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CRecordDataForGame.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CReferences.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CRegisteredCorona.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CRegisteredMotionBlurStreak.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CRegisteredShinyText.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CRemote.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CRestart.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CRoadBlocks.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CRouteNode.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CRubbish.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CScrollBar.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CShinyTexts.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CShotInfo.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CSimpleModelInfo.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CSkidmark.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CSkidmarks.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CSpecialFX.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CSpecialParticleStuff.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CSprite.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CSprite2d.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CStoredCar.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CStoredCollPoly.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CStuckCarCheck.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CSurfaceTable.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CTempNode.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CText.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CTheCarGenerators.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CTimeCycle.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CTimeModelInfo.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CTimer.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CTowerClock.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CTrafficLights.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CTrain.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CTrainCamNode.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CTrainDoor.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CTreadable.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CUpsideDownCarCheck.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CUserDisplay.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CVehicle.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CVehicleModelInfo.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CVisibilityPlugins.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CWanted.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CWaterCannon.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CWaterCannons.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CWeapon.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CWeather.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CXtraCompsModelInfo.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.CZone.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.C_PcSave.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.GenericGameStorage.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.NodeName.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.RenderBuffer.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.RpAnimBlend.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.cAudioCollision.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.cAudioCollisionManager.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.cAudioScriptObject.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.cDMAudio.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\meta\meta.cMusicManager.h">
+      <Filter>game_III\meta</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\rw\rpanisot.h">
+      <Filter>game_III\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\rw\rpcollis.h">
+      <Filter>game_III\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\rw\rpcriter.h">
+      <Filter>game_III\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\rw\rpdbgerr.h">
+      <Filter>game_III\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\rw\rpdmorph.h">
+      <Filter>game_III\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\rw\rperror.h">
+      <Filter>game_III\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\rw\rphanim.h">
+      <Filter>game_III\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\rw\rplodatm.h">
+      <Filter>game_III\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\rw\rplogo.h">
+      <Filter>game_III\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\rw\rpltmap.h">
+      <Filter>game_III\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\rw\rpmatfx.h">
+      <Filter>game_III\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\rw\rpmipkl.h">
+      <Filter>game_III\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\rw\rpmorph.h">
+      <Filter>game_III\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\rw\rppatch.h">
+      <Filter>game_III\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\rw\rpprtstd.h">
+      <Filter>game_III\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\rw\rpptank.h">
+      <Filter>game_III\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\rw\rppvs.h">
+      <Filter>game_III\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\rw\rprandom.h">
+      <Filter>game_III\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\rw\rpskin.h">
+      <Filter>game_III\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\rw\rpspline.h">
+      <Filter>game_III\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\rw\rpstereo.h">
+      <Filter>game_III\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\rw\rpusrdat.h">
+      <Filter>game_III\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\rw\rpworld.h">
+      <Filter>game_III\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\rw\rt2d.h">
+      <Filter>game_III\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\rw\rt2danim.h">
+      <Filter>game_III\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\rw\rtbary.h">
+      <Filter>game_III\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\rw\rtbezpat.h">
+      <Filter>game_III\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\rw\rtbmp.h">
+      <Filter>game_III\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\rw\rtcharse.h">
+      <Filter>game_III\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\rw\rtimport.h">
+      <Filter>game_III\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\rw\rtintel.h">
+      <Filter>game_III\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\rw\rtintsec.h">
+      <Filter>game_III\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\rw\rtltmap.h">
+      <Filter>game_III\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\rw\rtmipk.h">
+      <Filter>game_III\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\rw\rtpick.h">
+      <Filter>game_III\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\rw\rtpitexd.h">
+      <Filter>game_III\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\rw\rtpng.h">
+      <Filter>game_III\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\rw\rtquat.h">
+      <Filter>game_III\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\rw\rtras.h">
+      <Filter>game_III\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\rw\rtray.h">
+      <Filter>game_III\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\rw\rtslerp.h">
+      <Filter>game_III\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\rw\rtsplpvs.h">
+      <Filter>game_III\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\rw\rttiff.h">
+      <Filter>game_III\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\rw\rttilerd.h">
+      <Filter>game_III\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\rw\rttoc.h">
+      <Filter>game_III\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\rw\rtvcat.h">
+      <Filter>game_III\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\rw\rtworld.h">
+      <Filter>game_III\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\rw\rwcore.h">
+      <Filter>game_III\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\rw\rwplcore.h">
+      <Filter>game_III\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\rw\skeleton.h">
+      <Filter>game_III\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\tColSurface.h">
+      <Filter>game_III\Collision</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\tHandlingData.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\tParticleSystemData.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\tParticleType.h">
+      <Filter>game_III\Enums</Filter>
+    </ClInclude>
+    <ClInclude Include="game_III\tTransmissionGear.h">
+      <Filter>game_III</Filter>
+    </ClInclude>
+    <ClInclude Include="plugin_III.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\hooking\Hooking.Patterns.cpp">
+      <Filter>..\hooking</Filter>
+    </ClCompile>
+    <ClCompile Include="..\safetyhook\Zydis.c">
+      <Filter>..\safetyhook</Filter>
+    </ClCompile>
+    <ClCompile Include="..\safetyhook\safetyhook.cpp">
+      <Filter>..\safetyhook</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\Audio.cpp">
+      <Filter>..\shared</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\Color.cpp">
+      <Filter>..\shared</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\DynAddress.cpp">
+      <Filter>..\shared</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\GameVersion.cpp">
+      <Filter>..\shared</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\Image.cpp">
+      <Filter>..\shared</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\Other.cpp">
+      <Filter>..\shared</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\Patch.cpp">
+      <Filter>..\shared</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\Pattern.cpp">
+      <Filter>..\shared</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\PluginBase.cpp">
+      <Filter>..\shared</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\SpriteLoader.cpp">
+      <Filter>..\shared</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\StringUtils.cpp">
+      <Filter>..\shared</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\TextLoader.cpp">
+      <Filter>..\shared</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\common_sdk.cpp">
+      <Filter>..\shared</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\comp\PluginSupport.cpp">
+      <Filter>..\shared\comp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\comp\PluginsCompatibility.cpp">
+      <Filter>..\shared\comp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\comp\plugins\LimitAdjusterSupport.cpp">
+      <Filter>..\shared\comp\plugins</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\extensions\Config.cpp">
+      <Filter>..\shared\extensions</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\extensions\DynamicResource.cpp">
+      <Filter>..\shared\extensions</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\extensions\FontPrint.cpp">
+      <Filter>..\shared\extensions</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\extensions\KeyCheck.cpp">
+      <Filter>..\shared\extensions</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\extensions\Paths.cpp">
+      <Filter>..\shared\extensions</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\extensions\Screen.cpp">
+      <Filter>..\shared\extensions</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\extensions\ScriptCommands.cpp">
+      <Filter>..\shared\extensions</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\extensions\Shader.cpp">
+      <Filter>..\shared\extensions</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\game\CRGBA.cpp">
+      <Filter>..\shared\game</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\game\CVector.cpp">
+      <Filter>..\shared\game</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\game\CompressedVector.cpp">
+      <Filter>..\shared\game</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\game\CompressedVector2D.cpp">
+      <Filter>..\shared\game</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\plugin.cpp">
+      <Filter>..\shared</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\stdafx.cpp">
+      <Filter>..\shared</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\C2dEffect.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\C2deffectsModelInfo.cpp">
+      <Filter>game_III\Models</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\C3dMarker.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\C3dMarkers.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CAccident.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CAccidentManager.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CAnimBlendAssocGroup.cpp">
+      <Filter>game_III\Animation</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CAnimBlendAssociation.cpp">
+      <Filter>game_III\Animation</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CAnimBlendClumpData.cpp">
+      <Filter>game_III\Animation</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CAnimBlendHierarchy.cpp">
+      <Filter>game_III\Animation</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CAnimBlendNode.cpp">
+      <Filter>game_III\Animation</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CAnimBlendSequence.cpp">
+      <Filter>game_III\Animation</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CAnimManager.cpp">
+      <Filter>game_III\Animation</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CAntenna.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CAntennas.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CAudioHydrant.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CAutoPilot.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CAutomobile.cpp">
+      <Filter>game_III\Entity\Vehicle</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CBaseModelInfo.cpp">
+      <Filter>game_III\Models</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CBoat.cpp">
+      <Filter>game_III\Entity\Vehicle</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CBridge.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CBrightLight.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CBrightLights.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CBuilding.cpp">
+      <Filter>game_III\Entity</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CBulletInfo.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CBulletTrace.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CBulletTraces.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CCam.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CCamera.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CCarAI.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CCarCtrl.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CCarGenerator.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CCheat.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CCivilianPed.cpp">
+      <Filter>game_III\Entity\Ped</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CClock.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CClouds.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CClumpModelInfo.cpp">
+      <Filter>game_III\Models</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CColBox.cpp">
+      <Filter>game_III\Collision</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CColLine.cpp">
+      <Filter>game_III\Collision</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CColModel.cpp">
+      <Filter>game_III\Collision</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CColPoint.cpp">
+      <Filter>game_III\Collision</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CColSphere.cpp">
+      <Filter>game_III\Collision</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CColTriangle.cpp">
+      <Filter>game_III\Collision</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CColTrianglePlane.cpp">
+      <Filter>game_III\Collision</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CCollision.cpp">
+      <Filter>game_III\Collision</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CControllerConfigManager.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CControllerState.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CCopPed.cpp">
+      <Filter>game_III\Entity\Ped</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CCoronas.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CCrane.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CCranes.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CCredits.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CCurrentVehicle.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CCurves.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CCutsceneHead.cpp">
+      <Filter>game_III\Entity\Object</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CCutsceneMgr.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CCutsceneObject.cpp">
+      <Filter>game_III\Entity\Object</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CDamageManager.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CDarkel.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CDate.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CDigitalClock.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CDirectory.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CDoor.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CDraw.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CDummy.cpp">
+      <Filter>game_III\Entity\Dummy</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CDummyObject.cpp">
+      <Filter>game_III\Entity\Dummy</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CEmergencyPed.cpp">
+      <Filter>game_III\Entity\Ped</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CEntity.cpp">
+      <Filter>game_III\Entity</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CEntryInfoList.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CEventList.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CExplosion.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CFallingGlassPane.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CFileLoader.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CFileMgr.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CFire.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CFireManager.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CFont.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CFontDetails.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CGame.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CGameLogic.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CGangInfo.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CGangs.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CGarage.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CGarages.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CGeneral.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CGlass.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CHeli.cpp">
+      <Filter>game_III\Entity\Vehicle</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CHud.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CIniFile.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CInstance.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CKeyboardState.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CLines.cpp">
+      <Filter>game_III\Collision</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CMBlur.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CMatrix.cpp">
+      <Filter>game_III\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CMenuManager.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CMessages.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CMissionCleanup.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CMloModelInfo.cpp">
+      <Filter>game_III\Models</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CModelInfo.cpp">
+      <Filter>game_III\Models</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CMoneyMessage.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CMoneyMessages.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CMotionBlurStreaks.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CMouseControllerState.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CMousePointerStateHelper.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CMovie.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CMovingThing.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CMovingThings.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CObject.cpp">
+      <Filter>game_III\Entity\Object</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CObjectData.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\COneSheet.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\COnscreenTimer.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\COnscreenTimerEntry.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CPacManPickup.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CPacManPickups.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CPad.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CPager.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CParticle.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CParticleObject.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CPathFind.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CPathNode.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CPed.cpp">
+      <Filter>game_III\Entity\Ped</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CPedIK.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CPedModelInfo.cpp">
+      <Filter>game_III\Models</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CPedPath.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CPedPlacement.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CPedStats.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CPedType.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CPhone.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CPhoneInfo.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CPhysical.cpp">
+      <Filter>game_III\Entity</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CPickup.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CPickups.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CPlaceName.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CPlaceable.cpp">
+      <Filter>game_III\Entity</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CPlane.cpp">
+      <Filter>game_III\Entity\Vehicle</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CPlayerInfo.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CPlayerPed.cpp">
+      <Filter>game_III\Entity\Ped</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CPlayerSkin.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CPointLights.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CPools.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CPopulation.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CProjectile.cpp">
+      <Filter>game_III\Entity\Object</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CProjectileInfo.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CPtrList.cpp">
+      <Filter>game_III\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CQuaternion.cpp">
+      <Filter>game_III\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CRadar.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CRange2D.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CRecordDataForChase.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CRecordDataForGame.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CReferences.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CRegisteredCorona.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CRegisteredMotionBlurStreak.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CRegisteredShinyText.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CRemote.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CRenderer.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CReplay.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CRestart.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CRoadBlocks.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CRouteNode.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CRubbish.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CRunningScript.cpp">
+      <Filter>game_III\Scripts</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CScene.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CSceneEdit.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CScrollBar.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CShadows.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CShinyTexts.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CShotInfo.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CSimpleModelInfo.cpp">
+      <Filter>game_III\Models</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CSkidmark.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CSkidmarks.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CSpecialFX.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CSpecialParticleStuff.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CSphere.cpp">
+      <Filter>game_III\Collision</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CSprite.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CSprite2d.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CStats.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CStoredCar.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CStoredCollPoly.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CStreaming.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CStreamingInfo.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CStuckCarCheck.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CSurfaceTable.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CTempColModels.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CTempNode.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CText.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CTheCarGenerators.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CTheScripts.cpp">
+      <Filter>game_III\Scripts</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CTheZones.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CTimeCycle.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CTimeModelInfo.cpp">
+      <Filter>game_III\Models</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CTimeStep.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CTimer.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CTowerClock.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CTrafficLights.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CTrain.cpp">
+      <Filter>game_III\Entity\Vehicle</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CTrainCamNode.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CTrainDoor.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CTreadable.cpp">
+      <Filter>game_III\Entity</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CTxdStore.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CUpsideDownCarCheck.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CUserDisplay.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CVehicle.cpp">
+      <Filter>game_III\Entity\Vehicle</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CVehicleModelInfo.cpp">
+      <Filter>game_III\Models</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CVisibilityPlugins.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CWanted.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CWaterCannon.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CWaterCannons.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CWaterLevel.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CWeapon.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CWeaponEffects.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CWeaponInfo.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CWeather.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CWorld.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CXtraCompsModelInfo.cpp">
+      <Filter>game_III\Models</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\CZone.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\C_PcSave.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\GenericGameStorage.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\NodeName.cpp">
+      <Filter>game_III\Plugins</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\RenderBuffer.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\RenderWare.cpp">
+      <Filter>game_III\RenderWare</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\RpAnimBlend.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\cAudioCollision.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\cAudioCollisionManager.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\cAudioManager.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\cAudioScriptObject.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\cBuoyancy.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\cDMAudio.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\cHandlingDataMgr.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\cMusicManager.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\cParticleSystemMgr.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\cSampleManager.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\cTransmission.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+    <ClCompile Include="game_III\common.cpp">
+      <Filter>game_III</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>

@@ -1,0 +1,25 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="ASM injections">
+      <UniqueIdentifier>{5CEC750F-48BA-6915-314E-DA3B1DBB457A}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="ASM injections\ASM_PassNitrousAcc.h">
+      <Filter>ASM injections</Filter>
+    </ClInclude>
+    <ClInclude Include="ASM injections\ASM_SelectAccMultiplier.h">
+      <Filter>ASM injections</Filter>
+    </ClInclude>
+    <ClInclude Include="DrawNitrousIndicator.h" />
+    <ClInclude Include="NitrousControl.h" />
+    <ClInclude Include="Parameters.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Main.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="README.md" />
+  </ItemGroup>
+</Project>

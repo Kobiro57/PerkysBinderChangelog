@@ -1,0 +1,1610 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="zDebug|Win32">
+      <Configuration>zDebug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{2E2C298D-1AE4-6ADA-83EB-43366FC205CB}</ProjectGuid>
+    <IgnoreWarnCompileDuplicatedFilename>true</IgnoreWarnCompileDuplicatedFilename>
+    <Keyword>Win32Proj</Keyword>
+    <RootNamespace>Plugin_III</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='zDebug|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='zDebug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <OutDir>$(PLUGIN_SDK_DIR)\output\lib\</OutDir>
+    <IntDir>$(PLUGIN_SDK_DIR)\output\obj\Plugin_III\Release\</IntDir>
+    <TargetName>Plugin_III</TargetName>
+    <TargetExt>.lib</TargetExt>
+    <ExternalIncludePath>$(IncludePath);$(PLUGIN_SDK_DIR)\shared\dxsdk;$(ExternalIncludePath)</ExternalIncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='zDebug|Win32'">
+    <OutDir>$(PLUGIN_SDK_DIR)\output\lib\</OutDir>
+    <IntDir>$(PLUGIN_SDK_DIR)\output\obj\Plugin_III\Debug\</IntDir>
+    <TargetName>Plugin_III_d</TargetName>
+    <TargetExt>.lib</TargetExt>
+    <ExternalIncludePath>$(IncludePath);$(PLUGIN_SDK_DIR)\shared\dxsdk;$(ExternalIncludePath)</ExternalIncludePath>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>stdafx.h</PrecompiledHeaderFile>
+      <WarningLevel>Level3</WarningLevel>
+      <DisableSpecificWarnings>4073;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <TreatSpecificWarningsAsErrors>4996;%(TreatSpecificWarningsAsErrors)</TreatSpecificWarningsAsErrors>
+      <PreprocessorDefinitions>_CRT_NON_CONFORMING_SWPRINTFS;_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING;_DX9_SDK_INSTALLED;GTA3;PLUGIN_SGV_10EN;RW;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(PLUGIN_SDK_DIR)\plugin_III;$(PLUGIN_SDK_DIR)\plugin_III\game_III;$(PLUGIN_SDK_DIR)\plugin_III\game_III\enums;$(PLUGIN_SDK_DIR)\plugin_III\game_III\rw;$(PLUGIN_SDK_DIR)\safetyhook;$(PLUGIN_SDK_DIR)\shared;$(PLUGIN_SDK_DIR)\shared\game;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <ForcedIncludeFiles>stdafx.h</ForcedIncludeFiles>
+      <DebugInformationFormat>None</DebugInformationFormat>
+      <Optimization>Full</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <MinimalRebuild>false</MinimalRebuild>
+      <StringPooling>true</StringPooling>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <AdditionalOptions>/sdl- /std:c++latest %(AdditionalOptions)</AdditionalOptions>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
+      <ExternalWarningLevel>Level3</ExternalWarningLevel>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
+    </Link>
+    <ProjectReference>
+    </ProjectReference>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='zDebug|Win32'">
+    <ClCompile>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>stdafx.h</PrecompiledHeaderFile>
+      <WarningLevel>Level3</WarningLevel>
+      <DisableSpecificWarnings>4073;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <TreatSpecificWarningsAsErrors>4996;%(TreatSpecificWarningsAsErrors)</TreatSpecificWarningsAsErrors>
+      <PreprocessorDefinitions>_CRT_NON_CONFORMING_SWPRINTFS;_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING;_DX9_SDK_INSTALLED;GTA3;PLUGIN_SGV_10EN;RW;DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(PLUGIN_SDK_DIR)\plugin_III;$(PLUGIN_SDK_DIR)\plugin_III\game_III;$(PLUGIN_SDK_DIR)\plugin_III\game_III\enums;$(PLUGIN_SDK_DIR)\plugin_III\game_III\rw;$(PLUGIN_SDK_DIR)\safetyhook;$(PLUGIN_SDK_DIR)\shared;$(PLUGIN_SDK_DIR)\shared\game;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <ForcedIncludeFiles>stdafx.h</ForcedIncludeFiles>
+      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+      <Optimization>Disabled</Optimization>
+      <MinimalRebuild>false</MinimalRebuild>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <AdditionalOptions>/sdl- /std:c++latest %(AdditionalOptions)</AdditionalOptions>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
+      <ExternalWarningLevel>Level3</ExternalWarningLevel>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+    <ProjectReference>
+    </ProjectReference>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClInclude Include="..\hooking\Hooking.Patterns.h" />
+    <ClInclude Include="..\injector\assembly.hpp" />
+    <ClInclude Include="..\injector\calling.hpp" />
+    <ClInclude Include="..\injector\gvm\gvm.hpp" />
+    <ClInclude Include="..\injector\gvm\translator.hpp" />
+    <ClInclude Include="..\injector\hooking.hpp" />
+    <ClInclude Include="..\injector\injector.hpp" />
+    <ClInclude Include="..\injector\utility.hpp" />
+    <ClInclude Include="..\safetyhook\safetyhook.hpp" />
+    <ClInclude Include="..\shared\ArgPicker.h" />
+    <ClInclude Include="..\shared\Audio.h" />
+    <ClInclude Include="..\shared\Base.h" />
+    <ClInclude Include="..\shared\Color.h" />
+    <ClInclude Include="..\shared\DynAddress.h" />
+    <ClInclude Include="..\shared\Error.h" />
+    <ClInclude Include="..\shared\EventList.h" />
+    <ClInclude Include="..\shared\Events.h" />
+    <ClInclude Include="..\shared\Extender.h" />
+    <ClInclude Include="..\shared\GameVersion.h" />
+    <ClInclude Include="..\shared\GameVersionMessage.h" />
+    <ClInclude Include="..\shared\Image.h" />
+    <ClInclude Include="..\shared\Maths.h" />
+    <ClInclude Include="..\shared\Other.h" />
+    <ClInclude Include="..\shared\Patch.h" />
+    <ClInclude Include="..\shared\Pattern.h" />
+    <ClInclude Include="..\shared\PluginBase.h" />
+    <ClInclude Include="..\shared\RefList.h" />
+    <ClInclude Include="..\shared\RefListUtils.h" />
+    <ClInclude Include="..\shared\RenderWare.h" />
+    <ClInclude Include="..\shared\SpriteLoader.h" />
+    <ClInclude Include="..\shared\StringUtils.h" />
+    <ClInclude Include="..\shared\TextLoader.h" />
+    <ClInclude Include="..\shared\Timer.h" />
+    <ClInclude Include="..\shared\Types.h" />
+    <ClInclude Include="..\shared\VersionsMacro.h" />
+    <ClInclude Include="..\shared\bass\bass.h" />
+    <ClInclude Include="..\shared\common_sdk.h" />
+    <ClInclude Include="..\shared\comp\PluginSupport.h" />
+    <ClInclude Include="..\shared\comp\PluginsCompatibility.h" />
+    <ClInclude Include="..\shared\comp\plugins\LimitAdjusterSupport.h" />
+    <ClInclude Include="..\shared\dxsdk\D2D1.h" />
+    <ClInclude Include="..\shared\dxsdk\D2D1Helper.h" />
+    <ClInclude Include="..\shared\dxsdk\D2DBaseTypes.h" />
+    <ClInclude Include="..\shared\dxsdk\D2Derr.h" />
+    <ClInclude Include="..\shared\dxsdk\D3D10.h" />
+    <ClInclude Include="..\shared\dxsdk\D3D10_1.h" />
+    <ClInclude Include="..\shared\dxsdk\D3D10_1shader.h" />
+    <ClInclude Include="..\shared\dxsdk\D3D10effect.h" />
+    <ClInclude Include="..\shared\dxsdk\D3D10shader.h" />
+    <ClInclude Include="..\shared\dxsdk\D3D11.h" />
+    <ClInclude Include="..\shared\dxsdk\D3D11SDKLayers.h" />
+    <ClInclude Include="..\shared\dxsdk\D3D11Shader.h" />
+    <ClInclude Include="..\shared\dxsdk\D3DCSX.h" />
+    <ClInclude Include="..\shared\dxsdk\D3DX10.h" />
+    <ClInclude Include="..\shared\dxsdk\D3DX10core.h" />
+    <ClInclude Include="..\shared\dxsdk\D3DX10math.h" />
+    <ClInclude Include="..\shared\dxsdk\D3DX10mesh.h" />
+    <ClInclude Include="..\shared\dxsdk\D3DX10tex.h" />
+    <ClInclude Include="..\shared\dxsdk\D3DX11.h" />
+    <ClInclude Include="..\shared\dxsdk\D3DX11async.h" />
+    <ClInclude Include="..\shared\dxsdk\D3DX11core.h" />
+    <ClInclude Include="..\shared\dxsdk\D3DX11tex.h" />
+    <ClInclude Include="..\shared\dxsdk\D3Dcommon.h" />
+    <ClInclude Include="..\shared\dxsdk\D3Dcompiler.h" />
+    <ClInclude Include="..\shared\dxsdk\DWrite.h" />
+    <ClInclude Include="..\shared\dxsdk\DXGI.h" />
+    <ClInclude Include="..\shared\dxsdk\DXGIFormat.h" />
+    <ClInclude Include="..\shared\dxsdk\DXGIType.h" />
+    <ClInclude Include="..\shared\dxsdk\Dcommon.h" />
+    <ClInclude Include="..\shared\dxsdk\DxErr.h" />
+    <ClInclude Include="..\shared\dxsdk\PIXPlugin.h" />
+    <ClInclude Include="..\shared\dxsdk\X3DAudio.h" />
+    <ClInclude Include="..\shared\dxsdk\XAPO.h" />
+    <ClInclude Include="..\shared\dxsdk\XAPOBase.h" />
+    <ClInclude Include="..\shared\dxsdk\XAPOFX.h" />
+    <ClInclude Include="..\shared\dxsdk\XAudio2.h" />
+    <ClInclude Include="..\shared\dxsdk\XAudio2fx.h" />
+    <ClInclude Include="..\shared\dxsdk\XDSP.h" />
+    <ClInclude Include="..\shared\dxsdk\XInput.h" />
+    <ClInclude Include="..\shared\dxsdk\audiodefs.h" />
+    <ClInclude Include="..\shared\dxsdk\comdecl.h" />
+    <ClInclude Include="..\shared\dxsdk\d3d.h" />
+    <ClInclude Include="..\shared\dxsdk\d3d10misc.h" />
+    <ClInclude Include="..\shared\dxsdk\d3d10sdklayers.h" />
+    <ClInclude Include="..\shared\dxsdk\d3d8.h" />
+    <ClInclude Include="..\shared\dxsdk\d3d8caps.h" />
+    <ClInclude Include="..\shared\dxsdk\d3d8types.h" />
+    <ClInclude Include="..\shared\dxsdk\d3d9.h" />
+    <ClInclude Include="..\shared\dxsdk\d3d9caps.h" />
+    <ClInclude Include="..\shared\dxsdk\d3d9types.h" />
+    <ClInclude Include="..\shared\dxsdk\d3dcaps.h" />
+    <ClInclude Include="..\shared\dxsdk\d3dres.h" />
+    <ClInclude Include="..\shared\dxsdk\d3drm.h" />
+    <ClInclude Include="..\shared\dxsdk\d3drmdef.h" />
+    <ClInclude Include="..\shared\dxsdk\d3drmobj.h" />
+    <ClInclude Include="..\shared\dxsdk\d3drmwin.h" />
+    <ClInclude Include="..\shared\dxsdk\d3dtypes.h" />
+    <ClInclude Include="..\shared\dxsdk\d3dutil.h" />
+    <ClInclude Include="..\shared\dxsdk\d3dx.h" />
+    <ClInclude Include="..\shared\dxsdk\d3dx10async.h" />
+    <ClInclude Include="..\shared\dxsdk\d3dx8.h" />
+    <ClInclude Include="..\shared\dxsdk\d3dx8core.h" />
+    <ClInclude Include="..\shared\dxsdk\d3dx8effect.h" />
+    <ClInclude Include="..\shared\dxsdk\d3dx8math.h" />
+    <ClInclude Include="..\shared\dxsdk\d3dx8mesh.h" />
+    <ClInclude Include="..\shared\dxsdk\d3dx8shape.h" />
+    <ClInclude Include="..\shared\dxsdk\d3dx8tex.h" />
+    <ClInclude Include="..\shared\dxsdk\d3dx9.h" />
+    <ClInclude Include="..\shared\dxsdk\d3dx9anim.h" />
+    <ClInclude Include="..\shared\dxsdk\d3dx9core.h" />
+    <ClInclude Include="..\shared\dxsdk\d3dx9effect.h" />
+    <ClInclude Include="..\shared\dxsdk\d3dx9math.h" />
+    <ClInclude Include="..\shared\dxsdk\d3dx9mesh.h" />
+    <ClInclude Include="..\shared\dxsdk\d3dx9shader.h" />
+    <ClInclude Include="..\shared\dxsdk\d3dx9shape.h" />
+    <ClInclude Include="..\shared\dxsdk\d3dx9tex.h" />
+    <ClInclude Include="..\shared\dxsdk\d3dx9xof.h" />
+    <ClInclude Include="..\shared\dxsdk\d3dxcore.h" />
+    <ClInclude Include="..\shared\dxsdk\d3dxerr.h" />
+    <ClInclude Include="..\shared\dxsdk\d3dxmath.h" />
+    <ClInclude Include="..\shared\dxsdk\d3dxshapes.h" />
+    <ClInclude Include="..\shared\dxsdk\d3dxsprite.h" />
+    <ClInclude Include="..\shared\dxsdk\dinput.h" />
+    <ClInclude Include="..\shared\dxsdk\dinputd.h" />
+    <ClInclude Include="..\shared\dxsdk\dsconf.h" />
+    <ClInclude Include="..\shared\dxsdk\dsetup.h" />
+    <ClInclude Include="..\shared\dxsdk\dsound.h" />
+    <ClInclude Include="..\shared\dxsdk\dxdiag.h" />
+    <ClInclude Include="..\shared\dxsdk\dxfile.h" />
+    <ClInclude Include="..\shared\dxsdk\dxsdkver.h" />
+    <ClInclude Include="..\shared\dxsdk\gameux.h" />
+    <ClInclude Include="..\shared\dxsdk\rmxfguid.h" />
+    <ClInclude Include="..\shared\dxsdk\rmxftmpl.h" />
+    <ClInclude Include="..\shared\dxsdk\rpcsal.h" />
+    <ClInclude Include="..\shared\dxsdk\xact3.h" />
+    <ClInclude Include="..\shared\dxsdk\xact3d3.h" />
+    <ClInclude Include="..\shared\dxsdk\xact3wb.h" />
+    <ClInclude Include="..\shared\dxsdk\xma2defs.h" />
+    <ClInclude Include="..\shared\dxsdk\xnamath.h" />
+    <ClInclude Include="..\shared\extender\ObjectExtender.h" />
+    <ClInclude Include="..\shared\extender\PedExtender.h" />
+    <ClInclude Include="..\shared\extender\VehicleExtender.h" />
+    <ClInclude Include="..\shared\extensions\Config.h" />
+    <ClInclude Include="..\shared\extensions\DynamicResource.h" />
+    <ClInclude Include="..\shared\extensions\FontPrint.h" />
+    <ClInclude Include="..\shared\extensions\KeyCheck.h" />
+    <ClInclude Include="..\shared\extensions\Paths.h" />
+    <ClInclude Include="..\shared\extensions\PoolIterator.h" />
+    <ClInclude Include="..\shared\extensions\Screen.h" />
+    <ClInclude Include="..\shared\extensions\ScriptCommands.h" />
+    <ClInclude Include="..\shared\extensions\Shader.h" />
+    <ClInclude Include="..\shared\extensions\scripting\ScriptCommandNames.h" />
+    <ClInclude Include="..\shared\game\CRGBA.h" />
+    <ClInclude Include="..\shared\game\CVector.h" />
+    <ClInclude Include="..\shared\game\CVector2D.h" />
+    <ClInclude Include="..\shared\game\CVector2DImplementation.h" />
+    <ClInclude Include="..\shared\game\CVectorImplementation.h" />
+    <ClInclude Include="..\shared\game\CompressedVector.h" />
+    <ClInclude Include="..\shared\game\CompressedVector2D.h" />
+    <ClInclude Include="..\shared\plugin.h" />
+    <ClInclude Include="..\shared\rpplugin.h" />
+    <ClInclude Include="..\shared\rwd3d9\rwd3d9.h" />
+    <ClInclude Include="..\shared\stdafx.h" />
+    <ClInclude Include="game_III\AnimBlendFrameData.h" />
+    <ClInclude Include="game_III\C2dEffect.h" />
+    <ClInclude Include="game_III\C2deffectsModelInfo.h" />
+    <ClInclude Include="game_III\C3dMarker.h" />
+    <ClInclude Include="game_III\C3dMarkers.h" />
+    <ClInclude Include="game_III\CAccident.h" />
+    <ClInclude Include="game_III\CAccidentManager.h" />
+    <ClInclude Include="game_III\CAnimBlendAssocGroup.h" />
+    <ClInclude Include="game_III\CAnimBlendAssociation.h" />
+    <ClInclude Include="game_III\CAnimBlendClumpData.h" />
+    <ClInclude Include="game_III\CAnimBlendHierarchy.h" />
+    <ClInclude Include="game_III\CAnimBlendLink.h" />
+    <ClInclude Include="game_III\CAnimBlendNode.h" />
+    <ClInclude Include="game_III\CAnimBlendSequence.h" />
+    <ClInclude Include="game_III\CAnimBlock.h" />
+    <ClInclude Include="game_III\CAnimManager.h" />
+    <ClInclude Include="game_III\CAnimationStyleDescriptor.h" />
+    <ClInclude Include="game_III\CAntenna.h" />
+    <ClInclude Include="game_III\CAntennas.h" />
+    <ClInclude Include="game_III\CAudioHydrant.h" />
+    <ClInclude Include="game_III\CAutoPilot.h" />
+    <ClInclude Include="game_III\CAutomobile.h" />
+    <ClInclude Include="game_III\CBaseModelInfo.h" />
+    <ClInclude Include="game_III\CBoat.h" />
+    <ClInclude Include="game_III\CBox.h" />
+    <ClInclude Include="game_III\CBridge.h" />
+    <ClInclude Include="game_III\CBrightLight.h" />
+    <ClInclude Include="game_III\CBrightLights.h" />
+    <ClInclude Include="game_III\CBuilding.h" />
+    <ClInclude Include="game_III\CBulletInfo.h" />
+    <ClInclude Include="game_III\CBulletTrace.h" />
+    <ClInclude Include="game_III\CBulletTraces.h" />
+    <ClInclude Include="game_III\CCam.h" />
+    <ClInclude Include="game_III\CCamera.h" />
+    <ClInclude Include="game_III\CCarAI.h" />
+    <ClInclude Include="game_III\CCarCtrl.h" />
+    <ClInclude Include="game_III\CCarGenerator.h" />
+    <ClInclude Include="game_III\CCheat.h" />
+    <ClInclude Include="game_III\CCivilianPed.h" />
+    <ClInclude Include="game_III\CClock.h" />
+    <ClInclude Include="game_III\CClouds.h" />
+    <ClInclude Include="game_III\CClumpModelInfo.h" />
+    <ClInclude Include="game_III\CColBox.h" />
+    <ClInclude Include="game_III\CColLine.h" />
+    <ClInclude Include="game_III\CColModel.h" />
+    <ClInclude Include="game_III\CColPoint.h" />
+    <ClInclude Include="game_III\CColSphere.h" />
+    <ClInclude Include="game_III\CColTriangle.h" />
+    <ClInclude Include="game_III\CColTrianglePlane.h" />
+    <ClInclude Include="game_III\CCollision.h" />
+    <ClInclude Include="game_III\CControllerConfigManager.h" />
+    <ClInclude Include="game_III\CControllerState.h" />
+    <ClInclude Include="game_III\CCopPed.h" />
+    <ClInclude Include="game_III\CCoronas.h" />
+    <ClInclude Include="game_III\CCrane.h" />
+    <ClInclude Include="game_III\CCranes.h" />
+    <ClInclude Include="game_III\CCredits.h" />
+    <ClInclude Include="game_III\CCurrentVehicle.h" />
+    <ClInclude Include="game_III\CCurves.h" />
+    <ClInclude Include="game_III\CCutsceneHead.h" />
+    <ClInclude Include="game_III\CCutsceneMgr.h" />
+    <ClInclude Include="game_III\CCutsceneObject.h" />
+    <ClInclude Include="game_III\CDamageManager.h" />
+    <ClInclude Include="game_III\CDarkel.h" />
+    <ClInclude Include="game_III\CDate.h" />
+    <ClInclude Include="game_III\CDigitalClock.h" />
+    <ClInclude Include="game_III\CDirectory.h" />
+    <ClInclude Include="game_III\CDoor.h" />
+    <ClInclude Include="game_III\CDraw.h" />
+    <ClInclude Include="game_III\CDummy.h" />
+    <ClInclude Include="game_III\CDummyObject.h" />
+    <ClInclude Include="game_III\CEmergencyPed.h" />
+    <ClInclude Include="game_III\CEntity.h" />
+    <ClInclude Include="game_III\CEntryInfoList.h" />
+    <ClInclude Include="game_III\CEventList.h" />
+    <ClInclude Include="game_III\CExplosion.h" />
+    <ClInclude Include="game_III\CFallingGlassPane.h" />
+    <ClInclude Include="game_III\CFileLoader.h" />
+    <ClInclude Include="game_III\CFileMgr.h" />
+    <ClInclude Include="game_III\CFire.h" />
+    <ClInclude Include="game_III\CFireManager.h" />
+    <ClInclude Include="game_III\CFont.h" />
+    <ClInclude Include="game_III\CFontDetails.h" />
+    <ClInclude Include="game_III\CGame.h" />
+    <ClInclude Include="game_III\CGameLogic.h" />
+    <ClInclude Include="game_III\CGangInfo.h" />
+    <ClInclude Include="game_III\CGangs.h" />
+    <ClInclude Include="game_III\CGarage.h" />
+    <ClInclude Include="game_III\CGarages.h" />
+    <ClInclude Include="game_III\CGeneral.h" />
+    <ClInclude Include="game_III\CGlass.h" />
+    <ClInclude Include="game_III\CHeli.h" />
+    <ClInclude Include="game_III\CHud.h" />
+    <ClInclude Include="game_III\CIniFile.h" />
+    <ClInclude Include="game_III\CInstance.h" />
+    <ClInclude Include="game_III\CKeyboardState.h" />
+    <ClInclude Include="game_III\CLines.h" />
+    <ClInclude Include="game_III\CLink.h" />
+    <ClInclude Include="game_III\CLinkList.h" />
+    <ClInclude Include="game_III\CMBlur.h" />
+    <ClInclude Include="game_III\CMatrix.h" />
+    <ClInclude Include="game_III\CMenuManager.h" />
+    <ClInclude Include="game_III\CMessages.h" />
+    <ClInclude Include="game_III\CMissionCleanup.h" />
+    <ClInclude Include="game_III\CMloModelInfo.h" />
+    <ClInclude Include="game_III\CModelInfo.h" />
+    <ClInclude Include="game_III\CMoneyMessage.h" />
+    <ClInclude Include="game_III\CMoneyMessages.h" />
+    <ClInclude Include="game_III\CMotionBlurStreaks.h" />
+    <ClInclude Include="game_III\CMouseControllerState.h" />
+    <ClInclude Include="game_III\CMousePointerStateHelper.h" />
+    <ClInclude Include="game_III\CMovie.h" />
+    <ClInclude Include="game_III\CMovingThing.h" />
+    <ClInclude Include="game_III\CMovingThings.h" />
+    <ClInclude Include="game_III\CNodeAddress.h" />
+    <ClInclude Include="game_III\CObject.h" />
+    <ClInclude Include="game_III\CObjectData.h" />
+    <ClInclude Include="game_III\COneSheet.h" />
+    <ClInclude Include="game_III\COnscreenTimer.h" />
+    <ClInclude Include="game_III\COnscreenTimerEntry.h" />
+    <ClInclude Include="game_III\CPacManPickup.h" />
+    <ClInclude Include="game_III\CPacManPickups.h" />
+    <ClInclude Include="game_III\CPad.h" />
+    <ClInclude Include="game_III\CPager.h" />
+    <ClInclude Include="game_III\CParticle.h" />
+    <ClInclude Include="game_III\CParticleObject.h" />
+    <ClInclude Include="game_III\CPathFind.h" />
+    <ClInclude Include="game_III\CPathNode.h" />
+    <ClInclude Include="game_III\CPathSplines.h" />
+    <ClInclude Include="game_III\CPed.h" />
+    <ClInclude Include="game_III\CPedIK.h" />
+    <ClInclude Include="game_III\CPedModelInfo.h" />
+    <ClInclude Include="game_III\CPedPath.h" />
+    <ClInclude Include="game_III\CPedPathNode.h" />
+    <ClInclude Include="game_III\CPedPlacement.h" />
+    <ClInclude Include="game_III\CPedStats.h" />
+    <ClInclude Include="game_III\CPedType.h" />
+    <ClInclude Include="game_III\CPhone.h" />
+    <ClInclude Include="game_III\CPhoneInfo.h" />
+    <ClInclude Include="game_III\CPhysical.h" />
+    <ClInclude Include="game_III\CPickup.h" />
+    <ClInclude Include="game_III\CPickups.h" />
+    <ClInclude Include="game_III\CPlaceName.h" />
+    <ClInclude Include="game_III\CPlaceable.h" />
+    <ClInclude Include="game_III\CPlane.h" />
+    <ClInclude Include="game_III\CPlayerInfo.h" />
+    <ClInclude Include="game_III\CPlayerPed.h" />
+    <ClInclude Include="game_III\CPlayerSkin.h" />
+    <ClInclude Include="game_III\CPointLights.h" />
+    <ClInclude Include="game_III\CPool.h" />
+    <ClInclude Include="game_III\CPools.h" />
+    <ClInclude Include="game_III\CPopulation.h" />
+    <ClInclude Include="game_III\CProjectile.h" />
+    <ClInclude Include="game_III\CProjectileInfo.h" />
+    <ClInclude Include="game_III\CPtrList.h" />
+    <ClInclude Include="game_III\CPtrNode.h" />
+    <ClInclude Include="game_III\CQuaternion.h" />
+    <ClInclude Include="game_III\CRadar.h" />
+    <ClInclude Include="game_III\CRange2D.h" />
+    <ClInclude Include="game_III\CRecordDataForChase.h" />
+    <ClInclude Include="game_III\CRecordDataForGame.h" />
+    <ClInclude Include="game_III\CRect.h" />
+    <ClInclude Include="game_III\CReference.h" />
+    <ClInclude Include="game_III\CReferences.h" />
+    <ClInclude Include="game_III\CRegisteredCorona.h" />
+    <ClInclude Include="game_III\CRegisteredMotionBlurStreak.h" />
+    <ClInclude Include="game_III\CRegisteredShinyText.h" />
+    <ClInclude Include="game_III\CRemote.h" />
+    <ClInclude Include="game_III\CRenderer.h" />
+    <ClInclude Include="game_III\CReplay.h" />
+    <ClInclude Include="game_III\CRestart.h" />
+    <ClInclude Include="game_III\CRoadBlocks.h" />
+    <ClInclude Include="game_III\CRouteNode.h" />
+    <ClInclude Include="game_III\CRubbish.h" />
+    <ClInclude Include="game_III\CRunningScript.h" />
+    <ClInclude Include="game_III\CScene.h" />
+    <ClInclude Include="game_III\CSceneEdit.h" />
+    <ClInclude Include="game_III\CScrollBar.h" />
+    <ClInclude Include="game_III\CSector.h" />
+    <ClInclude Include="game_III\CShadows.h" />
+    <ClInclude Include="game_III\CShinyTexts.h" />
+    <ClInclude Include="game_III\CShotInfo.h" />
+    <ClInclude Include="game_III\CSimpleModelInfo.h" />
+    <ClInclude Include="game_III\CSkidmark.h" />
+    <ClInclude Include="game_III\CSkidmarks.h" />
+    <ClInclude Include="game_III\CSpecialFX.h" />
+    <ClInclude Include="game_III\CSpecialParticleStuff.h" />
+    <ClInclude Include="game_III\CSphere.h" />
+    <ClInclude Include="game_III\CSprite.h" />
+    <ClInclude Include="game_III\CSprite2d.h" />
+    <ClInclude Include="game_III\CStats.h" />
+    <ClInclude Include="game_III\CStore.h" />
+    <ClInclude Include="game_III\CStoredCar.h" />
+    <ClInclude Include="game_III\CStoredCollPoly.h" />
+    <ClInclude Include="game_III\CStreaming.h" />
+    <ClInclude Include="game_III\CStreamingInfo.h" />
+    <ClInclude Include="game_III\CStuckCarCheck.h" />
+    <ClInclude Include="game_III\CSurfaceTable.h" />
+    <ClInclude Include="game_III\CTempColModels.h" />
+    <ClInclude Include="game_III\CTempNode.h" />
+    <ClInclude Include="game_III\CText.h" />
+    <ClInclude Include="game_III\CTheCarGenerators.h" />
+    <ClInclude Include="game_III\CTheScripts.h" />
+    <ClInclude Include="game_III\CTheZones.h" />
+    <ClInclude Include="game_III\CTimeCycle.h" />
+    <ClInclude Include="game_III\CTimeModelInfo.h" />
+    <ClInclude Include="game_III\CTimeStep.h" />
+    <ClInclude Include="game_III\CTimer.h" />
+    <ClInclude Include="game_III\CTowerClock.h" />
+    <ClInclude Include="game_III\CTrafficLights.h" />
+    <ClInclude Include="game_III\CTrain.h" />
+    <ClInclude Include="game_III\CTrainCamNode.h" />
+    <ClInclude Include="game_III\CTrainDoor.h" />
+    <ClInclude Include="game_III\CTreadable.h" />
+    <ClInclude Include="game_III\CTxdStore.h" />
+    <ClInclude Include="game_III\CUpsideDownCarCheck.h" />
+    <ClInclude Include="game_III\CUserDisplay.h" />
+    <ClInclude Include="game_III\CVehicle.h" />
+    <ClInclude Include="game_III\CVehicleModelInfo.h" />
+    <ClInclude Include="game_III\CVisibilityPlugins.h" />
+    <ClInclude Include="game_III\CWanted.h" />
+    <ClInclude Include="game_III\CWaterCannon.h" />
+    <ClInclude Include="game_III\CWaterCannons.h" />
+    <ClInclude Include="game_III\CWaterLevel.h" />
+    <ClInclude Include="game_III\CWeapon.h" />
+    <ClInclude Include="game_III\CWeaponEffects.h" />
+    <ClInclude Include="game_III\CWeaponInfo.h" />
+    <ClInclude Include="game_III\CWeather.h" />
+    <ClInclude Include="game_III\CWorld.h" />
+    <ClInclude Include="game_III\CXtraCompsModelInfo.h" />
+    <ClInclude Include="game_III\CZone.h" />
+    <ClInclude Include="game_III\CZoneInfo.h" />
+    <ClInclude Include="game_III\C_PcSave.h" />
+    <ClInclude Include="game_III\GenericGameStorage.h" />
+    <ClInclude Include="game_III\NodeName.h" />
+    <ClInclude Include="game_III\RenderBuffer.h" />
+    <ClInclude Include="game_III\RpAnimBlend.h" />
+    <ClInclude Include="game_III\RwObjectNameIdAssocation.h" />
+    <ClInclude Include="game_III\TxdDef.h" />
+    <ClInclude Include="game_III\cAudioCollision.h" />
+    <ClInclude Include="game_III\cAudioCollisionManager.h" />
+    <ClInclude Include="game_III\cAudioManager.h" />
+    <ClInclude Include="game_III\cAudioScriptObject.h" />
+    <ClInclude Include="game_III\cBuoyancy.h" />
+    <ClInclude Include="game_III\cDMAudio.h" />
+    <ClInclude Include="game_III\cHandlingDataMgr.h" />
+    <ClInclude Include="game_III\cMusicManager.h" />
+    <ClInclude Include="game_III\cParticleSystemMgr.h" />
+    <ClInclude Include="game_III\cSampleManager.h" />
+    <ClInclude Include="game_III\cTransmission.h" />
+    <ClInclude Include="game_III\common.h" />
+    <ClInclude Include="game_III\enums\eAnimations.h" />
+    <ClInclude Include="game_III\enums\eAudioType.h" />
+    <ClInclude Include="game_III\enums\eBodyParts.h" />
+    <ClInclude Include="game_III\enums\eBridgeState.h" />
+    <ClInclude Include="game_III\enums\eCarMission.h" />
+    <ClInclude Include="game_III\enums\eCopType.h" />
+    <ClInclude Include="game_III\enums\eCoronaType.h" />
+    <ClInclude Include="game_III\enums\eCrimeType.h" />
+    <ClInclude Include="game_III\enums\eEntityStatus.h" />
+    <ClInclude Include="game_III\enums\eEventEntity.h" />
+    <ClInclude Include="game_III\enums\eEventStatus.h" />
+    <ClInclude Include="game_III\enums\eEventType.h" />
+    <ClInclude Include="game_III\enums\eExplosionType.h" />
+    <ClInclude Include="game_III\enums\eGangType.h" />
+    <ClInclude Include="game_III\enums\eGarageID.h" />
+    <ClInclude Include="game_III\enums\eGarageState.h" />
+    <ClInclude Include="game_III\enums\eGarageType.h" />
+    <ClInclude Include="game_III\enums\eHandlingIndex.h" />
+    <ClInclude Include="game_III\enums\eLevelName.h" />
+    <ClInclude Include="game_III\enums\eModelID.h" />
+    <ClInclude Include="game_III\enums\eModelInfoType.h" />
+    <ClInclude Include="game_III\enums\eParticleObjectType.h" />
+    <ClInclude Include="game_III\enums\ePedModel.h" />
+    <ClInclude Include="game_III\enums\ePedStats.h" />
+    <ClInclude Include="game_III\enums\ePedType.h" />
+    <ClInclude Include="game_III\enums\ePhoneState.h" />
+    <ClInclude Include="game_III\enums\eRadioStations.h" />
+    <ClInclude Include="game_III\enums\eSceneCommands.h" />
+    <ClInclude Include="game_III\enums\eScriptCommands.h" />
+    <ClInclude Include="game_III\enums\eVehicleHandlingModelFlags.h" />
+    <ClInclude Include="game_III\enums\eVehicleType.h" />
+    <ClInclude Include="game_III\enums\eWeaponFire.h" />
+    <ClInclude Include="game_III\enums\eWeaponModel.h" />
+    <ClInclude Include="game_III\enums\eWeaponType.h" />
+    <ClInclude Include="game_III\enums\eWeather.h" />
+    <ClInclude Include="game_III\enums\eWheelModel.h" />
+    <ClInclude Include="game_III\enums\eZoneType.h" />
+    <ClInclude Include="game_III\meta\meta.C2dEffect.h" />
+    <ClInclude Include="game_III\meta\meta.C2deffectsModelInfo.h" />
+    <ClInclude Include="game_III\meta\meta.C3dMarker.h" />
+    <ClInclude Include="game_III\meta\meta.C3dMarkers.h" />
+    <ClInclude Include="game_III\meta\meta.CAccident.h" />
+    <ClInclude Include="game_III\meta\meta.CAccidentManager.h" />
+    <ClInclude Include="game_III\meta\meta.CAnimBlendAssocGroup.h" />
+    <ClInclude Include="game_III\meta\meta.CAnimBlendAssociation.h" />
+    <ClInclude Include="game_III\meta\meta.CAnimBlendClumpData.h" />
+    <ClInclude Include="game_III\meta\meta.CAnimBlendHierarchy.h" />
+    <ClInclude Include="game_III\meta\meta.CAnimBlendNode.h" />
+    <ClInclude Include="game_III\meta\meta.CAnimBlendSequence.h" />
+    <ClInclude Include="game_III\meta\meta.CAnimManager.h" />
+    <ClInclude Include="game_III\meta\meta.CAntenna.h" />
+    <ClInclude Include="game_III\meta\meta.CAntennas.h" />
+    <ClInclude Include="game_III\meta\meta.CAudioHydrant.h" />
+    <ClInclude Include="game_III\meta\meta.CAutomobile.h" />
+    <ClInclude Include="game_III\meta\meta.CBaseModelInfo.h" />
+    <ClInclude Include="game_III\meta\meta.CBoat.h" />
+    <ClInclude Include="game_III\meta\meta.CBridge.h" />
+    <ClInclude Include="game_III\meta\meta.CBrightLight.h" />
+    <ClInclude Include="game_III\meta\meta.CBrightLights.h" />
+    <ClInclude Include="game_III\meta\meta.CBuilding.h" />
+    <ClInclude Include="game_III\meta\meta.CBulletInfo.h" />
+    <ClInclude Include="game_III\meta\meta.CBulletTrace.h" />
+    <ClInclude Include="game_III\meta\meta.CBulletTraces.h" />
+    <ClInclude Include="game_III\meta\meta.CCamera.h" />
+    <ClInclude Include="game_III\meta\meta.CCarAI.h" />
+    <ClInclude Include="game_III\meta\meta.CCarCtrl.h" />
+    <ClInclude Include="game_III\meta\meta.CCarGenerator.h" />
+    <ClInclude Include="game_III\meta\meta.CCheat.h" />
+    <ClInclude Include="game_III\meta\meta.CCivilianPed.h" />
+    <ClInclude Include="game_III\meta\meta.CClock.h" />
+    <ClInclude Include="game_III\meta\meta.CClouds.h" />
+    <ClInclude Include="game_III\meta\meta.CClumpModelInfo.h" />
+    <ClInclude Include="game_III\meta\meta.CColBox.h" />
+    <ClInclude Include="game_III\meta\meta.CColLine.h" />
+    <ClInclude Include="game_III\meta\meta.CColModel.h" />
+    <ClInclude Include="game_III\meta\meta.CColPoint.h" />
+    <ClInclude Include="game_III\meta\meta.CColSphere.h" />
+    <ClInclude Include="game_III\meta\meta.CColTriangle.h" />
+    <ClInclude Include="game_III\meta\meta.CColTrianglePlane.h" />
+    <ClInclude Include="game_III\meta\meta.CCopPed.h" />
+    <ClInclude Include="game_III\meta\meta.CCoronas.h" />
+    <ClInclude Include="game_III\meta\meta.CCrane.h" />
+    <ClInclude Include="game_III\meta\meta.CCranes.h" />
+    <ClInclude Include="game_III\meta\meta.CCredits.h" />
+    <ClInclude Include="game_III\meta\meta.CCurrentVehicle.h" />
+    <ClInclude Include="game_III\meta\meta.CCurves.h" />
+    <ClInclude Include="game_III\meta\meta.CCutsceneHead.h" />
+    <ClInclude Include="game_III\meta\meta.CCutsceneObject.h" />
+    <ClInclude Include="game_III\meta\meta.CDamageManager.h" />
+    <ClInclude Include="game_III\meta\meta.CDarkel.h" />
+    <ClInclude Include="game_III\meta\meta.CDate.h" />
+    <ClInclude Include="game_III\meta\meta.CDigitalClock.h" />
+    <ClInclude Include="game_III\meta\meta.CDirectory.h" />
+    <ClInclude Include="game_III\meta\meta.CDraw.h" />
+    <ClInclude Include="game_III\meta\meta.CDummy.h" />
+    <ClInclude Include="game_III\meta\meta.CDummyObject.h" />
+    <ClInclude Include="game_III\meta\meta.CEmergencyPed.h" />
+    <ClInclude Include="game_III\meta\meta.CEntity.h" />
+    <ClInclude Include="game_III\meta\meta.CEventList.h" />
+    <ClInclude Include="game_III\meta\meta.CFallingGlassPane.h" />
+    <ClInclude Include="game_III\meta\meta.CFileMgr.h" />
+    <ClInclude Include="game_III\meta\meta.CFire.h" />
+    <ClInclude Include="game_III\meta\meta.CFireManager.h" />
+    <ClInclude Include="game_III\meta\meta.CGame.h" />
+    <ClInclude Include="game_III\meta\meta.CGameLogic.h" />
+    <ClInclude Include="game_III\meta\meta.CGangInfo.h" />
+    <ClInclude Include="game_III\meta\meta.CGangs.h" />
+    <ClInclude Include="game_III\meta\meta.CGeneral.h" />
+    <ClInclude Include="game_III\meta\meta.CGlass.h" />
+    <ClInclude Include="game_III\meta\meta.CHeli.h" />
+    <ClInclude Include="game_III\meta\meta.CIniFile.h" />
+    <ClInclude Include="game_III\meta\meta.CInstance.h" />
+    <ClInclude Include="game_III\meta\meta.CLines.h" />
+    <ClInclude Include="game_III\meta\meta.CMBlur.h" />
+    <ClInclude Include="game_III\meta\meta.CMatrix.h" />
+    <ClInclude Include="game_III\meta\meta.CMissionCleanup.h" />
+    <ClInclude Include="game_III\meta\meta.CMloModelInfo.h" />
+    <ClInclude Include="game_III\meta\meta.CModelInfo.h" />
+    <ClInclude Include="game_III\meta\meta.CMoneyMessage.h" />
+    <ClInclude Include="game_III\meta\meta.CMoneyMessages.h" />
+    <ClInclude Include="game_III\meta\meta.CMotionBlurStreaks.h" />
+    <ClInclude Include="game_III\meta\meta.CMouseControllerState.h" />
+    <ClInclude Include="game_III\meta\meta.CMousePointerStateHelper.h" />
+    <ClInclude Include="game_III\meta\meta.CMovie.h" />
+    <ClInclude Include="game_III\meta\meta.CMovingThing.h" />
+    <ClInclude Include="game_III\meta\meta.CMovingThings.h" />
+    <ClInclude Include="game_III\meta\meta.CObject.h" />
+    <ClInclude Include="game_III\meta\meta.CObjectData.h" />
+    <ClInclude Include="game_III\meta\meta.COneSheet.h" />
+    <ClInclude Include="game_III\meta\meta.COnscreenTimer.h" />
+    <ClInclude Include="game_III\meta\meta.COnscreenTimerEntry.h" />
+    <ClInclude Include="game_III\meta\meta.CPacManPickup.h" />
+    <ClInclude Include="game_III\meta\meta.CPacManPickups.h" />
+    <ClInclude Include="game_III\meta\meta.CParticle.h" />
+    <ClInclude Include="game_III\meta\meta.CParticleObject.h" />
+    <ClInclude Include="game_III\meta\meta.CPathFind.h" />
+    <ClInclude Include="game_III\meta\meta.CPathNode.h" />
+    <ClInclude Include="game_III\meta\meta.CPed.h" />
+    <ClInclude Include="game_III\meta\meta.CPedIK.h" />
+    <ClInclude Include="game_III\meta\meta.CPedModelInfo.h" />
+    <ClInclude Include="game_III\meta\meta.CPedPath.h" />
+    <ClInclude Include="game_III\meta\meta.CPedPlacement.h" />
+    <ClInclude Include="game_III\meta\meta.CPedStats.h" />
+    <ClInclude Include="game_III\meta\meta.CPhone.h" />
+    <ClInclude Include="game_III\meta\meta.CPhoneInfo.h" />
+    <ClInclude Include="game_III\meta\meta.CPhysical.h" />
+    <ClInclude Include="game_III\meta\meta.CPickup.h" />
+    <ClInclude Include="game_III\meta\meta.CPickups.h" />
+    <ClInclude Include="game_III\meta\meta.CPlaceName.h" />
+    <ClInclude Include="game_III\meta\meta.CPlaceable.h" />
+    <ClInclude Include="game_III\meta\meta.CPlane.h" />
+    <ClInclude Include="game_III\meta\meta.CPlayerPed.h" />
+    <ClInclude Include="game_III\meta\meta.CPlayerSkin.h" />
+    <ClInclude Include="game_III\meta\meta.CPools.h" />
+    <ClInclude Include="game_III\meta\meta.CPopulation.h" />
+    <ClInclude Include="game_III\meta\meta.CProjectile.h" />
+    <ClInclude Include="game_III\meta\meta.CQuaternion.h" />
+    <ClInclude Include="game_III\meta\meta.CRadar.h" />
+    <ClInclude Include="game_III\meta\meta.CRange2D.h" />
+    <ClInclude Include="game_III\meta\meta.CRecordDataForChase.h" />
+    <ClInclude Include="game_III\meta\meta.CRecordDataForGame.h" />
+    <ClInclude Include="game_III\meta\meta.CReferences.h" />
+    <ClInclude Include="game_III\meta\meta.CRegisteredCorona.h" />
+    <ClInclude Include="game_III\meta\meta.CRegisteredMotionBlurStreak.h" />
+    <ClInclude Include="game_III\meta\meta.CRegisteredShinyText.h" />
+    <ClInclude Include="game_III\meta\meta.CRemote.h" />
+    <ClInclude Include="game_III\meta\meta.CRestart.h" />
+    <ClInclude Include="game_III\meta\meta.CRoadBlocks.h" />
+    <ClInclude Include="game_III\meta\meta.CRouteNode.h" />
+    <ClInclude Include="game_III\meta\meta.CRubbish.h" />
+    <ClInclude Include="game_III\meta\meta.CScrollBar.h" />
+    <ClInclude Include="game_III\meta\meta.CShinyTexts.h" />
+    <ClInclude Include="game_III\meta\meta.CShotInfo.h" />
+    <ClInclude Include="game_III\meta\meta.CSimpleModelInfo.h" />
+    <ClInclude Include="game_III\meta\meta.CSkidmark.h" />
+    <ClInclude Include="game_III\meta\meta.CSkidmarks.h" />
+    <ClInclude Include="game_III\meta\meta.CSpecialFX.h" />
+    <ClInclude Include="game_III\meta\meta.CSpecialParticleStuff.h" />
+    <ClInclude Include="game_III\meta\meta.CSprite.h" />
+    <ClInclude Include="game_III\meta\meta.CSprite2d.h" />
+    <ClInclude Include="game_III\meta\meta.CStoredCar.h" />
+    <ClInclude Include="game_III\meta\meta.CStoredCollPoly.h" />
+    <ClInclude Include="game_III\meta\meta.CStuckCarCheck.h" />
+    <ClInclude Include="game_III\meta\meta.CSurfaceTable.h" />
+    <ClInclude Include="game_III\meta\meta.CTempNode.h" />
+    <ClInclude Include="game_III\meta\meta.CText.h" />
+    <ClInclude Include="game_III\meta\meta.CTheCarGenerators.h" />
+    <ClInclude Include="game_III\meta\meta.CTimeCycle.h" />
+    <ClInclude Include="game_III\meta\meta.CTimeModelInfo.h" />
+    <ClInclude Include="game_III\meta\meta.CTimer.h" />
+    <ClInclude Include="game_III\meta\meta.CTowerClock.h" />
+    <ClInclude Include="game_III\meta\meta.CTrafficLights.h" />
+    <ClInclude Include="game_III\meta\meta.CTrain.h" />
+    <ClInclude Include="game_III\meta\meta.CTrainCamNode.h" />
+    <ClInclude Include="game_III\meta\meta.CTrainDoor.h" />
+    <ClInclude Include="game_III\meta\meta.CTreadable.h" />
+    <ClInclude Include="game_III\meta\meta.CUpsideDownCarCheck.h" />
+    <ClInclude Include="game_III\meta\meta.CUserDisplay.h" />
+    <ClInclude Include="game_III\meta\meta.CVehicle.h" />
+    <ClInclude Include="game_III\meta\meta.CVehicleModelInfo.h" />
+    <ClInclude Include="game_III\meta\meta.CVisibilityPlugins.h" />
+    <ClInclude Include="game_III\meta\meta.CWanted.h" />
+    <ClInclude Include="game_III\meta\meta.CWaterCannon.h" />
+    <ClInclude Include="game_III\meta\meta.CWaterCannons.h" />
+    <ClInclude Include="game_III\meta\meta.CWeapon.h" />
+    <ClInclude Include="game_III\meta\meta.CWeather.h" />
+    <ClInclude Include="game_III\meta\meta.CXtraCompsModelInfo.h" />
+    <ClInclude Include="game_III\meta\meta.CZone.h" />
+    <ClInclude Include="game_III\meta\meta.C_PcSave.h" />
+    <ClInclude Include="game_III\meta\meta.GenericGameStorage.h" />
+    <ClInclude Include="game_III\meta\meta.NodeName.h" />
+    <ClInclude Include="game_III\meta\meta.RenderBuffer.h" />
+    <ClInclude Include="game_III\meta\meta.RpAnimBlend.h" />
+    <ClInclude Include="game_III\meta\meta.cAudioCollision.h" />
+    <ClInclude Include="game_III\meta\meta.cAudioCollisionManager.h" />
+    <ClInclude Include="game_III\meta\meta.cAudioScriptObject.h" />
+    <ClInclude Include="game_III\meta\meta.cDMAudio.h" />
+    <ClInclude Include="game_III\meta\meta.cMusicManager.h" />
+    <ClInclude Include="game_III\rw\rpanisot.h" />
+    <ClInclude Include="game_III\rw\rpcollis.h" />
+    <ClInclude Include="game_III\rw\rpcriter.h" />
+    <ClInclude Include="game_III\rw\rpdbgerr.h" />
+    <ClInclude Include="game_III\rw\rpdmorph.h" />
+    <ClInclude Include="game_III\rw\rperror.h" />
+    <ClInclude Include="game_III\rw\rphanim.h" />
+    <ClInclude Include="game_III\rw\rplodatm.h" />
+    <ClInclude Include="game_III\rw\rplogo.h" />
+    <ClInclude Include="game_III\rw\rpltmap.h" />
+    <ClInclude Include="game_III\rw\rpmatfx.h" />
+    <ClInclude Include="game_III\rw\rpmipkl.h" />
+    <ClInclude Include="game_III\rw\rpmorph.h" />
+    <ClInclude Include="game_III\rw\rppatch.h" />
+    <ClInclude Include="game_III\rw\rpprtstd.h" />
+    <ClInclude Include="game_III\rw\rpptank.h" />
+    <ClInclude Include="game_III\rw\rppvs.h" />
+    <ClInclude Include="game_III\rw\rprandom.h" />
+    <ClInclude Include="game_III\rw\rpskin.h" />
+    <ClInclude Include="game_III\rw\rpspline.h" />
+    <ClInclude Include="game_III\rw\rpstereo.h" />
+    <ClInclude Include="game_III\rw\rpusrdat.h" />
+    <ClInclude Include="game_III\rw\rpworld.h" />
+    <ClInclude Include="game_III\rw\rt2d.h" />
+    <ClInclude Include="game_III\rw\rt2danim.h" />
+    <ClInclude Include="game_III\rw\rtbary.h" />
+    <ClInclude Include="game_III\rw\rtbezpat.h" />
+    <ClInclude Include="game_III\rw\rtbmp.h" />
+    <ClInclude Include="game_III\rw\rtcharse.h" />
+    <ClInclude Include="game_III\rw\rtimport.h" />
+    <ClInclude Include="game_III\rw\rtintel.h" />
+    <ClInclude Include="game_III\rw\rtintsec.h" />
+    <ClInclude Include="game_III\rw\rtltmap.h" />
+    <ClInclude Include="game_III\rw\rtmipk.h" />
+    <ClInclude Include="game_III\rw\rtpick.h" />
+    <ClInclude Include="game_III\rw\rtpitexd.h" />
+    <ClInclude Include="game_III\rw\rtpng.h" />
+    <ClInclude Include="game_III\rw\rtquat.h" />
+    <ClInclude Include="game_III\rw\rtras.h" />
+    <ClInclude Include="game_III\rw\rtray.h" />
+    <ClInclude Include="game_III\rw\rtslerp.h" />
+    <ClInclude Include="game_III\rw\rtsplpvs.h" />
+    <ClInclude Include="game_III\rw\rttiff.h" />
+    <ClInclude Include="game_III\rw\rttilerd.h" />
+    <ClInclude Include="game_III\rw\rttoc.h" />
+    <ClInclude Include="game_III\rw\rtvcat.h" />
+    <ClInclude Include="game_III\rw\rtworld.h" />
+    <ClInclude Include="game_III\rw\rwcore.h" />
+    <ClInclude Include="game_III\rw\rwplcore.h" />
+    <ClInclude Include="game_III\rw\skeleton.h" />
+    <ClInclude Include="game_III\tColSurface.h" />
+    <ClInclude Include="game_III\tHandlingData.h" />
+    <ClInclude Include="game_III\tParticleSystemData.h" />
+    <ClInclude Include="game_III\tParticleType.h" />
+    <ClInclude Include="game_III\tTransmissionGear.h" />
+    <ClInclude Include="plugin_III.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\hooking\Hooking.Patterns.cpp">
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="..\safetyhook\Zydis.c">
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="..\safetyhook\safetyhook.cpp">
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="..\shared\Audio.cpp">
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="..\shared\Color.cpp">
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="..\shared\DynAddress.cpp">
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="..\shared\GameVersion.cpp">
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="..\shared\Image.cpp">
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="..\shared\Other.cpp">
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="..\shared\Patch.cpp">
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="..\shared\Pattern.cpp">
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="..\shared\PluginBase.cpp">
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="..\shared\SpriteLoader.cpp">
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="..\shared\StringUtils.cpp">
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="..\shared\TextLoader.cpp">
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="..\shared\common_sdk.cpp">
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="..\shared\comp\PluginSupport.cpp">
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="..\shared\comp\PluginsCompatibility.cpp">
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="..\shared\comp\plugins\LimitAdjusterSupport.cpp">
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="..\shared\extensions\Config.cpp">
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="..\shared\extensions\DynamicResource.cpp">
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="..\shared\extensions\FontPrint.cpp">
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="..\shared\extensions\KeyCheck.cpp">
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="..\shared\extensions\Paths.cpp">
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="..\shared\extensions\Screen.cpp">
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="..\shared\extensions\ScriptCommands.cpp">
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="..\shared\extensions\Shader.cpp">
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="..\shared\game\CRGBA.cpp">
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="..\shared\game\CVector.cpp">
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="..\shared\game\CompressedVector.cpp">
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="..\shared\game\CompressedVector2D.cpp">
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="..\shared\plugin.cpp">
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="..\shared\stdafx.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PrecompiledHeader>Create</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="game_III\C2dEffect.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\C2deffectsModelInfo.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\C3dMarker.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\C3dMarkers.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CAccident.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CAccidentManager.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CAnimBlendAssocGroup.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CAnimBlendAssociation.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CAnimBlendClumpData.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CAnimBlendHierarchy.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CAnimBlendNode.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CAnimBlendSequence.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CAnimManager.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CAntenna.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CAntennas.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CAudioHydrant.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CAutoPilot.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CAutomobile.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CBaseModelInfo.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CBoat.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CBridge.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CBrightLight.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CBrightLights.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CBuilding.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CBulletInfo.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CBulletTrace.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CBulletTraces.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CCam.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CCamera.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CCarAI.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CCarCtrl.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CCarGenerator.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CCheat.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CCivilianPed.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CClock.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CClouds.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CClumpModelInfo.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CColBox.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CColLine.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CColModel.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CColPoint.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CColSphere.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CColTriangle.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CColTrianglePlane.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CCollision.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CControllerConfigManager.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CControllerState.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CCopPed.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CCoronas.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CCrane.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CCranes.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CCredits.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CCurrentVehicle.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CCurves.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CCutsceneHead.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CCutsceneMgr.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CCutsceneObject.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CDamageManager.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CDarkel.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CDate.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CDigitalClock.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CDirectory.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CDoor.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CDraw.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CDummy.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CDummyObject.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CEmergencyPed.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CEntity.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CEntryInfoList.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CEventList.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CExplosion.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CFallingGlassPane.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CFileLoader.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CFileMgr.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CFire.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CFireManager.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CFont.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CFontDetails.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CGame.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CGameLogic.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CGangInfo.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CGangs.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CGarage.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CGarages.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CGeneral.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CGlass.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CHeli.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CHud.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CIniFile.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CInstance.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CKeyboardState.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CLines.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CMBlur.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CMatrix.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CMenuManager.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CMessages.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CMissionCleanup.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CMloModelInfo.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CModelInfo.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CMoneyMessage.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CMoneyMessages.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CMotionBlurStreaks.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CMouseControllerState.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CMousePointerStateHelper.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CMovie.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CMovingThing.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CMovingThings.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CObject.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CObjectData.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\COneSheet.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\COnscreenTimer.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\COnscreenTimerEntry.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CPacManPickup.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CPacManPickups.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CPad.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CPager.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CParticle.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CParticleObject.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CPathFind.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CPathNode.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CPed.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CPedIK.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CPedModelInfo.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CPedPath.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CPedPlacement.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CPedStats.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CPedType.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CPhone.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CPhoneInfo.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CPhysical.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CPickup.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CPickups.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CPlaceName.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CPlaceable.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CPlane.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CPlayerInfo.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CPlayerPed.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CPlayerSkin.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CPointLights.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CPools.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CPopulation.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CProjectile.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CProjectileInfo.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CPtrList.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CQuaternion.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CRadar.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CRange2D.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CRecordDataForChase.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CRecordDataForGame.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CReferences.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CRegisteredCorona.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CRegisteredMotionBlurStreak.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CRegisteredShinyText.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CRemote.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CRenderer.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CReplay.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CRestart.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CRoadBlocks.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CRouteNode.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CRubbish.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CRunningScript.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CScene.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CSceneEdit.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CScrollBar.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CShadows.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CShinyTexts.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CShotInfo.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CSimpleModelInfo.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CSkidmark.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CSkidmarks.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CSpecialFX.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CSpecialParticleStuff.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CSphere.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CSprite.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CSprite2d.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CStats.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CStoredCar.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CStoredCollPoly.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CStreaming.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CStreamingInfo.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CStuckCarCheck.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CSurfaceTable.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CTempColModels.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CTempNode.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CText.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CTheCarGenerators.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CTheScripts.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CTheZones.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CTimeCycle.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CTimeModelInfo.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CTimeStep.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CTimer.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CTowerClock.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CTrafficLights.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CTrain.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CTrainCamNode.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CTrainDoor.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CTreadable.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CTxdStore.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CUpsideDownCarCheck.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CUserDisplay.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CVehicle.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CVehicleModelInfo.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CVisibilityPlugins.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CWanted.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CWaterCannon.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CWaterCannons.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CWaterLevel.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CWeapon.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CWeaponEffects.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CWeaponInfo.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CWeather.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CWorld.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CXtraCompsModelInfo.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\CZone.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\C_PcSave.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\GenericGameStorage.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\NodeName.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\RenderBuffer.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\RenderWare.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\RpAnimBlend.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\cAudioCollision.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\cAudioCollisionManager.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\cAudioManager.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\cAudioScriptObject.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\cBuoyancy.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\cDMAudio.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\cHandlingDataMgr.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\cMusicManager.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\cParticleSystemMgr.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\cSampleManager.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\cTransmission.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="game_III\common.cpp">
+      <PreprocessorDefinitions>USE_PCH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

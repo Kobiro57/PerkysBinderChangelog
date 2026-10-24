@@ -1,0 +1,931 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="..">
+      <UniqueIdentifier>{61705900-4DFC-870B-B6AA-880BA255880B}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="..\hooking">
+      <UniqueIdentifier>{9FBCB08E-8B74-F2DB-F47B-CB37E0528DCC}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="..\injector">
+      <UniqueIdentifier>{2E5BF6F7-9A10-6FED-2305-69C48FB965F1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="..\injector\gvm">
+      <UniqueIdentifier>{C7CD0775-3359-7539-3C6A-F82DA874D139}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="..\safetyhook">
+      <UniqueIdentifier>{EDD10884-5992-84BA-22CD-CD378E4CC996}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="..\shared">
+      <UniqueIdentifier>{8798108A-F302-C500-3C41-76A6A8EAA255}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="..\shared\bass">
+      <UniqueIdentifier>{9FEDA122-8BBB-9528-744F-064F60BC718D}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="..\shared\comp">
+      <UniqueIdentifier>{C5B4A222-B182-9628-9A16-074F8683728D}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="..\shared\comp\plugins">
+      <UniqueIdentifier>{B6F2D6D9-A2EC-FF2B-8B59-963C77F26598}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="..\shared\dxsdk">
+      <UniqueIdentifier>{B46D1077-20F9-7D3B-290A-01309514DA3B}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="..\shared\extender">
+      <UniqueIdentifier>{3573E407-2157-A55D-8AB7-9FB076BA8FDF}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="..\shared\extensions">
+      <UniqueIdentifier>{66B7DF93-5246-695D-FB64-7D58E7D27903}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="..\shared\extensions\scripting">
+      <UniqueIdentifier>{0844F652-F469-C0B9-DDAF-4585C974E585}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="..\shared\game">
+      <UniqueIdentifier>{B0AAA422-9C78-9828-850C-094F7179748D}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="..\shared\rwd3d9">
+      <UniqueIdentifier>{B339AB79-9F32-CACB-C864-AF50B4BCA9D7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="game_sa_unreal">
+      <UniqueIdentifier>{B832056E-A400-F973-8D94-699A7901D5D8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="game_sa_unreal\Core">
+      <UniqueIdentifier>{10CAC24B-7C2B-A059-0599-E60B71F9D618}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="game_sa_unreal\Entity">
+      <UniqueIdentifier>{0400374C-706C-F246-3960-8AA4A58B14AF}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="game_sa_unreal\Entity\Object">
+      <UniqueIdentifier>{0A41C01A-F6FB-AFC6-9FB3-28118B4DFA56}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="game_sa_unreal\Entity\Ped">
+      <UniqueIdentifier>{8C891A90-F84B-4E1A-41FC-DCA6ADFD26F8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="game_sa_unreal\Entity\Vehicle">
+      <UniqueIdentifier>{53857D94-BF9D-64BE-884A-F457F421F957}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="game_sa_unreal\RenderWare">
+      <UniqueIdentifier>{56EE6F7E-C2B0-A308-0B61-329577627CE6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="game_sa_unreal\RenderWare\rw">
+      <UniqueIdentifier>{AE2DC11E-9AE8-B0CA-43A0-29152F3AFB5A}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="game_sa_unreal\Scripts">
+      <UniqueIdentifier>{EF51F9EE-DB4B-2241-C4B8-B851B05188AD}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\hooking\Hooking.Patterns.h">
+      <Filter>..\hooking</Filter>
+    </ClInclude>
+    <ClInclude Include="..\injector\assembly.hpp">
+      <Filter>..\injector</Filter>
+    </ClInclude>
+    <ClInclude Include="..\injector\calling.hpp">
+      <Filter>..\injector</Filter>
+    </ClInclude>
+    <ClInclude Include="..\injector\gvm\gvm.hpp">
+      <Filter>..\injector\gvm</Filter>
+    </ClInclude>
+    <ClInclude Include="..\injector\gvm\translator.hpp">
+      <Filter>..\injector\gvm</Filter>
+    </ClInclude>
+    <ClInclude Include="..\injector\hooking.hpp">
+      <Filter>..\injector</Filter>
+    </ClInclude>
+    <ClInclude Include="..\injector\injector.hpp">
+      <Filter>..\injector</Filter>
+    </ClInclude>
+    <ClInclude Include="..\injector\utility.hpp">
+      <Filter>..\injector</Filter>
+    </ClInclude>
+    <ClInclude Include="..\safetyhook\safetyhook.hpp">
+      <Filter>..\safetyhook</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\ArgPicker.h">
+      <Filter>..\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\Audio.h">
+      <Filter>..\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\Base.h">
+      <Filter>..\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\Color.h">
+      <Filter>..\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\DynAddress.h">
+      <Filter>..\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\Error.h">
+      <Filter>..\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\EventList.h">
+      <Filter>..\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\Events.h">
+      <Filter>..\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\Extender.h">
+      <Filter>..\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\GameVersion.h">
+      <Filter>..\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\GameVersionMessage.h">
+      <Filter>..\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\Image.h">
+      <Filter>..\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\Maths.h">
+      <Filter>..\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\Other.h">
+      <Filter>..\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\Patch.h">
+      <Filter>..\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\Pattern.h">
+      <Filter>..\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\PluginBase.h">
+      <Filter>..\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\RefList.h">
+      <Filter>..\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\RefListUtils.h">
+      <Filter>..\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\RenderWare.h">
+      <Filter>..\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\SpriteLoader.h">
+      <Filter>..\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\StringUtils.h">
+      <Filter>..\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\TextLoader.h">
+      <Filter>..\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\Timer.h">
+      <Filter>..\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\Types.h">
+      <Filter>..\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\VersionsMacro.h">
+      <Filter>..\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\bass\bass.h">
+      <Filter>..\shared\bass</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\common_sdk.h">
+      <Filter>..\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\comp\PluginSupport.h">
+      <Filter>..\shared\comp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\comp\PluginsCompatibility.h">
+      <Filter>..\shared\comp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\comp\plugins\LimitAdjusterSupport.h">
+      <Filter>..\shared\comp\plugins</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\D2D1.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\D2D1Helper.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\D2DBaseTypes.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\D2Derr.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\D3D10.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\D3D10_1.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\D3D10_1shader.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\D3D10effect.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\D3D10shader.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\D3D11.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\D3D11SDKLayers.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\D3D11Shader.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\D3DCSX.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\D3DX10.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\D3DX10core.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\D3DX10math.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\D3DX10mesh.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\D3DX10tex.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\D3DX11.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\D3DX11async.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\D3DX11core.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\D3DX11tex.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\D3Dcommon.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\D3Dcompiler.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\DWrite.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\DXGI.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\DXGIFormat.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\DXGIType.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\Dcommon.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\DxErr.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\PIXPlugin.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\X3DAudio.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\XAPO.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\XAPOBase.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\XAPOFX.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\XAudio2.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\XAudio2fx.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\XDSP.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\XInput.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\audiodefs.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\comdecl.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3d.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3d10misc.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3d10sdklayers.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3d8.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3d8caps.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3d8types.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3d9.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3d9caps.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3d9types.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3dcaps.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3dres.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3drm.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3drmdef.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3drmobj.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3drmwin.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3dtypes.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3dutil.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3dx.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3dx10async.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3dx8.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3dx8core.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3dx8effect.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3dx8math.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3dx8mesh.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3dx8shape.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3dx8tex.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3dx9.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3dx9anim.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3dx9core.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3dx9effect.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3dx9math.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3dx9mesh.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3dx9shader.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3dx9shape.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3dx9tex.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3dx9xof.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3dxcore.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3dxerr.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3dxmath.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3dxshapes.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\d3dxsprite.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\dinput.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\dinputd.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\dsconf.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\dsetup.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\dsound.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\dxdiag.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\dxfile.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\dxsdkver.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\gameux.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\rmxfguid.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\rmxftmpl.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\rpcsal.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\xact3.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\xact3d3.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\xact3wb.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\xma2defs.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\dxsdk\xnamath.h">
+      <Filter>..\shared\dxsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\extender\ObjectExtender.h">
+      <Filter>..\shared\extender</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\extender\PedExtender.h">
+      <Filter>..\shared\extender</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\extender\VehicleExtender.h">
+      <Filter>..\shared\extender</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\extensions\Config.h">
+      <Filter>..\shared\extensions</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\extensions\DynamicResource.h">
+      <Filter>..\shared\extensions</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\extensions\FontPrint.h">
+      <Filter>..\shared\extensions</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\extensions\KeyCheck.h">
+      <Filter>..\shared\extensions</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\extensions\Paths.h">
+      <Filter>..\shared\extensions</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\extensions\PoolIterator.h">
+      <Filter>..\shared\extensions</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\extensions\Screen.h">
+      <Filter>..\shared\extensions</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\extensions\ScriptCommands.h">
+      <Filter>..\shared\extensions</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\extensions\Shader.h">
+      <Filter>..\shared\extensions</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\extensions\scripting\ScriptCommandNames.h">
+      <Filter>..\shared\extensions\scripting</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\game\CRGBA.h">
+      <Filter>..\shared\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\game\CVector.h">
+      <Filter>..\shared\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\game\CVector2D.h">
+      <Filter>..\shared\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\game\CVector2DImplementation.h">
+      <Filter>..\shared\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\game\CVectorImplementation.h">
+      <Filter>..\shared\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\game\CompressedVector.h">
+      <Filter>..\shared\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\game\CompressedVector2D.h">
+      <Filter>..\shared\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\plugin.h">
+      <Filter>..\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\rpplugin.h">
+      <Filter>..\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\rwd3d9\rwd3d9.h">
+      <Filter>..\shared\rwd3d9</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\stdafx.h">
+      <Filter>..\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="game_sa_unreal\CCopPed.h">
+      <Filter>game_sa_unreal\Entity\Ped</Filter>
+    </ClInclude>
+    <ClInclude Include="game_sa_unreal\CCutsceneObject.h">
+      <Filter>game_sa_unreal\Entity\Object</Filter>
+    </ClInclude>
+    <ClInclude Include="game_sa_unreal\CFont.h">
+      <Filter>game_sa_unreal</Filter>
+    </ClInclude>
+    <ClInclude Include="game_sa_unreal\CHeli.h">
+      <Filter>game_sa_unreal\Entity\Vehicle</Filter>
+    </ClInclude>
+    <ClInclude Include="game_sa_unreal\CObject.h">
+      <Filter>game_sa_unreal\Entity\Object</Filter>
+    </ClInclude>
+    <ClInclude Include="game_sa_unreal\CPad.h">
+      <Filter>game_sa_unreal</Filter>
+    </ClInclude>
+    <ClInclude Include="game_sa_unreal\CPed.h">
+      <Filter>game_sa_unreal\Entity\Ped</Filter>
+    </ClInclude>
+    <ClInclude Include="game_sa_unreal\CPool.h">
+      <Filter>game_sa_unreal\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="game_sa_unreal\CPools.h">
+      <Filter>game_sa_unreal</Filter>
+    </ClInclude>
+    <ClInclude Include="game_sa_unreal\CRect.h">
+      <Filter>game_sa_unreal\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="game_sa_unreal\CRunningScript.h">
+      <Filter>game_sa_unreal\Scripts</Filter>
+    </ClInclude>
+    <ClInclude Include="game_sa_unreal\CSprite2d.h">
+      <Filter>game_sa_unreal</Filter>
+    </ClInclude>
+    <ClInclude Include="game_sa_unreal\CText.h">
+      <Filter>game_sa_unreal</Filter>
+    </ClInclude>
+    <ClInclude Include="game_sa_unreal\CTimer.h">
+      <Filter>game_sa_unreal</Filter>
+    </ClInclude>
+    <ClInclude Include="game_sa_unreal\CVehicle.h">
+      <Filter>game_sa_unreal\Entity\Vehicle</Filter>
+    </ClInclude>
+    <ClInclude Include="game_sa_unreal\common.h">
+      <Filter>game_sa_unreal</Filter>
+    </ClInclude>
+    <ClInclude Include="game_sa_unreal\rw\rpadc.h">
+      <Filter>game_sa_unreal\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_sa_unreal\rw\rpanisot.h">
+      <Filter>game_sa_unreal\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_sa_unreal\rw\rpcollis.h">
+      <Filter>game_sa_unreal\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_sa_unreal\rw\rpcriter.h">
+      <Filter>game_sa_unreal\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_sa_unreal\rw\rpdbgerr.h">
+      <Filter>game_sa_unreal\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_sa_unreal\rw\rpdmorph.h">
+      <Filter>game_sa_unreal\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_sa_unreal\rw\rperror.h">
+      <Filter>game_sa_unreal\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_sa_unreal\rw\rphanim.h">
+      <Filter>game_sa_unreal\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_sa_unreal\rw\rplodatm.h">
+      <Filter>game_sa_unreal\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_sa_unreal\rw\rplogo.h">
+      <Filter>game_sa_unreal\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_sa_unreal\rw\rpltmap.h">
+      <Filter>game_sa_unreal\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_sa_unreal\rw\rpmatfx.h">
+      <Filter>game_sa_unreal\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_sa_unreal\rw\rpmipkl.h">
+      <Filter>game_sa_unreal\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_sa_unreal\rw\rpmorph.h">
+      <Filter>game_sa_unreal\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_sa_unreal\rw\rpnormmap.h">
+      <Filter>game_sa_unreal\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_sa_unreal\rw\rppatch.h">
+      <Filter>game_sa_unreal\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_sa_unreal\rw\rpprtstd.h">
+      <Filter>game_sa_unreal\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_sa_unreal\rw\rpptank.h">
+      <Filter>game_sa_unreal\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_sa_unreal\rw\rppvs.h">
+      <Filter>game_sa_unreal\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_sa_unreal\rw\rprandom.h">
+      <Filter>game_sa_unreal\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_sa_unreal\rw\rpskin.h">
+      <Filter>game_sa_unreal\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_sa_unreal\rw\rpspline.h">
+      <Filter>game_sa_unreal\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_sa_unreal\rw\rpusrdat.h">
+      <Filter>game_sa_unreal\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_sa_unreal\rw\rpuvanim.h">
+      <Filter>game_sa_unreal\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_sa_unreal\rw\rpworld.h">
+      <Filter>game_sa_unreal\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_sa_unreal\rw\rt2d.h">
+      <Filter>game_sa_unreal\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_sa_unreal\rw\rt2danim.h">
+      <Filter>game_sa_unreal\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_sa_unreal\rw\rtanim.h">
+      <Filter>game_sa_unreal\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_sa_unreal\rw\rtbary.h">
+      <Filter>game_sa_unreal\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_sa_unreal\rw\rtbezpat.h">
+      <Filter>game_sa_unreal\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_sa_unreal\rw\rtbmp.h">
+      <Filter>game_sa_unreal\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_sa_unreal\rw\rtcharse.h">
+      <Filter>game_sa_unreal\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_sa_unreal\rw\rtcmpkey.h">
+      <Filter>game_sa_unreal\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_sa_unreal\rw\rtdict.h">
+      <Filter>game_sa_unreal\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_sa_unreal\rw\rtfsyst.h">
+      <Filter>game_sa_unreal\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_sa_unreal\rw\rtgcond.h">
+      <Filter>game_sa_unreal\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_sa_unreal\rw\rtgncpip.h">
+      <Filter>game_sa_unreal\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_sa_unreal\rw\rtimport.h">
+      <Filter>game_sa_unreal\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_sa_unreal\rw\rtintsec.h">
+      <Filter>game_sa_unreal\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_sa_unreal\rw\rtltmap.h">
+      <Filter>game_sa_unreal\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_sa_unreal\rw\rtltmapcnv.h">
+      <Filter>game_sa_unreal\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_sa_unreal\rw\rtmipk.h">
+      <Filter>game_sa_unreal\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_sa_unreal\rw\rtnormmap.h">
+      <Filter>game_sa_unreal\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_sa_unreal\rw\rtpick.h">
+      <Filter>game_sa_unreal\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_sa_unreal\rw\rtpitexd.h">
+      <Filter>game_sa_unreal\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_sa_unreal\rw\rtpng.h">
+      <Filter>game_sa_unreal\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_sa_unreal\rw\rtquat.h">
+      <Filter>game_sa_unreal\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_sa_unreal\rw\rtras.h">
+      <Filter>game_sa_unreal\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_sa_unreal\rw\rtray.h">
+      <Filter>game_sa_unreal\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_sa_unreal\rw\rtskinsp.h">
+      <Filter>game_sa_unreal\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_sa_unreal\rw\rtslerp.h">
+      <Filter>game_sa_unreal\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_sa_unreal\rw\rtsplpvs.h">
+      <Filter>game_sa_unreal\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_sa_unreal\rw\rttiff.h">
+      <Filter>game_sa_unreal\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_sa_unreal\rw\rttilerd.h">
+      <Filter>game_sa_unreal\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_sa_unreal\rw\rttoc.h">
+      <Filter>game_sa_unreal\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_sa_unreal\rw\rtvcat.h">
+      <Filter>game_sa_unreal\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_sa_unreal\rw\rtwing.h">
+      <Filter>game_sa_unreal\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_sa_unreal\rw\rtworld.h">
+      <Filter>game_sa_unreal\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_sa_unreal\rw\rwcore.h">
+      <Filter>game_sa_unreal\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_sa_unreal\rw\rwplcore.h">
+      <Filter>game_sa_unreal\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="game_sa_unreal\rw\skeleton.h">
+      <Filter>game_sa_unreal\RenderWare\rw</Filter>
+    </ClInclude>
+    <ClInclude Include="plugin_sa_unreal.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\hooking\Hooking.Patterns.cpp">
+      <Filter>..\hooking</Filter>
+    </ClCompile>
+    <ClCompile Include="..\safetyhook\Zydis.c">
+      <Filter>..\safetyhook</Filter>
+    </ClCompile>
+    <ClCompile Include="..\safetyhook\safetyhook.cpp">
+      <Filter>..\safetyhook</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\Audio.cpp">
+      <Filter>..\shared</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\Color.cpp">
+      <Filter>..\shared</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\DynAddress.cpp">
+      <Filter>..\shared</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\GameVersion.cpp">
+      <Filter>..\shared</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\Image.cpp">
+      <Filter>..\shared</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\Other.cpp">
+      <Filter>..\shared</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\Patch.cpp">
+      <Filter>..\shared</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\Pattern.cpp">
+      <Filter>..\shared</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\PluginBase.cpp">
+      <Filter>..\shared</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\SpriteLoader.cpp">
+      <Filter>..\shared</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\StringUtils.cpp">
+      <Filter>..\shared</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\TextLoader.cpp">
+      <Filter>..\shared</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\common_sdk.cpp">
+      <Filter>..\shared</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\comp\PluginSupport.cpp">
+      <Filter>..\shared\comp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\comp\PluginsCompatibility.cpp">
+      <Filter>..\shared\comp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\comp\plugins\LimitAdjusterSupport.cpp">
+      <Filter>..\shared\comp\plugins</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\extensions\Config.cpp">
+      <Filter>..\shared\extensions</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\extensions\DynamicResource.cpp">
+      <Filter>..\shared\extensions</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\extensions\FontPrint.cpp">
+      <Filter>..\shared\extensions</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\extensions\KeyCheck.cpp">
+      <Filter>..\shared\extensions</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\extensions\Paths.cpp">
+      <Filter>..\shared\extensions</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\extensions\Screen.cpp">
+      <Filter>..\shared\extensions</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\extensions\ScriptCommands.cpp">
+      <Filter>..\shared\extensions</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\extensions\Shader.cpp">
+      <Filter>..\shared\extensions</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\game\CRGBA.cpp">
+      <Filter>..\shared\game</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\game\CVector.cpp">
+      <Filter>..\shared\game</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\game\CompressedVector.cpp">
+      <Filter>..\shared\game</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\game\CompressedVector2D.cpp">
+      <Filter>..\shared\game</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\plugin.cpp">
+      <Filter>..\shared</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\stdafx.cpp">
+      <Filter>..\shared</Filter>
+    </ClCompile>
+    <ClCompile Include="game_sa_unreal\CFont.cpp">
+      <Filter>game_sa_unreal</Filter>
+    </ClCompile>
+    <ClCompile Include="game_sa_unreal\CPad.cpp">
+      <Filter>game_sa_unreal</Filter>
+    </ClCompile>
+    <ClCompile Include="game_sa_unreal\CPool.cpp">
+      <Filter>game_sa_unreal\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="game_sa_unreal\CPools.cpp">
+      <Filter>game_sa_unreal</Filter>
+    </ClCompile>
+    <ClCompile Include="game_sa_unreal\CRunningScript.cpp">
+      <Filter>game_sa_unreal\Scripts</Filter>
+    </ClCompile>
+    <ClCompile Include="game_sa_unreal\CSprite2d.cpp">
+      <Filter>game_sa_unreal</Filter>
+    </ClCompile>
+    <ClCompile Include="game_sa_unreal\CText.cpp">
+      <Filter>game_sa_unreal</Filter>
+    </ClCompile>
+    <ClCompile Include="game_sa_unreal\CTimer.cpp">
+      <Filter>game_sa_unreal</Filter>
+    </ClCompile>
+    <ClCompile Include="game_sa_unreal\RenderWare.cpp">
+      <Filter>game_sa_unreal\RenderWare</Filter>
+    </ClCompile>
+    <ClCompile Include="game_sa_unreal\common.cpp">
+      <Filter>game_sa_unreal</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>

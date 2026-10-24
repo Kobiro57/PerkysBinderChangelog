@@ -1,0 +1,62 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Plugin_II", "plugin_II\Plugin_II.vcxproj", "{45C3102B-B12D-C5A1-FA6B-76476615A3F6}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Plugin_III", "plugin_III\Plugin_III.vcxproj", "{2E2C298D-1AE4-6ADA-83EB-43366FC205CB}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Plugin_III_Unreal", "plugin_iii_unreal\Plugin_III_Unreal.vcxproj", "{B4BA9D28-20D1-9BBE-6948-27E0D59D6C46}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Plugin_IV", "plugin_IV\Plugin_IV.vcxproj", "{52C3102B-BE2D-C5A1-076C-76477315A3F6}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Plugin_SA", "plugin_sa\Plugin_SA.vcxproj", "{87C4102B-F32E-C5A1-3C6D-7647A816A3F6}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Plugin_SA_Unreal", "plugin_sa_unreal\Plugin_SA_Unreal.vcxproj", "{ED54ED75-D94D-0CC8-0280-F14CEED7EBD3}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Plugin_VC", "plugin_vc\Plugin_VC.vcxproj", "{ECC4102B-582F-C5A1-A16D-76470D17A3F6}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Plugin_VC_Unreal", "plugin_vc_unreal\Plugin_VC_Unreal.vcxproj", "{B251E6AB-9E4A-05FE-C77C-EA82B3D4E409}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Release|Mixed Platforms = Release|Mixed Platforms
+		zDebug|Mixed Platforms = zDebug|Mixed Platforms
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{45C3102B-B12D-C5A1-FA6B-76476615A3F6}.Release|Mixed Platforms.ActiveCfg = Release|Win32
+		{45C3102B-B12D-C5A1-FA6B-76476615A3F6}.Release|Mixed Platforms.Build.0 = Release|Win32
+		{45C3102B-B12D-C5A1-FA6B-76476615A3F6}.zDebug|Mixed Platforms.ActiveCfg = zDebug|Win32
+		{45C3102B-B12D-C5A1-FA6B-76476615A3F6}.zDebug|Mixed Platforms.Build.0 = zDebug|Win32
+		{2E2C298D-1AE4-6ADA-83EB-43366FC205CB}.Release|Mixed Platforms.ActiveCfg = Release|Win32
+		{2E2C298D-1AE4-6ADA-83EB-43366FC205CB}.Release|Mixed Platforms.Build.0 = Release|Win32
+		{2E2C298D-1AE4-6ADA-83EB-43366FC205CB}.zDebug|Mixed Platforms.ActiveCfg = zDebug|Win32
+		{2E2C298D-1AE4-6ADA-83EB-43366FC205CB}.zDebug|Mixed Platforms.Build.0 = zDebug|Win32
+		{B4BA9D28-20D1-9BBE-6948-27E0D59D6C46}.Release|Mixed Platforms.ActiveCfg = Release|x64
+		{B4BA9D28-20D1-9BBE-6948-27E0D59D6C46}.Release|Mixed Platforms.Build.0 = Release|x64
+		{B4BA9D28-20D1-9BBE-6948-27E0D59D6C46}.zDebug|Mixed Platforms.ActiveCfg = zDebug|x64
+		{B4BA9D28-20D1-9BBE-6948-27E0D59D6C46}.zDebug|Mixed Platforms.Build.0 = zDebug|x64
+		{52C3102B-BE2D-C5A1-076C-76477315A3F6}.Release|Mixed Platforms.ActiveCfg = Release|Win32
+		{52C3102B-BE2D-C5A1-076C-76477315A3F6}.Release|Mixed Platforms.Build.0 = Release|Win32
+		{52C3102B-BE2D-C5A1-076C-76477315A3F6}.zDebug|Mixed Platforms.ActiveCfg = zDebug|Win32
+		{52C3102B-BE2D-C5A1-076C-76477315A3F6}.zDebug|Mixed Platforms.Build.0 = zDebug|Win32
+		{87C4102B-F32E-C5A1-3C6D-7647A816A3F6}.Release|Mixed Platforms.ActiveCfg = Release|Win32
+		{87C4102B-F32E-C5A1-3C6D-7647A816A3F6}.Release|Mixed Platforms.Build.0 = Release|Win32
+		{87C4102B-F32E-C5A1-3C6D-7647A816A3F6}.zDebug|Mixed Platforms.ActiveCfg = zDebug|Win32
+		{87C4102B-F32E-C5A1-3C6D-7647A816A3F6}.zDebug|Mixed Platforms.Build.0 = zDebug|Win32
+		{ED54ED75-D94D-0CC8-0280-F14CEED7EBD3}.Release|Mixed Platforms.ActiveCfg = Release|x64
+		{ED54ED75-D94D-0CC8-0280-F14CEED7EBD3}.Release|Mixed Platforms.Build.0 = Release|x64
+		{ED54ED75-D94D-0CC8-0280-F14CEED7EBD3}.zDebug|Mixed Platforms.ActiveCfg = zDebug|x64
+		{ED54ED75-D94D-0CC8-0280-F14CEED7EBD3}.zDebug|Mixed Platforms.Build.0 = zDebug|x64
+		{ECC4102B-582F-C5A1-A16D-76470D17A3F6}.Release|Mixed Platforms.ActiveCfg = Release|Win32
+		{ECC4102B-582F-C5A1-A16D-76470D17A3F6}.Release|Mixed Platforms.Build.0 = Release|Win32
+		{ECC4102B-582F-C5A1-A16D-76470D17A3F6}.zDebug|Mixed Platforms.ActiveCfg = zDebug|Win32
+		{ECC4102B-582F-C5A1-A16D-76470D17A3F6}.zDebug|Mixed Platforms.Build.0 = zDebug|Win32
+		{B251E6AB-9E4A-05FE-C77C-EA82B3D4E409}.Release|Mixed Platforms.ActiveCfg = Release|x64
+		{B251E6AB-9E4A-05FE-C77C-EA82B3D4E409}.Release|Mixed Platforms.Build.0 = Release|x64
+		{B251E6AB-9E4A-05FE-C77C-EA82B3D4E409}.zDebug|Mixed Platforms.ActiveCfg = zDebug|x64
+		{B251E6AB-9E4A-05FE-C77C-EA82B3D4E409}.zDebug|Mixed Platforms.Build.0 = zDebug|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
