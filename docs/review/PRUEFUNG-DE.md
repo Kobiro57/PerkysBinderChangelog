@@ -1,8 +1,82 @@
 # Hinweise zur Prüfung durch die Projektleitung
 
-## Aktueller Stand r4 – 25. Oktober 2026
+## Aktueller Stand r5 – 25. Oktober 2026
 
-Der aktuelle Quellstand ist **NLBinder v.0.1.1 by KOBiRO, r4**. Die
+Der aktuelle Quellstand ist **NLBinder v.0.1.1 by KOBiRO, r5**. Die
+[Bedienungsbeschreibung](../NLBinder-0.1.1-r5-DE.md) und der
+[r5-Nachtrag der Änderungsübersicht](CHANGELOG-DE.md#11-nachtrag-r5--25-oktober-2026)
+beschreiben die Änderungen seit r4. Die folgenden r4- und r3-Abschnitte
+dokumentieren weiterhin deren frühere Dateien und Prüfergebnisse.
+
+### Geändertes Verhalten gegenüber r4
+
+- Der automatische Motorstart verbraucht den Fahrer-Einstieg vor dem einen
+  Tastendruck. Es gibt keinen Retry und keinen zusätzlichen RPC-Planungsweg.
+  Ein verzögertes EngineOn oder eine fehlende Textbestätigung kann deshalb
+  keinen zweiten Toggle auslösen. Ein bereits laufender oder später manuell
+  gestoppter Motor wird im selben Einstieg nicht automatisch erneut bedient.
+  Optionswechsel setzen einen verbrauchten Einstieg nicht zurück; ein echter
+  Ausstieg oder ein anderes Fahrerfahrzeug schon. Eingabesperren und die
+  bestehende Einstiegswartezeit bleiben erhalten.
+- Die Statistik wird direkt aus dem vollständigen RPC-61-Text gelesen.
+  Messageboxen, Listen und Tabellen sind berücksichtigt. Native Anzeigepuffer
+  dürfen nicht mehr die einzige Quelle für längere Statistikdialoge sein.
+  Der Parser verarbeitet bis zu 128 Zeilen und Zähler mit eckigen Klammern,
+  runden Klammern oder ohne Klammern, einschließlich Farbcodes/Tabulatoren.
+- Eigene Kills und Tode genügen für den erfolgreichen Import. Geldwerte und
+  weitere Zusatzdaten bleiben optional. Der Import setzt einen Ausgangsstand
+  und erzeugt keinen zusätzlichen Kill oder Tod. Anschließend verwenden auch
+  die Textvariablen und Testkill die übernommenen Gesamtzähler.
+- Nur die identifizierte eigene Startstatistik wird automatisch geschlossen,
+  im selben Update wie die Übernahme. Ein eigener manueller `/stats`-Aufruf
+  kann nach einem Timeout nachsynchronisieren, ohne automatische Abfrageschleife.
+  Nach erfolgreicher Start-Synchronisation bleiben spätere manuelle eigene
+  Statistiken sichtbar. Fremde Statistikdialoge und andere Dialoge werden
+  nicht pauschal übernommen oder geschlossen.
+
+### r5-Prüfpfade
+
+| Bereich | Implementierung | Tests |
+| --- | --- | --- |
+| Ein Tastendruck je Fahrer-Einstieg | [SAMPBridge.cpp](../../src/SAMPBridge.cpp), [SAMPBridge.h](../../include/SAMPBridge.h) | [SAMPBridgeTests.cpp](../../tests/SAMPBridgeTests.cpp) |
+| Vollständiger Serverdialog | [StatsDialogRPCAdapter.cpp](../../src/StatsDialogRPCAdapter.cpp), [StatsDialogRPCAdapter.h](../../include/StatsDialogRPCAdapter.h) | [StatsDialogRPCAdapterTests.cpp](../../tests/StatsDialogRPCAdapterTests.cpp) |
+| Tabellen, Klammern und lange Statistiktexte | [ServerStatsSnapshot.h](../../include/ServerStatsSnapshot.h) | [ServerStatsParserTests.cpp](../../tests/ServerStatsParserTests.cpp) |
+| Übernehmen, eigenes Fenster schließen und manuell nachsynchronisieren | [StartupStatsSync.cpp](../../src/StartupStatsSync.cpp), [SettingsManager.cpp](../../src/SettingsManager.cpp) | [StartupStatsSyncTests.cpp](../../tests/StartupStatsSyncTests.cpp) |
+| Binär- und Paketprüfung | [verify_revision5_artifact.py](../../tools/verify_revision5_artifact.py), [package_revision5.ps1](../../tools/package_revision5.ps1) | PE32/x86, Ressource 300, Helfer- und Paket-SHA-256 |
+
+Die finale r5-Datei ist über ihre eigenen Paketnachweise zugeordnet:
+
+- [Keybinder.asi](../../dist/NLBinder-0.1.1-r5/Keybinder.asi)
+- [SHA-256](../../dist/NLBinder-0.1.1-r5/SHA256SUMS.txt)
+- [Build- und Prüfangaben](../../dist/NLBinder-0.1.1-r5/BUILD-INFO.txt)
+- [PE-/Import-/Ressourcenprüfung](../../dist/NLBinder-0.1.1-r5/PRUEFBERICHT.json)
+- [Nativer Helfertest](../../dist/NLBinder-0.1.1-r5/RECONNECT-TEST.json)
+
+### Ausgeführte Prüfungen für r5
+
+Die Gesamttests und der anschließende Win32-Release-Build sind mit Exitcode 0
+abgeschlossen. Die SAMPBridge-Suite meldet 411 erfolgreiche Prüfungen, der
+Statistikparser 150, die Synchronisation 137 und der Dialog-RPC-Adapter 724,
+jeweils ohne Fehler. Geprüft sind insbesondere genau ein Motor-Tastendruck,
+alle vier unterstützten Dialogtypen, vollständige Tabellen mit mehr als
+16 Zeilen, ein Testkill mit dem importierten Gesamtstand sowie die manuelle
+Erholung nach einem Timeout und das Speichern ohne Geldangaben.
+
+Die ASI umfasst 18.345.984 Bytes. SHA-256:
+`bd2774897c3ae9db23e79b781682708c016de60f716f9476408a05dc017c14f7`.
+PE32/x86, Windows-Imports und der bytegleiche eingebettete Helfer wurden
+geprüft. Der native Helfertest umfasst 18 erfolgreiche Prüfungen mit harmlosen
+Testprozessen. Die ASI im ZIP entspricht der separat ausgelieferten Datei.
+[Maschinenlesbare Ergebnisse](r5-validation.json) ergänzen die Paketnachweise.
+
+Frühere r4-Ergebnisse gelten ausschließlich für die damalige Binärdatei. Ein
+echter Ingame-Test mit dem konkreten Server und Launcher steht aus. Auch der
+neue Ablauf muss die echte Serverantwort abwarten; er fügt keine feste
+Wartepause nach deren Empfang ein.
+
+## Historischer Prüfstand r4 – 25. Oktober 2026
+
+Der damalige Quellstand ist **NLBinder v.0.1.1 by KOBiRO, r4**. Die
 [Bedienungsbeschreibung](../NLBinder-0.1.1-r4-DE.md) und der
 [r4-Nachtrag der Änderungsübersicht](CHANGELOG-DE.md#10-nachtrag-r4--25-oktober-2026)
 beschreiben die Änderungen seit r3. Die historischen r3-Angaben weiter unten

@@ -1984,7 +1984,7 @@ bool SettingsManager::LoadFromJson(const std::string& json_content) {
     readCachedNumber("stats_cache_experience", cachedStats.experience);
     readCachedNumber("stats_cache_next_level", cachedStats.nextLevelExperience);
     readCachedNumber("stats_cache_payday_minutes", cachedStats.nextPaydayMinutes);
-    settings_.synchronized_player_stats = cachedStats.HasCore() && !cachedStats.playerName.empty()
+    settings_.synchronized_player_stats = cachedStats.HasCounters() && !cachedStats.playerName.empty()
         && *cachedStats.kills >= 0 && *cachedStats.deaths >= 0 ? std::move(cachedStats) : ServerStatsSnapshot{};
     return true;
 }
@@ -2345,7 +2345,7 @@ std::string SettingsManager::GetSettingsJson() const {
     oss << "    \"kill_tracker_death_count\": " << settings_.kill_tracker_death_count << ",\n";
 
     const auto& cachedStats = settings_.synchronized_player_stats;
-    if (cachedStats.HasCore()) {
+    if (cachedStats.HasCounters()) {
         oss << "    \"stats_cache_player\": \"" << EscapeJsonString(cachedStats.playerName) << "\",\n";
         oss << "    \"stats_cache_server\": \"" << EscapeJsonString(cachedStats.serverAddress) << "\",\n";
         oss << "    \"stats_cache_port\": " << cachedStats.serverPort << ",\n";

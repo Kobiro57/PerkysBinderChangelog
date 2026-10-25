@@ -1,6 +1,6 @@
 # Änderungen am Perkys Binder – NLBinder v.0.1.1 by KOBiRO
 
-Stand: 25. Oktober 2026, Arbeitsfassung **r4 mit direktem Damagelog, bereinigten Variablen, Testkill, Login-Synchronisation und Motorstart-Korrektur**. Die Abschnitte 1 bis 9 dokumentieren die bisherigen Änderungen; Abschnitt 10 beschreibt die Änderungen seit r3.
+Stand: 25. Oktober 2026, Arbeitsfassung **r5 mit einmaligem Motorstart und korrigierter Statistik-Synchronisation**. Die Abschnitte 1 bis 9 dokumentieren die bisherigen Änderungen; Abschnitt 10 beschreibt r4, Abschnitt 11 die anschließenden r5-Korrekturen.
 
 Die Grundlage ist der vorhandene Perkys/NLBinder. Die Änderungen erweitern dessen bestehende Oberfläche und verwenden weiterhin die vorhandenen ImGui-Komponenten, Karten, Schalter und Darstellungseinstellungen. Der Ordner KOBiRO_ASI diente als funktionale Referenz für die Overlay-Erweiterung; seine Oberfläche wurde nicht als neue Binder-Oberfläche übernommen.
 
@@ -307,3 +307,69 @@ Der Schutz vor Eingaben in Chat, Dialog oder Binder bleibt erhalten.
 Die konkrete Änderung und die ergänzten Regressionstests stehen in
 [SAMPBridge.cpp](../../src/SAMPBridge.cpp) und
 [SAMPBridgeTests.cpp](../../tests/SAMPBridgeTests.cpp).
+
+## 11. Nachtrag r5 – 25. Oktober 2026
+
+### Motor-Taste nur einmal pro Einstieg
+
+Die bisherigen Wiederholungsversuche konnten die Motor-Taste erneut auslösen,
+bevor der Server einen laufenden Motor meldete. Da die Taste auf dem Server
+ein Umschalter ist, führte das zu Starten, Ausschalten und erneutem Starten.
+Der Binder verbraucht den Fahrer-Einstieg jetzt vor dem einen Tastendruck.
+Eine ausbleibende oder verzögerte Bestätigung erzeugt keine weiteren Versuche.
+Der zusätzliche Planungsweg über RPC 26 sowie die alte Textbestätigung wurden
+entfernt.
+
+Die bestehende Einstiegswartezeit von 1,5 Sekunden und die Sperren bei Chat,
+Dialog, Binder und fehlendem Fokus bleiben erhalten. Ein bereits laufender
+Motor bekommt keinen Druck. Ein späterer manueller Stopp und erneutes
+Aktivieren der Option lösen im selben Einstieg keinen automatischen Neustart
+aus. Ein echter Ausstieg oder ein anderes Fahrerfahrzeug erlaubt den nächsten
+einmaligen Start.
+
+Quellen: [SAMPBridge.cpp](../../src/SAMPBridge.cpp),
+[SAMPBridge.h](../../include/SAMPBridge.h).
+Tests: [SAMPBridgeTests.cpp](../../tests/SAMPBridgeTests.cpp), einschließlich
+dauerhaftem EngineOff ohne Retry, Ausstieg/Wiedereinstieg im selben Fahrzeug,
+Optionswechsel ohne Doppelstart und manuellem Motorstopp.
+
+### Vollständige Statistikantwort direkt lesen
+
+Die r4-Synchronisation erkannte die tatsächlich geöffnete Statistik nicht
+zuverlässig. Sie beschränkte den Dialogpfad auf Messageboxen, verlangte neben
+Kills und Toden auch Bargeld/Kontostand und konnte längere oder anders
+formatierte Statistiktexte unvollständig auswerten.
+
+Die Korrektur liest den vollständigen RPC-61-Dialogtext direkt aus der
+Serverantwort. Messageboxen, Listen und Tabellen sind unterstützt. Der Parser
+berücksichtigt bis zu 128 Zeilen, Farbcodes und Tabulatoren sowie Zähler mit
+eckigen Klammern, runden Klammern oder ohne Klammern. Die eigenen Kills und
+Tode genügen für die Übernahme. Weitere tatsächlich gelieferte Statistikwerte
+werden ergänzt; fehlende Geldwerte verhindern die Zählerübernahme nicht mehr.
+
+Nach dem automatischen eigenen `/stats`-Abruf erfolgen Import und Schließen
+der identifizierten Startstatistik im selben Update. Es gibt keine zusätzliche
+feste Verzögerung; die echte Serverantwort bleibt notwendig. Die gelesenen
+Zähler werden als Ausgangsstand gespeichert und stehen anschließend auch
+`{total_kills}`, `{total_deaths}` und **Kill simulieren** zur Verfügung, ohne
+einen künstlichen Kill oder Tod zu erzeugen. Erst dann erscheint die lokale
+Erfolgsmeldung `[NL-BINDER] Synchronisation abgeschlossen.`.
+
+Nach einem Timeout kann ein eigener manueller `/stats`-Aufruf noch
+nachsynchronisieren. Es gibt keine automatische Abfrageschleife. Nach bereits
+abgeschlossener Start-Synchronisation bleiben spätere manuell geöffnete eigene
+Statistiken sichtbar und aktualisieren empfangene Werte. Fremde Statistiken
+und andere Dialoge werden nicht pauschal geschlossen oder übernommen.
+
+Quellen: [StartupStatsSync.cpp](../../src/StartupStatsSync.cpp),
+[ServerStatsSnapshot.h](../../include/ServerStatsSnapshot.h),
+[StatsDialogRPCAdapter.cpp](../../src/StatsDialogRPCAdapter.cpp),
+[SettingsManager.cpp](../../src/SettingsManager.cpp).
+Tests: [StartupStatsSyncTests.cpp](../../tests/StartupStatsSyncTests.cpp),
+[ServerStatsParserTests.cpp](../../tests/ServerStatsParserTests.cpp),
+[StatsDialogRPCAdapterTests.cpp](../../tests/StatsDialogRPCAdapterTests.cpp).
+
+Die endgültige r5-ASI, Prüfsumme und die zugehörigen Prüfnachweise stehen im
+[r5-Paket](../../dist/NLBinder-0.1.1-r5/BUILD-INFO.txt). Die früheren r4-Werte
+gelten weiterhin ausschließlich für die frühere Binärdatei. Ein echter
+Ingame-Test auf dem konkreten Server steht aus.

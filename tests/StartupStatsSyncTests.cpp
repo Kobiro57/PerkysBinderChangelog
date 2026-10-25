@@ -221,6 +221,102 @@ void TestStatsCacheRoundTripAndOldConfigurations() {
     CHECK(restored.LoadFromJson("{\"stats_cache_player\":\"Nobody\",\"stats_cache_kills\":\"bad\"}"));
     CHECK(!restored.Get().synchronized_player_stats.HasCore());
 }
+
+void TestAllStatsDialogStylesImportCloseAndSendRealTotalInSameFrame() {
+    for (unsigned char style : {0, 2, 4, 5}) {
+        Context context;
+        context.ready = true;
+        SAMPBridge::SetTestingHooks(context.Hooks());
+        keybinder::SettingsManager settings;
+        SAMPBridge bridge;
+        bridge.SetSettingsManager(&settings);
+        int saved = 0;
+        bridge.SetStatsSynchronizedCallback([&](const keybinder::ServerStatsSnapshot& snapshot) {
+            settings.GetMutable().synchronized_player_stats = snapshot;
+            ++saved;
+            return true;
+        });
+        CHECK(bridge.Initialize());
+        bridge.Update();
+        CHECK(context.commands == std::vector<std::string>{"/stats"});
+        auto* dialog = context.dialog.get();
+        dialog->m_bIsActive = TRUE;
+        dialog->m_nId = 234;
+        dialog->m_nType = style;
+        std::strcpy(dialog->m_szCaption, "Statistiken");
+        // A native list may expose no combined body. Only the original RPC
+        // contains the full table, including counters beyond 16 rows.
+        dialog->m_szText = nullptr;
+        std::string body;
+        for (int row = 0; row < 25; ++row) body += "Zusatzwert\tvorhanden\n";
+        body += "Kills:\t(341)\nTode:\t(119)\nBargeld:\t12.345$\nKontostand:\t67.890$";
+        bridge.ProcessStatsDialogForTesting({234, style, "Statistiken", body});
+        bridge.Update(); // same clock value: no artificial delay or timeout wait
+        CHECK(bridge.AreStatsSynchronized());
+        CHECK(context.closed == 1 && !dialog->m_bIsActive);
+        CHECK(context.Completions() == 1 && saved == 1);
+        CHECK(bridge.GetTotalKills() == 341 && bridge.GetTotalDeaths() == 119);
+        CHECK(bridge.GetKillTracker()->GetSessionKills() == 0);
+        CHECK(bridge.GetSynchronizedStats().GetAvailableWealth() == 80235);
+        std::string error;
+        CHECK(bridge.SendSimulatedKillMessage("/f Kills: {total_kills}", error));
+        CHECK(context.commands.back() == "/f [Testkill] Kills: 341");
+        // Later manual stats update the snapshot without closing the user's UI.
+        dialog->m_bIsActive = TRUE;
+        bridge.ObserveStatsCommand("/stats");
+        bridge.ProcessStatsDialogForTesting({234, style, "Statistiken", "Kills: 342\nTode: 120"});
+        bridge.Update();
+        CHECK(context.closed == 1 && dialog->m_bIsActive);
+        CHECK(bridge.GetTotalKills() == 342 && bridge.GetTotalDeaths() == 120);
+        CHECK(context.Completions() == 1 && saved == 2);
+        CHECK(!bridge.GetSynchronizedStats().cash && !bridge.GetSynchronizedStats().bank);
+        keybinder::SettingsManager restored;
+        CHECK(restored.LoadFromJson(settings.GetSettingsJson()));
+        CHECK(restored.Get().synchronized_player_stats.HasCounters());
+        CHECK(restored.Get().synchronized_player_stats.kills == 342);
+        // A neutral statistics dialog without another own /stats request
+        // must not replace our account totals with some other player's data.
+        bridge.ObserveStatsCommand("/stats 99");
+        bridge.ProcessStatsDialogForTesting({234, style, "Statistiken", "Kills: 999\nTode: 888"});
+        bridge.Update();
+        CHECK(bridge.GetTotalKills() == 342 && bridge.GetTotalDeaths() == 120);
+        bridge.Shutdown();
+        SAMPBridge::ResetTestingHooks();
+    }
+}
+
+void TestManualStatsRecoversAfterTimeoutAndOtherDialogsStayOpen() {
+    Context context;
+    context.ready = true;
+    SAMPBridge::SetTestingHooks(context.Hooks());
+    SAMPBridge bridge;
+    CHECK(bridge.Initialize());
+    bridge.Update();
+    context.now += 8000;
+    bridge.Update();
+    CHECK(!bridge.AreStatsSynchronized() && context.Completions() == 0);
+    auto* dialog = context.dialog.get();
+    dialog->m_bIsActive = TRUE;
+    dialog->m_nId = 345;
+    dialog->m_nType = sampapi::v03dl::CDialog::DIALOG_TABLIST;
+    std::strcpy(dialog->m_szCaption, "Inventar");
+    bridge.ObserveStatsCommand("/stats");
+    bridge.ProcessStatsDialogForTesting({345, 4, "Inventar", "Kills: 67\nTode: 89"});
+    bridge.Update();
+    CHECK(!bridge.AreStatsSynchronized() && context.closed == 0 && dialog->m_bIsActive);
+    std::strcpy(dialog->m_szCaption, "Statistiken");
+    bridge.ProcessStatsDialogForTesting({345, 4, "Statistiken", "Name: OtherPlayer\nKills: 67\nTode: 89"});
+    bridge.Update();
+    CHECK(!bridge.AreStatsSynchronized() && context.closed == 0);
+    bridge.ProcessStatsDialogForTesting({345, 4, "Statistiken", "Kills: 67\nTode: 89"});
+    bridge.Update();
+    CHECK(bridge.AreStatsSynchronized() && context.Completions() == 1);
+    CHECK(context.closed == 1 && !dialog->m_bIsActive);
+    CHECK(bridge.GetTotalKills() == 67 && bridge.GetTotalDeaths() == 89);
+    CHECK(context.commands == std::vector<std::string>{"/stats"});
+    bridge.Shutdown();
+    SAMPBridge::ResetTestingHooks();
+}
 } // namespace
 
 int RunStartupStatsSyncTests() {
@@ -229,6 +325,8 @@ int RunStartupStatsSyncTests() {
     TestTimeoutDoesNotSpamOrClaimSuccessAndReconnectCanSyncAgain();
     TestOnlyAnIdentifiedOwnStatsDialogCloses();
     TestStatsCacheRoundTripAndOldConfigurations();
+    TestAllStatsDialogStylesImportCloseAndSendRealTotalInSameFrame();
+    TestManualStatsRecoversAfterTimeoutAndOtherDialogsStayOpen();
     std::printf("StartupStatsSyncTests: %d checks, %d failures\n", checks, failures);
     return failures;
 }

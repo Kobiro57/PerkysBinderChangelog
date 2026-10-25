@@ -1,0 +1,37 @@
+NLBinder v.0.1.1 by KOBiRO – Überarbeitung 5
+Erstellt: 25.10.2026 11:24:56 (Europe/Berlin)
+Datei: Keybinder.asi
+Format: Win32 Release, PE32/x86 DLL
+Größe: 18345984 Bytes
+SHA256: bd2774897c3ae9db23e79b781682708c016de60f716f9476408a05dc017c14f7
+Eingebetteter Reconnect-Helfer: Ressource 300, 101376 Bytes
+Helfer-SHA256: 7185bd7f1d85ef409d385d8a35f859d3d714b16bf1436e29436c2f90e6696d85
+
+Verifikation:
+- Vollständige automatisierte Tests: Exitcode 0
+- Release-Build: Exitcode 0
+- ASI-Format, Windows-Imports und eingebetteter Helfer geprüft
+- Eingebetteter Reconnect-Helfer stimmt mit dem geprüften Helfer überein
+- Nativer Reconnect-Helfer: 18 Prüfungen, 0 Fehler
+- Dafür ausschließlich harmlose Testprozesse verwendet
+- Kein echtes Spiel und kein installierter Launcher gestartet oder beendet
+- Kein Ingame-Test durchgeführt
+
+Neue Änderungen:
+- Genau ein Motor-Tastendruck pro Fahrer-Einstieg, ohne Wiederholungen
+- Bereits laufende oder später manuell gestoppte Motoren bleiben unbeeinflusst
+- Statistikantwort direkt als vollständiger RPC-61-Text erfasst
+- Statistik-Messagebox, Listen und Tabellen werden ausgelesen
+- Kills und Tode genügen für die Übernahme; weitere gelieferte Werte optional
+- Eigene Startstatistik wird nach Übernahme im selben Update geschlossen
+- Nach einem Timeout kann ein eigener manueller /stats-Aufruf nachsynchronisieren
+- Spätere manuelle Statistiken bleiben für den Spieler geöffnet
+
+Die früheren Job-, Skilltree-, Fraktions-, Radar-, Tacho- und Reconnect-
+Anpassungen sind enthalten. Die ursprüngliche Oberfläche bleibt Grundlage.
+Der Reconnect-Helfer ist in der ASI enthalten.
+
+Grenzen: Die Synchronisation wartet auf eine echte Serverantwort. Mehrere
+Schadensereignisse zwischen Messungen erscheinen als gemessener Gesamtverlust.
+Ein Live-Test mit dem konkreten Server und Launcher steht weiterhin aus.
+Installation und weitere Hinweise stehen in LIESMICH.md.

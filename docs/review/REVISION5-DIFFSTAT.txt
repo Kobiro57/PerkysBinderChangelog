@@ -1,0 +1,24 @@
+Keybinder.vcxproj                    |   1 +
+ README.md                            |  27 ++---
+ docs/NLBinder-0.1.1-r5-DE.md         |  83 ++++++++++++++
+ docs/review/CHANGELOG-DE.md          |  68 +++++++++++-
+ docs/review/PRUEFUNG-DE.md           |  78 ++++++++++++-
+ docs/review/PUBLICATION.json         |  10 +-
+ docs/review/README-GITHUB.md         |  27 ++---
+ docs/review/r5-validation.json       |  20 ++++
+ include/SAMPBridge.h                 |  26 +++--
+ include/ServerStatsSnapshot.h        | 127 +++++++++++++++------
+ include/StatsDialogRPCAdapter.h      |  51 +++++++++
+ src/SAMPBridge.cpp                   | 210 +++++------------------------------
+ src/SettingsManager.cpp              |   4 +-
+ src/StartupStatsSync.cpp             | 148 +++++++++++++++++++-----
+ src/StatsDialogRPCAdapter.cpp        | 116 +++++++++++++++++++
+ tests/KeybindTests.cpp               |   4 +-
+ tests/SAMPBridgeTests.cpp            |  96 +++++++++++++---
+ tests/ServerStatsParserTests.cpp     |  54 +++++++++
+ tests/StartupStatsSyncTests.cpp      |  98 ++++++++++++++++
+ tests/StatsDialogRPCAdapterTests.cpp | 114 +++++++++++++++++++
+ tools/package_revision5.ps1          |  96 ++++++++++++++++
+ tools/run_tests.bat                  |   4 +
+ tools/verify_revision5_artifact.py   | 115 +++++++++++++++++++
+ 23 files changed, 1270 insertions(+), 307 deletions(-)

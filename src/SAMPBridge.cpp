@@ -22,19 +22,16 @@
 #include "../include/RakHook/include/RakHook/rakhook.hpp"
 #include "../include/SAMP-API/include/sampapi/sampapi.h"
 #ifndef KEYBINDER_TESTING
-#include "../include/plugin-sdk/plugin_sa/game_sa/CHud.h"
 #include "../include/plugin-sdk/plugin_sa/game_sa/CPlayerPed.h"
 #include "../include/plugin-sdk/plugin_sa/game_sa/CVehicle.h"
 #include "../include/plugin-sdk/plugin_sa/game_sa/CModelInfo.h"
 #include "../include/plugin-sdk/plugin_sa/game_sa/CText.h"
 #include "../include/plugin-sdk/plugin_sa/game_sa/CVehicleModelInfo.h"
-#include "../include/plugin-sdk/plugin_sa/game_sa/enums/ePedState.h"
 #include "CTheZones.h"
 #include "common.h"
 #endif
 #include "safetyhook.hpp"
 #include "../include/SAMP-API/include/sampapi/0.3.DL-1/CPlayerInfo.h"
-#include "../include/SAMP-API/include/sampapi/0.3.DL-1/KeyStuff.h"
 
 extern std::atomic<int> g_shutdown_phase;
 static std::string StripSampColorCodes(const std::string& text);
@@ -47,9 +44,6 @@ constexpr int kTrackedIncomeMessageDelayFrames = 10;
 constexpr int kLocalDeathFallbackDelayFrames = 12;
 constexpr unsigned long kAutoEngineStartDelayMs = 1500;
 constexpr unsigned long kAutoEngineStartHoldMs = 150;
-constexpr unsigned long kAutoEngineStartRetryMs = 1800;
-constexpr unsigned long kAutoEngineStartRetryWindowMs = 12000;
-constexpr int kAutoEngineStartMaxAttempts = 3;
 
 SAMPBridge* g_activeBridge = nullptr;
 
@@ -99,63 +93,6 @@ const char* TranslateVehicleGameNameKey(const std::string& gameNameKey)
     CTextGet getText = reinterpret_cast<CTextGet>(kCTextGetAddress);
     return getText(text, gameNameKey.c_str());
 }
-#endif
-
-#ifndef KEYBINDER_TESTING
-bool ContainsAsciiNoCase(const char* haystack, const char* needle)
-{
-    if (haystack == nullptr || needle == nullptr || *needle == '\0') {
-        return false;
-    }
-
-    const std::size_t needleLength = std::strlen(needle);
-    const std::size_t haystackLength = std::strlen(haystack);
-    if (needleLength > haystackLength) {
-        return false;
-    }
-
-    for (std::size_t start = 0; start + needleLength <= haystackLength; ++start) {
-        bool matches = true;
-        for (std::size_t index = 0; index < needleLength; ++index) {
-            const unsigned char left = static_cast<unsigned char>(haystack[start + index]);
-            const unsigned char right = static_cast<unsigned char>(needle[index]);
-            if (std::tolower(left) != std::tolower(right)) {
-                matches = false;
-                break;
-            }
-        }
-        if (matches) {
-            return true;
-        }
-    }
-
-    return false;
-}
-
-const char* DetectEngineStartSuccessTextSource()
-{
-    if (CHud::m_pHelpMessageToPrint != nullptr && ContainsAsciiNoCase(CHud::m_pHelpMessageToPrint, "Motor Startet")) {
-        return "help-to-print";
-    }
-    if (CHud::m_pHelpMessage != nullptr && ContainsAsciiNoCase(CHud::m_pHelpMessage, "Motor Startet")) {
-        return "help";
-    }
-    if (CHud::m_Message != nullptr && ContainsAsciiNoCase(CHud::m_Message, "Motor Startet")) {
-        return "message";
-    }
-
-    for (int i = 0; i < 7; ++i) {
-        if (BigMessageInUse[i] != 0.0f && BigMessageAlpha[i] > 0.0f
-            && ContainsAsciiNoCase(CHud::m_BigMessage[i], "Motor Startet")) {
-            return "big-message";
-        }
-    }
-
-    // BriefMessages and the queued stacks retain old engine notices. They
-    // cannot acknowledge a new key press in another vehicle.
-    return nullptr;
-}
-
 #endif
 
 std::string ConvertUtf8ToGameEncoding(const std::string& text) {
@@ -660,6 +597,7 @@ void __fastcall HookedCInputSend(sampapi::v03dl::CInput* pThis, void* /*edx*/, c
         if (g_activeBridge->InterceptSlashCommand(szString)) {
             return;
         }
+        g_activeBridge->ObserveStatsCommand(szString);
     }
     if (g_sendHook != nullptr) {
         g_sendHook->thiscall<void>(pThis, szString);
@@ -675,7 +613,6 @@ SAMPBridge::SAMPBridge()
       fallbackInstalled_(false),
       missingModuleLogged_(false),
       unsupportedVersionLogged_(false),
-      vehicleEntryHookInstalled_(false),
       originalDefaultCommand_(nullptr),
       startupMessagePending_(false),
       startupMessageDelayFrames_(0),
@@ -684,13 +621,8 @@ SAMPBridge::SAMPBridge()
       hudScaleFixEnabled_(false),
       autoEngineStartEnabled_(false),
       autoEngineStartPending_(false),
-      autoEngineStartScheduledAt_(0),
-      autoEngineStartNextAttemptAt_(0),
-      autoEngineStartReadySince_(0),
+      autoEngineStartAt_(0),
       autoEngineStartHoldUntil_(0),
-      autoEngineStartVehicleId_(0),
-      autoEngineStartAttempts_(0),
-      autoEngineStartInjectedVk_(0),
       autoEngineStartReleasePending_(false),
       killTrackerEnabled_(false),
       killTrackerLocalKillMessageEnabled_(true),
@@ -746,7 +678,6 @@ bool SAMPBridge::Initialize() {
 
     g_activeBridge = this;
     EnsureKillTrackerRpcAdaptersRegistered();
-    InstallVehicleEntryHook();
 
     if (!InitializeRakHook()) {
         if (g_activeBridge == this) {
@@ -763,6 +694,7 @@ bool SAMPBridge::Initialize() {
     // side SetPlayerHealth/SetPlayerArmour RPCs can arm suppression windows
     // and prevent false incoming hitsounds on script-driven HP changes.
     InstallScriptedHealthRpcHook();
+    InitializeStartupStatsAdapter();
 
     initialized_ = true;
     // Damage feedback/logging stays available independently of the counters.
@@ -805,75 +737,6 @@ bool SAMPBridge::InstallSendHook() {
 #endif
 }
 
-bool SAMPBridge::InstallVehicleEntryHook() {
-#ifdef KEYBINDER_TESTING
-    return true;
-#else
-    if (vehicleEntryHookInstalled_) {
-        return true;
-    }
-
-    // Hook outgoing RPC 26 (EnterVehicleNotification) to detect when the
-    // local player enters a vehicle. When entering as driver (passenger==false)
-    // and auto-engine-start is enabled, schedule a delayed "Z" key press to
-    // start the engine after the enter-vehicle animation completes.
-    rakhook::on_send_rpc += [](int& rpcId, RakNet::BitStream* bs,
-                               PacketPriority& priority, PacketReliability& reliability,
-                               char& ord_channel, bool& sh_timestamp) -> bool {
-        if (!rakhook::initialized) {
-            return true;
-        }
-
-        if (rpcId != 26) { // EnterVehicleNotification
-            return true;
-        }
-
-        if (g_activeBridge == nullptr || !g_activeBridge->autoEngineStartEnabled_) {
-            return true;
-        }
-
-        // Non-mutating read: save and restore the read offset
-        if (bs == nullptr) {
-            return true;
-        }
-
-        int originalReadOffset = bs->GetReadOffset();
-
-        unsigned short vehicleId;
-        unsigned char passenger;
-
-        if (!bs->Read(vehicleId) || !bs->Read(passenger)) {
-            bs->SetReadOffset(originalReadOffset);
-            return true;
-        }
-
-        bs->SetReadOffset(originalReadOffset);
-
-        if (!passenger) {
-            if (g_activeBridge->autoEngineStartPending_ && g_activeBridge->autoEngineStartVehicleId_ == vehicleId) {
-                g_activeBridge->Log("Vehicle entry detected (driver, vehicle=" + std::to_string(vehicleId) + ") while auto engine start is already pending; keeping existing schedule");
-                return true;
-            }
-
-            g_activeBridge->autoEngineStartPending_ = true;
-            g_activeBridge->autoEngineStartScheduledAt_ = GetTickCount();
-            g_activeBridge->autoEngineStartNextAttemptAt_ = g_activeBridge->autoEngineStartScheduledAt_ + kAutoEngineStartDelayMs;
-            g_activeBridge->autoEngineStartReadySince_ = 0;
-            g_activeBridge->autoEngineStartHoldUntil_ = 0;
-            g_activeBridge->autoEngineStartVehicleId_ = vehicleId;
-            g_activeBridge->autoEngineStartAttempts_ = 0;
-            g_activeBridge->Log("Vehicle entry detected (driver, vehicle=" + std::to_string(vehicleId) + "); scheduling auto engine start in " + std::to_string(kAutoEngineStartDelayMs) + " ms");
-        }
-
-        return true;
-    };
-
-    vehicleEntryHookInstalled_ = true;
-    Log("Vehicle entry RPC hook installed for auto engine start");
-    return true;
-#endif
-}
-
 void SAMPBridge::Shutdown() {
     // Guard against double-cleanup during shutdown (can be called from both
     // shutdownRwEvent and destructor)
@@ -882,6 +745,8 @@ void SAMPBridge::Shutdown() {
         return;
     }
     shutting_down_ = true;
+    if (statsDialogAdapter_) statsDialogAdapter_->Shutdown();
+    statsDialogAdapter_.reset();
     ResetStartupStats();
 
     Log("Shutting down SAMPBridge");
@@ -965,7 +830,7 @@ bool SAMPBridge::SendCommand(const std::string& cmd) const {
     }
 
     const std::string encodedText = ConvertUtf8ToGameEncoding(normalized);
-
+    ObserveStatsCommand(normalized);
     g_bypassSendHook = true;
     SendInputHook(input, encodedText.c_str());
     g_bypassSendHook = false;
@@ -1023,7 +888,7 @@ void SAMPBridge::SetSettingsManager(const keybinder::SettingsManager* manager) {
         killTracker_->SetCountKills(manager->Get().kill_tracker_count_kills);
         killTracker_->SetCountDeaths(manager->Get().kill_tracker_count_deaths);
     }
-    if (manager && !startupStatsComplete_ && manager->Get().synchronized_player_stats.HasCore())
+    if (manager && !startupStatsComplete_ && manager->Get().synchronized_player_stats.HasCounters())
         synchronizedStats_ = manager->Get().synchronized_player_stats;
 }
 
@@ -1818,22 +1683,15 @@ void SAMPBridge::SetAutoHudScaleFix(bool enabled) {
 void SAMPBridge::SetAutoEngineStart(bool enabled) {
     if (autoEngineStartEnabled_ == enabled) return;
     autoEngineStartEnabled_ = enabled;
-    autoEngineObservedVehicle_ = 0xFFFF;
 
     if (!enabled) {
         autoEngineStartPending_ = false;
-        autoEngineStartScheduledAt_ = 0;
-        autoEngineStartNextAttemptAt_ = 0;
-        autoEngineStartVehicleId_ = 0;
-        autoEngineStartAttempts_ = 0;
-        autoEngineStartReadySince_ = 0;
+        autoEngineStartAt_ = 0;
         autoEngineStartHoldUntil_ = 0;
         if (autoEngineStartReleasePending_) {
             SetEngineStartKeyDown(false);
         }
-        autoEngineStartInjectedVk_ = 0;
         autoEngineStartReleasePending_ = false;
-        autoEngineStartLastSuccessText_ = false;
     }
 }
 
@@ -1844,7 +1702,6 @@ bool SAMPBridge::ReadDriverVehicle(unsigned short& vehicleId, bool& engineOn) co
     auto* local = GetLocalPlayer();
     auto* ped = local && local->m_pPed ? local->m_pPed->m_pGamePed : nullptr;
     if (!ped || !ped->bInVehicle || !ped->m_pVehicle || ped->m_pVehicle->m_pDriver != ped
-        || ped->m_ePedState != PEDSTATE_DRIVING
         || local->m_nCurrentVehicle == 0xFFFF || local->m_pPed->IsPassenger()) return false;
     vehicleId = local->m_nCurrentVehicle;
     engineOn = ped->m_pVehicle->bEngineOn;
@@ -1888,57 +1745,48 @@ void SAMPBridge::UpdateAutoEngineStart(unsigned long now) {
     };
     if (autoEngineStartReleasePending_ && (!autoEngineStartEnabled_ || !inputAvailable
         || static_cast<long>(now - autoEngineStartHoldUntil_) >= 0)) releaseKey();
-    if (!autoEngineStartEnabled_) return;
-
     unsigned short vehicleId = 0xFFFF;
     bool engineOn = false;
     if (!ReadDriverVehicle(vehicleId, engineOn)) {
         autoEngineObservedVehicle_ = 0xFFFF;
+        autoEngineEntryConsumed_ = false;
         autoEngineStartPending_ = false;
         releaseKey();
         return;
     }
-    bool successText = false;
-#ifdef KEYBINDER_TESTING
-    if (g_testingHooks.hasEngineStartSuccessText) successText = g_testingHooks.hasEngineStartSuccessText();
-#else
-    successText = DetectEngineStartSuccessTextSource() != nullptr;
-#endif
     if (vehicleId != autoEngineObservedVehicle_) {
         autoEngineObservedVehicle_ = vehicleId;
+        autoEngineEntryConsumed_ = false;
+        autoEngineStartPending_ = false;
+        releaseKey();
+    }
+    // Keep the seat identity while disabled too. Reapplying or toggling the
+    // setting cannot create another automatic press in the same entry.
+    if (!autoEngineStartEnabled_ || autoEngineEntryConsumed_) return;
+    if (!autoEngineStartPending_) {
         // GTA can briefly set bEngineOn while seating the driver, before the
         // server applies its manual engine state. Decide after the entry delay.
         autoEngineStartPending_ = true;
-        autoEngineStartScheduledAt_ = now;
-        autoEngineStartNextAttemptAt_ = now + kAutoEngineStartDelayMs;
-        autoEngineStartAttempts_ = 0;
-        autoEngineStartLastSuccessText_ = successText;
-        releaseKey();
+        autoEngineStartAt_ = now + kAutoEngineStartDelayMs;
         Log("Auto engine start: driver vehicle detected, id=" + std::to_string(vehicleId));
     }
-    const bool starting = autoEngineStartAttempts_ > 0 && successText && !autoEngineStartLastSuccessText_;
-    autoEngineStartLastSuccessText_ = successText;
-    if (!autoEngineStartPending_) return;
-    const bool firstAttemptDue = static_cast<long>(now - autoEngineStartNextAttemptAt_) >= 0;
-    const bool entrySettled = autoEngineStartAttempts_ > 0 || firstAttemptDue;
-    const bool timedOut = autoEngineStartAttempts_ > 0
-        && now - autoEngineStartScheduledAt_ > kAutoEngineStartRetryWindowMs;
-    if ((engineOn && entrySettled) || starting || timedOut) {
+    if (static_cast<long>(now - autoEngineStartAt_) < 0) return;
+    if (engineOn) {
+        // An already running engine completes this entry as well. A later
+        // manual stop must not be undone by the binder.
+        autoEngineEntryConsumed_ = true;
         autoEngineStartPending_ = false;
-        releaseKey();
         return;
     }
-    if (!inputAvailable || autoEngineStartAttempts_ >= kAutoEngineStartMaxAttempts
-        || static_cast<long>(now - autoEngineStartNextAttemptAt_) < 0) return;
-    // The retry window begins with the actual first press, so opening chat or
-    // the binder during entry cannot silently expire the pending start.
-    if (autoEngineStartAttempts_ == 0) autoEngineStartScheduledAt_ = now;
+    if (!inputAvailable) return;
+    // The server motor key is a toggle. Consume this entry before the one
+    // physical press; delayed server state can never cause an off/on retry.
+    autoEngineEntryConsumed_ = true;
+    autoEngineStartPending_ = false;
     SetEngineStartKeyDown(true);
     autoEngineStartReleasePending_ = true;
     autoEngineStartHoldUntil_ = now + kAutoEngineStartHoldMs;
-    autoEngineStartNextAttemptAt_ = now + kAutoEngineStartRetryMs;
-    ++autoEngineStartAttempts_;
-    Log("Auto engine start: held Z, attempt=" + std::to_string(autoEngineStartAttempts_));
+    Log("Auto engine start: pressed Z once for this driver entry");
 }
 
 killtracker::KillTracker* SAMPBridge::GetKillTracker() const {

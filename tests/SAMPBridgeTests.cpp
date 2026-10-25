@@ -1578,16 +1578,16 @@ bool TestAutoEngineStartWaitsForServerEngineStateAfterEntry() {
     return true;
 }
 
-bool TestAutoEngineStartIgnoresOldStartNotice() {
+bool TestAutoEngineStartPressesOnlyOnceUntilActualExit() {
     MockContext context;
     auto hooks = context.BuildHooks();
     unsigned long now = 1000;
-    bool oldStartNotice = true;
+    bool driver = true;
+    bool engineOn = false;
     std::vector<bool> keys;
     hooks.getTickCount = [&]() { return now; };
-    hooks.getDriverVehicle = [](unsigned short& id, bool& running) { id = 21; running = false; return true; };
+    hooks.getDriverVehicle = [&](unsigned short& id, bool& running) { id = 21; running = engineOn; return driver; };
     hooks.isEngineInputAvailable = []() { return true; };
-    hooks.hasEngineStartSuccessText = [&]() { return oldStartNotice; };
     hooks.setEngineStartKeyDown = [&](bool down) { keys.push_back(down); };
     SAMPBridge::SetTestingHooks(hooks);
     SAMPBridge bridge;
@@ -1598,17 +1598,38 @@ bool TestAutoEngineStartIgnoresOldStartNotice() {
     bridge.Update();
     now = 2650;
     bridge.Update();
-    now = 4300;
-    bridge.Update(); // old text must not prevent a necessary second attempt
+    ASSERT_EQ(keys.size(), std::size_t(2));
+    ASSERT_TRUE(keys.front() && !keys.back());
+    // The server may leave bEngineOn false throughout the start animation.
+    // Its toggle command must never be repeated, even after the old retry times.
+    for (const auto tick : {4300UL, 6100UL, 10000UL, 20000UL}) {
+        now = tick;
+        bridge.Update();
+    }
+    ASSERT_EQ(keys.size(), std::size_t(2));
+    engineOn = true;
+    bridge.Update();
+    engineOn = false; // a later manual stop is not another entry
+    bridge.Update();
+    bridge.SetAutoEngineStart(true);
+    bridge.SetAutoEngineStart(false);
+    bridge.Update();
+    bridge.SetAutoEngineStart(true);
+    now = 24000;
+    bridge.Update();
+    now = 26000;
+    bridge.Update();
+    ASSERT_EQ(keys.size(), std::size_t(2));
+    driver = false;
+    bridge.Update();
+    driver = true; // exit and re-enter the very same vehicle
+    now = 27000;
+    bridge.Update();
+    now = 28500;
+    bridge.Update();
     ASSERT_EQ(keys.size(), std::size_t(3));
     ASSERT_TRUE(keys.back());
-    oldStartNotice = false;
-    now = 4450;
-    bridge.Update();
-    oldStartNotice = true; // newly appearing live confirmation after our press
-    now = 4600;
-    bridge.Update();
-    now = 9000;
+    now = 28650;
     bridge.Update();
     ASSERT_EQ(keys.size(), std::size_t(4));
     ASSERT_TRUE(!keys.back());
@@ -1632,7 +1653,7 @@ bool TestAutoEngineStartWaitsUntilChatCanReleaseInput() {
     bridge.SetAutoEngineStart(true);
     ASSERT_TRUE(bridge.Initialize());
     bridge.Update();
-    now = 25000; // chat/binder was open longer than the retry window
+    now = 25000; // a long-open chat/binder must not discard the one pending press
     bridge.Update();
     ASSERT_TRUE(keys.empty());
     inputAvailable = true;
@@ -1645,9 +1666,51 @@ bool TestAutoEngineStartWaitsUntilChatCanReleaseInput() {
     ASSERT_TRUE(!keys.back());
     now = 26800;
     bridge.Update();
-    ASSERT_EQ(keys.size(), std::size_t(3));
+    ASSERT_EQ(keys.size(), std::size_t(2)); // no retry after releasing the one press
+    bridge.Shutdown();
+    SAMPBridge::ResetTestingHooks();
+    return true;
+}
+
+bool TestAutoEngineStartDoesNotRestartManuallyStoppedEngine() {
+    MockContext context;
+    auto hooks = context.BuildHooks();
+    unsigned long now = 1000;
+    bool engineOn = true;
+    bool driver = true;
+    std::vector<bool> keys;
+    hooks.getTickCount = [&]() { return now; };
+    hooks.getDriverVehicle = [&](unsigned short& id, bool& running) { id = 23; running = engineOn; return driver; };
+    hooks.isEngineInputAvailable = []() { return true; };
+    hooks.setEngineStartKeyDown = [&](bool down) { keys.push_back(down); };
+    SAMPBridge::SetTestingHooks(hooks);
+    SAMPBridge bridge;
+    bridge.SetAutoEngineStart(true);
+    ASSERT_TRUE(bridge.Initialize());
+    bridge.Update();
+    now = 2500;
+    bridge.Update(); // already running: consume this entry without a key press
+    ASSERT_TRUE(keys.empty());
+    engineOn = false;
+    now = 10000;
+    bridge.Update();
+    bridge.SetAutoEngineStart(false);
+    bridge.SetAutoEngineStart(true);
+    now = 20000;
+    bridge.Update();
+    ASSERT_TRUE(keys.empty());
+    driver = false;
+    bridge.Update();
+    driver = true;
+    now = 21000;
+    bridge.Update();
+    now = 22500;
+    bridge.Update();
+    ASSERT_EQ(keys.size(), std::size_t(1));
     ASSERT_TRUE(keys.back());
     bridge.Shutdown();
+    ASSERT_EQ(keys.size(), std::size_t(2));
+    ASSERT_TRUE(!keys.back());
     SAMPBridge::ResetTestingHooks();
     return true;
 }
@@ -1827,8 +1890,9 @@ int RunSAMPBridgeTests() {
     RUN_TEST(TestAutoEngineStartUsesDriverTransitionsAndHeldInput);
     RUN_TEST(TestAutoEngineStartDoesNotTypeIntoBinder);
     RUN_TEST(TestAutoEngineStartWaitsForServerEngineStateAfterEntry);
-    RUN_TEST(TestAutoEngineStartIgnoresOldStartNotice);
+    RUN_TEST(TestAutoEngineStartPressesOnlyOnceUntilActualExit);
     RUN_TEST(TestAutoEngineStartWaitsUntilChatCanReleaseInput);
+    RUN_TEST(TestAutoEngineStartDoesNotRestartManuallyStoppedEngine);
     
     std::printf("\n--- Weapon Names Tests ---\n");
     RUN_TEST(TestWeaponNamesKnownWeapons);

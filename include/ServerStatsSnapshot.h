@@ -37,6 +37,8 @@ class ServerStatsCollector {
 public:
     static constexpr unsigned long kContextTtlMs = 3000;
     static constexpr int kMaximumBodyLines = 16;
+    static constexpr std::size_t kMaximumDialogLines = 128;
+    static constexpr std::size_t kMaximumDialogBytes = 65536;
 
     void Reset() { snapshot_ = {}; ownContext_ = false; startedAt_ = 0; bodyLines_ = 0; }
     const ServerStatsSnapshot& Snapshot() const { return snapshot_; }
@@ -70,15 +72,15 @@ public:
     static bool IsRecognizedStatsLine(const std::string& text) {
         const std::string line = Lower(Clean(text));
         if (line.empty()) return true;
-        constexpr const char* numericLabels[] = {"level", "erfahrungspunkte", "bargeld", "kontostand", "bankguthaben", "bank",
+        constexpr const char* numericLabels[] = {"level", "erfahrungspunkte", "xp", "bargeld", "kontostand", "bankguthaben", "bank",
             "vermögen", "vermoegen", "gesamtvermögen", "gesamtvermoegen", "kills", "tode", "gold", "eventcoins", "wantedpunkte",
-            "nächster zahltag in", "naechster zahltag in"};
+            "kills/tode", "kills / tode", "nächster zahltag in", "naechster zahltag in"};
         for (const char* label : numericLabels) {
             const std::size_t length = std::char_traits<char>::length(label);
             if (line.compare(0, length, label) != 0 || !FieldBoundary(line, length)) continue;
             std::size_t value = length;
             SkipSpaceAndColon(line, value);
-            if (value < line.size() && (line[value] == '[' || line[value] == '+' || line[value] == '-'
+            if (value < line.size() && (line[value] == '[' || line[value] == '(' || line[value] == '+' || line[value] == '-' || line[value] == '$'
                 || std::isdigit(static_cast<unsigned char>(line[value])))) return true;
         }
         // Remaining server-statistic rows contain descriptive data, not
@@ -92,48 +94,40 @@ public:
         return false;
     }
 
-    // A requested statistics dialog can legitimately omit the chat header.
-    // Accept only neutral statistics captions or an explicitly own identity;
-    // reject every foreign name before modifying this collector's state.
+    // Dialogs carry a complete payload rather than the short legacy chat block.
+    // Their table headings and unrelated rows must not spend the chat budget.
+    // Trust is still scoped by the caller to an own /stats request, and an
+    // explicit foreign identity always rejects the whole payload.
     bool ConsumeDialog(const std::string& caption, const std::string& body, const std::string& ownName,
                        unsigned long now, bool trustedOwnRequest) {
-        if (!trustedOwnRequest || Trim(ownName).empty()) return false;
+        if (!trustedOwnRequest || Trim(ownName).empty() || body.size() > kMaximumDialogBytes) return false;
         const std::string cleanCaption = Clean(caption);
-        const auto captionName = HeaderName(cleanCaption);
-        if (captionName && !EqualName(*captionName, ownName)) return false;
-        const std::string lowerCaption = Lower(cleanCaption);
-        constexpr const char* harmlessCaptions[] = {"stats", "statistik", "statistiken", "deine stats", "deine statistik",
-            "deine statistiken", "spielerstatistiken", "spieler-statistiken", "spieler statistik", "spieler-statistik"};
-        bool safeCaption = captionName.has_value();
-        for (const char* harmless : harmlessCaptions) if (lowerCaption == harmless) safeCaption = true;
-        constexpr const char* namedPrefixes[] = {"stats von ", "statistik von ", "statistiken von "};
-        for (const char* prefix : namedPrefixes) {
-            const std::size_t length = std::char_traits<char>::length(prefix);
-            if (lowerCaption.compare(0, length, prefix) == 0) {
-                if (!EqualName(cleanCaption.substr(length), ownName)) return false;
-                safeCaption = true;
-            }
-        }
+        bool foreignCaption = false;
+        const bool safeCaption = IsStatsCaption(cleanCaption, ownName, foreignCaption);
+        if (foreignCaption) return false;
         const std::vector<std::string> lines = SplitLines(body);
-        bool ownHeader = false;
+        if (lines.size() > kMaximumDialogLines) return false;
+        bool ownIdentity = false;
         for (const std::string& raw : lines) {
             const std::string line = Clean(raw);
             if (const auto name = HeaderName(line)) {
                 if (!EqualName(*name, ownName)) return false;
-                ownHeader = true;
+                ownIdentity = true;
             }
-            for (const char* identity : {"Spieler", "Name"}) {
+            for (const char* identity : {"Spielername", "Spieler", "Name"}) {
                 if (const auto value = FindField(line, identity)) {
                     if (!EqualName(*value, ownName)) return false;
+                    ownIdentity = true;
                 }
             }
         }
-        if (!safeCaption && !ownHeader) return false;
-        // An unknown caption with an own header is accepted only if it does
-        // not claim a different player's statistics in a known named form.
+        if (!safeCaption && !ownIdentity) return false;
         ServerStatsCollector temporary;
         temporary.ConsumeLine("*** " + Trim(ownName) + " ***", ownName, now);
-        for (const std::string& line : lines) temporary.ConsumeLine(line, ownName, now);
+        for (const std::string& raw : lines) {
+            const std::string line = Clean(raw);
+            if (IsRecognizedStatsLine(line)) temporary.ParseValues(line);
+        }
         if (!temporary.HasAnyValue()) return false;
         *this = std::move(temporary);
         return true;
@@ -151,6 +145,49 @@ private:
         return value;
     }
     static bool EqualName(const std::string& first, const std::string& second) { return Lower(Trim(first)) == Lower(Trim(second)); }
+    static std::string TrimCaptionPart(std::string value) {
+        value = Trim(value);
+        while (!value.empty() && (value.front() == ':' || value.front() == '|' || value.front() == '-'))
+            value = Trim(std::string_view(value).substr(1));
+        while (!value.empty() && (value.back() == ':' || value.back() == '|' || value.back() == '-')) {
+            value.pop_back();
+            value = Trim(value);
+        }
+        if (value.size() >= 2 && ((value.front() == '(' && value.back() == ')')
+            || (value.front() == '[' && value.back() == ']')))
+            value = Trim(std::string_view(value).substr(1, value.size() - 2));
+        return value;
+    }
+    static bool IsStatsCaption(const std::string& caption, const std::string& ownName, bool& foreignIdentity) {
+        foreignIdentity = false;
+        if (const auto name = HeaderName(caption)) {
+            foreignIdentity = !EqualName(*name, ownName);
+            return !foreignIdentity;
+        }
+        if (EqualName(caption, ownName)) return true;
+        const std::string lower = Lower(caption);
+        for (const char* word : {"spielerstatistiken", "spielerstatistik", "statistiken", "statistik", "stats"}) {
+            const std::size_t size = std::char_traits<char>::length(word);
+            const auto at = lower.find(word);
+            if (at == std::string::npos || (at > 0 && std::isalnum(static_cast<unsigned char>(lower[at - 1])))
+                || (at + size < lower.size() && std::isalnum(static_cast<unsigned char>(lower[at + size])))) continue;
+            const std::string prefix = TrimCaptionPart(caption.substr(0, at));
+            std::string suffix = TrimCaptionPart(caption.substr(at + size));
+            const std::string lowerPrefix = Lower(prefix);
+            bool neutralPrefix = prefix.empty();
+            for (const char* neutral : {"deine", "persönliche", "persoenliche", "spieler", "nova legacy", "nova-legacy", "nova legacy roleplay"})
+                if (lowerPrefix == neutral) neutralPrefix = true;
+            if (!neutralPrefix && !EqualName(prefix, ownName)) { foreignIdentity = true; return false; }
+            for (const char* named : {"von ", "für ", "fuer "}) {
+                const std::size_t length = std::char_traits<char>::length(named);
+                if (Lower(suffix).compare(0, length, named) == 0) { suffix = TrimCaptionPart(suffix.substr(length)); break; }
+            }
+            if (suffix.empty() || EqualName(suffix, ownName)) return true;
+            foreignIdentity = true;
+            return false;
+        }
+        return false;
+    }
     static std::string Clean(const std::string& text) {
         std::string result;
         for (std::size_t index = 0; index < text.size();) {
@@ -189,13 +226,29 @@ private:
             if (begins && FieldBoundary(line, value)) {
                 SkipSpaceAndColon(line, value);
                 if (value >= line.size()) return {};
-                if (line[value] == '[') {
-                    const auto end = line.find(']', value + 1);
+                if (line[value] == '[' || line[value] == '(') {
+                    const auto end = line.find(line[value] == '[' ? ']' : ')', value + 1);
                     if (end == std::string::npos) return {};
-                    return Trim(std::string_view(line).substr(value + 1, end - value - 1));
+                    // [TAG]Player is a nickname, [Player] an outer wrapper.
+                    if (end + 1 == line.size() || std::isspace(static_cast<unsigned char>(line[end + 1])) || line[end + 1] == '|')
+                        return Trim(std::string_view(line).substr(value + 1, end - value - 1));
                 }
                 std::size_t end = value;
+                if (line[end] == '$') {
+                    ++end;
+                    while (end < line.size() && std::isspace(static_cast<unsigned char>(line[end]))) ++end;
+                }
                 while (end < line.size() && !std::isspace(static_cast<unsigned char>(line[end])) && line[end] != '|') ++end;
+                // A tabular XP or Kills/Tode pair may put spaces around '/'.
+                if (key == "erfahrungspunkte" || key == "xp" || key == "kills/tode" || key == "kills / tode") {
+                    std::size_t slash = end;
+                    while (slash < line.size() && line[slash] == ' ') ++slash;
+                    if (slash < line.size() && line[slash] == '/') {
+                        end = slash + 1;
+                        while (end < line.size() && line[end] == ' ') ++end;
+                        while (end < line.size() && !std::isspace(static_cast<unsigned char>(line[end])) && line[end] != '|') ++end;
+                    }
+                }
                 return Trim(std::string_view(line).substr(value, end - value));
             }
             at += key.size();
@@ -255,12 +308,20 @@ private:
         money("Bargeld", snapshot_.cash); money("Kontostand", snapshot_.bank); money("Bankguthaben", snapshot_.bank);
         money("Bank", snapshot_.bank); money("Vermögen", snapshot_.wealth); money("Vermoegen", snapshot_.wealth);
         money("Gesamtvermögen", snapshot_.wealth); money("Gesamtvermoegen", snapshot_.wealth);
-        if (const auto experience = FindField(line, "Erfahrungspunkte")) {
+        for (const char* label : {"Erfahrungspunkte", "XP"}) if (const auto experience = FindField(line, label)) {
             const auto separator = experience->find('/');
             if (separator != std::string::npos && experience->find('/', separator + 1) == std::string::npos) {
                 const auto current = SmallInteger(experience->substr(0, separator));
                 const auto next = SmallInteger(experience->substr(separator + 1));
                 if (current && next) { snapshot_.experience = current; snapshot_.nextLevelExperience = next; }
+            }
+        }
+        for (const char* label : {"Kills/Tode", "Kills / Tode"}) if (const auto counters = FindField(line, label)) {
+            const auto separator = counters->find('/');
+            if (separator != std::string::npos && counters->find('/', separator + 1) == std::string::npos) {
+                const auto kills = SmallInteger(counters->substr(0, separator));
+                const auto deaths = SmallInteger(counters->substr(separator + 1));
+                if (kills && deaths) { snapshot_.kills = kills; snapshot_.deaths = deaths; }
             }
         }
         for (const char* label : {"Nächster Zahltag in", "Naechster Zahltag in"}) {

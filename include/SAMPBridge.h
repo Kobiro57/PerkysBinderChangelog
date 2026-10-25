@@ -17,6 +17,7 @@
 #include "DamageRPCAdapter.h"
 #include "IncomingDamageDetector.h"
 #include "ServerStatsSnapshot.h"
+#include "StatsDialogRPCAdapter.h"
 #include "DeathMessageRPCAdapter.h"
 #include "JobChatAdapter.h"
 #include "JobTracker.h"
@@ -53,6 +54,7 @@ public:
 
     bool SendChat(const std::string& text) const override;
     bool SendCommand(const std::string& cmd) const override;
+    void ObserveStatsCommand(const std::string& cmd) const;
     bool SendSimulatedKillMessage(const std::string& text, std::string& error) const;
 
     bool IsChatOpen() const;
@@ -153,7 +155,6 @@ public:
         std::function<bool(unsigned short&, bool&)> getDriverVehicle;
         std::function<bool()> isEngineInputAvailable;
         std::function<void(bool)> setEngineStartKeyDown;
-        std::function<bool()> hasEngineStartSuccessText;
         std::function<bool(float&, float&, int&, const void*&)> readLocalDamageSample;
         std::function<int()> getCityLevel;
         std::function<std::string()> getDistrictName;
@@ -170,6 +171,7 @@ public:
     void ProcessDamageRpcForTesting(RakNet::BitStream* payload);
     void RequestScriptedHealthSuppressionForTesting();
     bool ProcessIncomingChatLineForTesting(const char* prefix, const char* text);
+    void ProcessStatsDialogForTesting(const keybinder::StatsDialogEvent& event);
 #endif
 
 private:
@@ -181,6 +183,10 @@ private:
     void CaptureStartupStatsLine(const std::string& text);
     bool ShouldDisplayStartupStatsChat(const jobs::JobChatEvent& event);
     void CompleteStartupStats(unsigned long now);
+    void InitializeStartupStatsAdapter();
+    void CaptureStartupStatsDialog(const keybinder::StatsDialogEvent& event);
+    bool AcceptStartupStatsDialog(const keybinder::StatsDialogEvent& event, unsigned long now);
+    void CloseStartupStatsDialog(unsigned long now);
     void UpdateAutoEngineStart(unsigned long now);
     bool ReadDriverVehicle(unsigned short& vehicleId, bool& engineOn) const;
     bool IsEngineInputAvailable() const;
@@ -198,7 +204,6 @@ private:
     bool TryRegisterDirect(CommandRegistration& registration);
     bool InstallFallbackInterceptor();
     bool InstallSendHook();
-    bool InstallVehicleEntryHook();
     bool HasCommandRouting() const;
     void RestoreFallbackInterceptor();
     bool SendStartupMessage() const;
@@ -294,7 +299,6 @@ private:
     bool fallbackInstalled_;
     bool missingModuleLogged_;
     bool unsupportedVersionLogged_;
-    bool vehicleEntryHookInstalled_;
     bool shutting_down_ = false;
     sampapi::CMDPROC originalDefaultCommand_;
     std::vector<CommandRegistration> commands_;
@@ -316,16 +320,11 @@ private:
     bool autoEngineStartEnabled_;
     std::function<bool()> engineInputBlocked_;
     bool autoEngineStartPending_;
-    unsigned long autoEngineStartScheduledAt_;
-    unsigned long autoEngineStartNextAttemptAt_;
-    unsigned long autoEngineStartReadySince_;
+    unsigned long autoEngineStartAt_;
     unsigned long autoEngineStartHoldUntil_;
-    unsigned short autoEngineStartVehicleId_;
-    int autoEngineStartAttempts_;
-    int autoEngineStartInjectedVk_;
     bool autoEngineStartReleasePending_;
     unsigned short autoEngineObservedVehicle_ = 0xFFFF;
-    bool autoEngineStartLastSuccessText_ = false;
+    bool autoEngineEntryConsumed_ = false;
 
     bool killTrackerEnabled_;
     bool killTrackerLocalKillMessageEnabled_;
@@ -372,18 +371,25 @@ private:
     std::time_t lastLocalKillTime_ = 0;
     std::time_t lastLocalDeathTime_ = 0;
     keybinder::ServerStatsCollector startupStatsCollector_;
+    std::unique_ptr<keybinder::StatsDialogRPCAdapter> statsDialogAdapter_;
     keybinder::ServerStatsSnapshot synchronizedStats_;
     std::function<bool(const keybinder::ServerStatsSnapshot&)> statsSynchronizedCallback_;
     bool startupStatsConnected_ = false;
     bool startupStatsRequested_ = false;
     bool startupStatsComplete_ = false;
     bool startupStatsFailed_ = false;
+    mutable std::atomic<bool> ownStatsCommandObserved_{false};
+    bool statsDialogRequestPending_ = false;
+    unsigned long statsDialogRequestAt_ = 0;
     unsigned long startupStatsRequestedAt_ = 0;
     unsigned long startupStatsCompletedAt_ = 0;
     std::string startupStatsIdentity_;
     std::atomic<bool> captureStartupStats_{false};
     std::mutex startupStatsMutex_;
     std::vector<std::string> startupStatsLines_;
+    std::vector<keybinder::StatsDialogEvent> startupStatsDialogs_;
+    std::optional<keybinder::StatsDialogEvent> startupStatsDialogToClose_;
+    unsigned long startupStatsDialogCloseAt_ = 0;
     std::string startupStatsOwnName_;
     bool startupStatsPendingChat_ = false;
     bool startupStatsHiddenChat_ = false;

@@ -11,6 +11,13 @@
 namespace {
 constexpr unsigned long kStatsResponseTimeoutMs = 8000;
 
+bool IsReadableStatsDialog(int style) {
+    return style == sampapi::v03dl::CDialog::DIALOG_MESSAGEBOX
+        || style == sampapi::v03dl::CDialog::DIALOG_LIST
+        || style == sampapi::v03dl::CDialog::DIALOG_TABLIST
+        || style == sampapi::v03dl::CDialog::DIALOG_HEADERSLIST;
+}
+
 std::string LowerStatsName(std::string value) {
     std::transform(value.begin(), value.end(), value.begin(), [](unsigned char ch) { return static_cast<char>(std::tolower(ch)); });
     return value;
@@ -21,6 +28,14 @@ bool IsOwnStatsHeader(const std::string& line, const std::string& name) {
     std::smatch result;
     return !name.empty() && std::regex_match(line, result, header)
         && LowerStatsName(result[1].str()) == LowerStatsName(name);
+}
+
+std::string VisibleStatsCaption(const std::string& value) {
+    static const std::regex color(R"(\{[[:xdigit:]]{6}([[:xdigit:]]{2})?\})");
+    const std::string plain = std::regex_replace(value, color, "");
+    const auto first = plain.find_first_not_of(" \t\r\n");
+    if (first == std::string::npos) return {};
+    return plain.substr(first, plain.find_last_not_of(" \t\r\n") - first + 1);
 }
 
 bool EqualStats(const keybinder::ServerStatsSnapshot& first, const keybinder::ServerStatsSnapshot& second) {
@@ -53,10 +68,81 @@ void SAMPBridge::ResetStartupStats() {
     startupStatsConnected_ = startupStatsRequested_ = startupStatsComplete_ = startupStatsFailed_ = false;
     startupStatsIdentity_.clear();
     startupStatsCollector_.Reset();
+    startupStatsDialogToClose_.reset();
+    ownStatsCommandObserved_.store(false, std::memory_order_release);
+    statsDialogRequestPending_ = false;
     std::lock_guard<std::mutex> lock(startupStatsMutex_);
     startupStatsLines_.clear();
+    startupStatsDialogs_.clear();
     startupStatsOwnName_.clear();
     startupStatsPendingChat_ = startupStatsHiddenChat_ = false;
+}
+
+void SAMPBridge::ObserveStatsCommand(const std::string& cmd) const {
+    const auto first = cmd.find_first_not_of(" \t\r\n");
+    if (first == std::string::npos) return;
+    const std::string command = LowerStatsName(cmd.substr(first, cmd.find_last_not_of(" \t\r\n") - first + 1));
+    if (command == "/stats") ownStatsCommandObserved_.store(true, std::memory_order_release);
+}
+
+void SAMPBridge::InitializeStartupStatsAdapter() {
+    if (!statsDialogAdapter_) statsDialogAdapter_ = std::make_unique<keybinder::StatsDialogRPCAdapter>();
+    statsDialogAdapter_->SetDialogCallback([this](const keybinder::StatsDialogEvent& event) {
+        CaptureStartupStatsDialog(event);
+    });
+    statsDialogAdapter_->Initialize();
+}
+
+void SAMPBridge::CaptureStartupStatsDialog(const keybinder::StatsDialogEvent& event) {
+    std::lock_guard<std::mutex> lock(startupStatsMutex_);
+    if (startupStatsDialogs_.size() < 8) startupStatsDialogs_.push_back(event);
+}
+
+#ifdef KEYBINDER_TESTING
+void SAMPBridge::ProcessStatsDialogForTesting(const keybinder::StatsDialogEvent& event) {
+    CaptureStartupStatsDialog(event);
+}
+#endif
+
+bool SAMPBridge::AcceptStartupStatsDialog(const keybinder::StatsDialogEvent& event, unsigned long now) {
+    if (!IsReadableStatsDialog(event.style) || !statsDialogRequestPending_
+        || now - statsDialogRequestAt_ > kStatsResponseTimeoutMs) return false;
+    keybinder::ServerStatsCollector candidate;
+    if (!candidate.ConsumeDialog(StatsGameTextToUtf8(event.caption.c_str(), 256),
+            StatsGameTextToUtf8(event.text.c_str(), 32768), GetLocalPlayerName(), now, true)
+        || !candidate.Snapshot().HasCounters()) return false;
+    startupStatsCollector_ = std::move(candidate);
+    statsDialogRequestPending_ = false;
+    // A subsequent manually opened stats window updates the saved values too,
+    // but remains open once the startup synchronisation has completed.
+    if (!startupStatsComplete_) {
+        startupStatsDialogToClose_ = event;
+        startupStatsDialogCloseAt_ = now;
+    }
+    return true;
+}
+
+void SAMPBridge::CloseStartupStatsDialog(unsigned long now) {
+    if (!startupStatsDialogToClose_) return;
+    if (now - startupStatsDialogCloseAt_ > 1000) {
+        startupStatsDialogToClose_.reset();
+        return;
+    }
+    auto* dialog = GetDialog();
+    const auto& expected = *startupStatsDialogToClose_;
+    const std::string caption = dialog ? VisibleStatsCaption(StatsGameTextToUtf8(dialog->m_szCaption, 65)) : std::string();
+    const std::string expectedPrefix = expected.caption.substr(0, 64);
+    if (!dialog || !dialog->m_bIsActive || dialog->m_nId != expected.id
+        || dialog->m_nType != expected.style
+        || (caption != VisibleStatsCaption(StatsGameTextToUtf8(expected.caption.c_str(), 256))
+            && caption != VisibleStatsCaption(StatsGameTextToUtf8(expectedPrefix.c_str(), 65)))) return;
+    const int dialogId = dialog->m_nId;
+    startupStatsDialogToClose_.reset();
+#ifdef KEYBINDER_TESTING
+    if (GetTestingHooks().closeStatsDialog) GetTestingHooks().closeStatsDialog(dialogId);
+#else
+    dialog->Close(0);
+#endif
 }
 
 void SAMPBridge::CaptureStartupStatsLine(const std::string& text) {
@@ -103,7 +189,9 @@ void SAMPBridge::CompleteStartupStats(unsigned long now) {
     // The first received account snapshot is a baseline, never a newly made
     // kill/death. Chat snapshots may already have updated these counters.
     auto* tracker = GetKillTracker();
-    if (firstCompletion && !serverCombatBaselineEstablished_) {
+    const bool changedCounters = !previous.HasCounters() || previous.kills != synchronizedStats_.kills
+        || previous.deaths != synchronizedStats_.deaths;
+    if (firstCompletion || changedCounters) {
         tracker->ImportKillCount(*synchronizedStats_.kills);
         tracker->ImportDeathCount(*synchronizedStats_.deaths);
     }
@@ -111,6 +199,7 @@ void SAMPBridge::CompleteStartupStats(unsigned long now) {
     lastServerDeathTotal_ = *synchronizedStats_.deaths;
     serverCombatBaselineEstablished_ = true;
     startupStatsComplete_ = true;
+    startupStatsFailed_ = false;
     if (firstCompletion) startupStatsCompletedAt_ = now;
     {
         std::lock_guard<std::mutex> lock(startupStatsMutex_);
@@ -160,52 +249,51 @@ void SAMPBridge::UpdateStartupStats(unsigned long now) {
         captureStartupStats_.store(true, std::memory_order_release);
         if (!SendCommand("/stats")) {
             startupStatsFailed_ = true;
-            captureStartupStats_.store(false, std::memory_order_release);
-            std::lock_guard<std::mutex> lock(startupStatsMutex_);
-            startupStatsPendingChat_ = false;
+            {
+                std::lock_guard<std::mutex> lock(startupStatsMutex_);
+                startupStatsPendingChat_ = false;
+            }
+            QueueLocalMessage("{FF6600}[NL-BINDER]{FFFFFF} Automatischer Statistikabruf fehlgeschlagen. Eigene /stats erneut öffnen.");
         }
     }
-    if (startupStatsFailed_) return;
-    if (startupStatsComplete_ && now - startupStatsCompletedAt_ >= keybinder::ServerStatsCollector::kContextTtlMs) {
-        captureStartupStats_.store(false, std::memory_order_release);
-        return;
+    if (ownStatsCommandObserved_.exchange(false, std::memory_order_acq_rel)) {
+        statsDialogRequestPending_ = true;
+        statsDialogRequestAt_ = now;
     }
+    // Keep accepting actual own statistics after a timeout. Reopening /stats
+    // manually is a recovery path, not another automatic request loop.
     std::vector<std::string> lines;
+    std::vector<keybinder::StatsDialogEvent> dialogs;
     {
         std::lock_guard<std::mutex> lock(startupStatsMutex_);
         lines.swap(startupStatsLines_);
+        dialogs.swap(startupStatsDialogs_);
     }
-    bool finalChatLine = false;
     for (const auto& line : lines) {
-        const bool ownLine = startupStatsCollector_.ConsumeLine(line, name, now);
-        if (ownLine && line.rfind("Waffenscheine:", 0) == 0) finalChatLine = true;
+        startupStatsCollector_.ConsumeLine(line, name, now);
     }
+    for (const auto& event : dialogs) AcceptStartupStatsDialog(event, now);
+    // Native polling remains a fallback. Lists and tab lists must not be
+    // excluded: /stats is a dialog on Nova, whereas /oldstats is a chat block.
     if (auto* dialog = GetDialog(); !startupStatsComplete_ && dialog && dialog->m_bIsActive
-        && dialog->m_nType == sampapi::v03dl::CDialog::DIALOG_MESSAGEBOX) {
-        const int dialogId = dialog->m_nId;
-        keybinder::ServerStatsCollector candidate;
-        if (candidate.ConsumeDialog(StatsGameTextToUtf8(dialog->m_szCaption, 65),
-                StatsGameTextToUtf8(dialog->m_szText, 32768), name, now, true) && candidate.Snapshot().HasCore()) {
-            startupStatsCollector_ = std::move(candidate);
-            // Only dismiss the identified own stats response, never another
-            // open dialog or the login UI.
-#ifdef KEYBINDER_TESTING
-            if (GetTestingHooks().closeStatsDialog) GetTestingHooks().closeStatsDialog(dialogId);
-#else
-            if (dialog == GetDialog() && dialog->m_nId == dialogId) dialog->Close(0);
-#endif
-        }
+        && IsReadableStatsDialog(dialog->m_nType) && !startupStatsDialogToClose_) {
+        keybinder::StatsDialogEvent event{};
+        event.id = static_cast<unsigned short>(dialog->m_nId);
+        event.style = static_cast<unsigned char>(dialog->m_nType);
+        event.caption = StatsGameTextToUtf8(dialog->m_szCaption, 65);
+        event.text = StatsGameTextToUtf8(dialog->m_szText, 32768);
+        AcceptStartupStatsDialog(event, now);
     }
-    if (startupStatsCollector_.Snapshot().HasCore()) {
+    CloseStartupStatsDialog(now);
+    if (startupStatsCollector_.Snapshot().HasCounters()) {
         CompleteStartupStats(now);
-        if (finalChatLine) captureStartupStats_.store(false, std::memory_order_release);
-    } else if (now - startupStatsRequestedAt_ >= kStatsResponseTimeoutMs) {
+    } else if (!startupStatsComplete_ && !startupStatsFailed_ && now - startupStatsRequestedAt_ >= kStatsResponseTimeoutMs) {
         startupStatsFailed_ = true;
-        captureStartupStats_.store(false, std::memory_order_release);
+        statsDialogRequestPending_ = false;
         {
             std::lock_guard<std::mutex> lock(startupStatsMutex_);
             startupStatsPendingChat_ = startupStatsHiddenChat_ = false;
         }
-        QueueLocalMessage("{FF6600}[NL-BINDER]{FFFFFF} Synchronisation nicht abgeschlossen. /stats kann manuell erneut geöffnet werden.");
+        QueueLocalMessage("{FF6600}[NL-BINDER]{FFFFFF} Keine eigenen Zähler empfangen. Eigene /stats erneut öffnen, um die Werte zu übernehmen.");
     }
 }

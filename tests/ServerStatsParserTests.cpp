@@ -145,6 +145,57 @@ void TestRecognizedRowsDoNotIncludeOrdinaryChat() {
     STATS_CHECK(!keybinder::ServerStatsCollector::IsRecognizedStatsLine("*** Other_Player ***"));
     STATS_CHECK(!keybinder::ServerStatsCollector::IsRecognizedStatsLine("Level: Das ist Spielerchat"));
 }
+
+void TestLongTabbedDialogReadsCountersBeyondLegacyChatBudget() {
+    std::string body = "{FFCC00}Spielername:\t[TEST]Sample_Player\nEigenschaft\tWert\n";
+    for (int line = 0; line < 24; ++line) body += "Sonstige Eigenschaft\tvorhanden\n";
+    body += "{FFFFFF}Kills:\t(341)\nTode:\t(119)\nLevel:\t12\nErfahrungspunkte:\t1.234 / 9.876\n";
+    body += "Bargeld:\t$ 12.345\nKontostand:\t67.890 $\nGold:\t8\nEventcoins:\t3\nWantedpunkte:\t2";
+    keybinder::ServerStatsCollector collector;
+    STATS_CHECK(collector.ConsumeDialog("{FFCC00}Nova Legacy | Statistiken", body, "[TEST]Sample_Player", 1000, true));
+    const auto& snapshot = collector.Snapshot();
+    STATS_CHECK(snapshot.HasCore());
+    STATS_CHECK(snapshot.playerName == "[TEST]Sample_Player");
+    STATS_CHECK(snapshot.kills == 341 && snapshot.deaths == 119);
+    STATS_CHECK(snapshot.level == 12);
+    STATS_CHECK(snapshot.experience == 1234 && snapshot.nextLevelExperience == 9876);
+    STATS_CHECK(snapshot.cash == 12345 && snapshot.bank == 67890);
+    STATS_CHECK(snapshot.GetAvailableWealth() == 80235);
+    STATS_CHECK(snapshot.gold == 8 && snapshot.eventcoins == 3 && snapshot.wantedPoints == 2);
+}
+
+void TestStatsCaptionAndOwnIdentityVariantsRejectForeignPlayers() {
+    const std::string rows = "Kills: 41\nTode: 19";
+    keybinder::ServerStatsCollector collector;
+    for (const char* caption : {"Statistiken: Own_Player", "Stats - Own_Player", "Statistik (Own_Player)",
+                               "Statistiken für Own_Player", "Own_Player", "Nova Legacy | Statistiken"}) {
+        STATS_CHECK(collector.ConsumeDialog(caption, rows, "Own_Player", 1000, true));
+        STATS_CHECK(collector.Snapshot().HasCounters());
+    }
+    STATS_CHECK(collector.ConsumeDialog("Persönliche Übersicht", "Name:\tOwn_Player\n" + rows, "Own_Player", 1000, true));
+    STATS_CHECK(collector.Snapshot().kills == 41 && collector.Snapshot().deaths == 19);
+    STATS_CHECK(!collector.Snapshot().HasCore()); // Missing money never becomes invented zeroes.
+    for (const char* caption : {"Statistiken: Other_Player", "Stats - Other_Player", "Statistik (Other_Player)",
+                               "Statistiken für Other_Player", "Other_Player | Statistiken"})
+        STATS_CHECK(!collector.ConsumeDialog(caption, "*** Own_Player ***\n" + rows, "Own_Player", 1000, true));
+    STATS_CHECK(!collector.ConsumeDialog("Statistiken", "Spielername:\tOther_Player\n" + rows, "Own_Player", 1000, true));
+    STATS_CHECK(!collector.ConsumeDialog("Inventar", rows, "Own_Player", 1000, true));
+    STATS_CHECK(!collector.ConsumeDialog("Statistiken", rows, "Own_Player", 1000, false));
+}
+
+void TestDialogBoundsAndCombinedCounters() {
+    keybinder::ServerStatsCollector collector;
+    STATS_CHECK(collector.ConsumeDialog("Stats", "Kills/Tode:\t41 / 19\nXP:\t21 / 500", "Own_Player", 1000, true));
+    STATS_CHECK(collector.Snapshot().kills == 41 && collector.Snapshot().deaths == 19);
+    STATS_CHECK(collector.Snapshot().experience == 21 && collector.Snapshot().nextLevelExperience == 500);
+    STATS_CHECK(collector.ConsumeDialog("Stats", "Kills / Tode:\t(42/20)", "Own_Player", 1000, true));
+    STATS_CHECK(collector.Snapshot().kills == 42 && collector.Snapshot().deaths == 20);
+    std::string tooMany = "Kills: 41\nTode: 19";
+    for (std::size_t line = 0; line < keybinder::ServerStatsCollector::kMaximumDialogLines; ++line) tooMany += "\nZusatzwert";
+    STATS_CHECK(!collector.ConsumeDialog("Stats", tooMany, "Own_Player", 1000, true));
+    STATS_CHECK(!collector.ConsumeDialog("Stats", std::string(keybinder::ServerStatsCollector::kMaximumDialogBytes + 1, 'x'), "Own_Player", 1000, true));
+    STATS_CHECK(collector.Snapshot().kills == 42 && collector.Snapshot().deaths == 20);
+}
 } // namespace
 
 int RunServerStatsParserTests() {
@@ -155,6 +206,9 @@ int RunServerStatsParserTests() {
     TestGermanNumbersAndOverflowNeverWrap();
     TestDialogRequiresTrustedOwnRequestAndRejectsForeignIdentity();
     TestRecognizedRowsDoNotIncludeOrdinaryChat();
+    TestLongTabbedDialogReadsCountersBeyondLegacyChatBudget();
+    TestStatsCaptionAndOwnIdentityVariantsRejectForeignPlayers();
+    TestDialogBoundsAndCombinedCounters();
     std::printf("ServerStatsParserTests: %d checks, %d failures\n", checks, failures);
     return failures;
 }
