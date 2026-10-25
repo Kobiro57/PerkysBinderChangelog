@@ -1,0 +1,34 @@
+NLBinder v.0.1.1 by KOBiRO – Überarbeitung 6
+Erstellt: 25.10.2026 12:29:09 (Europe/Berlin)
+Datei: Keybinder.asi
+Format: Win32 Release, PE32/x86 DLL
+Größe: 18347008 Bytes
+SHA256: 8c489fe45c14a9f45ae9228acd8107538c5323bf6af116d8401cd0cbc7d17620
+Eingebetteter Reconnect-Helfer: Ressource 300, 101376 Bytes
+Helfer-SHA256: 643f2159ea58174eae730aa2471aa92ada6665bf8a13bca8faa79ed9b3b3b931
+
+Verifikation:
+- Vollständige automatisierte Tests: Exitcode 0
+- Release-Build: Exitcode 0
+- ASI-Format, Windows-Imports und eingebetteter Helfer geprüft
+- Eingebetteter Reconnect-Helfer stimmt mit dem geprüften Helfer überein
+- Nativer Reconnect-Helfer: 18 Prüfungen, 0 Fehler
+- Dafür ausschließlich harmlose Testprozesse verwendet
+- Kein echtes Spiel und kein installierter Launcher gestartet oder beendet
+- Kein Ingame-Test durchgeführt
+
+Neue Änderungen:
+- Statistik-Titel mit dem Unicode-Trennzeichen » werden korrekt zugeordnet
+- Eigene Statistik wird nicht mehr wegen dieses Titeltrennzeichens abgewiesen
+- Vollständiger komprimierter RPC-61-Pfad mit anonymisiertem Dialogformat geprüft
+- Import, eigener Dialogabschluss und Testkill verwenden denselben Gesamtstand
+- Der einmalige Motorstart aus r5 bleibt unverändert enthalten
+
+Die früheren Job-, Skilltree-, Fraktions-, Radar-, Tacho- und Reconnect-
+Anpassungen sind enthalten. Die ursprüngliche Oberfläche bleibt Grundlage.
+Der Reconnect-Helfer ist in der ASI enthalten.
+
+Grenzen: Die Synchronisation wartet auf eine echte Serverantwort. Mehrere
+Schadensereignisse zwischen Messungen erscheinen als gemessener Gesamtverlust.
+Ein Live-Test mit dem konkreten Server und Launcher steht weiterhin aus.
+Installation und weitere Hinweise stehen in LIESMICH.md.

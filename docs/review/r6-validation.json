@@ -1,0 +1,29 @@
+{
+  "revision": "v0.1.1-r6",
+  "date": "2026-10-25",
+  "asi_bytes": 18347008,
+  "asi_sha256": "8c489fe45c14a9f45ae9228acd8107538c5323bf6af116d8401cd0cbc7d17620",
+  "full_test_suite_exit_code": 0,
+  "release_build_exit_code": 0,
+  "observed_caption_reproduction": {
+    "r5_rejected_matching_own_identity": true,
+    "r6_accepts_matching_own_identity": true
+  },
+  "focused_checks": {
+    "ServerStatsParser": 156,
+    "StartupStatsSync": 171,
+    "StatsDialogRPCAdapter": 724,
+    "native_reconnect_helper": 18
+  },
+  "full_compressed_rpc_layout_test": {
+    "encoding": "Windows-1252",
+    "distinct_dynamic_player_names": 2,
+    "counter_import_persistence_dialog_close_success_and_testkill": true,
+    "artificial_clock_advance": false
+  },
+  "failures": 0,
+  "pe32_x86_dll": true,
+  "embedded_helper_matches": true,
+  "archive_asi_matches": true,
+  "live_game_test_performed": false
+}

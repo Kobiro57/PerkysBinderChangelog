@@ -2,11 +2,12 @@
 
 Vollständiger Prüfstand der Änderungen am **Perkys / NLBinder**, angepasst für
 KOBiRO. Grundlage und ursprüngliche Urheberschaft bleiben beim Originalprojekt.
-Der Stand lautet **NLBinder v.0.1.1 by KOBiRO, r5**. Der Motorstart drückt
-die Motor-Taste jetzt höchstens einmal pro Fahrer-Einstieg. Die
-Statistik-Synchronisation liest vollständige Serverdialoge, übernimmt eigene
-Kills/Tode auch ohne Geldwerte und schließt die eigene Startstatistik direkt.
-Alle früheren Binder-Anpassungen sind enthalten.
+Der Stand lautet **NLBinder v.0.1.1 by KOBiRO, r6**. Die Statistik erkennt
+jetzt den tatsächlichen Titel im Format `Statistiken » Spielername`; das
+Trennzeichen führte zuvor zur falschen Ablehnung der eigenen Statistik.
+Ein anonymisierter Test prüft den vollständigen komprimierten Dialogpfad bis
+zum Import, Dialogabschluss und Testkill. Der einmalige Motorstart aus r5 und
+alle früheren Binder-Anpassungen bleiben enthalten.
 
 ## Einstieg für die Projektleitung
 
@@ -14,9 +15,9 @@ Alle früheren Binder-Anpassungen sind enthalten.
 2. [Technisches Verhalten, Prüfungen und Grenzen](docs/review/PRUEFUNG-DE.md)
 3. [Dateien im Vergleich zum Original](docs/review/DATEIVERGLEICH.md)
 4. [Herkunft und Abhängigkeiten](docs/review/DEPENDENCIES.md)
-5. [Programmänderungen als GitHub-Vergleich](https://github.com/Kobiro57/PerkysBinderChangelog/compare/build-dependencies-baseline...v0.1.1-r5)
+5. [Programmänderungen als GitHub-Vergleich](https://github.com/Kobiro57/PerkysBinderChangelog/compare/build-dependencies-baseline...v0.1.1-r6)
    oder als [kompakter Quellcode-Patch](docs/review/first-party-changes.patch)
-6. [Änderungen seit r4](https://github.com/Kobiro57/PerkysBinderChangelog/compare/v0.1.1-r4...v0.1.1-r5)
+6. [Änderungen seit r5](https://github.com/Kobiro57/PerkysBinderChangelog/compare/v0.1.1-r5...v0.1.1-r6)
 
 Der vollständige bearbeitete Code liegt in `src/`, `include/`, `res/`,
 `tests/`, `tools/` und `third_party/`. Die Übersicht verlinkt direkt zu den
@@ -40,17 +41,17 @@ die [aktuelle Build-Anleitung](docs/BUILD-README.md) beschreibt das Bauen des Bi
 
 ## Geprüfte ASI
 
-- [Keybinder.asi herunterladen](dist/NLBinder-0.1.1-r5/Keybinder.asi)
-- [Komplettes ZIP-Paket herunterladen](dist/NLBinder-v0.1.1-KOBiRO-r5.zip)
-- [Installation und Bedienung](dist/NLBinder-0.1.1-r5/LIESMICH.md)
-- [Build- und Prüfangaben](dist/NLBinder-0.1.1-r5/BUILD-INFO.txt)
-- [Maschinenlesbarer Prüfnachweis](dist/NLBinder-0.1.1-r5/PRUEFBERICHT.json)
-- [SHA-256 der ausgelieferten ASI](dist/NLBinder-0.1.1-r5/SHA256SUMS.txt)
+- [Keybinder.asi herunterladen](dist/NLBinder-0.1.1-r6/Keybinder.asi)
+- [Komplettes ZIP-Paket herunterladen](dist/NLBinder-v0.1.1-KOBiRO-r6.zip)
+- [Installation und Bedienung](dist/NLBinder-0.1.1-r6/LIESMICH.md)
+- [Build- und Prüfangaben](dist/NLBinder-0.1.1-r6/BUILD-INFO.txt)
+- [Maschinenlesbarer Prüfnachweis](dist/NLBinder-0.1.1-r6/PRUEFBERICHT.json)
+- [SHA-256 der ausgelieferten ASI](dist/NLBinder-0.1.1-r6/SHA256SUMS.txt)
 
 Die Nachweise gehören zum jeweiligen Binärstand: automatisierte Gesamttests,
 Win32-Release-Build, PE-/Ressourcenvergleich und Reconnect-Helfertest mit
 harmlosen Testprozessen. Ein echter Ingame-Test mit dem konkreten Server und
-Launcher steht aus. Die [vorherige r4-Fassung](dist/NLBinder-0.1.1-r4/BUILD-INFO.txt)
+Launcher steht aus. Die [vorherige r5-Fassung](dist/NLBinder-0.1.1-r5/BUILD-INFO.txt)
 und ihre Prüfsumme bleiben zur Nachverfolgung erhalten.
 
 ## Weitere Updates

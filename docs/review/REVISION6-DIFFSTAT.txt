@@ -1,0 +1,15 @@
+README.md                          |  29 +++++-----
+ docs/NLBinder-0.1.1-r6-DE.md       |  71 +++++++++++++++++++++++
+ docs/review/CHANGELOG-DE.md        |  44 +++++++++++++-
+ docs/review/PRUEFUNG-DE.md         |  76 +++++++++++++++++++++++-
+ docs/review/PUBLICATION.json       |  10 ++--
+ docs/review/README-GITHUB.md       |  29 +++++-----
+ docs/review/r6-validation.json     |  29 ++++++++++
+ include/SAMPBridge.h               |   1 +
+ include/ServerStatsSnapshot.h      |  20 +++++--
+ src/StartupStatsSync.cpp           |   3 +
+ tests/ServerStatsParserTests.cpp   |   6 +-
+ tests/StartupStatsSyncTests.cpp    |  69 ++++++++++++++++++++++
+ tools/package_revision6.ps1        |  93 ++++++++++++++++++++++++++++++
+ tools/verify_revision6_artifact.py | 115 +++++++++++++++++++++++++++++++++++++
+ 14 files changed, 553 insertions(+), 42 deletions(-)

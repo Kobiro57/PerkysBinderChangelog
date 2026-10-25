@@ -108,10 +108,10 @@ index 41dbd9f..7d5b40c 100644
    <ImportGroup Label="ExtensionTargets" />
  </Project>
 diff --git a/README.md b/README.md
-index 92c4598..4b323f4 100644
+index 92c4598..2916e18 100644
 --- a/README.md
 +++ b/README.md
-@@ -1,121 +1,61 @@
+@@ -1,121 +1,62 @@
 -# NLBinder
 -
 -Advanced keybinder and combat-assist plugin for GTA San Andreas Multiplayer (SA-MP) 0.3.DL.
@@ -237,11 +237,12 @@ index 92c4598..4b323f4 100644
 +
 +Vollständiger Prüfstand der Änderungen am **Perkys / NLBinder**, angepasst für
 +KOBiRO. Grundlage und ursprüngliche Urheberschaft bleiben beim Originalprojekt.
-+Der Stand lautet **NLBinder v.0.1.1 by KOBiRO, r5**. Der Motorstart drückt
-+die Motor-Taste jetzt höchstens einmal pro Fahrer-Einstieg. Die
-+Statistik-Synchronisation liest vollständige Serverdialoge, übernimmt eigene
-+Kills/Tode auch ohne Geldwerte und schließt die eigene Startstatistik direkt.
-+Alle früheren Binder-Anpassungen sind enthalten.
++Der Stand lautet **NLBinder v.0.1.1 by KOBiRO, r6**. Die Statistik erkennt
++jetzt den tatsächlichen Titel im Format `Statistiken » Spielername`; das
++Trennzeichen führte zuvor zur falschen Ablehnung der eigenen Statistik.
++Ein anonymisierter Test prüft den vollständigen komprimierten Dialogpfad bis
++zum Import, Dialogabschluss und Testkill. Der einmalige Motorstart aus r5 und
++alle früheren Binder-Anpassungen bleiben enthalten.
 +
 +## Einstieg für die Projektleitung
 +
@@ -249,9 +250,9 @@ index 92c4598..4b323f4 100644
 +2. [Technisches Verhalten, Prüfungen und Grenzen](docs/review/PRUEFUNG-DE.md)
 +3. [Dateien im Vergleich zum Original](docs/review/DATEIVERGLEICH.md)
 +4. [Herkunft und Abhängigkeiten](docs/review/DEPENDENCIES.md)
-+5. [Programmänderungen als GitHub-Vergleich](https://github.com/Kobiro57/PerkysBinderChangelog/compare/build-dependencies-baseline...v0.1.1-r5)
++5. [Programmänderungen als GitHub-Vergleich](https://github.com/Kobiro57/PerkysBinderChangelog/compare/build-dependencies-baseline...v0.1.1-r6)
 +   oder als [kompakter Quellcode-Patch](docs/review/first-party-changes.patch)
-+6. [Änderungen seit r4](https://github.com/Kobiro57/PerkysBinderChangelog/compare/v0.1.1-r4...v0.1.1-r5)
++6. [Änderungen seit r5](https://github.com/Kobiro57/PerkysBinderChangelog/compare/v0.1.1-r5...v0.1.1-r6)
 +
 +Der vollständige bearbeitete Code liegt in `src/`, `include/`, `res/`,
 +`tests/`, `tools/` und `third_party/`. Die Übersicht verlinkt direkt zu den
@@ -275,17 +276,17 @@ index 92c4598..4b323f4 100644
 +
 +## Geprüfte ASI
 +
-+- [Keybinder.asi herunterladen](dist/NLBinder-0.1.1-r5/Keybinder.asi)
-+- [Komplettes ZIP-Paket herunterladen](dist/NLBinder-v0.1.1-KOBiRO-r5.zip)
-+- [Installation und Bedienung](dist/NLBinder-0.1.1-r5/LIESMICH.md)
-+- [Build- und Prüfangaben](dist/NLBinder-0.1.1-r5/BUILD-INFO.txt)
-+- [Maschinenlesbarer Prüfnachweis](dist/NLBinder-0.1.1-r5/PRUEFBERICHT.json)
-+- [SHA-256 der ausgelieferten ASI](dist/NLBinder-0.1.1-r5/SHA256SUMS.txt)
++- [Keybinder.asi herunterladen](dist/NLBinder-0.1.1-r6/Keybinder.asi)
++- [Komplettes ZIP-Paket herunterladen](dist/NLBinder-v0.1.1-KOBiRO-r6.zip)
++- [Installation und Bedienung](dist/NLBinder-0.1.1-r6/LIESMICH.md)
++- [Build- und Prüfangaben](dist/NLBinder-0.1.1-r6/BUILD-INFO.txt)
++- [Maschinenlesbarer Prüfnachweis](dist/NLBinder-0.1.1-r6/PRUEFBERICHT.json)
++- [SHA-256 der ausgelieferten ASI](dist/NLBinder-0.1.1-r6/SHA256SUMS.txt)
 +
 +Die Nachweise gehören zum jeweiligen Binärstand: automatisierte Gesamttests,
 +Win32-Release-Build, PE-/Ressourcenvergleich und Reconnect-Helfertest mit
 +harmlosen Testprozessen. Ein echter Ingame-Test mit dem konkreten Server und
-+Launcher steht aus. Die [vorherige r4-Fassung](dist/NLBinder-0.1.1-r4/BUILD-INFO.txt)
++Launcher steht aus. Die [vorherige r5-Fassung](dist/NLBinder-0.1.1-r5/BUILD-INFO.txt)
 +und ihre Prüfsumme bleiben zur Nachverfolgung erhalten.
 +
 +## Weitere Updates
@@ -1034,6 +1035,83 @@ index 0000000..e10477c
 +zusammen mit diesem Stand bereitgestellt. Frühere r4-Unterlagen beschreiben
 +weiterhin die damalige Version; ihre Prüfsumme gilt ausschließlich für deren
 +Binärdatei.
+diff --git a/docs/NLBinder-0.1.1-r6-DE.md b/docs/NLBinder-0.1.1-r6-DE.md
+new file mode 100644
+index 0000000..bfab4aa
+--- /dev/null
++++ b/docs/NLBinder-0.1.1-r6-DE.md
+@@ -0,0 +1,71 @@
++# NLBinder v.0.1.1 by KOBiRO – Überarbeitung 6
++
++Stand: 25. Oktober 2026. Diese Fassung korrigiert einen konkreten Fehler bei
++der Zuordnung des Statistikfensters. Die übrigen Binder-Anpassungen und der
++einmalige Motorstart aus r5 bleiben enthalten.
++
++## Installation
++
++1. GTA/SA-MP schließen und die bisherige Binder-ASI sichern.
++2. Die bisherige ASI durch `Keybinder.asi` aus diesem Paket ersetzen. Nur eine
++   Binder-Fassung laden. Ein vorhandener ASI-Loader wird weiterhin benötigt.
++3. GTA San Andreas 1.0 US mit SA-MP 0.3.DL-R1 starten und normal einloggen.
++   Das Menü öffnet sich wie bisher mit F2, `/kb` oder `/keybinder`, sofern die
++   eigene Konfiguration nicht davon abweicht.
++
++Vorhandene Einstellungen werden übernommen. Die Prüfsumme dieser Binärdatei
++und die abschließenden Prüfnachweise stehen in `BUILD-INFO.txt`,
++`SHA256SUMS.txt` und `PRUEFBERICHT.json`. Die früheren r5-Prüfwerte beschreiben
++ausschließlich die frühere ASI.
++
++## Statistik mit dem tatsächlichen Fenstertitel erkennen
++
++Der Server verwendet einen Titel im Format `Statistiken » Spielername`.
++Das Unicode-Trennzeichen `»` blieb bisher beim Herauslösen des Spielernamens
++stehen. Dadurch konnte der Binder die eigene Statistik als fremd abweisen,
++obwohl im Inhalt der richtige Name sowie Kills und Tode standen. Das führte
++zum offenen Statistikfenster, ausbleibendem Import und anschließendem Timeout.
++
++Der Titel wird jetzt vor dem Namensvergleich korrekt getrennt. Eine fremde
++Spieleridentität bleibt ausgeschlossen. Der vollständige Statistiktext wird
++weiterhin direkt aus der Serverantwort gelesen; Messageboxen, Listen und
++Tabellen sowie Klammern, Farbcodes und Tabulatoren werden unterstützt.
++
++Nach dem Login wird im ersten geeigneten Spielzustand einmal `/stats`
++angefordert. Sobald die eigene Antwort erkannt ist, übernimmt der Binder
++Kills und Tode als Ausgangsstand, ergänzt weitere gelieferte Werte und
++schließt die eigene Startstatistik im selben Update. Danach erscheint nur
++lokal:
++
++```text
++[NL-BINDER] Synchronisation abgeschlossen.
++```
++
++`{total_kills}` und `{total_deaths}` verwenden danach diese Gesamtstände,
++auch bei **Kill simulieren**. Der Import erzeugt keinen zusätzlichen Kill
++oder Tod. Es gibt keine zusätzliche feste Wartepause; die tatsächliche
++Antwortzeit des Servers bleibt notwendig.
++
++Ein eigener manueller `/stats`-Aufruf kann nach einem Timeout weiterhin
++nachsynchronisieren. Nach erfolgreicher Start-Synchronisation bleiben später
++manuell geöffnete eigene Statistiken sichtbar. Andere Dialoge und fremde
++Statistiken werden nicht pauschal geschlossen.
++
++## Motorstart
++
++Die r5-Korrektur bleibt unverändert: höchstens ein Motor-Tastendruck pro
++Fahrer-Einstieg, ohne Wiederholungsversuche. Ein bereits laufender oder später
++manuell gestoppter Motor wird im selben Einstieg nicht erneut bedient.
++Eingabesperren bei offenem Chat, Dialog und Binder bleiben erhalten.
++
++## Prüfung und veröffentlichte Daten
++
++Der neue Regressionstest bildet das beobachtete Dialogformat mit erfundenem
++Spielernamen und erfundenen Statistikwerten nach. Er prüft den vollständigen
++komprimierten RPC-61-Pfad bis zur Übernahme, zum Schließen des eigenen
++Startdialogs und zum Testkill mit den importierten Zählern. Persönliche
++Screenshots und die tatsächlichen Statistikwerte werden nicht veröffentlicht.
++
++Quellen und zugehörige Prüfnachweise stehen im
++[GitHub-Prüfrepository](https://github.com/Kobiro57/PerkysBinderChangelog).
++Ein echter Ingame-Test mit dem konkreten Server und Launcher steht aus.
 diff --git a/docs/ORIGINAL-README.md b/docs/ORIGINAL-README.md
 new file mode 100644
 index 0000000..92c4598
@@ -1237,13 +1315,13 @@ index 0000000..f99992a
 +evidence. Add verified messages to `res/jobs_registry.json` when they are available.
 diff --git a/docs/review/CHANGELOG-DE.md b/docs/review/CHANGELOG-DE.md
 new file mode 100644
-index 0000000..cb2cc81
+index 0000000..f7a65b6
 --- /dev/null
 +++ b/docs/review/CHANGELOG-DE.md
-@@ -0,0 +1,375 @@
+@@ -0,0 +1,417 @@
 +# Änderungen am Perkys Binder – NLBinder v.0.1.1 by KOBiRO
 +
-+Stand: 25. Oktober 2026, Arbeitsfassung **r5 mit einmaligem Motorstart und korrigierter Statistik-Synchronisation**. Die Abschnitte 1 bis 9 dokumentieren die bisherigen Änderungen; Abschnitt 10 beschreibt r4, Abschnitt 11 die anschließenden r5-Korrekturen.
++Stand: 25. Oktober 2026, Arbeitsfassung **r6 mit korrigierter Zuordnung des Statistik-Titels mit `»`**. Die Abschnitte 1 bis 9 dokumentieren die bisherigen Änderungen; Abschnitt 10 beschreibt r4, Abschnitt 11 r5 und Abschnitt 12 die anschließende r6-Korrektur.
 +
 +Die Grundlage ist der vorhandene Perkys/NLBinder. Die Änderungen erweitern dessen bestehende Oberfläche und verwenden weiterhin die vorhandenen ImGui-Komponenten, Karten, Schalter und Darstellungseinstellungen. Der Ordner KOBiRO_ASI diente als funktionale Referenz für die Overlay-Erweiterung; seine Oberfläche wurde nicht als neue Binder-Oberfläche übernommen.
 +
@@ -1616,6 +1694,48 @@ index 0000000..cb2cc81
 +[r5-Paket](../../dist/NLBinder-0.1.1-r5/BUILD-INFO.txt). Die früheren r4-Werte
 +gelten weiterhin ausschließlich für die frühere Binärdatei. Ein echter
 +Ingame-Test auf dem konkreten Server steht aus.
++
++## 12. Nachtrag r6 – 25. Oktober 2026
++
++### Eigenen Statistik-Titel mit `»` korrekt zuordnen
++
++Das tatsächliche Statistikfenster verwendet einen Titel im Format
++`Statistiken » Spielername`. Die bisherige Titelbereinigung entfernte das
++Unicode-Trennzeichen `»` vor dem Namen nicht. Der anschließende Namensvergleich
++konnte deshalb die eigene Statistik als fremd abweisen, obwohl im Inhalt der
++richtige Name sowie Kills und Tode standen. Der Import blieb aus, das Fenster
++blieb geöffnet und der automatische Versuch endete im Timeout.
++
++Die Titelbereinigung trennt den Namen jetzt korrekt vom Statistikpräfix.
++Die Prüfung auf eine fremde Spieleridentität bleibt erhalten. Nach Erkennung
++der eigenen Antwort werden die Gesamtzähler übernommen und die eigene
++Startstatistik im selben Update geschlossen. Der importierte Stand steht
++anschließend auch den Textvariablen und **Kill simulieren** zur Verfügung.
++Eine zusätzliche feste Verzögerung wird nicht eingefügt; die Serverantwort
++bleibt erforderlich.
++
++### Vollständigen komprimierten Dialogpfad prüfen
++
++Ein Regressionstest bildet das beobachtete Format mit erfundenem Namen und
++erfundenen Statistikwerten nach. Er führt die komprimierte RPC-61-Nachricht
++durch Dekodierung, Identitätsprüfung, Parser, Zählerübernahme und eigenen
++Dialogabschluss bis zum Testkill mit dem importierten Gesamtstand. Weitere
++Prüfungen grenzen fremde Spielernamen ab. Persönliche Screenshots und die
++ursprünglichen Statistikwerte gehören nicht zur Veröffentlichung.
++
++Quellen: [ServerStatsSnapshot.h](../../include/ServerStatsSnapshot.h),
++[StartupStatsSync.cpp](../../src/StartupStatsSync.cpp),
++[StatsDialogRPCAdapter.cpp](../../src/StatsDialogRPCAdapter.cpp).
++Tests: [ServerStatsParserTests.cpp](../../tests/ServerStatsParserTests.cpp),
++[StartupStatsSyncTests.cpp](../../tests/StartupStatsSyncTests.cpp),
++[StatsDialogRPCAdapterTests.cpp](../../tests/StatsDialogRPCAdapterTests.cpp).
++
++Der einmalige Motorstart aus r5 bleibt unverändert. Frühere Job-, Overlay-,
++Zähler-, Damagelog-, Tacho- und Reconnect-Anpassungen sind weiterhin enthalten.
++Die endgültige r6-ASI und deren eigene Prüfnachweise werden im
++[r6-Paket](../../dist/NLBinder-0.1.1-r6/BUILD-INFO.txt) bereitgestellt. Frühere
++r5-Prüfwerte gelten ausschließlich für die damalige ASI. Ein echter
++Ingame-Test mit dem konkreten Server und Launcher steht aus.
 diff --git a/docs/review/DEPENDENCIES.md b/docs/review/DEPENDENCIES.md
 new file mode 100644
 index 0000000..88f82ce
@@ -1702,15 +1822,87 @@ index 0000000..88f82ce
 +nicht zum veröffentlichten Quellstand.
 diff --git a/docs/review/PRUEFUNG-DE.md b/docs/review/PRUEFUNG-DE.md
 new file mode 100644
-index 0000000..0925c7d
+index 0000000..f2b7002
 --- /dev/null
 +++ b/docs/review/PRUEFUNG-DE.md
-@@ -0,0 +1,274 @@
+@@ -0,0 +1,346 @@
 +# Hinweise zur Prüfung durch die Projektleitung
 +
-+## Aktueller Stand r5 – 25. Oktober 2026
++## Aktueller Stand r6 – 25. Oktober 2026
 +
-+Der aktuelle Quellstand ist **NLBinder v.0.1.1 by KOBiRO, r5**. Die
++Der aktuelle Quellstand ist **NLBinder v.0.1.1 by KOBiRO, r6**. Die
++[Bedienungsbeschreibung](../NLBinder-0.1.1-r6-DE.md) und der
++[r6-Nachtrag der Änderungsübersicht](CHANGELOG-DE.md#12-nachtrag-r6--25-oktober-2026)
++beschreiben die Korrektur seit r5. Die historischen Prüfwerte der früheren
++Stände bleiben in den nachfolgenden Abschnitten erhalten.
++
++### Konkreter Fehler und Korrektur
++
++Der tatsächlich beobachtete Statistik-Titel hat das Format
++`Statistiken » Spielername`. `TrimCaptionPart` entfernte das Unicode-Trennzeichen
++`»` bisher nicht. Dadurch wurde beim anschließenden Identitätsvergleich ein
++falscher Spielername verglichen und die eigene Antwort konnte als fremd
++abgelehnt werden. Die Korrektur bereinigt das Trennzeichen vor diesem
++Vergleich. Fremde Spieleridentitäten bleiben ausgeschlossen.
++
++Nach Erkennung der eigenen Antwort laufen Zählerimport und Schließen der
++eigenen Startstatistik im selben Update. Der importierte Gesamtstand wird
++anschließend auch in Textvariablen und Testkill verwendet. Es gibt keine
++zusätzliche feste Wartepause, aber weiterhin die notwendige Serverantwort.
++Der einmalige Motorstart und die übrigen r5-Funktionen sind unverändert.
++
++### r6-Prüfpfade und Datenschutz
++
++| Bereich | Implementierung | Tests |
++| --- | --- | --- |
++| Titeltrennzeichen und eigene/fremde Identität | [ServerStatsSnapshot.h](../../include/ServerStatsSnapshot.h) | [ServerStatsParserTests.cpp](../../tests/ServerStatsParserTests.cpp) |
++| Komprimierter vollständiger RPC-61-Dialog | [StatsDialogRPCAdapter.cpp](../../src/StatsDialogRPCAdapter.cpp) | [StatsDialogRPCAdapterTests.cpp](../../tests/StatsDialogRPCAdapterTests.cpp), [StartupStatsSyncTests.cpp](../../tests/StartupStatsSyncTests.cpp) |
++| Zählerimport, eigener Dialogabschluss und Testkill | [StartupStatsSync.cpp](../../src/StartupStatsSync.cpp), [SAMPBridge.cpp](../../src/SAMPBridge.cpp) | [StartupStatsSyncTests.cpp](../../tests/StartupStatsSyncTests.cpp) |
++| Binär- und Paketgleichheit | [verify_revision6_artifact.py](../../tools/verify_revision6_artifact.py), [package_revision6.ps1](../../tools/package_revision6.ps1) | PE32/x86, eingebetteter Helfer, SHA-256 |
++
++Der vollständige Dialogtest verwendet dasselbe Nachrichtenformat mit
++erfundenem Spielernamen und erfundenen Werten. Er verbindet die komprimierte
++RPC-Dekodierung mit Parser, Zählerimport, eigenem Dialogabschluss und Testkill.
++Persönliche Screenshots und die tatsächlichen Statistikwerte werden nicht in
++das Repository übernommen.
++
++Die finale r6-Datei wird mit ihren eigenen Nachweisen bereitgestellt:
++
++- [Keybinder.asi](../../dist/NLBinder-0.1.1-r6/Keybinder.asi)
++- [SHA-256](../../dist/NLBinder-0.1.1-r6/SHA256SUMS.txt)
++- [Build- und Prüfangaben](../../dist/NLBinder-0.1.1-r6/BUILD-INFO.txt)
++- [PE-/Import-/Ressourcenprüfung](../../dist/NLBinder-0.1.1-r6/PRUEFBERICHT.json)
++- [Nativer Helfertest](../../dist/NLBinder-0.1.1-r6/RECONNECT-TEST.json)
++
++### Ausgeführte Prüfungen für r6
++
++Die Titelablehnung wurde zunächst mit dem bisherigen r5-Parser reproduziert:
++`Statistiken » Fixture_Player` wurde trotz passender eigener Namenszeile und
++Zähler abgelehnt. Mit dem korrigierten Parser wird dieselbe Eingabe angenommen.
++
++Die vollständige Testsuite und der Win32-Release-Build endeten mit Exitcode 0.
++Der Statistikparser meldet 156 erfolgreiche Prüfungen, die Synchronisation
++171 und der Dialog-RPC-Adapter 724, jeweils ohne Fehler. Der neue vollständige
++Test verwendet zwei unterschiedliche Ingame-Namen, darunter einen Namen mit
++Clanpräfix, einen komprimierten CP1252-Dialog im beobachteten Layout und keine
++vorab aufbereiteten Dialogereignisse. Er bestätigt ohne Zeitfortschritt:
++Zählerimport, lokales Speichern, Dialogabschluss, Erfolgsmeldung und Testkill
++mit den tatsächlich importierten Gesamtständen. Fremde Namen bleiben in den
++Regressionstests ausgeschlossen.
++
++Die geprüfte ASI umfasst 18.347.008 Bytes; SHA-256:
++`8c489fe45c14a9f45ae9228acd8107538c5323bf6af116d8401cd0cbc7d17620`.
++PE32/x86, Windows-Imports und der eingebettete Helfer sind geprüft. Der native
++Helfertest besteht aus 18 erfolgreichen Prüfungen mit harmlosen Testprozessen.
++Die separat ausgelieferte ASI und die ASI im ZIP haben dieselbe Prüfsumme.
++[Maschinenlesbare Ergebnisse](r6-validation.json) ergänzen die Paketnachweise.
++
++Die folgenden r5-Werte gelten nur für deren frühere Binärdatei. Ein echter
++Ingame-Test mit dem konkreten Server und Launcher steht aus.
++
++## Historischer Prüfstand r5 – 25. Oktober 2026
++
++Der damalige Quellstand ist **NLBinder v.0.1.1 by KOBiRO, r5**. Die
 +[Bedienungsbeschreibung](../NLBinder-0.1.1-r5-DE.md) und der
 +[r5-Nachtrag der Änderungsübersicht](CHANGELOG-DE.md#11-nachtrag-r5--25-oktober-2026)
 +beschreiben die Änderungen seit r4. Die folgenden r4- und r3-Abschnitte
@@ -1982,7 +2174,7 @@ index 0000000..0925c7d
 +Spätere Erweiterungen sollten mit ihrem jeweiligen Quellcommit, angepasster Änderungsübersicht, Testnachweisen und neuer ASI-Prüfsumme veröffentlicht werden. Ein neuer Build sollte nicht unter der Prüfsumme dieser r3-Fassung beschrieben werden.
 diff --git a/docs/review/PUBLICATION.json b/docs/review/PUBLICATION.json
 new file mode 100644
-index 0000000..0bd9890
+index 0000000..7058b86
 --- /dev/null
 +++ b/docs/review/PUBLICATION.json
 @@ -0,0 +1,13 @@
@@ -1991,13 +2183,13 @@ index 0000000..0bd9890
 +  "baseline_import_commit": "2da75e6c54a098243bf00ab48d86c5e3ee3cd261",
 +  "baseline_tag": "original-archive-92ce219",
 +  "original_archive_commit_comment": "92ce21971bee2d166d830e23ad20950f1dc98921",
-+  "history_note": "Original archive and pinned-dependency imports remain intact. r5 is a subsequent Binder update; no previous history is rewritten.",
-+  "asi_sha256": "bd2774897c3ae9db23e79b781682708c016de60f716f9476408a05dc017c14f7",
++  "history_note": "Original archive and pinned-dependency imports remain intact. r6 is a subsequent Binder update; no previous history is rewritten.",
++  "asi_sha256": "8c489fe45c14a9f45ae9228acd8107538c5323bf6af116d8401cd0cbc7d17620",
 +  "dependencies_import_commit": "3c8e11a76bc8d94962da0ce447a8d1a8b7c3eb83",
 +  "dependencies_tag": "build-dependencies-baseline",
-+  "release": "v0.1.1-r5",
-+  "previous_release": "v0.1.1-r4",
-+  "previous_published_commit": "c76b0e3220dae28f8ce525a5b87cc8d93be1d468"
++  "release": "v0.1.1-r6",
++  "previous_release": "v0.1.1-r5",
++  "previous_published_commit": "799d164ed5751eeffba92cc467ece0a03e2c1ab5"
 +}
 diff --git a/docs/review/PUBLISHING-DE.md b/docs/review/PUBLISHING-DE.md
 new file mode 100644
@@ -2041,19 +2233,20 @@ index 0000000..33b07ac
 +geändert.
 diff --git a/docs/review/README-GITHUB.md b/docs/review/README-GITHUB.md
 new file mode 100644
-index 0000000..11df4c5
+index 0000000..b027ba7
 --- /dev/null
 +++ b/docs/review/README-GITHUB.md
-@@ -0,0 +1,61 @@
+@@ -0,0 +1,62 @@
 +# PerkysBinderChangelog
 +
 +Vollständiger Prüfstand der Änderungen am **Perkys / NLBinder**, angepasst für
 +KOBiRO. Grundlage und ursprüngliche Urheberschaft bleiben beim Originalprojekt.
-+Der Stand lautet **NLBinder v.0.1.1 by KOBiRO, r5**. Der Motorstart drückt
-+die Motor-Taste jetzt höchstens einmal pro Fahrer-Einstieg. Die
-+Statistik-Synchronisation liest vollständige Serverdialoge, übernimmt eigene
-+Kills/Tode auch ohne Geldwerte und schließt die eigene Startstatistik direkt.
-+Alle früheren Binder-Anpassungen sind enthalten.
++Der Stand lautet **NLBinder v.0.1.1 by KOBiRO, r6**. Die Statistik erkennt
++jetzt den tatsächlichen Titel im Format `Statistiken » Spielername`; das
++Trennzeichen führte zuvor zur falschen Ablehnung der eigenen Statistik.
++Ein anonymisierter Test prüft den vollständigen komprimierten Dialogpfad bis
++zum Import, Dialogabschluss und Testkill. Der einmalige Motorstart aus r5 und
++alle früheren Binder-Anpassungen bleiben enthalten.
 +
 +## Einstieg für die Projektleitung
 +
@@ -2061,9 +2254,9 @@ index 0000000..11df4c5
 +2. [Technisches Verhalten, Prüfungen und Grenzen](../../docs/review/PRUEFUNG-DE.md)
 +3. [Dateien im Vergleich zum Original](../../docs/review/DATEIVERGLEICH.md)
 +4. [Herkunft und Abhängigkeiten](../../docs/review/DEPENDENCIES.md)
-+5. [Programmänderungen als GitHub-Vergleich](https://github.com/Kobiro57/PerkysBinderChangelog/compare/build-dependencies-baseline...v0.1.1-r5)
++5. [Programmänderungen als GitHub-Vergleich](https://github.com/Kobiro57/PerkysBinderChangelog/compare/build-dependencies-baseline...v0.1.1-r6)
 +   oder als [kompakter Quellcode-Patch](../../docs/review/first-party-changes.patch)
-+6. [Änderungen seit r4](https://github.com/Kobiro57/PerkysBinderChangelog/compare/v0.1.1-r4...v0.1.1-r5)
++6. [Änderungen seit r5](https://github.com/Kobiro57/PerkysBinderChangelog/compare/v0.1.1-r5...v0.1.1-r6)
 +
 +Der vollständige bearbeitete Code liegt in `src/`, `include/`, `res/`,
 +`tests/`, `tools/` und `third_party/`. Die Übersicht verlinkt direkt zu den
@@ -2087,17 +2280,17 @@ index 0000000..11df4c5
 +
 +## Geprüfte ASI
 +
-+- [Keybinder.asi herunterladen](../../dist/NLBinder-0.1.1-r5/Keybinder.asi)
-+- [Komplettes ZIP-Paket herunterladen](../../dist/NLBinder-v0.1.1-KOBiRO-r5.zip)
-+- [Installation und Bedienung](../../dist/NLBinder-0.1.1-r5/LIESMICH.md)
-+- [Build- und Prüfangaben](../../dist/NLBinder-0.1.1-r5/BUILD-INFO.txt)
-+- [Maschinenlesbarer Prüfnachweis](../../dist/NLBinder-0.1.1-r5/PRUEFBERICHT.json)
-+- [SHA-256 der ausgelieferten ASI](../../dist/NLBinder-0.1.1-r5/SHA256SUMS.txt)
++- [Keybinder.asi herunterladen](../../dist/NLBinder-0.1.1-r6/Keybinder.asi)
++- [Komplettes ZIP-Paket herunterladen](../../dist/NLBinder-v0.1.1-KOBiRO-r6.zip)
++- [Installation und Bedienung](../../dist/NLBinder-0.1.1-r6/LIESMICH.md)
++- [Build- und Prüfangaben](../../dist/NLBinder-0.1.1-r6/BUILD-INFO.txt)
++- [Maschinenlesbarer Prüfnachweis](../../dist/NLBinder-0.1.1-r6/PRUEFBERICHT.json)
++- [SHA-256 der ausgelieferten ASI](../../dist/NLBinder-0.1.1-r6/SHA256SUMS.txt)
 +
 +Die Nachweise gehören zum jeweiligen Binärstand: automatisierte Gesamttests,
 +Win32-Release-Build, PE-/Ressourcenvergleich und Reconnect-Helfertest mit
 +harmlosen Testprozessen. Ein echter Ingame-Test mit dem konkreten Server und
-+Launcher steht aus. Die [vorherige r4-Fassung](../../dist/NLBinder-0.1.1-r4/BUILD-INFO.txt)
++Launcher steht aus. Die [vorherige r5-Fassung](../../dist/NLBinder-0.1.1-r5/BUILD-INFO.txt)
 +und ihre Prüfsumme bleiben zur Nachverfolgung erhalten.
 +
 +## Weitere Updates
@@ -2152,6 +2345,41 @@ index 0000000..bbc626a
 +    "StartupStatsSync": 137,
 +    "StatsDialogRPCAdapter": 724,
 +    "native_reconnect_helper": 18
++  },
++  "failures": 0,
++  "pe32_x86_dll": true,
++  "embedded_helper_matches": true,
++  "archive_asi_matches": true,
++  "live_game_test_performed": false
++}
+diff --git a/docs/review/r6-validation.json b/docs/review/r6-validation.json
+new file mode 100644
+index 0000000..fd4b887
+--- /dev/null
++++ b/docs/review/r6-validation.json
+@@ -0,0 +1,29 @@
++{
++  "revision": "v0.1.1-r6",
++  "date": "2026-10-25",
++  "asi_bytes": 18347008,
++  "asi_sha256": "8c489fe45c14a9f45ae9228acd8107538c5323bf6af116d8401cd0cbc7d17620",
++  "full_test_suite_exit_code": 0,
++  "release_build_exit_code": 0,
++  "observed_caption_reproduction": {
++    "r5_rejected_matching_own_identity": true,
++    "r6_accepts_matching_own_identity": true
++  },
++  "focused_checks": {
++    "ServerStatsParser": 156,
++    "StartupStatsSync": 171,
++    "StatsDialogRPCAdapter": 724,
++    "native_reconnect_helper": 18
++  },
++  "full_compressed_rpc_layout_test": {
++    "encoding": "Windows-1252",
++    "distinct_dynamic_player_names": 2,
++    "counter_import_persistence_dialog_close_success_and_testkill": true,
++    "artificial_clock_advance": false
 +  },
 +  "failures": 0,
 +  "pe32_x86_dll": true,
@@ -2998,7 +3226,7 @@ index ab1cdf6..1306be6 100644
  #define IDR_IMAGE_NL_LOGO 103
  #define IDR_GTASA_MAP 104
 diff --git a/include/SAMPBridge.h b/include/SAMPBridge.h
-index dc6b025..cb5b3f1 100644
+index dc6b025..802b155 100644
 --- a/include/SAMPBridge.h
 +++ b/include/SAMPBridge.h
 @@ -2,6 +2,7 @@
@@ -3043,7 +3271,7 @@ index dc6b025..cb5b3f1 100644
  
      // Incoming chat line callback for external consumers (e.g. OnlineEventDetector)
      using IncomingChatCallback = std::function<void(const std::string&)>;
-@@ -139,15 +148,49 @@ public:
+@@ -139,15 +148,50 @@ public:
          std::function<void(sampapi::v03dl::CInput*, sampapi::CMDPROC)> setDefaultCommand;
          std::function<void(const std::function<void(sampapi::v03dl::CChat*, const char*, unsigned long, const char*)>&)> installIncomingChatInterceptor;
          std::function<void(const std::string&)> logSink;
@@ -3071,6 +3299,7 @@ index dc6b025..cb5b3f1 100644
 +    void RequestScriptedHealthSuppressionForTesting();
 +    bool ProcessIncomingChatLineForTesting(const char* prefix, const char* text);
 +    void ProcessStatsDialogForTesting(const keybinder::StatsDialogEvent& event);
++    bool ProcessStatsDialogRpcForTesting(RakNet::BitStream* payload);
  #endif
  
  private:
@@ -3093,7 +3322,7 @@ index dc6b025..cb5b3f1 100644
      struct CommandRegistration {
          std::string name;
          CommandCallback callback;
-@@ -161,7 +204,6 @@ private:
+@@ -161,7 +205,6 @@ private:
      bool TryRegisterDirect(CommandRegistration& registration);
      bool InstallFallbackInterceptor();
      bool InstallSendHook();
@@ -3101,7 +3330,7 @@ index dc6b025..cb5b3f1 100644
      bool HasCommandRouting() const;
      void RestoreFallbackInterceptor();
      bool SendStartupMessage() const;
-@@ -195,6 +237,8 @@ public:
+@@ -195,6 +238,8 @@ public:
      float GetPlayerArmour() const override;
      float GetVehicleHP() const override;
      std::string GetVehicleName() const override;
@@ -3110,7 +3339,7 @@ index dc6b025..cb5b3f1 100644
      int GetTotalKills() const override;
      int GetTotalDeaths() const override;
  
-@@ -208,6 +252,12 @@ private:
+@@ -208,6 +253,12 @@ private:
      void EnsureKillTrackerRpcAdaptersRegistered();
      void RefreshDamageTracking();
      void PollLocalIncomingDamage();
@@ -3123,7 +3352,7 @@ index dc6b025..cb5b3f1 100644
      void InstallScriptedHealthRpcHook();
  
      // Shared state between SAMPBridge and the ScrSetPlayerHealth/Armour RPC
-@@ -218,6 +268,7 @@ private:
+@@ -218,6 +269,7 @@ private:
      // value is a decrease, sets an atomic request that the game thread
      // consumes to arm the detector's one-shot suppression window.
      struct ScriptedHealthSuppressionState {
@@ -3131,7 +3360,7 @@ index dc6b025..cb5b3f1 100644
          std::atomic<float> lastKnownHealth{0.0f};
          std::atomic<float> lastKnownArmour{0.0f};
          std::atomic<bool> suppressionRequested{false};
-@@ -248,7 +299,6 @@ private:
+@@ -248,7 +300,6 @@ private:
      bool fallbackInstalled_;
      bool missingModuleLogged_;
      bool unsupportedVersionLogged_;
@@ -3139,7 +3368,7 @@ index dc6b025..cb5b3f1 100644
      bool shutting_down_ = false;
      sampapi::CMDPROC originalDefaultCommand_;
      std::vector<CommandRegistration> commands_;
-@@ -268,15 +318,13 @@ private:
+@@ -268,15 +319,13 @@ private:
      bool hudScaleFixEnabled_;
  
      bool autoEngineStartEnabled_;
@@ -3159,7 +3388,7 @@ index dc6b025..cb5b3f1 100644
  
      bool killTrackerEnabled_;
      bool killTrackerLocalKillMessageEnabled_;
-@@ -300,13 +348,50 @@ private:
+@@ -300,13 +349,50 @@ private:
      std::function<void(const killtracker::KillEvent&)> hitmarkerKillCallback_;
      std::function<void()> hitsoundIncomingCallback_;
      keybinder::IncomingDamageDetector incomingDamageDetector_;
@@ -3212,10 +3441,10 @@ index dc6b025..cb5b3f1 100644
  };
 diff --git a/include/ServerStatsSnapshot.h b/include/ServerStatsSnapshot.h
 new file mode 100644
-index 0000000..0c2fda7
+index 0000000..64d7800
 --- /dev/null
 +++ b/include/ServerStatsSnapshot.h
-@@ -0,0 +1,357 @@
+@@ -0,0 +1,369 @@
 +#pragma once
 +
 +#include <algorithm>
@@ -3363,12 +3592,24 @@ index 0000000..0c2fda7
 +        return value;
 +    }
 +    static bool EqualName(const std::string& first, const std::string& second) { return Lower(Trim(first)) == Lower(Trim(second)); }
++    static std::size_t CaptionSeparatorAt(const std::string& value, std::size_t at) {
++        if (at >= value.size()) return 0;
++        if (value[at] == ':' || value[at] == '|' || value[at] == '-') return 1;
++        // Nova formats its own stats caption as "Statistiken » Player_Name".
++        // These UTF-8 separators belong to the title, never to the identity.
++        for (const char* separator : {"\xC2\xBB", "\xC2\xAB"})
++            if (value.compare(at, 2, separator) == 0) return 2;
++        return 0;
++    }
 +    static std::string TrimCaptionPart(std::string value) {
 +        value = Trim(value);
-+        while (!value.empty() && (value.front() == ':' || value.front() == '|' || value.front() == '-'))
-+            value = Trim(std::string_view(value).substr(1));
-+        while (!value.empty() && (value.back() == ':' || value.back() == '|' || value.back() == '-')) {
-+            value.pop_back();
++        while (const auto size = CaptionSeparatorAt(value, 0))
++            value = Trim(std::string_view(value).substr(size));
++        while (!value.empty()) {
++            const auto at = value.size() >= 2 && CaptionSeparatorAt(value, value.size() - 2) == 2
++                ? value.size() - 2 : value.size() - 1;
++            if (CaptionSeparatorAt(value, at) == 0) break;
++            value.resize(at);
 +            value = Trim(value);
 +        }
 +        if (value.size() >= 2 && ((value.front() == '(' && value.back() == ')')
@@ -8227,10 +8468,10 @@ index 170bd4a..ac6af10 100644
  
 diff --git a/src/StartupStatsSync.cpp b/src/StartupStatsSync.cpp
 new file mode 100644
-index 0000000..32096e2
+index 0000000..90cbda6
 --- /dev/null
 +++ b/src/StartupStatsSync.cpp
-@@ -0,0 +1,299 @@
+@@ -0,0 +1,302 @@
 +#include "../include/SAMPBridge.h"
 +#include "../include/SettingsManager.h"
 +#include "../include/Logger.h"
@@ -8334,6 +8575,9 @@ index 0000000..32096e2
 +#ifdef KEYBINDER_TESTING
 +void SAMPBridge::ProcessStatsDialogForTesting(const keybinder::StatsDialogEvent& event) {
 +    CaptureStartupStatsDialog(event);
++}
++bool SAMPBridge::ProcessStatsDialogRpcForTesting(RakNet::BitStream* payload) {
++    return statsDialogAdapter_ && statsDialogAdapter_->ProcessRpcForTesting(61, payload);
 +}
 +#endif
 +
@@ -11706,10 +11950,10 @@ index 9773b60..6679bd2 100644
      RUN_TEST(TestWeaponNamesKnownWeapons);
 diff --git a/tests/ServerStatsParserTests.cpp b/tests/ServerStatsParserTests.cpp
 new file mode 100644
-index 0000000..cb714c7
+index 0000000..af3c749
 --- /dev/null
 +++ b/tests/ServerStatsParserTests.cpp
-@@ -0,0 +1,218 @@
+@@ -0,0 +1,220 @@
 +#include "../include/ServerStatsSnapshot.h"
 +
 +#include <cstdio>
@@ -11880,7 +12124,8 @@ index 0000000..cb714c7
 +    const std::string rows = "Kills: 41\nTode: 19";
 +    keybinder::ServerStatsCollector collector;
 +    for (const char* caption : {"Statistiken: Own_Player", "Stats - Own_Player", "Statistik (Own_Player)",
-+                               "Statistiken für Own_Player", "Own_Player", "Nova Legacy | Statistiken"}) {
++                               "Statistiken für Own_Player", "Own_Player", "Nova Legacy | Statistiken",
++                               "Statistiken \xC2\xBB Own_Player", "Own_Player \xC2\xBB Statistiken"}) {
 +        STATS_CHECK(collector.ConsumeDialog(caption, rows, "Own_Player", 1000, true));
 +        STATS_CHECK(collector.Snapshot().HasCounters());
 +    }
@@ -11888,7 +12133,8 @@ index 0000000..cb714c7
 +    STATS_CHECK(collector.Snapshot().kills == 41 && collector.Snapshot().deaths == 19);
 +    STATS_CHECK(!collector.Snapshot().HasCore()); // Missing money never becomes invented zeroes.
 +    for (const char* caption : {"Statistiken: Other_Player", "Stats - Other_Player", "Statistik (Other_Player)",
-+                               "Statistiken für Other_Player", "Other_Player | Statistiken"})
++                               "Statistiken für Other_Player", "Other_Player | Statistiken",
++                               "Statistiken \xC2\xBB Other_Player", "Other_Player \xC2\xBB Statistiken"})
 +        STATS_CHECK(!collector.ConsumeDialog(caption, "*** Own_Player ***\n" + rows, "Own_Player", 1000, true));
 +    STATS_CHECK(!collector.ConsumeDialog("Statistiken", "Spielername:\tOther_Player\n" + rows, "Own_Player", 1000, true));
 +    STATS_CHECK(!collector.ConsumeDialog("Inventar", rows, "Own_Player", 1000, true));
@@ -12170,13 +12416,15 @@ index 6ea6a63..0a18ab8 100644
 +#endif
 diff --git a/tests/StartupStatsSyncTests.cpp b/tests/StartupStatsSyncTests.cpp
 new file mode 100644
-index 0000000..8ce538c
+index 0000000..74d5746
 --- /dev/null
 +++ b/tests/StartupStatsSyncTests.cpp
-@@ -0,0 +1,332 @@
+@@ -0,0 +1,401 @@
 +#include "../include/SAMPBridge.h"
 +#include "../include/SettingsManager.h"
 +#include "../include/RakHook/include/RakHook/samp.hpp"
++#include "../include/RakHook/include/RakNet/BitStream.h"
++#include "../include/RakHook/include/RakNet/StringCompressor.h"
 +#include <cstring>
 +#include <cstdio>
 +#include <new>
@@ -12493,6 +12741,72 @@ index 0000000..8ce538c
 +    bridge.Shutdown();
 +    SAMPBridge::ResetTestingHooks();
 +}
++
++void TestObservedNovaScreenshotLayoutThroughCompressedRpcWithDynamicPlayerName() {
++    // Reproduce the screenshot's layout and game encoding, with synthetic
++    // identities/account values. No screenshot or personal account data is used.
++    for (const char* playerName : {"Fixture_East", "[TAG]Fixture_West"}) {
++        Context context;
++        context.name = playerName;
++        context.ready = true;
++        SAMPBridge::SetTestingHooks(context.Hooks());
++        keybinder::SettingsManager settings;
++        SAMPBridge bridge;
++        bridge.SetSettingsManager(&settings);
++        int saved = 0;
++        bridge.SetStatsSynchronizedCallback([&](const auto& snapshot) {
++            settings.GetMutable().synchronized_player_stats = snapshot;
++            ++saved;
++            return true;
++        });
++        CHECK(bridge.Initialize());
++        bridge.Update();
++        CHECK(context.commands == std::vector<std::string>{"/stats"});
++        const std::string caption = std::string("Statistiken \xBB ") + context.name;
++        const std::string body = "Name: " + context.name + "\nAlter: 0\nGeschlecht: M\xE4nnlich\n"
++            "Level: 17\nErfahrungspunkte: 1234/28176\nN\xE4" "chster Zahltag in:26 Minuten\n\n"
++            "Handynummer: 10000\n\nKills: 73\nTode: 219\n\nFraktion: Testfraktion\nFraktionsrang: Test\n\n"
++            "Bargeld: 12.345$\nKontostand: 67.890$\nGold: 9\nEventcoins: 3\n\nWantedpunkte: 0\n\n"
++            "Offene Rechnungen: Nein\n\nF\xFChrer" "scheine:\nAuto: Nicht vorhanden\nMotorrad: Nicht vorhanden\n"
++            "Flugzeug: Nicht vorhanden\nBoot: Nicht vorhanden\nWaffenschein A: Nicht vorhanden\n"
++            "Waffenschein B: Nicht vorhanden\nWaffenschein C: Nicht vorhanden";
++        auto* dialog = context.dialog.get();
++        dialog->m_bIsActive = TRUE;
++        dialog->m_nId = 789;
++        dialog->m_nType = sampapi::v03dl::CDialog::DIALOG_MESSAGEBOX;
++        std::strcpy(dialog->m_szCaption, caption.c_str());
++        dialog->m_szText = nullptr; // prove the full RPC is sufficient
++        RakNet::BitStream payload;
++        payload.Write(static_cast<unsigned short>(789));
++        payload.Write(static_cast<unsigned char>(0));
++        for (const auto& value : {caption, std::string("Schlie\xDF" "en"), std::string()}) {
++            payload.Write(static_cast<unsigned char>(value.size()));
++            if (!value.empty()) payload.Write(value.data(), static_cast<int>(value.size()));
++        }
++        StringCompressor::Instance()->EncodeString(body.c_str(), 0, &payload);
++        CHECK(bridge.ProcessStatsDialogRpcForTesting(&payload));
++        CHECK(payload.GetReadOffset() == 0);
++        bridge.Update(); // no clock advance or manual dialog close
++        CHECK(bridge.AreStatsSynchronized() && saved == 1);
++        CHECK(context.closed == 1 && !dialog->m_bIsActive);
++        CHECK(context.Completions() == 1);
++        CHECK(bridge.GetTotalKills() == 73 && bridge.GetTotalDeaths() == 219);
++        const auto& snapshot = bridge.GetSynchronizedStats();
++        CHECK(snapshot.playerName == context.name);
++        CHECK(snapshot.cash == 12345 && snapshot.bank == 67890 && snapshot.GetAvailableWealth() == 80235);
++        CHECK(snapshot.level == 17 && snapshot.experience == 1234 && snapshot.nextLevelExperience == 28176);
++        CHECK(snapshot.nextPaydayMinutes == 26 && snapshot.gold == 9 && snapshot.eventcoins == 3 && snapshot.wantedPoints == 0);
++        std::string error;
++        CHECK(bridge.SendSimulatedKillMessage("/r Kills: {total_kills}, Tode: {total_deaths}", error));
++        CHECK(context.commands.back() == "/r [Testkill] Kills: 73, Tode: 219");
++        keybinder::SettingsManager restored;
++        CHECK(restored.LoadFromJson(settings.GetSettingsJson()));
++        CHECK(restored.Get().synchronized_player_stats.playerName == context.name);
++        CHECK(restored.Get().synchronized_player_stats.kills == 73 && restored.Get().synchronized_player_stats.deaths == 219);
++        bridge.Shutdown();
++        SAMPBridge::ResetTestingHooks();
++    }
++}
 +} // namespace
 +
 +int RunStartupStatsSyncTests() {
@@ -12503,6 +12817,7 @@ index 0000000..8ce538c
 +    TestStatsCacheRoundTripAndOldConfigurations();
 +    TestAllStatsDialogStylesImportCloseAndSendRealTotalInSameFrame();
 +    TestManualStatsRecoversAfterTimeoutAndOtherDialogsStayOpen();
++    TestObservedNovaScreenshotLayoutThroughCompressedRpcWithDynamicPlayerName();
 +    std::printf("StartupStatsSyncTests: %d checks, %d failures\n", checks, failures);
 +    return failures;
 +}
@@ -13067,6 +13382,105 @@ index 0000000..80f7e4c
 +- Eigene Startstatistik wird nach Übernahme im selben Update geschlossen
 +- Nach einem Timeout kann ein eigener manueller /stats-Aufruf nachsynchronisieren
 +- Spätere manuelle Statistiken bleiben für den Spieler geöffnet
++
++Die früheren Job-, Skilltree-, Fraktions-, Radar-, Tacho- und Reconnect-
++Anpassungen sind enthalten. Die ursprüngliche Oberfläche bleibt Grundlage.
++Der Reconnect-Helfer ist in der ASI enthalten.
++
++Grenzen: Die Synchronisation wartet auf eine echte Serverantwort. Mehrere
++Schadensereignisse zwischen Messungen erscheinen als gemessener Gesamtverlust.
++Ein Live-Test mit dem konkreten Server und Launcher steht weiterhin aus.
++Installation und weitere Hinweise stehen in LIESMICH.md.
++"@
++$buildInfo | Set-Content -LiteralPath (Join-Path $packageDirectory 'BUILD-INFO.txt') -Encoding utf8
++"$binaryHash  Keybinder.asi" | Set-Content -LiteralPath (Join-Path $packageDirectory 'SHA256SUMS.txt') -Encoding ascii
++Compress-Archive -LiteralPath $packageDirectory -DestinationPath $archive -CompressionLevel Optimal
++
++Add-Type -AssemblyName System.IO.Compression.FileSystem
++$zip = [System.IO.Compression.ZipFile]::OpenRead($archive)
++try {
++    $entry = $zip.Entries | Where-Object { $_.FullName -match '/Keybinder\.asi$' }
++    if (@($entry).Count -ne 1) { throw 'ASI fehlt im Archiv oder ist mehrfach enthalten.' }
++    $stream = $entry.Open()
++    $digest = [System.Security.Cryptography.SHA256]::Create()
++    try {
++        $zippedHash = [BitConverter]::ToString($digest.ComputeHash($stream)).Replace('-', '').ToLowerInvariant()
++        if ($zippedHash -ne $binaryHash) { throw 'ASI-Prüfsumme im Archiv stimmt nicht.' }
++    } finally { $stream.Dispose(); $digest.Dispose() }
++} finally { $zip.Dispose() }
++$stagedHash = (Get-FileHash -LiteralPath (Join-Path $packageDirectory 'Keybinder.asi') -Algorithm SHA256).Hash.ToLowerInvariant()
++if ($stagedHash -ne $binaryHash) { throw 'Kopierte ASI stimmt nicht überein.' }
++Get-Item -LiteralPath (Join-Path $packageDirectory 'Keybinder.asi'), $archive | Select-Object FullName,Length
++Write-Output "SHA256: $binaryHash"
+diff --git a/tools/package_revision6.ps1 b/tools/package_revision6.ps1
+new file mode 100644
+index 0000000..00f77e5
+--- /dev/null
++++ b/tools/package_revision6.ps1
+@@ -0,0 +1,93 @@
++$ErrorActionPreference = 'Stop'
++$projectRoot = Split-Path -Parent $PSScriptRoot
++$binary = Join-Path $projectRoot 'build\Release\Keybinder.asi'
++$reportPath = Join-Path $projectRoot 'build\revision6-artifact.json'
++$report = Get-Content -LiteralPath $reportPath -Raw | ConvertFrom-Json
++$binaryHash = (Get-FileHash -LiteralPath $binary -Algorithm SHA256).Hash.ToLowerInvariant()
++if ($report.revision -ne 'v0.1.1-r6' -or $binaryHash -ne $report.sha256 -or -not $report.embedded_helper_matches) {
++    throw 'Die ASI stimmt nicht mit dem finalen r6-Prüfbericht überein.'
++}
++$helperPath = Join-Path $projectRoot 'build\ReconnectHelper.exe'
++$helperHash = (Get-FileHash -LiteralPath $helperPath -Algorithm SHA256).Hash.ToLowerInvariant()
++if ($helperHash -ne $report.helper_sha256) { throw 'Der Reconnect-Helfer hat sich seit der Artefaktprüfung geändert.' }
++$workerPath = Join-Path $projectRoot 'build\reconnect-worker-tests\result.json'
++$workerResult = Get-Content -LiteralPath $workerPath -Raw | ConvertFrom-Json
++if ($workerResult.failures -ne 0 -or $workerResult.checks -lt 18) { throw 'Reconnect-Helfertest fehlgeschlagen oder unvollständig.' }
++if ((Get-Item -LiteralPath $workerPath).LastWriteTimeUtc -lt (Get-Item -LiteralPath $helperPath).LastWriteTimeUtc) {
++    throw 'Den nativen Helfertest nach dem letzten Helfer-Build erneut ausführen.'
++}
++$testLog = Get-Content -LiteralPath (Join-Path $projectRoot 'build\revision6-tests.log') -Raw
++if ($testLog -notmatch '(?m)^Test exit code: 0\s*$' -or $testLog -match '\[FAIL\]') { throw 'Gesamttests nicht erfolgreich.' }
++$buildLog = Get-Content -LiteralPath (Join-Path $projectRoot 'build\revision6-build.log') -Raw
++if ($buildLog -notmatch '(?m)^RELEASE_BUILD_EXIT_CODE=0\s*$' -or $buildLog -notmatch 'Keybinder\.vcxproj -> .*Keybinder\.asi' -or $buildLog -match ': (fatal )?error [A-Z]+\d+:') {
++    throw 'Erfolgreicher finaler Release-Build nicht bestätigt.'
++}
++
++$packageDirectory = Join-Path $projectRoot 'dist\NLBinder-0.1.1-r6'
++$archive = Join-Path $projectRoot 'dist\NLBinder-v0.1.1-KOBiRO-r6.zip'
++if ((Test-Path -LiteralPath $packageDirectory) -or (Test-Path -LiteralPath $archive)) {
++    throw 'r6-Paket existiert bereits; nicht automatisch überschreiben.'
++}
++New-Item -ItemType Directory -Path $packageDirectory | Out-Null
++Copy-Item -LiteralPath $binary -Destination (Join-Path $packageDirectory 'Keybinder.asi')
++Copy-Item -LiteralPath (Join-Path $projectRoot 'docs\NLBinder-0.1.1-r6-DE.md') -Destination (Join-Path $packageDirectory 'LIESMICH.md')
++Copy-Item -LiteralPath (Join-Path $projectRoot 'docs\jobs-support.md') -Destination (Join-Path $packageDirectory 'JOB-HINWEISE.md')
++Copy-Item -LiteralPath $reportPath -Destination (Join-Path $packageDirectory 'PRUEFBERICHT.json')
++Copy-Item -LiteralPath $workerPath -Destination (Join-Path $packageDirectory 'RECONNECT-TEST.json')
++
++$buildInfo = @"
++NLBinder v.0.1.1 by KOBiRO – Überarbeitung 6
++Erstellt: $([System.TimeZoneInfo]::ConvertTimeBySystemTimeZoneId([DateTime]::UtcNow, 'W. Europe Standard Time').ToString('dd.MM.yyyy HH:mm:ss')) (Europe/Berlin)
++Datei: Keybinder.asi
++Format: Win32 Release, PE32/x86 DLL
++Größe: $($report.bytes) Bytes
++SHA256: $binaryHash
++Eingebetteter Reconnect-Helfer: Ressource 300, $($report.embedded_helper_bytes) Bytes
++Helfer-SHA256: $($report.helper_sha256)
++
++Verifikation:
++- Vollständige automatisierte Tests: Exitcode 0
++- Release-Build: Exitcode 0
++- ASI-Format, Windows-Imports und eingebetteter Helfer geprüft
++- Eingebetteter Reconnect-Helfer stimmt mit dem geprüften Helfer überein
++- Nativer Reconnect-Helfer: $($workerResult.checks) Prüfungen, 0 Fehler
++- Dafür ausschließlich harmlose Testprozesse verwendet
++- Kein echtes Spiel und kein installierter Launcher gestartet oder beendet
++- Kein Ingame-Test durchgeführt
++
++Neue Änderungen:
++- Statistik-Titel mit dem Unicode-Trennzeichen » werden korrekt zugeordnet
++- Eigene Statistik wird nicht mehr wegen dieses Titeltrennzeichens abgewiesen
++- Vollständiger komprimierter RPC-61-Pfad mit anonymisiertem Dialogformat geprüft
++- Import, eigener Dialogabschluss und Testkill verwenden denselben Gesamtstand
++- Der einmalige Motorstart aus r5 bleibt unverändert enthalten
 +
 +Die früheren Job-, Skilltree-, Fraktions-, Radar-, Tacho- und Reconnect-
 +Anpassungen sind enthalten. Die ursprüngliche Oberfläche bleibt Grundlage.
@@ -13718,6 +14132,127 @@ index 0000000..ac2c004
 +    }
 +    report = json.dumps(result, indent=2)
 +    (root / "build/revision5-artifact.json").write_text(report + "\n", encoding="utf-8")
++    print(report)
++
++
++if __name__ == "__main__":
++    main()
+diff --git a/tools/verify_revision6_artifact.py b/tools/verify_revision6_artifact.py
+new file mode 100644
+index 0000000..fc3d7c5
+--- /dev/null
++++ b/tools/verify_revision6_artifact.py
+@@ -0,0 +1,115 @@
++"""Read-only r6 PE/artifact verification; never loads or executes binaries."""
++import hashlib
++import json
++from pathlib import Path
++import struct
++import sys
++
++
++def require(condition, message):
++    if not condition:
++        raise ValueError(message)
++
++
++class PE:
++    def __init__(self, path):
++        self.path = Path(path)
++        self.data = self.path.read_bytes()
++        require(self.data[:2] == b"MZ", "Missing DOS header")
++        start = self.u32(0x3C)
++        require(self.data[start:start + 4] == b"PE\0\0", "Missing PE signature")
++        self.machine = self.u16(start + 4)
++        count = self.u16(start + 6)
++        self.characteristics = self.u16(start + 22)
++        self.optional = start + 24
++        require(self.u16(self.optional) == 0x10B, "Expected PE32")
++        self.sections = []
++        table = self.optional + self.u16(start + 20)
++        for index in range(count):
++            row = table + index * 40
++            virtual_size, rva, size, raw = struct.unpack_from("<IIII", self.data, row + 8)
++            self.sections.append((rva, max(virtual_size, size), raw, size))
++
++    def u16(self, offset):
++        return struct.unpack_from("<H", self.data, offset)[0]
++
++    def u32(self, offset):
++        return struct.unpack_from("<I", self.data, offset)[0]
++
++    def offset(self, rva):
++        for start, span, raw, size in self.sections:
++            if start <= rva < start + span:
++                require(rva - start < size, "RVA has no raw file data")
++                return raw + rva - start
++        raise ValueError(f"Unmapped RVA: {rva:#x}")
++
++    def imports(self):
++        directory = self.u32(self.optional + 96 + 8)
++        if not directory:
++            return []
++        row = self.offset(directory)
++        result = []
++        while any(struct.unpack_from("<IIIII", self.data, row)):
++            name = self.offset(self.u32(row + 12))
++            end = self.data.index(0, name)
++            result.append(self.data[name:end].decode("ascii"))
++            row += 20
++        return sorted(result, key=str.lower)
++
++    def resource(self, type_id, resource_id):
++        base = self.offset(self.u32(self.optional + 96 + 16))
++
++        def entries(relative):
++            head = base + relative
++            total = self.u16(head + 12) + self.u16(head + 14)
++            return [struct.unpack_from("<II", self.data, head + 16 + i * 8) for i in range(total)]
++
++        directory = 0
++        for expected in (type_id, resource_id):
++            candidates = [value for name, value in entries(directory) if name == expected]
++            require(len(candidates) == 1, f"Resource ID {expected} missing or ambiguous")
++            require(candidates[0] & 0x80000000, "Expected resource directory")
++            directory = candidates[0] & 0x7FFFFFFF
++        languages = entries(directory)
++        require(len(languages) == 1, "Expected one embedded worker language")
++        leaf = languages[0][1]
++        require(not leaf & 0x80000000, "Expected resource data entry")
++        rva, size = struct.unpack_from("<II", self.data, base + leaf)
++        start = self.offset(rva)
++        return self.data[start:start + size]
++
++
++def main():
++    root = Path(__file__).resolve().parents[1]
++    asi = PE(sys.argv[1] if len(sys.argv) > 1 else root / "build/Release/Keybinder.asi")
++    helper = PE(root / "build/ReconnectHelper.exe")
++    require(asi.machine == helper.machine == 0x14C, "Expected both binaries to be x86")
++    require(asi.characteristics & 0x2000, "ASI must be a DLL")
++    require(not helper.characteristics & 0x2000, "Worker must be an executable")
++    require(asi.resource(10, 300) == helper.data, "Embedded helper differs from built helper")
++    imports = asi.imports()
++    require(not any(name.lower().startswith(("vcruntime", "msvcp", "ucrtbased")) for name in imports),
++            "Unexpected external C++ runtime dependency")
++    try:
++        display_path = asi.path.resolve().relative_to(root).as_posix()
++    except ValueError:
++        display_path = asi.path.name
++    result = {
++        "revision": "v0.1.1-r6",
++        "asi": display_path,
++        "bytes": len(asi.data),
++        "format": "PE32 x86 DLL",
++        "sha256": hashlib.sha256(asi.data).hexdigest(),
++        "imports": imports,
++        "embedded_helper_id": 300,
++        "embedded_helper_bytes": len(helper.data),
++        "helper_sha256": hashlib.sha256(helper.data).hexdigest(),
++        "embedded_helper_matches": True,
++    }
++    report = json.dumps(result, indent=2)
++    (root / "build/revision6-artifact.json").write_text(report + "\n", encoding="utf-8")
 +    print(report)
 +
 +

@@ -2,24 +2,26 @@
  .gitignore                           |   13 +
  Keybinder.rc                         |    2 +
  Keybinder.vcxproj                    |   13 +-
- README.md                            |  182 ++----
+ README.md                            |  183 ++----
  docs/BUILD-README.md                 |  124 ++++
  docs/NLBinder-0.1.1-DE.md            |   71 +++
  docs/NLBinder-0.1.1-r2-DE.md         |  128 ++++
  docs/NLBinder-0.1.1-r3-DE.md         |  133 ++++
  docs/NLBinder-0.1.1-r4-DE.md         |  165 +++++
  docs/NLBinder-0.1.1-r5-DE.md         |   83 +++
+ docs/NLBinder-0.1.1-r6-DE.md         |   71 +++
  docs/ORIGINAL-README.md              |  121 ++++
  docs/build-dependencies.md           |   24 +
  docs/jobs-support.md                 |   38 ++
- docs/review/CHANGELOG-DE.md          |  375 +++++++++++
+ docs/review/CHANGELOG-DE.md          |  417 ++++++++++++
  docs/review/DEPENDENCIES.md          |   78 +++
- docs/review/PRUEFUNG-DE.md           |  274 ++++++++
+ docs/review/PRUEFUNG-DE.md           |  346 ++++++++++
  docs/review/PUBLICATION.json         |   13 +
  docs/review/PUBLISHING-DE.md         |   34 +
- docs/review/README-GITHUB.md         |   61 ++
+ docs/review/README-GITHUB.md         |   62 ++
  docs/review/r4-validation.json       |   21 +
  docs/review/r5-validation.json       |   20 +
+ docs/review/r6-validation.json       |   29 +
  include/ActionExecutor.h             |    4 +
  include/DamageRPCAdapter.h           |    8 +-
  include/DeathMessageRPCAdapter.h     |    3 +
@@ -41,8 +43,8 @@
  include/OnlineUI.h                   |   10 +-
  include/ReconnectManager.h           |   75 +++
  include/ResourceIds.h                |    1 +
- include/SAMPBridge.h                 |  101 ++-
- include/ServerStatsSnapshot.h        |  357 +++++++++++
+ include/SAMPBridge.h                 |  102 ++-
+ include/ServerStatsSnapshot.h        |  369 +++++++++++
  include/SettingsManager.h            |   44 +-
  include/SpeedometerManager.h         |   19 +-
  include/SpeedometerUI.h              |    1 +
@@ -72,7 +74,7 @@
  src/SpeedometerManager.cpp           |  104 +--
  src/SpeedometerUI.cpp                |   24 +-
  src/SquareMap.cpp                    |    2 +-
- src/StartupStatsSync.cpp             |  299 +++++++++
+ src/StartupStatsSync.cpp             |  302 +++++++++
  src/StatsDialogRPCAdapter.cpp        |  116 ++++
  src/TextDrawAdapter.cpp              |  168 ++---
  tests/JobChatAdapterTests.cpp        |  103 +++
@@ -90,10 +92,10 @@
  tests/ReconnectWorkerFixture.cpp     |   37 ++
  tests/RegressionTests.cpp            |   35 +-
  tests/SAMPBridgeTests.cpp            | 1152 ++++++++++++++++++++++++++++++++++
- tests/ServerStatsParserTests.cpp     |  218 +++++++
+ tests/ServerStatsParserTests.cpp     |  220 +++++++
  tests/SourceContractTests.cpp        |   19 +
  tests/SpeedometerFocusedTests.cpp    |  160 ++++-
- tests/StartupStatsSyncTests.cpp      |  332 ++++++++++
+ tests/StartupStatsSyncTests.cpp      |  401 ++++++++++++
  tests/StatsDialogRPCAdapterTests.cpp |  114 ++++
  tools/ReconnectHelper.cpp            |  185 ++++++
  tools/build_and_test.bat             |    9 +-
@@ -102,10 +104,12 @@
  tools/build_release.bat              |    8 +
  tools/package_revision4.ps1          |   97 +++
  tools/package_revision5.ps1          |   96 +++
+ tools/package_revision6.ps1          |   93 +++
  tools/prepare_github_review.py       |  135 ++++
  tools/run_tests.bat                  |   30 +-
  tools/setup_msvc.bat                 |   16 +
  tools/test_reconnect_worker.py       |  127 ++++
  tools/verify_revision4_artifact.py   |  115 ++++
  tools/verify_revision5_artifact.py   |  115 ++++
- 110 files changed, 9578 insertions(+), 1195 deletions(-)
+ tools/verify_revision6_artifact.py   |  115 ++++
+ 114 files changed, 10089 insertions(+), 1195 deletions(-)

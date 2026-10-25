@@ -1,6 +1,8 @@
 #include "../include/SAMPBridge.h"
 #include "../include/SettingsManager.h"
 #include "../include/RakHook/include/RakHook/samp.hpp"
+#include "../include/RakHook/include/RakNet/BitStream.h"
+#include "../include/RakHook/include/RakNet/StringCompressor.h"
 #include <cstring>
 #include <cstdio>
 #include <new>
@@ -317,6 +319,72 @@ void TestManualStatsRecoversAfterTimeoutAndOtherDialogsStayOpen() {
     bridge.Shutdown();
     SAMPBridge::ResetTestingHooks();
 }
+
+void TestObservedNovaScreenshotLayoutThroughCompressedRpcWithDynamicPlayerName() {
+    // Reproduce the screenshot's layout and game encoding, with synthetic
+    // identities/account values. No screenshot or personal account data is used.
+    for (const char* playerName : {"Fixture_East", "[TAG]Fixture_West"}) {
+        Context context;
+        context.name = playerName;
+        context.ready = true;
+        SAMPBridge::SetTestingHooks(context.Hooks());
+        keybinder::SettingsManager settings;
+        SAMPBridge bridge;
+        bridge.SetSettingsManager(&settings);
+        int saved = 0;
+        bridge.SetStatsSynchronizedCallback([&](const auto& snapshot) {
+            settings.GetMutable().synchronized_player_stats = snapshot;
+            ++saved;
+            return true;
+        });
+        CHECK(bridge.Initialize());
+        bridge.Update();
+        CHECK(context.commands == std::vector<std::string>{"/stats"});
+        const std::string caption = std::string("Statistiken \xBB ") + context.name;
+        const std::string body = "Name: " + context.name + "\nAlter: 0\nGeschlecht: M\xE4nnlich\n"
+            "Level: 17\nErfahrungspunkte: 1234/28176\nN\xE4" "chster Zahltag in:26 Minuten\n\n"
+            "Handynummer: 10000\n\nKills: 73\nTode: 219\n\nFraktion: Testfraktion\nFraktionsrang: Test\n\n"
+            "Bargeld: 12.345$\nKontostand: 67.890$\nGold: 9\nEventcoins: 3\n\nWantedpunkte: 0\n\n"
+            "Offene Rechnungen: Nein\n\nF\xFChrer" "scheine:\nAuto: Nicht vorhanden\nMotorrad: Nicht vorhanden\n"
+            "Flugzeug: Nicht vorhanden\nBoot: Nicht vorhanden\nWaffenschein A: Nicht vorhanden\n"
+            "Waffenschein B: Nicht vorhanden\nWaffenschein C: Nicht vorhanden";
+        auto* dialog = context.dialog.get();
+        dialog->m_bIsActive = TRUE;
+        dialog->m_nId = 789;
+        dialog->m_nType = sampapi::v03dl::CDialog::DIALOG_MESSAGEBOX;
+        std::strcpy(dialog->m_szCaption, caption.c_str());
+        dialog->m_szText = nullptr; // prove the full RPC is sufficient
+        RakNet::BitStream payload;
+        payload.Write(static_cast<unsigned short>(789));
+        payload.Write(static_cast<unsigned char>(0));
+        for (const auto& value : {caption, std::string("Schlie\xDF" "en"), std::string()}) {
+            payload.Write(static_cast<unsigned char>(value.size()));
+            if (!value.empty()) payload.Write(value.data(), static_cast<int>(value.size()));
+        }
+        StringCompressor::Instance()->EncodeString(body.c_str(), 0, &payload);
+        CHECK(bridge.ProcessStatsDialogRpcForTesting(&payload));
+        CHECK(payload.GetReadOffset() == 0);
+        bridge.Update(); // no clock advance or manual dialog close
+        CHECK(bridge.AreStatsSynchronized() && saved == 1);
+        CHECK(context.closed == 1 && !dialog->m_bIsActive);
+        CHECK(context.Completions() == 1);
+        CHECK(bridge.GetTotalKills() == 73 && bridge.GetTotalDeaths() == 219);
+        const auto& snapshot = bridge.GetSynchronizedStats();
+        CHECK(snapshot.playerName == context.name);
+        CHECK(snapshot.cash == 12345 && snapshot.bank == 67890 && snapshot.GetAvailableWealth() == 80235);
+        CHECK(snapshot.level == 17 && snapshot.experience == 1234 && snapshot.nextLevelExperience == 28176);
+        CHECK(snapshot.nextPaydayMinutes == 26 && snapshot.gold == 9 && snapshot.eventcoins == 3 && snapshot.wantedPoints == 0);
+        std::string error;
+        CHECK(bridge.SendSimulatedKillMessage("/r Kills: {total_kills}, Tode: {total_deaths}", error));
+        CHECK(context.commands.back() == "/r [Testkill] Kills: 73, Tode: 219");
+        keybinder::SettingsManager restored;
+        CHECK(restored.LoadFromJson(settings.GetSettingsJson()));
+        CHECK(restored.Get().synchronized_player_stats.playerName == context.name);
+        CHECK(restored.Get().synchronized_player_stats.kills == 73 && restored.Get().synchronized_player_stats.deaths == 219);
+        bridge.Shutdown();
+        SAMPBridge::ResetTestingHooks();
+    }
+}
 } // namespace
 
 int RunStartupStatsSyncTests() {
@@ -327,6 +395,7 @@ int RunStartupStatsSyncTests() {
     TestStatsCacheRoundTripAndOldConfigurations();
     TestAllStatsDialogStylesImportCloseAndSendRealTotalInSameFrame();
     TestManualStatsRecoversAfterTimeoutAndOtherDialogsStayOpen();
+    TestObservedNovaScreenshotLayoutThroughCompressedRpcWithDynamicPlayerName();
     std::printf("StartupStatsSyncTests: %d checks, %d failures\n", checks, failures);
     return failures;
 }

@@ -172,6 +172,7 @@ public:
     void RequestScriptedHealthSuppressionForTesting();
     bool ProcessIncomingChatLineForTesting(const char* prefix, const char* text);
     void ProcessStatsDialogForTesting(const keybinder::StatsDialogEvent& event);
+    bool ProcessStatsDialogRpcForTesting(RakNet::BitStream* payload);
 #endif
 
 private:

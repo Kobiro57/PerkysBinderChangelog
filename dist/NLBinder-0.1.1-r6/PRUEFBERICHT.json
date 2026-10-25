@@ -1,0 +1,22 @@
+{
+  "revision": "v0.1.1-r6",
+  "asi": "Keybinder.asi",
+  "bytes": 18347008,
+  "format": "PE32 x86 DLL",
+  "sha256": "8c489fe45c14a9f45ae9228acd8107538c5323bf6af116d8401cd0cbc7d17620",
+  "imports": [
+    "ADVAPI32.dll",
+    "IMM32.dll",
+    "KERNEL32.dll",
+    "ntdll.dll",
+    "ole32.dll",
+    "SHELL32.dll",
+    "USER32.dll",
+    "WINHTTP.dll",
+    "WS2_32.dll"
+  ],
+  "embedded_helper_id": 300,
+  "embedded_helper_bytes": 101376,
+  "helper_sha256": "643f2159ea58174eae730aa2471aa92ada6665bf8a13bca8faa79ed9b3b3b931",
+  "embedded_helper_matches": true
+}

@@ -168,7 +168,8 @@ void TestStatsCaptionAndOwnIdentityVariantsRejectForeignPlayers() {
     const std::string rows = "Kills: 41\nTode: 19";
     keybinder::ServerStatsCollector collector;
     for (const char* caption : {"Statistiken: Own_Player", "Stats - Own_Player", "Statistik (Own_Player)",
-                               "Statistiken für Own_Player", "Own_Player", "Nova Legacy | Statistiken"}) {
+                               "Statistiken für Own_Player", "Own_Player", "Nova Legacy | Statistiken",
+                               "Statistiken \xC2\xBB Own_Player", "Own_Player \xC2\xBB Statistiken"}) {
         STATS_CHECK(collector.ConsumeDialog(caption, rows, "Own_Player", 1000, true));
         STATS_CHECK(collector.Snapshot().HasCounters());
     }
@@ -176,7 +177,8 @@ void TestStatsCaptionAndOwnIdentityVariantsRejectForeignPlayers() {
     STATS_CHECK(collector.Snapshot().kills == 41 && collector.Snapshot().deaths == 19);
     STATS_CHECK(!collector.Snapshot().HasCore()); // Missing money never becomes invented zeroes.
     for (const char* caption : {"Statistiken: Other_Player", "Stats - Other_Player", "Statistik (Other_Player)",
-                               "Statistiken für Other_Player", "Other_Player | Statistiken"})
+                               "Statistiken für Other_Player", "Other_Player | Statistiken",
+                               "Statistiken \xC2\xBB Other_Player", "Other_Player \xC2\xBB Statistiken"})
         STATS_CHECK(!collector.ConsumeDialog(caption, "*** Own_Player ***\n" + rows, "Own_Player", 1000, true));
     STATS_CHECK(!collector.ConsumeDialog("Statistiken", "Spielername:\tOther_Player\n" + rows, "Own_Player", 1000, true));
     STATS_CHECK(!collector.ConsumeDialog("Inventar", rows, "Own_Player", 1000, true));

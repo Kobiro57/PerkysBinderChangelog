@@ -1,6 +1,6 @@
 # Änderungen am Perkys Binder – NLBinder v.0.1.1 by KOBiRO
 
-Stand: 25. Oktober 2026, Arbeitsfassung **r5 mit einmaligem Motorstart und korrigierter Statistik-Synchronisation**. Die Abschnitte 1 bis 9 dokumentieren die bisherigen Änderungen; Abschnitt 10 beschreibt r4, Abschnitt 11 die anschließenden r5-Korrekturen.
+Stand: 25. Oktober 2026, Arbeitsfassung **r6 mit korrigierter Zuordnung des Statistik-Titels mit `»`**. Die Abschnitte 1 bis 9 dokumentieren die bisherigen Änderungen; Abschnitt 10 beschreibt r4, Abschnitt 11 r5 und Abschnitt 12 die anschließende r6-Korrektur.
 
 Die Grundlage ist der vorhandene Perkys/NLBinder. Die Änderungen erweitern dessen bestehende Oberfläche und verwenden weiterhin die vorhandenen ImGui-Komponenten, Karten, Schalter und Darstellungseinstellungen. Der Ordner KOBiRO_ASI diente als funktionale Referenz für die Overlay-Erweiterung; seine Oberfläche wurde nicht als neue Binder-Oberfläche übernommen.
 
@@ -373,3 +373,45 @@ Die endgültige r5-ASI, Prüfsumme und die zugehörigen Prüfnachweise stehen im
 [r5-Paket](../../dist/NLBinder-0.1.1-r5/BUILD-INFO.txt). Die früheren r4-Werte
 gelten weiterhin ausschließlich für die frühere Binärdatei. Ein echter
 Ingame-Test auf dem konkreten Server steht aus.
+
+## 12. Nachtrag r6 – 25. Oktober 2026
+
+### Eigenen Statistik-Titel mit `»` korrekt zuordnen
+
+Das tatsächliche Statistikfenster verwendet einen Titel im Format
+`Statistiken » Spielername`. Die bisherige Titelbereinigung entfernte das
+Unicode-Trennzeichen `»` vor dem Namen nicht. Der anschließende Namensvergleich
+konnte deshalb die eigene Statistik als fremd abweisen, obwohl im Inhalt der
+richtige Name sowie Kills und Tode standen. Der Import blieb aus, das Fenster
+blieb geöffnet und der automatische Versuch endete im Timeout.
+
+Die Titelbereinigung trennt den Namen jetzt korrekt vom Statistikpräfix.
+Die Prüfung auf eine fremde Spieleridentität bleibt erhalten. Nach Erkennung
+der eigenen Antwort werden die Gesamtzähler übernommen und die eigene
+Startstatistik im selben Update geschlossen. Der importierte Stand steht
+anschließend auch den Textvariablen und **Kill simulieren** zur Verfügung.
+Eine zusätzliche feste Verzögerung wird nicht eingefügt; die Serverantwort
+bleibt erforderlich.
+
+### Vollständigen komprimierten Dialogpfad prüfen
+
+Ein Regressionstest bildet das beobachtete Format mit erfundenem Namen und
+erfundenen Statistikwerten nach. Er führt die komprimierte RPC-61-Nachricht
+durch Dekodierung, Identitätsprüfung, Parser, Zählerübernahme und eigenen
+Dialogabschluss bis zum Testkill mit dem importierten Gesamtstand. Weitere
+Prüfungen grenzen fremde Spielernamen ab. Persönliche Screenshots und die
+ursprünglichen Statistikwerte gehören nicht zur Veröffentlichung.
+
+Quellen: [ServerStatsSnapshot.h](../../include/ServerStatsSnapshot.h),
+[StartupStatsSync.cpp](../../src/StartupStatsSync.cpp),
+[StatsDialogRPCAdapter.cpp](../../src/StatsDialogRPCAdapter.cpp).
+Tests: [ServerStatsParserTests.cpp](../../tests/ServerStatsParserTests.cpp),
+[StartupStatsSyncTests.cpp](../../tests/StartupStatsSyncTests.cpp),
+[StatsDialogRPCAdapterTests.cpp](../../tests/StatsDialogRPCAdapterTests.cpp).
+
+Der einmalige Motorstart aus r5 bleibt unverändert. Frühere Job-, Overlay-,
+Zähler-, Damagelog-, Tacho- und Reconnect-Anpassungen sind weiterhin enthalten.
+Die endgültige r6-ASI und deren eigene Prüfnachweise werden im
+[r6-Paket](../../dist/NLBinder-0.1.1-r6/BUILD-INFO.txt) bereitgestellt. Frühere
+r5-Prüfwerte gelten ausschließlich für die damalige ASI. Ein echter
+Ingame-Test mit dem konkreten Server und Launcher steht aus.

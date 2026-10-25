@@ -145,12 +145,24 @@ private:
         return value;
     }
     static bool EqualName(const std::string& first, const std::string& second) { return Lower(Trim(first)) == Lower(Trim(second)); }
+    static std::size_t CaptionSeparatorAt(const std::string& value, std::size_t at) {
+        if (at >= value.size()) return 0;
+        if (value[at] == ':' || value[at] == '|' || value[at] == '-') return 1;
+        // Nova formats its own stats caption as "Statistiken » Player_Name".
+        // These UTF-8 separators belong to the title, never to the identity.
+        for (const char* separator : {"\xC2\xBB", "\xC2\xAB"})
+            if (value.compare(at, 2, separator) == 0) return 2;
+        return 0;
+    }
     static std::string TrimCaptionPart(std::string value) {
         value = Trim(value);
-        while (!value.empty() && (value.front() == ':' || value.front() == '|' || value.front() == '-'))
-            value = Trim(std::string_view(value).substr(1));
-        while (!value.empty() && (value.back() == ':' || value.back() == '|' || value.back() == '-')) {
-            value.pop_back();
+        while (const auto size = CaptionSeparatorAt(value, 0))
+            value = Trim(std::string_view(value).substr(size));
+        while (!value.empty()) {
+            const auto at = value.size() >= 2 && CaptionSeparatorAt(value, value.size() - 2) == 2
+                ? value.size() - 2 : value.size() - 1;
+            if (CaptionSeparatorAt(value, at) == 0) break;
+            value.resize(at);
             value = Trim(value);
         }
         if (value.size() >= 2 && ((value.front() == '(' && value.back() == ')')

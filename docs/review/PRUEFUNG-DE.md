@@ -1,8 +1,80 @@
 # Hinweise zur Prüfung durch die Projektleitung
 
-## Aktueller Stand r5 – 25. Oktober 2026
+## Aktueller Stand r6 – 25. Oktober 2026
 
-Der aktuelle Quellstand ist **NLBinder v.0.1.1 by KOBiRO, r5**. Die
+Der aktuelle Quellstand ist **NLBinder v.0.1.1 by KOBiRO, r6**. Die
+[Bedienungsbeschreibung](../NLBinder-0.1.1-r6-DE.md) und der
+[r6-Nachtrag der Änderungsübersicht](CHANGELOG-DE.md#12-nachtrag-r6--25-oktober-2026)
+beschreiben die Korrektur seit r5. Die historischen Prüfwerte der früheren
+Stände bleiben in den nachfolgenden Abschnitten erhalten.
+
+### Konkreter Fehler und Korrektur
+
+Der tatsächlich beobachtete Statistik-Titel hat das Format
+`Statistiken » Spielername`. `TrimCaptionPart` entfernte das Unicode-Trennzeichen
+`»` bisher nicht. Dadurch wurde beim anschließenden Identitätsvergleich ein
+falscher Spielername verglichen und die eigene Antwort konnte als fremd
+abgelehnt werden. Die Korrektur bereinigt das Trennzeichen vor diesem
+Vergleich. Fremde Spieleridentitäten bleiben ausgeschlossen.
+
+Nach Erkennung der eigenen Antwort laufen Zählerimport und Schließen der
+eigenen Startstatistik im selben Update. Der importierte Gesamtstand wird
+anschließend auch in Textvariablen und Testkill verwendet. Es gibt keine
+zusätzliche feste Wartepause, aber weiterhin die notwendige Serverantwort.
+Der einmalige Motorstart und die übrigen r5-Funktionen sind unverändert.
+
+### r6-Prüfpfade und Datenschutz
+
+| Bereich | Implementierung | Tests |
+| --- | --- | --- |
+| Titeltrennzeichen und eigene/fremde Identität | [ServerStatsSnapshot.h](../../include/ServerStatsSnapshot.h) | [ServerStatsParserTests.cpp](../../tests/ServerStatsParserTests.cpp) |
+| Komprimierter vollständiger RPC-61-Dialog | [StatsDialogRPCAdapter.cpp](../../src/StatsDialogRPCAdapter.cpp) | [StatsDialogRPCAdapterTests.cpp](../../tests/StatsDialogRPCAdapterTests.cpp), [StartupStatsSyncTests.cpp](../../tests/StartupStatsSyncTests.cpp) |
+| Zählerimport, eigener Dialogabschluss und Testkill | [StartupStatsSync.cpp](../../src/StartupStatsSync.cpp), [SAMPBridge.cpp](../../src/SAMPBridge.cpp) | [StartupStatsSyncTests.cpp](../../tests/StartupStatsSyncTests.cpp) |
+| Binär- und Paketgleichheit | [verify_revision6_artifact.py](../../tools/verify_revision6_artifact.py), [package_revision6.ps1](../../tools/package_revision6.ps1) | PE32/x86, eingebetteter Helfer, SHA-256 |
+
+Der vollständige Dialogtest verwendet dasselbe Nachrichtenformat mit
+erfundenem Spielernamen und erfundenen Werten. Er verbindet die komprimierte
+RPC-Dekodierung mit Parser, Zählerimport, eigenem Dialogabschluss und Testkill.
+Persönliche Screenshots und die tatsächlichen Statistikwerte werden nicht in
+das Repository übernommen.
+
+Die finale r6-Datei wird mit ihren eigenen Nachweisen bereitgestellt:
+
+- [Keybinder.asi](../../dist/NLBinder-0.1.1-r6/Keybinder.asi)
+- [SHA-256](../../dist/NLBinder-0.1.1-r6/SHA256SUMS.txt)
+- [Build- und Prüfangaben](../../dist/NLBinder-0.1.1-r6/BUILD-INFO.txt)
+- [PE-/Import-/Ressourcenprüfung](../../dist/NLBinder-0.1.1-r6/PRUEFBERICHT.json)
+- [Nativer Helfertest](../../dist/NLBinder-0.1.1-r6/RECONNECT-TEST.json)
+
+### Ausgeführte Prüfungen für r6
+
+Die Titelablehnung wurde zunächst mit dem bisherigen r5-Parser reproduziert:
+`Statistiken » Fixture_Player` wurde trotz passender eigener Namenszeile und
+Zähler abgelehnt. Mit dem korrigierten Parser wird dieselbe Eingabe angenommen.
+
+Die vollständige Testsuite und der Win32-Release-Build endeten mit Exitcode 0.
+Der Statistikparser meldet 156 erfolgreiche Prüfungen, die Synchronisation
+171 und der Dialog-RPC-Adapter 724, jeweils ohne Fehler. Der neue vollständige
+Test verwendet zwei unterschiedliche Ingame-Namen, darunter einen Namen mit
+Clanpräfix, einen komprimierten CP1252-Dialog im beobachteten Layout und keine
+vorab aufbereiteten Dialogereignisse. Er bestätigt ohne Zeitfortschritt:
+Zählerimport, lokales Speichern, Dialogabschluss, Erfolgsmeldung und Testkill
+mit den tatsächlich importierten Gesamtständen. Fremde Namen bleiben in den
+Regressionstests ausgeschlossen.
+
+Die geprüfte ASI umfasst 18.347.008 Bytes; SHA-256:
+`8c489fe45c14a9f45ae9228acd8107538c5323bf6af116d8401cd0cbc7d17620`.
+PE32/x86, Windows-Imports und der eingebettete Helfer sind geprüft. Der native
+Helfertest besteht aus 18 erfolgreichen Prüfungen mit harmlosen Testprozessen.
+Die separat ausgelieferte ASI und die ASI im ZIP haben dieselbe Prüfsumme.
+[Maschinenlesbare Ergebnisse](r6-validation.json) ergänzen die Paketnachweise.
+
+Die folgenden r5-Werte gelten nur für deren frühere Binärdatei. Ein echter
+Ingame-Test mit dem konkreten Server und Launcher steht aus.
+
+## Historischer Prüfstand r5 – 25. Oktober 2026
+
+Der damalige Quellstand ist **NLBinder v.0.1.1 by KOBiRO, r5**. Die
 [Bedienungsbeschreibung](../NLBinder-0.1.1-r5-DE.md) und der
 [r5-Nachtrag der Änderungsübersicht](CHANGELOG-DE.md#11-nachtrag-r5--25-oktober-2026)
 beschreiben die Änderungen seit r4. Die folgenden r4- und r3-Abschnitte

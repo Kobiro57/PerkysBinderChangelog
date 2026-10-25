@@ -102,6 +102,9 @@ void SAMPBridge::CaptureStartupStatsDialog(const keybinder::StatsDialogEvent& ev
 void SAMPBridge::ProcessStatsDialogForTesting(const keybinder::StatsDialogEvent& event) {
     CaptureStartupStatsDialog(event);
 }
+bool SAMPBridge::ProcessStatsDialogRpcForTesting(RakNet::BitStream* payload) {
+    return statsDialogAdapter_ && statsDialogAdapter_->ProcessRpcForTesting(61, payload);
+}
 #endif
 
 bool SAMPBridge::AcceptStartupStatsDialog(const keybinder::StatsDialogEvent& event, unsigned long now) {
