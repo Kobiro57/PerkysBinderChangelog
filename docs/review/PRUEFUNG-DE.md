@@ -1,8 +1,92 @@
 # Hinweise zur Prüfung durch die Projektleitung
 
-## Aktueller Stand r6 – 25. Oktober 2026
+## Aktueller Stand r7 – 25. Oktober 2026
 
-Der aktuelle Quellstand ist **NLBinder v.0.1.1 by KOBiRO, r6**. Die
+Der aktuelle Quellstand ist **NLBinder v.0.1.1 by KOBiRO, r7**.
+[Bedienung und Installation](../NLBinder-0.1.1-r7-DE.md) sowie der
+[r7-Nachtrag](CHANGELOG-DE.md#13-nachtrag-r7--25-oktober-2026) beschreiben
+Waffenicons, Wanted-Dialogfolge und die ergänzten Startabgleiche. Die früheren
+r6-/r5-Nachweise bleiben als historische Prüfstände erhalten.
+
+### Verhalten und prüfbarer Umfang
+
+- **Waffenicons:** 43 Waffenordner, PNG-Auswahl pro Waffe und globale sowie
+  einzelne Aktivierung unter `Dokumente/GTA San Andreas User Files/NLBinder/Waffenicons/`.
+  Der Button zum Ordneröffnen berücksichtigt die tatsächliche Windows-
+  Dokumente-Umleitung, etwa OneDrive. Die HUD-Geometrie bleibt Grundlage; es werden keine
+  Spielarchive verändert. Ohne ladbares Bild bleibt das Original erhalten.
+  Gespeicherte Pfade sind auf den passenden Waffenordner begrenzt. Persönliche
+  PNGs gehören nicht in das Repository oder das vorbereitete Ordnerpaket.
+- **`/speed ID`:** Die drei gezeigten Dialoge werden anhand von Titeln und
+  Eintragstexten verarbeitet. Auf ausdrücklichen Benutzerwunsch wird die
+  abschließende Eingabe über **Vergeben** genau einmal abgesendet. Der Vorgang
+  vergibt beim passenden Server-Tatbestand 15 Wantedpunkte und misst selbst
+  keine Geschwindigkeit. Fehler, Unterbrechungen und unerwartete Dialoge
+  dürfen keine weiteren Bestätigungen auslösen.
+- **Startabgleich:** Nach `/stats` werden die vorhandenen `/jobskills`
+  eingelesen. Bekannte Job-Skillstände werden absolut übernommen und im Feed
+  sichtbar gemacht, ohne daraus neue Einkünfte oder doppelte Verdienst-
+  Ereignisse abzuleiten. Unbekannte Namen werden nicht erfunden.
+- **Motorstart:** Die Einmal-Begrenzung pro Einstieg bleibt erhalten. Eine
+  bestätigte serverseitige Addon-Motorstartmeldung verhindert einen weiteren
+  Motor-Toggle durch den Binder.
+
+### r7-Prüfpfade
+
+| Bereich | Implementierung | Tests |
+| --- | --- | --- |
+| Waffenbibliothek und native Anzeige | [WeaponIconManager.cpp](../../src/WeaponIconManager.cpp), [WeaponIconCatalog.h](../../include/WeaponIconCatalog.h) | [WeaponIconManagerTests.cpp](../../tests/WeaponIconManagerTests.cpp) |
+| Vorschau, Auswahl und Einstellungen | [WeaponIconsUI.cpp](../../src/WeaponIconsUI.cpp), [SettingsManager.cpp](../../src/SettingsManager.cpp) | [WeaponIconSettingsTests.cpp](../../tests/WeaponIconSettingsTests.cpp) |
+| Wanted-Zustandsfolge und Einmal-Absendung | [SpeedTicketFlow.cpp](../../src/SpeedTicketFlow.cpp), [SAMPBridge.cpp](../../src/SAMPBridge.cpp) | [SpeedTicketFlowTests.cpp](../../tests/SpeedTicketFlowTests.cpp) |
+| Job-Skillpunkte als Ausgangsstände | [JobSkillsSnapshot.h](../../include/JobSkillsSnapshot.h), [JobTracker.cpp](../../src/JobTracker.cpp), [StartupStatsSync.cpp](../../src/StartupStatsSync.cpp) | [JobSkillsSnapshotTests.cpp](../../tests/JobSkillsSnapshotTests.cpp) |
+| Bestätigter Motorstart | [SAMPBridge.cpp](../../src/SAMPBridge.cpp) | [SAMPBridgeTests.cpp](../../tests/SAMPBridgeTests.cpp) |
+| ASI, Helfer und Paket | [verify_revision7_artifact.py](../../tools/verify_revision7_artifact.py), [package_revision7.ps1](../../tools/package_revision7.ps1) | PE32/x86, Ressource 300, Helfer-/Paket-SHA-256 und 43 Ordner |
+
+### Zugehörige finale Paketnachweise
+
+- [Keybinder.asi](../../dist/NLBinder-0.1.1-r7/Keybinder.asi)
+- [SHA-256](../../dist/NLBinder-0.1.1-r7/SHA256SUMS.txt)
+- [Build- und Prüfangaben](../../dist/NLBinder-0.1.1-r7/BUILD-INFO.txt)
+- [PE-/Import-/Ressourcenprüfung](../../dist/NLBinder-0.1.1-r7/PRUEFBERICHT.json)
+- [Nativer Helfertest](../../dist/NLBinder-0.1.1-r7/RECONNECT-TEST.json)
+
+### Ausgeführte Prüfungen für r7
+
+Gesamttests und Win32-Release-Build endeten mit Exitcode 0. Die SAMPBridge-
+Suite meldet 435 erfolgreiche Prüfungen, einschließlich sechs Fällen zur
+Server-Addon-Motorstartmeldung. Die kombinierte Dialog-/Synchronisationssuite
+meldet 252 Prüfungen; sie dekodiert die drei komprimierten Wanted-Dialoge und
+kontrolliert die tatsächlichen drei Antwortpakete einschließlich Spieler-ID
+und genau einer finalen Bestätigung. Sie prüft außerdem die Reihenfolge
+`/stats` → `/jobskills`, den absoluten Jobstand im Feed, erhaltene Einnahmen
+und ausbleibende Duplikate beim wiederholten Import.
+
+Weitere erfolgreiche Prüfungen: Dialog-RPC 727, Wanted-Zustandsfolge 109,
+Waffenicons-Laufzeit/Bibliothek 245, Waffenicon-Einstellungen 29, Jobskills-
+Parser 64 und Jobskills-Import/Persistenz 17. Alle meldeten 0 Fehler.
+
+Die geprüfte ASI umfasst 18.420.224 Bytes; SHA-256:
+`abdcca5a0f89ea6e2391834199eef83f267dfee4ac05e28cff7a946b3db9341d`.
+PE32/x86, Windows-Imports und der bytegleiche eingebettete Helfer sind geprüft.
+Der native Helfertest umfasst 18 erfolgreiche Prüfungen mit harmlosen
+Testprozessen. Die ASI im ZIP entspricht der separaten Datei; das ZIP enthält
+43 leere Waffenordner und deren Anleitung. [Maschinenlesbare Ergebnisse](r7-validation.json)
+ergänzen die Paketnachweise.
+
+Die Dialogantwortstruktur richtet sich nach der
+[offiziellen open.mp-Protokollquelle](https://github.com/openmultiplayer/open.mp/blob/master/Shared/NetCode/dialog.hpp).
+Der native Zeichnungspfad wurde anhand der lokalen plugin-sdk-Quellen und
+[GTA-Reversed: Hud.cpp](https://github.com/gta-reversed/gta-reversed/blob/master/source/game_sa/Hud.cpp)
+geprüft. Die ursprünglichen Lizenz- und Urheberhinweise bleiben erhalten.
+
+Frühere Ergebnisse gelten ausschließlich für ihre älteren ASIs. Ein echter
+Ingame-Test mit dem konkreten Server und Launcher steht aus. Die Tests
+verwenden synthetische Daten statt persönlicher Screenshots, Kontowerte oder
+PNG-Sammlungen.
+
+## Historischer Prüfstand r6 – 25. Oktober 2026
+
+Der damalige Quellstand ist **NLBinder v.0.1.1 by KOBiRO, r6**. Die
 [Bedienungsbeschreibung](../NLBinder-0.1.1-r6-DE.md) und der
 [r6-Nachtrag der Änderungsübersicht](CHANGELOG-DE.md#12-nachtrag-r6--25-oktober-2026)
 beschreiben die Korrektur seit r5. Die historischen Prüfwerte der früheren

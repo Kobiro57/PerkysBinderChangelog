@@ -15,6 +15,7 @@
 #include <type_traits>
 #include "../include/Logger.h"
 #include "../include/SpeedometerManager.h"
+#include "../include/WeaponIconCatalog.h"
 
 namespace keybinder {
 
@@ -1629,6 +1630,34 @@ bool SettingsManager::LoadFromJson(const std::string& json_content) {
     ParseFloatField(json_content, "\"online_pedslots_overlay_offset_y\"", settings_.online_pedslots_overlay_offset_y);
     if (!std::isfinite(settings_.online_pedslots_overlay_offset_y)) settings_.online_pedslots_overlay_offset_y = 12.0f;
 
+    bool foundWeaponIconSettings = ParseBoolField(json_content, "\"weapon_icons_enabled\"", settings_.weapon_icons_enabled);
+    settings_.weapon_icon_selections.clear();
+    std::string weaponIconsArray;
+    if (ExtractJsonArrayField(json_content, "\"weapon_icon_selections\"", weaponIconsArray)) {
+        foundWeaponIconSettings = true;
+        std::size_t position = 0;
+        while (settings_.weapon_icon_selections.size() < 46) {
+            const auto start = weaponIconsArray.find('{', position);
+            if (start == std::string::npos) break;
+            const auto end = FindMatchingDelimiter(weaponIconsArray, start, '{', '}');
+            if (end == std::string::npos) break;
+            const std::string object = weaponIconsArray.substr(start, end - start + 1);
+            WeaponIconSelection selection;
+            ParseIntField(object, "\"weapon_id\"", selection.weaponId);
+            ParseStringField(object, "\"path\"", selection.path);
+            ParseBoolField(object, "\"enabled\"", selection.enabled);
+            const std::string normalized = NormalizeWeaponIconPath(selection.weaponId, selection.path);
+            const bool duplicate = std::any_of(settings_.weapon_icon_selections.begin(), settings_.weapon_icon_selections.end(),
+                [&](const WeaponIconSelection& previous) { return previous.weaponId == selection.weaponId; });
+            if (FindWeaponIconDefinition(selection.weaponId) && !duplicate) {
+                if (!selection.path.empty() && normalized.empty()) selection.enabled = false;
+                selection.path = normalized;
+                settings_.weapon_icon_selections.push_back(std::move(selection));
+            }
+            position = end + 1;
+        }
+    }
+
     settings_.online_player_markers.clear();
     std::string markersArray;
     if (ExtractJsonArrayField(json_content, "\"online_player_markers\"", markersArray)) {
@@ -1928,7 +1957,7 @@ bool SettingsManager::LoadFromJson(const std::string& json_content) {
         }
     }
 
-    if (found_dpi || found_auto || found_ui_open_command_primary || found_ui_open_command_secondary || found_ui_toggle_hotkey || found_ui_window_width || found_ui_window_height || found_ui_transparency || found_kill_tracker || found_local_kill_message_enabled || found_local_death_message_enabled || found_server_kill_message_enabled || found_server_death_message_enabled || found_track_damage || found_local_kill_message_template || found_local_death_message_template || found_server_kill_message_template || found_server_death_message_template || found_manual_edits || found_auto_hudscalefix || found_auto_engine_start || found_damage_log_enabled || found_quickmap_enabled || found_quickmap_hotkey || found_quickmap_mode || found_quickmap_map_variant || found_quickmap_map_transparency || found_quickmap_radar_pack || found_hitmarker_enabled || found_hitmarker_active_preset_index || found_hitmarker_size || found_hitmarker_color_r || found_hitmarker_color_g || found_hitmarker_color_b || found_hitmarker_color_a || found_hitmarker_kill_color_r || found_hitmarker_kill_color_g || found_hitmarker_kill_color_b || found_hitmarker_kill_color_a || found_hitmarker_opacity || found_hitmarker_duration || found_hitmarker_fade_out || found_hitmarker_shape || found_hitmarker_custom_image_path || found_interface_editor_active_preset_index || found_interface_editor_saved_presets || found_crosshair_enabled || found_crosshair_texture_path || found_squaremap_enabled || found_fist_texture_path || found_hitsound_outgoing_enabled || found_hitsound_outgoing_path || found_hitsound_incoming_enabled || found_hitsound_incoming_path || found_rss_enabled || found_rss_notification_mode || found_rss_feeds || found_theme_name || found_legacy_theme_selected || found_legacy_theme_accent_mode || found_legacy_theme_accent_preset) {
+    if (foundWeaponIconSettings || found_dpi || found_auto || found_ui_open_command_primary || found_ui_open_command_secondary || found_ui_toggle_hotkey || found_ui_window_width || found_ui_window_height || found_ui_transparency || found_kill_tracker || found_local_kill_message_enabled || found_local_death_message_enabled || found_server_kill_message_enabled || found_server_death_message_enabled || found_track_damage || found_local_kill_message_template || found_local_death_message_template || found_server_kill_message_template || found_server_death_message_template || found_manual_edits || found_auto_hudscalefix || found_auto_engine_start || found_damage_log_enabled || found_quickmap_enabled || found_quickmap_hotkey || found_quickmap_mode || found_quickmap_map_variant || found_quickmap_map_transparency || found_quickmap_radar_pack || found_hitmarker_enabled || found_hitmarker_active_preset_index || found_hitmarker_size || found_hitmarker_color_r || found_hitmarker_color_g || found_hitmarker_color_b || found_hitmarker_color_a || found_hitmarker_kill_color_r || found_hitmarker_kill_color_g || found_hitmarker_kill_color_b || found_hitmarker_kill_color_a || found_hitmarker_opacity || found_hitmarker_duration || found_hitmarker_fade_out || found_hitmarker_shape || found_hitmarker_custom_image_path || found_interface_editor_active_preset_index || found_interface_editor_saved_presets || found_crosshair_enabled || found_crosshair_texture_path || found_squaremap_enabled || found_fist_texture_path || found_hitsound_outgoing_enabled || found_hitsound_outgoing_path || found_hitsound_incoming_enabled || found_hitsound_incoming_path || found_rss_enabled || found_rss_notification_mode || found_rss_feeds || found_theme_name || found_legacy_theme_selected || found_legacy_theme_accent_mode || found_legacy_theme_accent_preset) {
         Logger::Info("[SettingsManager] Loaded settings (ui_primary=/%s, ui_secondary=/%s, ui_hotkey=%d, kill_tracker_enabled=%s, local_kill=%s, local_death=%s, server_kill=%s, server_death=%s, kill_tracker_track_damage=%s, kill_tracker_allow_manual_edits=%s, auto_hudscalefix=%s, auto_engine_start=%s, hitmarker_enabled=%s)",
             settings_.ui_open_command_primary.c_str(),
             settings_.ui_open_command_secondary.c_str(),
@@ -2092,6 +2121,24 @@ std::string SettingsManager::GetSettingsJson() const {
     oss << "    \"interface_editor_active_preset_index\": " << settings_.interface_editor_active_preset_index << ",\n";
     oss << "    \"crosshair_enabled\": " << (settings_.crosshair_enabled ? "true" : "false") << ",\n";
     oss << "    \"crosshair_texture_path\": \"" << EscapeJsonString(settings_.crosshair_texture_path) << "\",\n";
+    oss << "    \"weapon_icons_enabled\": " << (settings_.weapon_icons_enabled ? "true" : "false") << ",\n";
+    oss << "    \"weapon_icon_selections\": [";
+    bool firstWeaponIcon = true;
+    std::vector<int> savedWeaponIds;
+    for (const auto& selection : settings_.weapon_icon_selections) {
+        if (!FindWeaponIconDefinition(selection.weaponId)
+            || std::find(savedWeaponIds.begin(), savedWeaponIds.end(), selection.weaponId) != savedWeaponIds.end()) continue;
+        const std::string normalized = NormalizeWeaponIconPath(selection.weaponId, selection.path);
+        const bool enabled = selection.enabled && (selection.path.empty() || !normalized.empty());
+        if (!firstWeaponIcon) oss << ',';
+        oss << "\n      {\"weapon_id\": " << selection.weaponId
+            << ", \"path\": \"" << EscapeJsonString(normalized)
+            << "\", \"enabled\": " << (enabled ? "true" : "false") << '}';
+        firstWeaponIcon = false;
+        savedWeaponIds.push_back(selection.weaponId);
+    }
+    if (!firstWeaponIcon) oss << "\n    ";
+    oss << "],\n";
     oss << "    \"squaremap_enabled\": " << (settings_.squaremap_enabled ? "true" : "false") << ",\n";
     oss << "    \"quickmap_radar_pack\": \"" << EscapeJsonString(settings_.quickmap_radar_pack) << "\",\n";
     oss << "    \"fist_texture_path\": \"" << EscapeJsonString(settings_.fist_texture_path) << "\",\n";

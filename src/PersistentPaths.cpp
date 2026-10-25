@@ -23,6 +23,7 @@ constexpr const char* kImGuiIniFileName = "imgui.ini";
 constexpr const char* kHitmarkersFolderName = "hitmarkers";
 constexpr const char* kCrosshairsFolderName = "crosshairs";
 constexpr const char* kFistsFolderName = "fists";
+constexpr const char* kWeaponIconsFolderName = "Waffenicons";
 constexpr const char* kHitsoundsFolderName = "hitsounds";
 
 bool IsSeparator(char ch) {
@@ -224,6 +225,11 @@ std::string HitsoundsDir() {
     return JoinPath(rootDir, kHitsoundsFolderName);
 }
 
+std::string WeaponIconsDir() {
+    const std::string rootDir = RootDir();
+    return rootDir.empty() ? std::string() : JoinPath(rootDir, kWeaponIconsFolderName);
+}
+
 std::string EnsureLayout() {
     const std::string rootDir = RootDir();
     if (rootDir.empty()) {
@@ -243,6 +249,10 @@ std::string EnsureLayout() {
     }
 
     if (!EnsureDirectoryRecursive(FistsDir())) {
+        return {};
+    }
+
+    if (!EnsureDirectoryRecursive(WeaponIconsDir())) {
         return {};
     }
 

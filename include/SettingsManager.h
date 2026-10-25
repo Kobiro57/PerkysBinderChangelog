@@ -44,6 +44,12 @@ struct OnlinePlayerMarker {
     bool friendly = false;
 };
 
+struct WeaponIconSelection {
+    int weaponId = -1;
+    std::string path;
+    bool enabled = true;
+};
+
 struct Settings {
     float dpi_scale = 1.0f;
     bool auto_detect_dpi = true;
@@ -111,6 +117,9 @@ struct Settings {
 
     bool crosshair_enabled = false;
     std::string crosshair_texture_path = "";
+
+    bool weapon_icons_enabled = false;
+    std::vector<WeaponIconSelection> weapon_icon_selections;
 
     bool squaremap_enabled = false;
     std::string quickmap_radar_pack = "radar1";

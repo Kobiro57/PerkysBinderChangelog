@@ -1715,6 +1715,220 @@ bool TestAutoEngineStartDoesNotRestartManuallyStoppedEngine() {
     return true;
 }
 
+const char* kServerAutoEngineNotice = "INFO: Automatischer Motorstart: Der Motor deines Fahrzeugs wurde automatisch gestartet.";
+
+bool TestServerAutoEngineNoticeConsumesCurrentEntryBeforeLaggingEngineFlag() {
+    MockContext context;
+    auto hooks = context.BuildHooks();
+    unsigned long now = 1000;
+    std::vector<bool> keys;
+    hooks.getTickCount = [&]() { return now; };
+    hooks.getDriverVehicle = [](unsigned short& id, bool& running) { id = 30; running = false; return true; };
+    hooks.isEngineInputAvailable = []() { return true; };
+    hooks.setEngineStartKeyDown = [&](bool down) { keys.push_back(down); };
+    SAMPBridge::SetTestingHooks(hooks);
+    SAMPBridge bridge;
+    bridge.SetAutoEngineStart(true);
+    ASSERT_TRUE(bridge.Initialize());
+    bridge.Update();
+    now = 1100;
+    ASSERT_TRUE(bridge.ProcessIncomingChatLineForTesting(nullptr, kServerAutoEngineNotice));
+    bridge.Update();
+    for (const auto tick : {2500UL, 5000UL, 20000UL}) { now = tick; bridge.Update(); }
+    ASSERT_TRUE(keys.empty());
+    bridge.SetAutoEngineStart(false);
+    bridge.SetAutoEngineStart(true);
+    now = 30000;
+    bridge.Update();
+    ASSERT_TRUE(keys.empty());
+    bridge.Shutdown();
+    SAMPBridge::ResetTestingHooks();
+    return true;
+}
+
+bool TestServerAutoEngineNoticeImmediatelyBeforeFirstDriverFrameAndNextEntry() {
+    MockContext context;
+    auto hooks = context.BuildHooks();
+    unsigned long now = 1000;
+    bool driver = false;
+    std::vector<bool> keys;
+    hooks.getTickCount = [&]() { return now; };
+    hooks.getDriverVehicle = [&](unsigned short& id, bool& running) { id = 31; running = false; return driver; };
+    hooks.isEngineInputAvailable = []() { return true; };
+    hooks.setEngineStartKeyDown = [&](bool down) { keys.push_back(down); };
+    SAMPBridge::SetTestingHooks(hooks);
+    SAMPBridge bridge;
+    bridge.SetAutoEngineStart(true);
+    ASSERT_TRUE(bridge.Initialize());
+    bridge.Update();
+    now = 1100;
+    bridge.ProcessIncomingChatLineForTesting(nullptr, kServerAutoEngineNotice);
+    bridge.Update(); // native seat is not ready yet
+    driver = true;
+    now = 1200;
+    bridge.Update();
+    now = 3000;
+    bridge.Update();
+    ASSERT_TRUE(keys.empty());
+    driver = false;
+    now = 3100;
+    bridge.Update();
+    driver = true;
+    now = 3200;
+    bridge.Update();
+    now = 4700;
+    bridge.Update();
+    ASSERT_EQ(keys.size(), std::size_t(1)); // previous server notice cannot consume a new entry
+    ASSERT_TRUE(keys.back());
+    bridge.Shutdown();
+    ASSERT_EQ(keys.size(), std::size_t(2));
+    SAMPBridge::ResetTestingHooks();
+    return true;
+}
+
+bool TestServerAutoEngineNoticeRejectsPlayerPrefixAndReleasesOwnHeldKey() {
+    MockContext context;
+    auto hooks = context.BuildHooks();
+    unsigned long now = 1000;
+    std::vector<bool> keys;
+    hooks.getTickCount = [&]() { return now; };
+    hooks.getDriverVehicle = [](unsigned short& id, bool& running) { id = 32; running = false; return true; };
+    hooks.isEngineInputAvailable = []() { return true; };
+    hooks.setEngineStartKeyDown = [&](bool down) { keys.push_back(down); };
+    SAMPBridge::SetTestingHooks(hooks);
+    SAMPBridge bridge;
+    bridge.SetAutoEngineStart(true);
+    ASSERT_TRUE(bridge.Initialize());
+    bridge.Update();
+    now = 1100;
+    bridge.ProcessIncomingChatLineForTesting("INFO", "Automatischer Motorstart: Der Motor deines Fahrzeugs wurde automatisch gestartet.");
+    bridge.ProcessIncomingChatLineForTesting("Other_Player", kServerAutoEngineNotice);
+    bridge.ProcessIncomingChatLineForTesting(nullptr, "INFO: Automatischer Motorstart: anderer Text");
+    bridge.Update();
+    now = 2500;
+    bridge.Update();
+    ASSERT_EQ(keys.size(), std::size_t(1));
+    ASSERT_TRUE(keys.back());
+    now = 2520;
+    bridge.ProcessIncomingChatLineForTesting(nullptr, kServerAutoEngineNotice);
+    bridge.Update();
+    ASSERT_EQ(keys.size(), std::size_t(2));
+    ASSERT_TRUE(!keys.back());
+    now = 5000;
+    bridge.Update();
+    ASSERT_EQ(keys.size(), std::size_t(2));
+    bridge.Shutdown();
+    SAMPBridge::ResetTestingHooks();
+    return true;
+}
+
+bool TestServerAutoEngineNoticeIsBoundToVehicleGenerationAndFreshness() {
+    MockContext context;
+    auto hooks = context.BuildHooks();
+    unsigned long now = 1000;
+    unsigned short vehicle = 40;
+    bool driver = true;
+    std::vector<bool> keys;
+    hooks.getTickCount = [&]() { return now; };
+    hooks.getDriverVehicle = [&](unsigned short& id, bool& running) { id = vehicle; running = false; return driver; };
+    hooks.isEngineInputAvailable = []() { return true; };
+    hooks.setEngineStartKeyDown = [&](bool down) { keys.push_back(down); };
+    SAMPBridge::SetTestingHooks(hooks);
+    SAMPBridge bridge;
+    bridge.SetAutoEngineStart(true);
+    ASSERT_TRUE(bridge.Initialize());
+    bridge.Update();
+    now = 1100;
+    bridge.ProcessIncomingChatLineForTesting(nullptr, kServerAutoEngineNotice); // tags old vehicle 40
+    vehicle = 41;
+    bridge.Update();
+    now = 2600;
+    bridge.Update();
+    ASSERT_EQ(keys.size(), std::size_t(1));
+    now = 2750;
+    bridge.Update();
+    ASSERT_EQ(keys.size(), std::size_t(2));
+    driver = false;
+    now = 2800;
+    bridge.Update();
+    now = 2810;
+    bridge.ProcessIncomingChatLineForTesting(nullptr, kServerAutoEngineNotice);
+    bridge.Update();
+    driver = true;
+    vehicle = 42;
+    now = 3900;
+    bridge.Update(); // stale pre-seat message must not suppress this entry
+    now = 5400;
+    bridge.Update();
+    ASSERT_EQ(keys.size(), std::size_t(3));
+    bridge.Shutdown();
+    ASSERT_EQ(keys.size(), std::size_t(4));
+    SAMPBridge::ResetTestingHooks();
+    return true;
+}
+
+bool TestServerAutoEngineNoticeWhileOptionDisabledRemainsConsumedOnEnable() {
+    MockContext context;
+    auto hooks = context.BuildHooks();
+    unsigned long now = 1000;
+    std::vector<bool> keys;
+    hooks.getTickCount = [&]() { return now; };
+    hooks.getDriverVehicle = [](unsigned short& id, bool& running) { id = 33; running = false; return true; };
+    hooks.isEngineInputAvailable = []() { return true; };
+    hooks.setEngineStartKeyDown = [&](bool down) { keys.push_back(down); };
+    SAMPBridge::SetTestingHooks(hooks);
+    SAMPBridge bridge;
+    ASSERT_TRUE(bridge.Initialize());
+    bridge.Update();
+    now = 1100;
+    bridge.ProcessIncomingChatLineForTesting(nullptr, kServerAutoEngineNotice);
+    bridge.Update();
+    bridge.SetAutoEngineStart(true);
+    now = 3000;
+    bridge.Update();
+    now = 5000;
+    bridge.Update();
+    ASSERT_TRUE(keys.empty());
+    bridge.Shutdown();
+    SAMPBridge::ResetTestingHooks();
+    return true;
+}
+
+bool TestServerAutoEngineNoticeNewerThanCachedFrameClockIsNotDiscarded() {
+    MockContext context;
+    auto hooks = context.BuildHooks();
+    unsigned long clock = 1000;
+    bool injectDuringClockRead = false;
+    SAMPBridge* bridgePointer = nullptr;
+    std::vector<bool> keys;
+    hooks.getTickCount = [&]() {
+        if (injectDuringClockRead) {
+            injectDuringClockRead = false;
+            clock = 1101;
+            bridgePointer->ProcessIncomingChatLineForTesting(nullptr, kServerAutoEngineNotice);
+            return 1100UL; // frame snapshot precedes the just-arrived chat
+        }
+        return clock;
+    };
+    hooks.getDriverVehicle = [](unsigned short& id, bool& running) { id = 34; running = false; return true; };
+    hooks.isEngineInputAvailable = []() { return true; };
+    hooks.setEngineStartKeyDown = [&](bool down) { keys.push_back(down); };
+    SAMPBridge::SetTestingHooks(hooks);
+    SAMPBridge bridge;
+    bridgePointer = &bridge;
+    bridge.SetAutoEngineStart(true);
+    ASSERT_TRUE(bridge.Initialize());
+    bridge.Update();
+    injectDuringClockRead = true;
+    bridge.Update();
+    clock = 3000;
+    bridge.Update();
+    ASSERT_TRUE(keys.empty());
+    bridge.Shutdown();
+    SAMPBridge::ResetTestingHooks();
+    return true;
+}
+
 bool TestWeaponNamesKnownWeapons() {
     ASSERT_EQ(killtracker::GetWeaponName(0), std::string("Fist"));
     ASSERT_EQ(killtracker::GetWeaponName(24), std::string("Desert Eagle"));
@@ -1893,6 +2107,12 @@ int RunSAMPBridgeTests() {
     RUN_TEST(TestAutoEngineStartPressesOnlyOnceUntilActualExit);
     RUN_TEST(TestAutoEngineStartWaitsUntilChatCanReleaseInput);
     RUN_TEST(TestAutoEngineStartDoesNotRestartManuallyStoppedEngine);
+    RUN_TEST(TestServerAutoEngineNoticeConsumesCurrentEntryBeforeLaggingEngineFlag);
+    RUN_TEST(TestServerAutoEngineNoticeImmediatelyBeforeFirstDriverFrameAndNextEntry);
+    RUN_TEST(TestServerAutoEngineNoticeRejectsPlayerPrefixAndReleasesOwnHeldKey);
+    RUN_TEST(TestServerAutoEngineNoticeIsBoundToVehicleGenerationAndFreshness);
+    RUN_TEST(TestServerAutoEngineNoticeWhileOptionDisabledRemainsConsumedOnEnable);
+    RUN_TEST(TestServerAutoEngineNoticeNewerThanCachedFrameClockIsNotDiscarded);
     
     std::printf("\n--- Weapon Names Tests ---\n");
     RUN_TEST(TestWeaponNamesKnownWeapons);

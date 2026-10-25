@@ -365,6 +365,42 @@ std::vector<JobEvent> JobTracker::ExportEvents() const {
     return eventStore_->GetEvents();
 }
 
+bool JobTracker::ImportSynchronizedSkills(const std::map<JobId, int>& points, std::time_t timestamp) {
+    if (!initialized_ || !eventStore_ || points.empty()) return false;
+    for (const auto& point : points)
+        if (!IsKnownJobId(point.first) || point.second < 0) return false;
+    const JobEventStore previous = *eventStore_;
+    const bool previousDirty = dirty_;
+    for (const auto& point : points) {
+        JobStats stats;
+        const bool exists = eventStore_->GetJobStats(point.first, stats);
+        const auto before = GetJobEditSnapshot(point.first);
+        if (exists && stats.highestLevel == point.second && before.skillOffset == 0) continue;
+        JobEvent event;
+        event.jobId = point.first;
+        event.type = "skill_level_absolute";
+        event.level = point.second;
+        event.source = "chat_auto";
+        event.timestamp = ResolveNow(timestamp);
+        event.note = "Synchronisation /jobskills";
+        if (!RecordEvent(std::move(event))) {
+            *eventStore_ = previous;
+            dirty_ = previousDirty;
+            MarkAggregatesDirty();
+            return false;
+        }
+        const auto after = GetJobEditSnapshot(point.first);
+        // Preserve earnings and existing history. The received value is an
+        // absolute server baseline, even if an older manual event is future-dated.
+        ApplyJobSummaryAdjustments(point.first, before.earningsOffset, point.second - after.baseHighestSkill);
+    }
+    if (Flush()) return true;
+    *eventStore_ = previous;
+    dirty_ = previousDirty;
+    MarkAggregatesDirty();
+    return false;
+}
+
 bool JobTracker::ImportEvents(const std::vector<JobEvent>& events) {
     if (!initialized_ || eventStore_ == nullptr) {
         return false;

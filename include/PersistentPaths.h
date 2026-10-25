@@ -21,6 +21,7 @@ std::string HitmarkersDir();
 
 std::string CrosshairsDir();
 std::string FistsDir();
+std::string WeaponIconsDir();
 
 std::string HitsoundsDir();
 

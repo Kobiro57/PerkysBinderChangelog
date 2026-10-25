@@ -44,6 +44,7 @@ constexpr int kTrackedIncomeMessageDelayFrames = 10;
 constexpr int kLocalDeathFallbackDelayFrames = 12;
 constexpr unsigned long kAutoEngineStartDelayMs = 1500;
 constexpr unsigned long kAutoEngineStartHoldMs = 150;
+constexpr unsigned long kAutoEngineServerNoticeWindowMs = 1000;
 
 SAMPBridge* g_activeBridge = nullptr;
 
@@ -748,6 +749,9 @@ void SAMPBridge::Shutdown() {
     if (statsDialogAdapter_) statsDialogAdapter_->Shutdown();
     statsDialogAdapter_.reset();
     ResetStartupStats();
+    captureSpeedDialogs_.store(false, std::memory_order_release);
+    speedTicketFlow_.Reset();
+    pendingSpeedDialogs_.clear();
 
     Log("Shutting down SAMPBridge");
     SetAutoEngineStart(false);
@@ -903,6 +907,8 @@ void SAMPBridge::Update() {
         InitializeJobTracker();
     }
     UpdateStartupStats(now);
+    UpdateSpeedTicketFlow(now);
+    UpdateStartupJobSkills(now);
 
     if (!HasCommandRouting()) {
         RegisterPendingCommands();
@@ -1430,6 +1436,7 @@ void SAMPBridge::InitializeJobTracker() {
     }
 
     jobChatAdapter_->SetCallback([this](const jobs::JobChatEvent& event) {
+        if (!event.hasPlayerPrefix) ObserveServerEngineStartMessage(event.normalizedLine);
         NotifyIncomingChat(event.normalizedLine);
         if (jobTracker_ != nullptr) {
             const std::vector<jobs::JobEvent> recordedEvents = jobTracker_->HandleChatEvent(event);
@@ -1681,7 +1688,7 @@ void SAMPBridge::SetAutoHudScaleFix(bool enabled) {
 }
 
 void SAMPBridge::SetAutoEngineStart(bool enabled) {
-    if (autoEngineStartEnabled_ == enabled) return;
+    if (autoEngineStartEnabled_ == enabled && !shutting_down_) return;
     autoEngineStartEnabled_ = enabled;
 
     if (!enabled) {
@@ -1692,7 +1699,24 @@ void SAMPBridge::SetAutoEngineStart(bool enabled) {
             SetEngineStartKeyDown(false);
         }
         autoEngineStartReleasePending_ = false;
+        if (shutting_down_) {
+            std::lock_guard<std::mutex> lock(autoEngineNoticeMutex_);
+            autoEngineServerNotices_.clear();
+            autoEnginePublishedVehicle_ = autoEngineObservedVehicle_ = 0xFFFF;
+            autoEnginePublishedGeneration_ = autoEngineEntryGeneration_ = 0;
+            autoEnginePreSeatNotice_.reset();
+            autoEngineEntryConsumed_ = false;
+        }
     }
+}
+
+void SAMPBridge::ObserveServerEngineStartMessage(const std::string& text) {
+    if (text != "INFO: Automatischer Motorstart: Der Motor deines Fahrzeugs wurde automatisch gestartet.") return;
+    // Chat callbacks never inspect native ped/vehicle memory. The main update
+    // publishes a small identity snapshot used to scope this fresh notice.
+    std::lock_guard<std::mutex> lock(autoEngineNoticeMutex_);
+    if (autoEngineServerNotices_.size() == 4) autoEngineServerNotices_.erase(autoEngineServerNotices_.begin());
+    autoEngineServerNotices_.push_back({RuntimeTickCount(), autoEnginePublishedVehicle_, autoEnginePublishedGeneration_});
 }
 
 bool SAMPBridge::ReadDriverVehicle(unsigned short& vehicleId, bool& engineOn) const {
@@ -1738,6 +1762,19 @@ void SAMPBridge::SetEngineStartKeyDown(bool down) {
 
 void SAMPBridge::UpdateAutoEngineStart(unsigned long now) {
     const bool inputAvailable = IsEngineInputAvailable();
+    std::vector<EngineServerStartNotice> serverNotices;
+    {
+        std::lock_guard<std::mutex> lock(autoEngineNoticeMutex_);
+        serverNotices.swap(autoEngineServerNotices_);
+    }
+    // A callback may arrive after the frame's cached `now` was read. Sample
+    // after draining, so its newer timestamp cannot wrap into a stale age.
+    const unsigned long noticeNow = RuntimeTickCount();
+    auto publishEntry = [this](unsigned short vehicle) {
+        std::lock_guard<std::mutex> lock(autoEngineNoticeMutex_);
+        autoEnginePublishedVehicle_ = vehicle;
+        autoEnginePublishedGeneration_ = autoEngineEntryGeneration_;
+    };
     auto releaseKey = [this]() {
         if (autoEngineStartReleasePending_) SetEngineStartKeyDown(false);
         autoEngineStartReleasePending_ = false;
@@ -1748,17 +1785,53 @@ void SAMPBridge::UpdateAutoEngineStart(unsigned long now) {
     unsigned short vehicleId = 0xFFFF;
     bool engineOn = false;
     if (!ReadDriverVehicle(vehicleId, engineOn)) {
+        if (autoEngineObservedVehicle_ != 0xFFFF) {
+            ++autoEngineEntryGeneration_;
+            autoEnginePreSeatNotice_.reset();
+        } else {
+            // A server auto-start message can precede the first usable native
+            // driver frame. Keep only this fresh, as-yet-unassigned notice.
+            for (const auto& notice : serverNotices)
+                if (notice.vehicle == 0xFFFF && notice.generation == autoEngineEntryGeneration_
+                    && noticeNow - notice.at <= kAutoEngineServerNoticeWindowMs) autoEnginePreSeatNotice_ = notice;
+        }
+        if (autoEnginePreSeatNotice_ && noticeNow - autoEnginePreSeatNotice_->at > kAutoEngineServerNoticeWindowMs)
+            autoEnginePreSeatNotice_.reset();
         autoEngineObservedVehicle_ = 0xFFFF;
         autoEngineEntryConsumed_ = false;
         autoEngineStartPending_ = false;
+        publishEntry(0xFFFF);
         releaseKey();
         return;
     }
-    if (vehicleId != autoEngineObservedVehicle_) {
+    const bool newEntry = vehicleId != autoEngineObservedVehicle_;
+    const unsigned short previousVehicle = autoEngineObservedVehicle_;
+    const unsigned long previousGeneration = autoEngineEntryGeneration_;
+    if (newEntry) {
+        ++autoEngineEntryGeneration_;
         autoEngineObservedVehicle_ = vehicleId;
         autoEngineEntryConsumed_ = false;
         autoEngineStartPending_ = false;
         releaseKey();
+    }
+    publishEntry(vehicleId);
+    bool serverAlreadyStarted = false;
+    for (const auto& notice : serverNotices) {
+        if (noticeNow - notice.at > kAutoEngineServerNoticeWindowMs) continue;
+        if (notice.vehicle == vehicleId && notice.generation == autoEngineEntryGeneration_)
+            serverAlreadyStarted = true;
+        if (newEntry && previousVehicle == 0xFFFF && notice.vehicle == 0xFFFF
+            && notice.generation == previousGeneration) serverAlreadyStarted = true;
+    }
+    if (newEntry && previousVehicle == 0xFFFF && autoEnginePreSeatNotice_
+        && autoEnginePreSeatNotice_->generation == previousGeneration
+        && noticeNow - autoEnginePreSeatNotice_->at <= kAutoEngineServerNoticeWindowMs) serverAlreadyStarted = true;
+    if (newEntry) autoEnginePreSeatNotice_.reset();
+    if (serverAlreadyStarted) {
+        autoEngineEntryConsumed_ = true;
+        autoEngineStartPending_ = false;
+        releaseKey();
+        Log("Auto engine start: server already started this entry; skipping motor toggle");
     }
     // Keep the seat identity while disabled too. Reapplying or toggling the
     // setting cannot create another automatic press in the same entry.

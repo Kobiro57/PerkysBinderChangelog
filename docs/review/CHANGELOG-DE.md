@@ -1,6 +1,6 @@
 # Änderungen am Perkys Binder – NLBinder v.0.1.1 by KOBiRO
 
-Stand: 25. Oktober 2026, Arbeitsfassung **r6 mit korrigierter Zuordnung des Statistik-Titels mit `»`**. Die Abschnitte 1 bis 9 dokumentieren die bisherigen Änderungen; Abschnitt 10 beschreibt r4, Abschnitt 11 r5 und Abschnitt 12 die anschließende r6-Korrektur.
+Stand: 25. Oktober 2026, Arbeitsfassung **r7 mit Waffenicons, Wanted-Dialogablauf und erweitertem Startabgleich**. Die Abschnitte 1 bis 12 dokumentieren die bisherigen Stände; Abschnitt 13 ergänzt r7.
 
 Die Grundlage ist der vorhandene Perkys/NLBinder. Die Änderungen erweitern dessen bestehende Oberfläche und verwenden weiterhin die vorhandenen ImGui-Komponenten, Karten, Schalter und Darstellungseinstellungen. Der Ordner KOBiRO_ASI diente als funktionale Referenz für die Overlay-Erweiterung; seine Oberfläche wurde nicht als neue Binder-Oberfläche übernommen.
 
@@ -415,3 +415,76 @@ Die endgültige r6-ASI und deren eigene Prüfnachweise werden im
 [r6-Paket](../../dist/NLBinder-0.1.1-r6/BUILD-INFO.txt) bereitgestellt. Frühere
 r5-Prüfwerte gelten ausschließlich für die damalige ASI. Ein echter
 Ingame-Test mit dem konkreten Server und Launcher steht aus.
+
+
+## 13. Nachtrag r7 – 25. Oktober 2026
+
+### Eigene Waffenicons im bisherigen Mods-Stil
+
+Neben Hud wurde unter Mods **Waffenicons** ergänzt. Der Binder legt unter
+`Dokumente/GTA San Andreas User Files/NLBinder/Waffenicons/` 43 Waffenunterordner
+an. **Waffenicons-Ordner öffnen** verwendet den tatsächlichen Windows-
+Dokumente-Pfad einschließlich einer möglichen OneDrive-Umleitung. Pro Waffe können mehrere
+PNGs abgelegt und als Vorschau ausgewählt werden. Die globale Aktivierung,
+einzelne Waffen und die jeweilige Bildauswahl werden gespeichert. Ohne eigene
+Auswahl dient die erste PNG nach Dateinamen als automatische Auswahl; die
+Originaldarstellung kann je Waffe wiederhergestellt werden. Fist bleibt im
+vorhandenen Hud-Bereich.
+
+Die lokale HUD-Ersetzung verwendet die bestehende Zeichengeometrie und
+überschreibt keine Spielarchive. Fehlende oder ungültige PNGs behalten die
+Originaldarstellung. Pfade werden auf die jeweilige Waffen-Unterbibliothek
+begrenzt; ungültige explizite Konfigurationen schalten die jeweilige Ersetzung
+ab. Das Paket enthält nur die Ordnerstruktur und Hinweise, keine persönlichen
+oder fremden Iconbilder.
+
+Quellen: [WeaponIconCatalog.h](../../include/WeaponIconCatalog.h),
+[WeaponIconManager.cpp](../../src/WeaponIconManager.cpp),
+[WeaponIconsUI.cpp](../../src/WeaponIconsUI.cpp),
+[SettingsManager.cpp](../../src/SettingsManager.cpp),
+[MainWindowUI.cpp](../../src/MainWindowUI.cpp).
+Tests: [WeaponIconManagerTests.cpp](../../tests/WeaponIconManagerTests.cpp),
+[WeaponIconSettingsTests.cpp](../../tests/WeaponIconSettingsTests.cpp).
+
+### Wanted-Dialogfolge über `/speed ID`
+
+Der Befehl startet `/su` und wählt anhand der gezeigten Titel und Zeilentexte
+**Ordnungswidrigkeit**, dann **Geschwindigkeitsüberschreitung ab 20km/h**.
+Im passenden Eingabefenster wird dieselbe Spieler-ID verwendet. Nach der
+zusätzlichen ausdrücklichen Benutzeranweisung wird **Vergeben** einmal
+bestätigt; die gezeigte Straftat umfasst 15 Wantedpunkte. Der Ablauf misst
+keine Geschwindigkeit und stellt keine automatische Verstoßfeststellung dar.
+
+Die Zustandsfolge begrenzt den Vorgang auf die passenden Dialoge und genau
+eine finale Absendung. Ungültige IDs, ein laufender Vorgang, fremde Dialoge,
+Abbruch, Timeout und Verbindungswechsel werden berücksichtigt.
+Quellen: [SpeedTicketFlow.h](../../include/SpeedTicketFlow.h),
+[SpeedTicketFlow.cpp](../../src/SpeedTicketFlow.cpp),
+[SAMPBridge.cpp](../../src/SAMPBridge.cpp), [Main.cpp](../../src/Main.cpp).
+Tests: [SpeedTicketFlowTests.cpp](../../tests/SpeedTicketFlowTests.cpp).
+
+### Vorhandene Job-Skillpunkte nach der Statistik übernehmen
+
+Die Start-Synchronisation wird nach `/stats` um `/jobskills` ergänzt.
+Vorhandene Punktestände bekannter Jobs werden als absolute Ausgangswerte
+übernommen und im Job-Feed sichtbar. Sie werden nicht als neue Einkünfte oder
+neu verdiente Punkte aufgezeichnet. Gleiche wiederholt gelieferte Stände
+verursachen keinen zusätzlichen Verdienst. Unbekannte oder mehrdeutige
+Jobnamen werden nicht stillschweigend einem anderen Job zugeordnet.
+Quellen: [JobSkillsSnapshot.h](../../include/JobSkillsSnapshot.h),
+[JobTracker.cpp](../../src/JobTracker.cpp),
+[StartupStatsSync.cpp](../../src/StartupStatsSync.cpp).
+Tests: [JobSkillsSnapshotTests.cpp](../../tests/JobSkillsSnapshotTests.cpp).
+
+### Bestätigten Addon-Motorstart berücksichtigen
+
+Zusätzlich zur Begrenzung auf einen Motor-Tastendruck pro Einstieg wird eine
+bestätigte serverseitige Addon-Motorstartmeldung berücksichtigt. Hat das
+Addon den Start bereits bestätigt, darf der Binder keinen weiteren Toggle
+nachschieben. Chat-, Dialog- und Binder-Eingaben bleiben geschützt.
+Quelle und Tests: [SAMPBridge.cpp](../../src/SAMPBridge.cpp),
+[SAMPBridgeTests.cpp](../../tests/SAMPBridgeTests.cpp).
+
+Die endgültigen automatisierten Ergebnisse, ASI-Prüfsumme und Paketgleichheit
+gehören zu den r7-Paketnachweisen. Frühere Hashwerte bleiben ausschließlich den
+älteren ASIs zugeordnet; ein echter Ingame-Test auf dem Server steht aus.

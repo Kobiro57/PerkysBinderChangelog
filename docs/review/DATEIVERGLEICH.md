@@ -2,7 +2,7 @@
 
 Originalarchiv: `a328e78eea63420e9bfe9c084883100177fe0fd9c2d62c4fcaef38c0a44801e9`; Commitkennung im ZIP: `92ce21971bee2d166d830e23ad20950f1dc98921`.
 
-Aktueller Vergleich: `v0.1.1-r6`, ASI-SHA-256 `8c489fe45c14a9f45ae9228acd8107538c5323bf6af116d8401cd0cbc7d17620`.
+Aktueller Vergleich: `v0.1.1-r7`, ASI-SHA-256 `abdcca5a0f89ea6e2391834199eef83f267dfee4ac05e28cff7a946b3db9341d`.
 
 Alle Dateien einschließlich wiederhergestellter Abhängigkeiten stehen in [SOURCE-COMPARISON.json](SOURCE-COMPARISON.json).
 Die Vorher-Prüfsummen stammen aus dem unveränderten gefilterten ZIP-Snapshot.
@@ -45,9 +45,18 @@ Diese Liste zeigt Inhaltsänderungen außerhalb der Vendor-Verzeichnisse.
 | added | [dist/NLBinder-0.1.1-r6/PRUEFBERICHT.json](../../dist/NLBinder-0.1.1-r6/PRUEFBERICHT.json) |
 | added | [dist/NLBinder-0.1.1-r6/RECONNECT-TEST.json](../../dist/NLBinder-0.1.1-r6/RECONNECT-TEST.json) |
 | added | [dist/NLBinder-0.1.1-r6/SHA256SUMS.txt](../../dist/NLBinder-0.1.1-r6/SHA256SUMS.txt) |
+| added | [dist/NLBinder-0.1.1-r7/BUILD-INFO.txt](../../dist/NLBinder-0.1.1-r7/BUILD-INFO.txt) |
+| added | [dist/NLBinder-0.1.1-r7/JOB-HINWEISE.md](../../dist/NLBinder-0.1.1-r7/JOB-HINWEISE.md) |
+| added | [dist/NLBinder-0.1.1-r7/Keybinder.asi](../../dist/NLBinder-0.1.1-r7/Keybinder.asi) |
+| added | [dist/NLBinder-0.1.1-r7/LIESMICH.md](../../dist/NLBinder-0.1.1-r7/LIESMICH.md) |
+| added | [dist/NLBinder-0.1.1-r7/NLBinder/Waffenicons/LIESMICH.md](../../dist/NLBinder-0.1.1-r7/NLBinder/Waffenicons/LIESMICH.md) |
+| added | [dist/NLBinder-0.1.1-r7/PRUEFBERICHT.json](../../dist/NLBinder-0.1.1-r7/PRUEFBERICHT.json) |
+| added | [dist/NLBinder-0.1.1-r7/RECONNECT-TEST.json](../../dist/NLBinder-0.1.1-r7/RECONNECT-TEST.json) |
+| added | [dist/NLBinder-0.1.1-r7/SHA256SUMS.txt](../../dist/NLBinder-0.1.1-r7/SHA256SUMS.txt) |
 | added | [dist/NLBinder-v0.1.1-KOBiRO-r4.zip](../../dist/NLBinder-v0.1.1-KOBiRO-r4.zip) |
 | added | [dist/NLBinder-v0.1.1-KOBiRO-r5.zip](../../dist/NLBinder-v0.1.1-KOBiRO-r5.zip) |
 | added | [dist/NLBinder-v0.1.1-KOBiRO-r6.zip](../../dist/NLBinder-v0.1.1-KOBiRO-r6.zip) |
+| added | [dist/NLBinder-v0.1.1-KOBiRO-r7.zip](../../dist/NLBinder-v0.1.1-KOBiRO-r7.zip) |
 | added | [docs/BUILD-README.md](../../docs/BUILD-README.md) |
 | added | [docs/NLBinder-0.1.1-DE.md](../../docs/NLBinder-0.1.1-DE.md) |
 | added | [docs/NLBinder-0.1.1-r2-DE.md](../../docs/NLBinder-0.1.1-r2-DE.md) |
@@ -55,6 +64,7 @@ Diese Liste zeigt Inhaltsänderungen außerhalb der Vendor-Verzeichnisse.
 | added | [docs/NLBinder-0.1.1-r4-DE.md](../../docs/NLBinder-0.1.1-r4-DE.md) |
 | added | [docs/NLBinder-0.1.1-r5-DE.md](../../docs/NLBinder-0.1.1-r5-DE.md) |
 | added | [docs/NLBinder-0.1.1-r6-DE.md](../../docs/NLBinder-0.1.1-r6-DE.md) |
+| added | [docs/NLBinder-0.1.1-r7-DE.md](../../docs/NLBinder-0.1.1-r7-DE.md) |
 | added | [docs/ORIGINAL-README.md](../../docs/ORIGINAL-README.md) |
 | added | [docs/build-dependencies.md](../../docs/build-dependencies.md) |
 | added | [docs/jobs-support.md](../../docs/jobs-support.md) |
@@ -67,11 +77,14 @@ Diese Liste zeigt Inhaltsänderungen außerhalb der Vendor-Verzeichnisse.
 | added | [docs/review/r4-validation.json](../../docs/review/r4-validation.json) |
 | added | [docs/review/r5-validation.json](../../docs/review/r5-validation.json) |
 | added | [docs/review/r6-validation.json](../../docs/review/r6-validation.json) |
+| added | [docs/review/r7-validation.json](../../docs/review/r7-validation.json) |
 | modified | [include/ActionExecutor.h](../../include/ActionExecutor.h) |
 | modified | [include/DamageRPCAdapter.h](../../include/DamageRPCAdapter.h) |
 | modified | [include/DeathMessageRPCAdapter.h](../../include/DeathMessageRPCAdapter.h) |
 | modified | [include/IncomingDamageDetector.h](../../include/IncomingDamageDetector.h) |
 | modified | [include/JobChatAdapter.h](../../include/JobChatAdapter.h) |
+| added | [include/JobSkillsSnapshot.h](../../include/JobSkillsSnapshot.h) |
+| modified | [include/JobTracker.h](../../include/JobTracker.h) |
 | modified | [include/JobsTypes.h](../../include/JobsTypes.h) |
 | added | [include/KillMessageTest.h](../../include/KillMessageTest.h) |
 | modified | [include/KillTracker.h](../../include/KillTracker.h) |
@@ -86,21 +99,28 @@ Diese Liste zeigt Inhaltsänderungen außerhalb der Vendor-Verzeichnisse.
 | modified | [include/OnlineOverlayController.h](../../include/OnlineOverlayController.h) |
 | modified | [include/OnlineOverlayRenderer.h](../../include/OnlineOverlayRenderer.h) |
 | modified | [include/OnlineUI.h](../../include/OnlineUI.h) |
+| modified | [include/PersistentPaths.h](../../include/PersistentPaths.h) |
 | added | [include/ReconnectManager.h](../../include/ReconnectManager.h) |
 | modified | [include/ResourceIds.h](../../include/ResourceIds.h) |
 | modified | [include/SAMPBridge.h](../../include/SAMPBridge.h) |
 | added | [include/ServerStatsSnapshot.h](../../include/ServerStatsSnapshot.h) |
 | modified | [include/SettingsManager.h](../../include/SettingsManager.h) |
+| added | [include/SpeedTicketFlow.h](../../include/SpeedTicketFlow.h) |
 | modified | [include/SpeedometerManager.h](../../include/SpeedometerManager.h) |
 | modified | [include/SpeedometerUI.h](../../include/SpeedometerUI.h) |
 | added | [include/StatsDialogRPCAdapter.h](../../include/StatsDialogRPCAdapter.h) |
 | modified | [include/TextDrawAdapter.h](../../include/TextDrawAdapter.h) |
 | modified | [include/Version.h](../../include/Version.h) |
+| added | [include/WeaponIconCatalog.h](../../include/WeaponIconCatalog.h) |
+| added | [include/WeaponIconManager.h](../../include/WeaponIconManager.h) |
+| added | [include/WeaponIconsUI.h](../../include/WeaponIconsUI.h) |
 | modified | [res/jobs_registry.json](../../res/jobs_registry.json) |
 | modified | [src/ActionExecutor.cpp](../../src/ActionExecutor.cpp) |
 | modified | [src/DamageRPCAdapter.cpp](../../src/DamageRPCAdapter.cpp) |
 | modified | [src/DeathMessageRPCAdapter.cpp](../../src/DeathMessageRPCAdapter.cpp) |
 | modified | [src/JobChatAdapter.cpp](../../src/JobChatAdapter.cpp) |
+| added | [src/JobSkillsSync.cpp](../../src/JobSkillsSync.cpp) |
+| modified | [src/JobTracker.cpp](../../src/JobTracker.cpp) |
 | modified | [src/JobsUI.cpp](../../src/JobsUI.cpp) |
 | modified | [src/KeybindEditorUI.cpp](../../src/KeybindEditorUI.cpp) |
 | modified | [src/KillTracker.cpp](../../src/KillTracker.cpp) |
@@ -116,15 +136,21 @@ Diese Liste zeigt Inhaltsänderungen außerhalb der Vendor-Verzeichnisse.
 | added | [src/ReconnectManager.cpp](../../src/ReconnectManager.cpp) |
 | modified | [src/SAMPBridge.cpp](../../src/SAMPBridge.cpp) |
 | modified | [src/SettingsManager.cpp](../../src/SettingsManager.cpp) |
+| added | [src/SpeedTicketBridge.cpp](../../src/SpeedTicketBridge.cpp) |
+| added | [src/SpeedTicketFlow.cpp](../../src/SpeedTicketFlow.cpp) |
 | modified | [src/SpeedometerManager.cpp](../../src/SpeedometerManager.cpp) |
 | modified | [src/SpeedometerUI.cpp](../../src/SpeedometerUI.cpp) |
 | modified | [src/SquareMap.cpp](../../src/SquareMap.cpp) |
 | added | [src/StartupStatsSync.cpp](../../src/StartupStatsSync.cpp) |
 | added | [src/StatsDialogRPCAdapter.cpp](../../src/StatsDialogRPCAdapter.cpp) |
 | modified | [src/TextDrawAdapter.cpp](../../src/TextDrawAdapter.cpp) |
+| added | [src/WeaponIconManager.cpp](../../src/WeaponIconManager.cpp) |
+| added | [src/WeaponIconsUI.cpp](../../src/WeaponIconsUI.cpp) |
 | modified | [tests/JobChatAdapterTests.cpp](../../tests/JobChatAdapterTests.cpp) |
 | modified | [tests/JobParserTests.cpp](../../tests/JobParserTests.cpp) |
 | modified | [tests/JobRegistryTests.cpp](../../tests/JobRegistryTests.cpp) |
+| added | [tests/JobSkillsImportTests.cpp](../../tests/JobSkillsImportTests.cpp) |
+| added | [tests/JobSkillsSnapshotTests.cpp](../../tests/JobSkillsSnapshotTests.cpp) |
 | modified | [tests/JobTrackerLifecycleTests.cpp](../../tests/JobTrackerLifecycleTests.cpp) |
 | modified | [tests/JobsUITests.cpp](../../tests/JobsUITests.cpp) |
 | modified | [tests/KeybindTests.cpp](../../tests/KeybindTests.cpp) |
@@ -139,9 +165,12 @@ Diese Liste zeigt Inhaltsänderungen außerhalb der Vendor-Verzeichnisse.
 | modified | [tests/SAMPBridgeTests.cpp](../../tests/SAMPBridgeTests.cpp) |
 | added | [tests/ServerStatsParserTests.cpp](../../tests/ServerStatsParserTests.cpp) |
 | modified | [tests/SourceContractTests.cpp](../../tests/SourceContractTests.cpp) |
+| added | [tests/SpeedTicketFlowTests.cpp](../../tests/SpeedTicketFlowTests.cpp) |
 | modified | [tests/SpeedometerFocusedTests.cpp](../../tests/SpeedometerFocusedTests.cpp) |
 | added | [tests/StartupStatsSyncTests.cpp](../../tests/StartupStatsSyncTests.cpp) |
 | added | [tests/StatsDialogRPCAdapterTests.cpp](../../tests/StatsDialogRPCAdapterTests.cpp) |
+| added | [tests/WeaponIconManagerTests.cpp](../../tests/WeaponIconManagerTests.cpp) |
+| added | [tests/WeaponIconSettingsTests.cpp](../../tests/WeaponIconSettingsTests.cpp) |
 | added | [tools/ReconnectHelper.cpp](../../tools/ReconnectHelper.cpp) |
 | modified | [tools/build_and_test.bat](../../tools/build_and_test.bat) |
 | modified | [tools/build_plugin_sdk.bat](../../tools/build_plugin_sdk.bat) |
@@ -150,6 +179,7 @@ Diese Liste zeigt Inhaltsänderungen außerhalb der Vendor-Verzeichnisse.
 | added | [tools/package_revision4.ps1](../../tools/package_revision4.ps1) |
 | added | [tools/package_revision5.ps1](../../tools/package_revision5.ps1) |
 | added | [tools/package_revision6.ps1](../../tools/package_revision6.ps1) |
+| added | [tools/package_revision7.ps1](../../tools/package_revision7.ps1) |
 | added | [tools/prepare_github_review.py](../../tools/prepare_github_review.py) |
 | modified | [tools/run_tests.bat](../../tools/run_tests.bat) |
 | added | [tools/setup_msvc.bat](../../tools/setup_msvc.bat) |
@@ -157,3 +187,4 @@ Diese Liste zeigt Inhaltsänderungen außerhalb der Vendor-Verzeichnisse.
 | added | [tools/verify_revision4_artifact.py](../../tools/verify_revision4_artifact.py) |
 | added | [tools/verify_revision5_artifact.py](../../tools/verify_revision5_artifact.py) |
 | added | [tools/verify_revision6_artifact.py](../../tools/verify_revision6_artifact.py) |
+| added | [tools/verify_revision7_artifact.py](../../tools/verify_revision7_artifact.py) |

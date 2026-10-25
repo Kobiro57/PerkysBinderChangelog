@@ -31,7 +31,7 @@ void TestAllReadOnlyDialogStylesDeliverFullCompressedTextAndPreserveOffset() {
     adapter.SetDialogCallback([&](const auto& event) { events.push_back(event); });
     CHECK(adapter.Initialize());
     const std::string body = "Wert\tStand\nKills\t123\nTode\t45\nBargeld\t1.234$\nKontostand\t5.678$\n" + std::string(6000, 'a');
-    for (unsigned char style : {0, 2, 4, 5}) {
+    for (unsigned char style : {0, 1, 2, 4, 5}) {
         RakNet::BitStream payload;
         payload.Write(true); payload.Write(false); payload.Write(true);
         const int start = payload.GetNumberOfBitsUsed();
@@ -43,7 +43,7 @@ void TestAllReadOnlyDialogStylesDeliverFullCompressedTextAndPreserveOffset() {
         CHECK(events.back().caption == "{FFFFFF}Statistik von Fixture_Player");
         CHECK(events.back().text == body);
     }
-    CHECK(events.size() == 4);
+    CHECK(events.size() == 5);
     adapter.Shutdown();
 }
 
@@ -62,7 +62,7 @@ void TestMalformedTruncatedAndInputPayloadsDoNotDeliverOrConsume() {
         CHECK(!adapter.ProcessRpcForTesting(61, &truncated));
         CHECK(truncated.GetReadOffset() == 0);
     }
-    for (unsigned char style : {1, 3, 6, 255}) {
+    for (unsigned char style : {3, 6, 255}) {
         RakNet::BitStream payload;
         WriteDialog(payload, style, "Statistik", "Kills: [12]");
         CHECK(!adapter.ProcessRpcForTesting(61, &payload));

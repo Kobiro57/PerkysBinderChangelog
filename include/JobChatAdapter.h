@@ -12,6 +12,7 @@ struct JobChatEvent {
     std::string normalizedLine;
     std::string timestampFreeLine;
     std::string jobPrefix;
+    bool hasPlayerPrefix = false;
     std::time_t arrivalTime;
 
     JobChatEvent()

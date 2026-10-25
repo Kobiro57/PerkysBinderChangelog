@@ -2,9 +2,9 @@
   "original_archive": "NLBinder-master.zip",
   "original_sha256": "a328e78eea63420e9bfe9c084883100177fe0fd9c2d62c4fcaef38c0a44801e9",
   "original_archive_commit_comment": "92ce21971bee2d166d830e23ad20950f1dc98921",
-  "release_asi_sha256": "8c489fe45c14a9f45ae9228acd8107538c5323bf6af116d8401cd0cbc7d17620",
+  "release_asi_sha256": "abdcca5a0f89ea6e2391834199eef83f267dfee4ac05e28cff7a946b3db9341d",
   "baseline_files": 2006,
-  "current_files": 5657,
+  "current_files": 5687,
   "changes": [
     {
       "path": ".gitattributes",
@@ -36,7 +36,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": "9ce784480d2be6bf031f91ae852de817748a194285ad98e3c53d0af54b612973",
-      "after_sha256": "5c343edeb305f65189dfad5ec42aeea853435e73567ea6b45c21614037b81dc8"
+      "after_sha256": "9099a5f87192118cd4a0c15754b16463f1701f677ceee523c087a07fc5eecd83"
     },
     {
       "path": "README.md",
@@ -44,7 +44,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": "65b8ae3822ae33054ece73689612fc8afb758e59282f3ee1185ee5fce62e269d",
-      "after_sha256": "fec3e8ea053eca61b8075e6a015b403b2034ee2353519d72dd9689a869cc1e10"
+      "after_sha256": "f47f3d0753598d54f450b4fcc79e0664c3690c96ec7f14685178d6c1987d1729"
     },
     {
       "path": "dist/NLBinder-0.1.1-r3/BUILD-INFO.txt",
@@ -271,6 +271,70 @@
       "after_sha256": "c1315019d04a9f671b8b310b28b6604b5138599077344a0b4c20a2bca088ec28"
     },
     {
+      "path": "dist/NLBinder-0.1.1-r7/BUILD-INFO.txt",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "67fc90192a0a1f4b329ce345b671718b3f0ad008763a629daf998eea4576297c"
+    },
+    {
+      "path": "dist/NLBinder-0.1.1-r7/JOB-HINWEISE.md",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "3f10215fe2080301060baadcbfdedcd4754cc31c0b33386c00e7405ec4fc2755"
+    },
+    {
+      "path": "dist/NLBinder-0.1.1-r7/Keybinder.asi",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "abdcca5a0f89ea6e2391834199eef83f267dfee4ac05e28cff7a946b3db9341d"
+    },
+    {
+      "path": "dist/NLBinder-0.1.1-r7/LIESMICH.md",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "ddcf77fa4424cc2d72240f984afee5d97236ee9a17bf96de7450a1c3ba1d7649"
+    },
+    {
+      "path": "dist/NLBinder-0.1.1-r7/NLBinder/Waffenicons/LIESMICH.md",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "839adf849f48623a1a302d1f819bd94b84c6e1f3371289a337eb6754c67d227b"
+    },
+    {
+      "path": "dist/NLBinder-0.1.1-r7/PRUEFBERICHT.json",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "c7afa5337292e45f10fddea7fe0564f6f6fcac3ef1da5bdf7f83edebbe3a1793"
+    },
+    {
+      "path": "dist/NLBinder-0.1.1-r7/RECONNECT-TEST.json",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "7a531ceb0ffeebb06d1ff39131297569194c05915cc2aff9b51396a002b285b3"
+    },
+    {
+      "path": "dist/NLBinder-0.1.1-r7/SHA256SUMS.txt",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "2dc01de02f2aac760fcec2b61fce91d5f12bc8fbca47c2558afe2fb49a36fcbb"
+    },
+    {
       "path": "dist/NLBinder-v0.1.1-KOBiRO-r4.zip",
       "status": "added",
       "dependency": false,
@@ -293,6 +357,14 @@
       "line_endings_only": false,
       "before_sha256": null,
       "after_sha256": "4d1273849cca627ec70cf377f18ef3bf62e186b8fe28a78b083af6919c38cc17"
+    },
+    {
+      "path": "dist/NLBinder-v0.1.1-KOBiRO-r7.zip",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "6a7a163e39ebd8da74bf2fb96ab9e884fc52851a54b011d3f070e9787c43a8e8"
     },
     {
       "path": "docs/BUILD-README.md",
@@ -351,6 +423,14 @@
       "after_sha256": "ae54beef3d72aa428dab37d8a04792f0f1175fa191788a893376d169e10d7c62"
     },
     {
+      "path": "docs/NLBinder-0.1.1-r7-DE.md",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "ddcf77fa4424cc2d72240f984afee5d97236ee9a17bf96de7450a1c3ba1d7649"
+    },
+    {
       "path": "docs/ORIGINAL-README.md",
       "status": "added",
       "dependency": false,
@@ -380,7 +460,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": null,
-      "after_sha256": "72934b247f68a6a9e3a94d48612ed0862fc1002adbc53a0a5b3c6ab8063cbe00"
+      "after_sha256": "9fc95a6f0fc9371fdd76bf8a65ad5f85c928896b563a7a78a42cca3f74820267"
     },
     {
       "path": "docs/review/DEPENDENCIES.md",
@@ -396,7 +476,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": null,
-      "after_sha256": "ae84904dbd9fecc34500caa49340463adca3602a9bd9820bf6eabbca0ebe2c45"
+      "after_sha256": "bea3fc7a724d53afb195f6bfcb7ab4c90d589f430a3048ae97a55050ce947d11"
     },
     {
       "path": "docs/review/PUBLICATION.json",
@@ -404,7 +484,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": null,
-      "after_sha256": "e9fcc7a33715a69afe4b74006f419dc8820d74f5f8136d61198a00771138ccc6"
+      "after_sha256": "4d997635b8c180031e0eac85688f69d3d38950bd51985245ecf67cc79c7a8e74"
     },
     {
       "path": "docs/review/PUBLISHING-DE.md",
@@ -420,7 +500,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": null,
-      "after_sha256": "cbc21132a5eb749629c6ae83be723f04923bcc3042e047da723effe132c56de2"
+      "after_sha256": "2c3e4b82bb8d8550d76adfebe32e4ae6bf82c0c507d3da42dc952f55c5e79d27"
     },
     {
       "path": "docs/review/r4-validation.json",
@@ -445,6 +525,14 @@
       "line_endings_only": false,
       "before_sha256": null,
       "after_sha256": "8499caf446adc4b9726bdad7e258b1d00d0b6b30271fb1ef5702e307f9d1a252"
+    },
+    {
+      "path": "docs/review/r7-validation.json",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "a98921f0ddd3b9d37a6175506a4a3fe5e4264d3fa5b5b4cfc0353a4522173f86"
     },
     {
       "path": "include/ActionExecutor.h",
@@ -484,7 +572,23 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": "afa1d8c408e18161b13a4d73ee77445e30097a1079c3ea0e013f57fc19fad321",
-      "after_sha256": "1f3e43309ec159fecee4291e5414c37328432d25bb8062a77b72837bcbd27eb2"
+      "after_sha256": "60b318b2dc4cd8f0bcbd06bae1b902a3c7c1b29731b2e1f8ee13c48efbea85c2"
+    },
+    {
+      "path": "include/JobSkillsSnapshot.h",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "c3807bad75d11d9c0da62f65c9565d4caa8bc6fdefea020d0cd11a177e4c627d"
+    },
+    {
+      "path": "include/JobTracker.h",
+      "status": "modified",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": "a985004b73845207313f2868c2ce1e1dd2d2b9d15b16f45515c8a298a8ba42ca",
+      "after_sha256": "004a32d266e35de81767f7de51a6aad70ecaeba76d2129cf71f25166f385ad49"
     },
     {
       "path": "include/JobsTypes.h",
@@ -548,7 +652,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": "e3cfea8aa6fc91354137845c6aecb16abfeb7b858f0afa21dd2021d42693aaa0",
-      "after_sha256": "7dc7a877f5d8a2a9a8ae8fcfe17429434297070f968bf198fa037c73287e6a3a"
+      "after_sha256": "6210e3a22132efb0ecb0816cb8d612e5e26bddf9e0790f29113042af3071d739"
     },
     {
       "path": "include/MessageVariables.h",
@@ -597,6 +701,14 @@
       "line_endings_only": false,
       "before_sha256": "0399c9c6978ecd9ab4779c7d1bc05a1175097d41c5845fb9b6f6d33b216fa1d5",
       "after_sha256": "eb6f703a00bdc6a7cec8afe72f48448d0d50dbbe2090b59d3725a2d08284d9a6"
+    },
+    {
+      "path": "include/PersistentPaths.h",
+      "status": "modified",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": "3dd9fb1325df1fc881dca1c5307d108f02b149c51e056f3180b30495858e47e8",
+      "after_sha256": "2b82f88418c430add153588ab86bf2a17a728823e1e7587b032300cad58a2099"
     },
     {
       "path": "include/RakHook/.clang-format",
@@ -924,7 +1036,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": "2299aeab1ef34de7189e4d246e7956bf5028638a7593289451304fb78e61f20e",
-      "after_sha256": "dca4900907318a31759d9fc8f166a6c2bdd7ba957eb4b0adb847ab876dac0371"
+      "after_sha256": "9fa55c0e25b82bcc784620631eaece8ffe75d04aa35a147219dffc6bfd44bcd5"
     },
     {
       "path": "include/ServerStatsSnapshot.h",
@@ -940,7 +1052,15 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": "353baf6539d341b05fb1a0eb8d62b52bc94d3b370c17b87abd9ae34b9d2ed3f1",
-      "after_sha256": "8b142708acdebc6e7a96241567da597a1e34868151fc682bff0205d64e5d57ab"
+      "after_sha256": "c23b4f29f053d722b0dbbfae68816e0f54d86220b960d8a88bca217e3d63e3cd"
+    },
+    {
+      "path": "include/SpeedTicketFlow.h",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "8842e84f0ba26f81946ce254e1791f2433b2c83b6ebef733d96ffe5d58800f4b"
     },
     {
       "path": "include/SpeedometerManager.h",
@@ -981,6 +1101,30 @@
       "line_endings_only": false,
       "before_sha256": "75676a06a6943df58b89e7699ab0f350781bd7939bd3fea4e608b2fb68134f45",
       "after_sha256": "766e2b796eb487545287e42ac8eca9c30268287279d90c9a8c271769d91c1f92"
+    },
+    {
+      "path": "include/WeaponIconCatalog.h",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "d3a5ae4f305977a98363ead14d79e17c9bda7eb8b2c31b2bb67728780cdeabcd"
+    },
+    {
+      "path": "include/WeaponIconManager.h",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "7bf53403518d0a59a50bf386efc336dbc5d1760cc1733d49da2cde0787c74511"
+    },
+    {
+      "path": "include/WeaponIconsUI.h",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "a4a6436766e278832d0186bf84509d0e5a054eec170e00168484a361bdae2826"
     },
     {
       "path": "include/imgui-1.92.7/examples/example_allegro5/example_allegro5.vcxproj",
@@ -29564,7 +29708,23 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": "82ab48f309c1ff27fff638b282f2f51e4c3b46d8fce83a67eff9627cea2339dd",
-      "after_sha256": "c4a4a81b0bac1fd26a86474628b34c62807019b4daafabfe32d74fe09c1ebe1c"
+      "after_sha256": "c296fcc33167c93be8d84f1289dc310201daf9bbe4c1d4177c64d58f56f762fd"
+    },
+    {
+      "path": "src/JobSkillsSync.cpp",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "0f9bcd304c168c02fbc8affd155fef450d51607c616464f87a772248cf380574"
+    },
+    {
+      "path": "src/JobTracker.cpp",
+      "status": "modified",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": "cb7f613525c967872f86a5360eced368988c6982a4aae13bb4973bd90f0a80ce",
+      "after_sha256": "a3da2f8fe9eddb5aa761b976d740f3b08a19ac74e9db59c7be30e024b3b64827"
     },
     {
       "path": "src/JobsUI.cpp",
@@ -29612,7 +29772,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": "eb9f28895fa6b3b435282a6285e06fff924a252ab88bfe81ad90658a0a222781",
-      "after_sha256": "20455d1cc117a53c2c2afcce120de37ba07c50ac57513e2ff63e50ae82abc9a0"
+      "after_sha256": "0b3fa8cd5aadcd71452d696d5dfd5d5805bc9980ce7db3dc832f3e9d60ad64dd"
     },
     {
       "path": "src/MainWindowUI.cpp",
@@ -29620,7 +29780,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": "382276bfc63910a601b4b870386bd1b4b9499ef5234aa72332d7cd2662a50dd4",
-      "after_sha256": "956baf43741fec6d4b473915463b179f137083e91db17c6cc04826224ae9cb50"
+      "after_sha256": "b7226f9505cc5a98315cd0af171d73fc945dbe564b57b78278000edaaa95e522"
     },
     {
       "path": "src/OnlineDataManager.cpp",
@@ -29660,7 +29820,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": "d233100d5d2234827ba8a7f0741b79a2d3236dac12631d210e6577ccc9b64a35",
-      "after_sha256": "0bbc2cdc7fa5aa5b08ba7e88b2569e1f49ec9e88cde621f0f5b1f4fcd2599d91"
+      "after_sha256": "cf166b55827088446e46f278bc3e1f7ac0a8bd603674e0c01e71bf47e85dff69"
     },
     {
       "path": "src/ReconnectManager.cpp",
@@ -29676,7 +29836,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": "d955624a2eb4a14103100e09a90ddbb5a7525ae8cc082665deadd324c08feef2",
-      "after_sha256": "20603f5cdd1e3fcc6c470ca461c49ed30adc2b5094dfe2d7c8bbacb92ac8fcd3"
+      "after_sha256": "3c4d3c8ba3f49a873b13ac95c0b43f09361a16738a82a7cbb3df44de7e493a10"
     },
     {
       "path": "src/SettingsManager.cpp",
@@ -29684,7 +29844,23 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": "7f15ae05799cfc7923a97bdf940ac293d9053dcafc4717f345fcf43b9f6b3c10",
-      "after_sha256": "8d0694c12303719288a05c2ea68c9622d29a037c20fc3c7012ea9d2db0ccf729"
+      "after_sha256": "7c4ae83d2aa4b5f94de553d6627e4ee893da617ec964fe8f61e5c01fdddcb888"
+    },
+    {
+      "path": "src/SpeedTicketBridge.cpp",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "02219880bc0b081c10994b13716421304586b48dd8c0e385300a1bf67a8048b0"
+    },
+    {
+      "path": "src/SpeedTicketFlow.cpp",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "6b026d6ad14c5199277e7c2bb93ead30e8313402a83cf01414c161fafdcdff3e"
     },
     {
       "path": "src/SpeedometerManager.cpp",
@@ -29716,7 +29892,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": null,
-      "after_sha256": "a671cc0dab1930091ad9139d9b773d5894c13cab565a57bac0575b7aecccd6cf"
+      "after_sha256": "e67d7e3b14528cf36081666dbe4c11a3cecdab959f2fac2d09ea3e87c26098fa"
     },
     {
       "path": "src/StatsDialogRPCAdapter.cpp",
@@ -29724,7 +29900,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": null,
-      "after_sha256": "8664b35c8d4ea4e24f832a39dd580ce5df0932d7fdd1ef4a911d29c13edc4af7"
+      "after_sha256": "e4131bf5c619b63388e43c9ba99bc4ea663d842bb31b26af98bcbdd5ba199ef6"
     },
     {
       "path": "src/TextDrawAdapter.cpp",
@@ -29733,6 +29909,22 @@
       "line_endings_only": false,
       "before_sha256": "936f120a31b933ded8ed246a36c26cd3a22399e94f5e3c9a568551c03c184afc",
       "after_sha256": "f3aeb9257a5bd19632bdab2b5d72c409a0ac2503f2835cbcfc437b9734f9b301"
+    },
+    {
+      "path": "src/WeaponIconManager.cpp",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "4ceccb2ba3d6ff2b22aaba246fb524981d2559edbafb89f5659400c7b750462d"
+    },
+    {
+      "path": "src/WeaponIconsUI.cpp",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "f26c6a82977f1a5726e0126dbfca6c94aa2a0db8fc05a66b97380ff2f07effed"
     },
     {
       "path": "tests/JobChatAdapterTests.cpp",
@@ -29759,6 +29951,22 @@
       "after_sha256": "a33ea01b74f448aec2146dcd23f441ac3766731831d2481f4d67fee4889510f4"
     },
     {
+      "path": "tests/JobSkillsImportTests.cpp",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "c59b62af367e2d53d5866113dce94d71a0b948b71028a80d45ad1a4b150f17fc"
+    },
+    {
+      "path": "tests/JobSkillsSnapshotTests.cpp",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "3b561d00671ae4c093c7c912ddf793191182f7642126ca9dd6604e72b6eda855"
+    },
+    {
       "path": "tests/JobTrackerLifecycleTests.cpp",
       "status": "modified",
       "dependency": false,
@@ -29780,7 +29988,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": "1fac4a1d9c947b62b3910b9b0cee32c0a604560edf7a048e03dca7f7a461d3f3",
-      "after_sha256": "13748cb79be0d5cd57a1716ba2dc76c14b01c7a6df6abc091180797f6e7a69f7"
+      "after_sha256": "037ba92084ff575b3ca6363d6fb47488c6f9514e33513a10bb621d01fa124b9d"
     },
     {
       "path": "tests/KillMessageTestTests.cpp",
@@ -29852,7 +30060,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": "405f55f0f241ac1d1d6d96747dab9a64d929e8912581591b1aac84548d1a7473",
-      "after_sha256": "46344278cfdb26366efecebde381a1944815cf1077f743001aa9c80e29e7d757"
+      "after_sha256": "183ec5a859aec4c4c71ec528212d67976b5759075678c4276b33ed3a6e36f8d0"
     },
     {
       "path": "tests/ServerStatsParserTests.cpp",
@@ -29871,6 +30079,14 @@
       "after_sha256": "991d4c11787cc16cac639faea7d67c07fadb81dc481efa2335b55f39b356bcfb"
     },
     {
+      "path": "tests/SpeedTicketFlowTests.cpp",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "fdd69e96b5a3f7d78895489e404d427e4aa158d17007c22ea1bc8264d2f39b7d"
+    },
+    {
       "path": "tests/SpeedometerFocusedTests.cpp",
       "status": "modified",
       "dependency": false,
@@ -29884,7 +30100,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": null,
-      "after_sha256": "44956230b0dbfbfe8696cf49059a0480ef67da8dec75dbaf9b819505444baa72"
+      "after_sha256": "56a8433ca7e0deb357874f229e1926c90c58cf49de85e460bfdde5845c64395e"
     },
     {
       "path": "tests/StatsDialogRPCAdapterTests.cpp",
@@ -29892,7 +30108,23 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": null,
-      "after_sha256": "34ec0cd13a076b28a06420a57a6895999350f72d9a26ce66ac49e7ba60ee4715"
+      "after_sha256": "f76a31d65ded4aa4d75b4f10d47b150db7f75fc1e2d2c7eb295890adb2602e58"
+    },
+    {
+      "path": "tests/WeaponIconManagerTests.cpp",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "3918d77db91f069d48441cb1ff6da2c408732687d33652c9eb09206636bf3931"
+    },
+    {
+      "path": "tests/WeaponIconSettingsTests.cpp",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "a7b830bf267bf285fa391cef5be159594f1d8848ed92eccaecff7f53a826f16e"
     },
     {
       "path": "third_party/assets/LICENSES/Apache-2.0-full.txt",
@@ -29967,6 +30199,14 @@
       "after_sha256": "37c62c2793fcaf0beecbbf33601421648f7e445672a54e89fd4eba2220c0a8cf"
     },
     {
+      "path": "tools/package_revision7.ps1",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "61a97c4f25b591bdcce71ef6a614b23ccecbf3b51e3f7802e4e160d4348b9053"
+    },
+    {
       "path": "tools/prepare_github_review.py",
       "status": "added",
       "dependency": false,
@@ -29980,7 +30220,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": "e8c7a0a6dde01e6ef6d857c59ffe1fec9278f15863e1f5a690b65d87ad002e69",
-      "after_sha256": "664ce0af4be1a8391f52879f76c7cad66f8490204cab8c7dfe7c238612055c8e"
+      "after_sha256": "27a3e13ffb79fe6d26341c5dcf927c2352f30d156406506fa6d6ffdb5c68a392"
     },
     {
       "path": "tools/setup_msvc.bat",
@@ -30021,6 +30261,14 @@
       "line_endings_only": false,
       "before_sha256": null,
       "after_sha256": "fe8142eda7b12327c3a9dc5d2dd8ba9393427674783199fc0827946c86bbc2e5"
+    },
+    {
+      "path": "tools/verify_revision7_artifact.py",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "48b7adfb32b2499ef2ecb73690e8e007191f202dfbf46f049410eea5beabc075"
     }
   ],
   "comparison_excludes_generated": [
@@ -30029,13 +30277,15 @@
     "docs/review/REVISION4-DIFFSTAT.txt",
     "docs/review/REVISION5-DIFFSTAT.txt",
     "docs/review/REVISION6-DIFFSTAT.txt",
+    "docs/review/REVISION7-DIFFSTAT.txt",
     "docs/review/SOURCE-COMPARISON.json",
     "docs/review/first-party-changes.patch",
     "docs/review/revision4-changes.patch",
     "docs/review/revision5-changes.patch",
-    "docs/review/revision6-changes.patch"
+    "docs/review/revision6-changes.patch",
+    "docs/review/revision7-changes.patch"
   ],
-  "release": "v0.1.1-r6",
+  "release": "v0.1.1-r7",
   "before_bytes": "Unmodified filtered original ZIP snapshot",
   "after_bytes": "Exact staged Git blobs after Git text/EOL normalization"
 }

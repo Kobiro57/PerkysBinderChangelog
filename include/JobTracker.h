@@ -8,6 +8,7 @@
 #include <ctime>
 #include <functional>
 #include <memory>
+#include <map>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -58,6 +59,7 @@ public:
 
     std::vector<JobEvent> ExportEvents() const;
     bool ImportEvents(const std::vector<JobEvent>& events);
+    bool ImportSynchronizedSkills(const std::map<JobId, int>& points, std::time_t timestamp = 0);
 
 private:
     bool LoadRegistry();

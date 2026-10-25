@@ -18,6 +18,8 @@
 #include "IncomingDamageDetector.h"
 #include "ServerStatsSnapshot.h"
 #include "StatsDialogRPCAdapter.h"
+#include "SpeedTicketFlow.h"
+#include "JobSkillsSnapshot.h"
 #include "DeathMessageRPCAdapter.h"
 #include "JobChatAdapter.h"
 #include "JobTracker.h"
@@ -56,6 +58,7 @@ public:
     bool SendCommand(const std::string& cmd) const override;
     void ObserveStatsCommand(const std::string& cmd) const;
     bool SendSimulatedKillMessage(const std::string& text, std::string& error) const;
+    bool RequestSpeedTicket(const std::string& arguments, std::string& error);
 
     bool IsChatOpen() const;
     bool IsDialogOpen() const;
@@ -64,6 +67,7 @@ public:
     void SetStatsSynchronizedCallback(std::function<bool(const keybinder::ServerStatsSnapshot&)> callback) { statsSynchronizedCallback_ = std::move(callback); }
     const keybinder::ServerStatsSnapshot& GetSynchronizedStats() const { return synchronizedStats_; }
     bool AreStatsSynchronized() const { return startupStatsComplete_; }
+    bool AreJobSkillsSynchronized() const { return startupJobSkillsComplete_; }
 
     void Update();
 
@@ -159,7 +163,10 @@ public:
         std::function<int()> getCityLevel;
         std::function<std::string()> getDistrictName;
         std::function<bool()> isStartupStatsReady;
+        std::function<bool()> isStartupJobSkillsReady;
         std::function<void(int)> closeStatsDialog;
+        std::function<bool(RakNet::BitStream*)> sendDialogResponse;
+        std::function<void(int)> hideDialog;
     };
 
     static void SetTestingHooks(const TestingHooks& hooks);
@@ -188,7 +195,11 @@ private:
     void CaptureStartupStatsDialog(const keybinder::StatsDialogEvent& event);
     bool AcceptStartupStatsDialog(const keybinder::StatsDialogEvent& event, unsigned long now);
     void CloseStartupStatsDialog(unsigned long now);
+    void UpdateSpeedTicketFlow(unsigned long now);
+    bool SendSpeedDialogChoice(const keybinder::SpeedTicketAction& action);
+    void UpdateStartupJobSkills(unsigned long now);
     void UpdateAutoEngineStart(unsigned long now);
+    void ObserveServerEngineStartMessage(const std::string& text);
     bool ReadDriverVehicle(unsigned short& vehicleId, bool& engineOn) const;
     bool IsEngineInputAvailable() const;
     void SetEngineStartKeyDown(bool down);
@@ -326,6 +337,17 @@ private:
     bool autoEngineStartReleasePending_;
     unsigned short autoEngineObservedVehicle_ = 0xFFFF;
     bool autoEngineEntryConsumed_ = false;
+    struct EngineServerStartNotice {
+        unsigned long at = 0;
+        unsigned short vehicle = 0xFFFF;
+        unsigned long generation = 0;
+    };
+    std::mutex autoEngineNoticeMutex_;
+    std::vector<EngineServerStartNotice> autoEngineServerNotices_;
+    unsigned short autoEnginePublishedVehicle_ = 0xFFFF;
+    unsigned long autoEnginePublishedGeneration_ = 0;
+    unsigned long autoEngineEntryGeneration_ = 0;
+    std::optional<EngineServerStartNotice> autoEnginePreSeatNotice_;
 
     bool killTrackerEnabled_;
     bool killTrackerLocalKillMessageEnabled_;
@@ -395,4 +417,18 @@ private:
     bool startupStatsPendingChat_ = false;
     bool startupStatsHiddenChat_ = false;
     unsigned long startupStatsChatHeaderAt_ = 0;
+    keybinder::SpeedTicketFlow speedTicketFlow_;
+    std::atomic<bool> captureSpeedDialogs_{false};
+    std::vector<keybinder::StatsDialogEvent> speedTicketDialogs_;
+    std::vector<keybinder::StatsDialogEvent> pendingSpeedDialogs_;
+    bool startupJobSkillsRequested_ = false;
+    bool startupJobSkillsComplete_ = false;
+    bool startupJobSkillsFailed_ = false;
+    bool startupStatsSaved_ = false;
+    bool startupSyncNotified_ = false;
+    unsigned long startupJobSkillsRequestedAt_ = 0;
+    bool jobSkillsRequestPending_ = false;
+    unsigned long jobSkillsRequestAt_ = 0;
+    mutable std::atomic<bool> ownJobSkillsCommandObserved_{false};
+    std::vector<keybinder::StatsDialogEvent> jobSkillsDialogs_;
 };

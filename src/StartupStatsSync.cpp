@@ -69,11 +69,17 @@ void SAMPBridge::ResetStartupStats() {
     startupStatsIdentity_.clear();
     startupStatsCollector_.Reset();
     startupStatsDialogToClose_.reset();
+    startupJobSkillsRequested_ = startupJobSkillsComplete_ = startupJobSkillsFailed_ = false;
+    startupStatsSaved_ = startupSyncNotified_ = false;
+    jobSkillsRequestPending_ = false;
+    ownJobSkillsCommandObserved_.store(false, std::memory_order_release);
     ownStatsCommandObserved_.store(false, std::memory_order_release);
     statsDialogRequestPending_ = false;
     std::lock_guard<std::mutex> lock(startupStatsMutex_);
     startupStatsLines_.clear();
     startupStatsDialogs_.clear();
+    jobSkillsDialogs_.clear();
+    speedTicketDialogs_.clear();
     startupStatsOwnName_.clear();
     startupStatsPendingChat_ = startupStatsHiddenChat_ = false;
 }
@@ -83,6 +89,7 @@ void SAMPBridge::ObserveStatsCommand(const std::string& cmd) const {
     if (first == std::string::npos) return;
     const std::string command = LowerStatsName(cmd.substr(first, cmd.find_last_not_of(" \t\r\n") - first + 1));
     if (command == "/stats") ownStatsCommandObserved_.store(true, std::memory_order_release);
+    if (command == "/jobskills") ownJobSkillsCommandObserved_.store(true, std::memory_order_release);
 }
 
 void SAMPBridge::InitializeStartupStatsAdapter() {
@@ -96,6 +103,8 @@ void SAMPBridge::InitializeStartupStatsAdapter() {
 void SAMPBridge::CaptureStartupStatsDialog(const keybinder::StatsDialogEvent& event) {
     std::lock_guard<std::mutex> lock(startupStatsMutex_);
     if (startupStatsDialogs_.size() < 8) startupStatsDialogs_.push_back(event);
+    if (captureSpeedDialogs_.load(std::memory_order_acquire) && speedTicketDialogs_.size() < 8) speedTicketDialogs_.push_back(event);
+    if (jobSkillsDialogs_.size() < 8) jobSkillsDialogs_.push_back(event);
 }
 
 #ifdef KEYBINDER_TESTING
@@ -209,8 +218,9 @@ void SAMPBridge::CompleteStartupStats(unsigned long now) {
         startupStatsPendingChat_ = false;
     }
     const bool saved = !statsSynchronizedCallback_ || statsSynchronizedCallback_(synchronizedStats_);
+    startupStatsSaved_ = saved;
     if (firstCompletion) QueueLocalMessage(saved
-        ? "{33CCFF}[NL-BINDER]{FFFFFF} Synchronisation abgeschlossen."
+        ? "{33CCFF}[NL-BINDER]{FFFFFF} Statistik übernommen."
         : "{FF6600}[NL-BINDER]{FFFFFF} Synchronisation gelesen, aber die Daten konnten nicht gespeichert werden.");
 }
 
@@ -239,7 +249,7 @@ void SAMPBridge::UpdateStartupStats(unsigned long now) {
 #else
         const bool ready = IsLocalCombatActive();
 #endif
-        if (!ready || name.empty() || IsChatOpen() || IsDialogOpen() || IsCursorActive()) return;
+        if (!ready || name.empty() || IsChatOpen() || IsDialogOpen() || IsCursorActive() || speedTicketFlow_.IsActive()) return;
         startupStatsRequested_ = true;
         startupStatsRequestedAt_ = now;
         startupStatsCollector_.Reset();

@@ -1,32 +1,36 @@
 .gitattributes                       |   12 +
  .gitignore                           |   13 +
  Keybinder.rc                         |    2 +
- Keybinder.vcxproj                    |   13 +-
- README.md                            |  183 ++----
- docs/BUILD-README.md                 |  124 ++++
- docs/NLBinder-0.1.1-DE.md            |   71 +++
+ Keybinder.vcxproj                    |   18 +-
+ README.md                            |  186 ++---
+ docs/BUILD-README.md                 |  124 +++
+ docs/NLBinder-0.1.1-DE.md            |   71 ++
  docs/NLBinder-0.1.1-r2-DE.md         |  128 ++++
  docs/NLBinder-0.1.1-r3-DE.md         |  133 ++++
- docs/NLBinder-0.1.1-r4-DE.md         |  165 +++++
- docs/NLBinder-0.1.1-r5-DE.md         |   83 +++
- docs/NLBinder-0.1.1-r6-DE.md         |   71 +++
- docs/ORIGINAL-README.md              |  121 ++++
+ docs/NLBinder-0.1.1-r4-DE.md         |  165 ++++
+ docs/NLBinder-0.1.1-r5-DE.md         |   83 ++
+ docs/NLBinder-0.1.1-r6-DE.md         |   71 ++
+ docs/NLBinder-0.1.1-r7-DE.md         |  113 +++
+ docs/ORIGINAL-README.md              |  121 +++
  docs/build-dependencies.md           |   24 +
- docs/jobs-support.md                 |   38 ++
- docs/review/CHANGELOG-DE.md          |  417 ++++++++++++
- docs/review/DEPENDENCIES.md          |   78 +++
- docs/review/PRUEFUNG-DE.md           |  346 ++++++++++
+ docs/jobs-support.md                 |   38 +
+ docs/review/CHANGELOG-DE.md          |  490 ++++++++++++
+ docs/review/DEPENDENCIES.md          |   78 ++
+ docs/review/PRUEFUNG-DE.md           |  430 +++++++++++
  docs/review/PUBLICATION.json         |   13 +
  docs/review/PUBLISHING-DE.md         |   34 +
- docs/review/README-GITHUB.md         |   62 ++
+ docs/review/README-GITHUB.md         |   65 ++
  docs/review/r4-validation.json       |   21 +
  docs/review/r5-validation.json       |   20 +
  docs/review/r6-validation.json       |   29 +
+ docs/review/r7-validation.json       |   32 +
  include/ActionExecutor.h             |    4 +
  include/DamageRPCAdapter.h           |    8 +-
  include/DeathMessageRPCAdapter.h     |    3 +
  include/IncomingDamageDetector.h     |   89 ++-
- include/JobChatAdapter.h             |    9 +
+ include/JobChatAdapter.h             |   10 +
+ include/JobSkillsSnapshot.h          |  165 ++++
+ include/JobTracker.h                 |    2 +
  include/JobsTypes.h                  |    2 +-
  include/KillMessageTest.h            |   56 ++
  include/KillTracker.h                |    6 +
@@ -34,70 +38,86 @@
  include/KillTrackerUI.h              |   11 +-
  include/KillfeedAdapter.h            |   11 +-
  include/LocationNames.h              |   18 +
- include/MainWindowUI.h               |    4 +
- include/MessageVariables.h           |   36 ++
+ include/MainWindowUI.h               |    9 +
+ include/MessageVariables.h           |   36 +
  include/MessageVariablesUI.h         |   47 ++
  include/OnlineDataManager.h          |    2 +-
  include/OnlineOverlayController.h    |   46 ++
  include/OnlineOverlayRenderer.h      |    5 +
  include/OnlineUI.h                   |   10 +-
- include/ReconnectManager.h           |   75 +++
+ include/PersistentPaths.h            |    1 +
+ include/ReconnectManager.h           |   75 ++
  include/ResourceIds.h                |    1 +
- include/SAMPBridge.h                 |  102 ++-
- include/ServerStatsSnapshot.h        |  369 +++++++++++
- include/SettingsManager.h            |   44 +-
+ include/SAMPBridge.h                 |  138 +++-
+ include/ServerStatsSnapshot.h        |  369 +++++++++
+ include/SettingsManager.h            |   53 +-
+ include/SpeedTicketFlow.h            |   50 ++
  include/SpeedometerManager.h         |   19 +-
  include/SpeedometerUI.h              |    1 +
  include/StatsDialogRPCAdapter.h      |   51 ++
  include/TextDrawAdapter.h            |    5 +
  include/Version.h                    |    2 +-
- res/jobs_registry.json               |  192 +++++-
+ include/WeaponIconCatalog.h          |   69 ++
+ include/WeaponIconManager.h          |   60 ++
+ include/WeaponIconsUI.h              |   31 +
+ res/jobs_registry.json               |  192 ++++-
  src/ActionExecutor.cpp               |   30 +-
  src/DamageRPCAdapter.cpp             |   31 +-
  src/DeathMessageRPCAdapter.cpp       |    7 +
- src/JobChatAdapter.cpp               |   37 +-
+ src/JobChatAdapter.cpp               |   38 +-
+ src/JobSkillsSync.cpp                |   91 +++
+ src/JobTracker.cpp                   |   36 +
  src/JobsUI.cpp                       |    4 +-
  src/KeybindEditorUI.cpp              |   41 +-
  src/KillTracker.cpp                  |   25 +-
  src/KillTrackerUI.cpp                |  104 +--
  src/KillfeedAdapter.cpp              |   34 +-
- src/Main.cpp                         |   43 +-
- src/MainWindowUI.cpp                 |  160 ++++-
+ src/Main.cpp                         |   60 +-
+ src/MainWindowUI.cpp                 |  179 ++++-
  src/OnlineDataManager.cpp            |    6 +-
- src/OnlineOverlayController.cpp      |  196 +++++-
- src/OnlineOverlayRenderer.cpp        |  117 +++-
- src/OnlineUI.cpp                     |  145 ++++-
- src/PersistentPaths.cpp              |   11 +
- src/ReconnectManager.cpp             |  295 +++++++++
- src/SAMPBridge.cpp                   | 1087 +++++++++++++++-----------------
- src/SettingsManager.cpp              |  236 +++++--
+ src/OnlineOverlayController.cpp      |  196 ++++-
+ src/OnlineOverlayRenderer.cpp        |  117 ++-
+ src/OnlineUI.cpp                     |  145 +++-
+ src/PersistentPaths.cpp              |   21 +
+ src/ReconnectManager.cpp             |  295 ++++++++
+ src/SAMPBridge.cpp                   | 1160 ++++++++++++++--------------
+ src/SettingsManager.cpp              |  283 +++++--
+ src/SpeedTicketBridge.cpp            |  128 ++++
+ src/SpeedTicketFlow.cpp              |  203 +++++
  src/SpeedometerManager.cpp           |  104 +--
  src/SpeedometerUI.cpp                |   24 +-
  src/SquareMap.cpp                    |    2 +-
- src/StartupStatsSync.cpp             |  302 +++++++++
- src/StatsDialogRPCAdapter.cpp        |  116 ++++
- src/TextDrawAdapter.cpp              |  168 ++---
+ src/StartupStatsSync.cpp             |  312 ++++++++
+ src/StatsDialogRPCAdapter.cpp        |  117 +++
+ src/TextDrawAdapter.cpp              |  168 +++--
+ src/WeaponIconManager.cpp            |  269 +++++++
+ src/WeaponIconsUI.cpp                |  154 ++++
  tests/JobChatAdapterTests.cpp        |  103 +++
- tests/JobParserTests.cpp             |  105 ++++
+ tests/JobParserTests.cpp             |  105 +++
  tests/JobRegistryTests.cpp           |   67 +-
+ tests/JobSkillsImportTests.cpp       |   56 ++
+ tests/JobSkillsSnapshotTests.cpp     |  114 +++
  tests/JobTrackerLifecycleTests.cpp   |   47 ++
  tests/JobsUITests.cpp                |    2 +-
- tests/KeybindTests.cpp               |   17 +-
+ tests/KeybindTests.cpp               |   27 +-
  tests/KillMessageTestTests.cpp       |   59 ++
- tests/LocationVariableTests.cpp      |  112 ++++
+ tests/LocationVariableTests.cpp      |  112 +++
  tests/OnlineDataManagerTests.cpp     |    7 +-
- tests/OnlineOverlayRendererTests.cpp |  351 ++++++++++-
+ tests/OnlineOverlayRendererTests.cpp |  351 ++++++++-
  tests/OnlineSettingsTests.cpp        |  137 ++++
- tests/ReconnectManagerTests.cpp      |  216 +++++++
- tests/ReconnectWorkerFixture.cpp     |   37 ++
+ tests/ReconnectManagerTests.cpp      |  216 ++++++
+ tests/ReconnectWorkerFixture.cpp     |   37 +
  tests/RegressionTests.cpp            |   35 +-
- tests/SAMPBridgeTests.cpp            | 1152 ++++++++++++++++++++++++++++++++++
- tests/ServerStatsParserTests.cpp     |  220 +++++++
+ tests/SAMPBridgeTests.cpp            | 1372 ++++++++++++++++++++++++++++++++++
+ tests/ServerStatsParserTests.cpp     |  220 ++++++
  tests/SourceContractTests.cpp        |   19 +
- tests/SpeedometerFocusedTests.cpp    |  160 ++++-
- tests/StartupStatsSyncTests.cpp      |  401 ++++++++++++
- tests/StatsDialogRPCAdapterTests.cpp |  114 ++++
- tools/ReconnectHelper.cpp            |  185 ++++++
+ tests/SpeedTicketFlowTests.cpp       |  180 +++++
+ tests/SpeedometerFocusedTests.cpp    |  160 +++-
+ tests/StartupStatsSyncTests.cpp      |  533 +++++++++++++
+ tests/StatsDialogRPCAdapterTests.cpp |  114 +++
+ tests/WeaponIconManagerTests.cpp     |  181 +++++
+ tests/WeaponIconSettingsTests.cpp    |   87 +++
+ tools/ReconnectHelper.cpp            |  185 +++++
  tools/build_and_test.bat             |    9 +-
  tools/build_plugin_sdk.bat           |   19 +-
  tools/build_reconnect_helper.bat     |    8 +
@@ -105,11 +125,13 @@
  tools/package_revision4.ps1          |   97 +++
  tools/package_revision5.ps1          |   96 +++
  tools/package_revision6.ps1          |   93 +++
+ tools/package_revision7.ps1          |  126 ++++
  tools/prepare_github_review.py       |  135 ++++
- tools/run_tests.bat                  |   30 +-
+ tools/run_tests.bat                  |   40 +-
  tools/setup_msvc.bat                 |   16 +
  tools/test_reconnect_worker.py       |  127 ++++
- tools/verify_revision4_artifact.py   |  115 ++++
- tools/verify_revision5_artifact.py   |  115 ++++
- tools/verify_revision6_artifact.py   |  115 ++++
- 114 files changed, 10089 insertions(+), 1195 deletions(-)
+ tools/verify_revision4_artifact.py   |  115 +++
+ tools/verify_revision5_artifact.py   |  115 +++
+ tools/verify_revision6_artifact.py   |  115 +++
+ tools/verify_revision7_artifact.py   |  115 +++
+ 136 files changed, 13121 insertions(+), 1195 deletions(-)

@@ -33,9 +33,10 @@ bool DecodeDialog(RakNet::BitStream* payload, StatsDialogEvent& event) {
     RestoreReadOffset restore{*payload, payload->GetReadOffset()};
     StatsDialogEvent parsed;
     if (!payload->Read(parsed.id) || parsed.id == 0xFFFF || !payload->Read(parsed.style)) return false;
-    // Input/password dialogs must never be treated as statistics. List and
-    // tablist styles carry the same full text in this RPC as message boxes.
-    if (parsed.style != 0 && parsed.style != 2 && parsed.style != 4 && parsed.style != 5) return false;
+    // The bridge also observes ordinary input dialogs for the explicitly
+    // requested /speed workflow. Statistics still accept read-only styles;
+    // password dialogs are never captured.
+    if (parsed.style != 0 && parsed.style != 1 && parsed.style != 2 && parsed.style != 4 && parsed.style != 5) return false;
     std::string firstButton, secondButton;
     if (!ReadByteString(*payload, parsed.caption) || !ReadByteString(*payload, firstButton)
         || !ReadByteString(*payload, secondButton)) return false;

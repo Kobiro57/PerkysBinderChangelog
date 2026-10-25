@@ -43,6 +43,7 @@
 #include "../include/SAMPBridge.h"
 #include "../include/SquareMap.h"
 #include "../include/HudSpriteManager.h"
+#include "../include/WeaponIconManager.h"
 #include "../include/SettingsManager.h"
 #include "../include/SpeedometerManager.h"
 #include "../include/SpeedometerUI.h"
@@ -384,6 +385,7 @@ public:
         
         // Shut down SAMPBridge (removes RakHook, command hooks)
         hitsoundPlayer_.Shutdown();
+        weaponIconManager_.Shutdown();
         textureManager_.ReleaseAll();
         bridge_.Shutdown();
         
@@ -532,6 +534,7 @@ public:
         crosshairSwitcher_.ApplySettings(settingsManager_.Get());
         squareMap_.ApplySettings(settingsManager_.Get());
         hudSpriteManager_.ApplySettings(settingsManager_.Get());
+        weaponIconManager_.ApplySettings(settingsManager_.Get());
 
         hitmarker_.ApplySettings(settingsManager_.Get());
 
@@ -565,6 +568,7 @@ public:
         mainWindowUI_.SetCrosshairSwitcher(&crosshairSwitcher_);
         mainWindowUI_.SetSquareMap(&squareMap_);
         mainWindowUI_.SetHudSpriteManager(&hudSpriteManager_);
+        mainWindowUI_.SetWeaponIconManager(&weaponIconManager_);
         mainWindowUI_.SetInterfaceEditor(&interfaceEditor_);
         mainWindowUI_.SetRssFeedManager(&rssFeedManager_);
         mainWindowUI_.SetOnlineDataManager(&onlineDataManager_);
@@ -687,6 +691,12 @@ public:
             }
         });
 
+        bridge_.RegisterCommand("speed", [&](const std::string& params) {
+            std::string error;
+            if (!bridge_.RequestSpeedTicket(params, error))
+                bridge_.SendLocalMessage("{FF6600}[NL-BINDER]{FFFFFF} " + error);
+        });
+
         auto runTextDrawDump = [&](const std::string&) {
             const std::string outputPath = BuildTextDrawDumpPath();
             std::size_t count = 0;
@@ -761,7 +771,7 @@ public:
                 return true;
             }
 
-            if (command == "info" || command == "reconnect") {
+            if (command == "info" || command == "reconnect" || command == "speed") {
                 return false;
             }
             
@@ -817,6 +827,7 @@ public:
             crosshairSwitcher_.Initialize();
             squareMap_.Initialize();
             hudSpriteManager_.Initialize();
+            weaponIconManager_.Initialize();
             if (!interfaceEditor_.Initialize()) {
                 keybinder::Logger::Error("InterfaceEditor hooks failed to initialize; custom zone text may not work");
             }
@@ -835,6 +846,7 @@ public:
             crosshairSwitcher_.OnDeviceReset();
             squareMap_.OnDeviceReset();
             hudSpriteManager_.OnDeviceReset();
+            weaponIconManager_.OnDeviceReset();
         };
         Events::drawHudEvent += [&]() {
             if (g_shutdown_phase.load() != 0) {
@@ -946,6 +958,7 @@ public:
         };
         Events::d3dLostEvent += [] {
             hudSpriteManager_.OnDeviceLost();
+            weaponIconManager_.OnDeviceLost();
             squareMap_.OnDeviceLost();
             crosshairSwitcher_.OnDeviceLost();
             quickMap_.OnDeviceLost();
@@ -960,6 +973,7 @@ public:
             crosshairSwitcher_.OnDeviceReset();
             squareMap_.OnDeviceReset();
             hudSpriteManager_.OnDeviceReset();
+            weaponIconManager_.OnDeviceReset();
         };
         Events::shutdownRwEvent += [] {
             g_shutdown_phase.store(2);
@@ -979,6 +993,7 @@ public:
             crosshairSwitcher_.Shutdown();
             squareMap_.Shutdown();
             hudSpriteManager_.Shutdown();
+            weaponIconManager_.Shutdown();
             onlineOverlayRenderer_.Shutdown();
             quickMap_.Shutdown();
             speedometerManager_.Shutdown();
@@ -1037,6 +1052,7 @@ private:
     static keybinder::CrosshairSwitcher crosshairSwitcher_;
     static keybinder::SquareMap squareMap_;
     static keybinder::HudSpriteManager hudSpriteManager_;
+    static keybinder::WeaponIconManager weaponIconManager_;
     static keybinder::InterfaceEditor interfaceEditor_;
     static keybinder::TextureManager textureManager_;
     static keybinder::QuickMap quickMap_;
@@ -1065,6 +1081,7 @@ keybinder::HitsoundPlayer Keybinder::hitsoundPlayer_{};
 keybinder::CrosshairSwitcher Keybinder::crosshairSwitcher_{};
 keybinder::SquareMap Keybinder::squareMap_{};
 keybinder::HudSpriteManager Keybinder::hudSpriteManager_{};
+keybinder::WeaponIconManager Keybinder::weaponIconManager_{};
 keybinder::InterfaceEditor Keybinder::interfaceEditor_{};
 keybinder::TextureManager Keybinder::textureManager_{};
 keybinder::QuickMap Keybinder::quickMap_{};

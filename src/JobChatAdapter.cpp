@@ -180,6 +180,7 @@ bool EmitChatEvent(const std::shared_ptr<jobs::JobChatAdapterState>& state,
     }
 
     jobs::JobChatEvent event;
+    event.hasPlayerPrefix = prefix != nullptr && prefix[0] != '\0';
     event.rawLine = ConvertGameEncodingToUtf8(BuildRawLine(prefix, text));
     event.timestampFreeLine = TrimCopy(StripTimestamp(event.rawLine));
     event.normalizedLine = TrimCopy(StripColorCodes(event.timestampFreeLine));

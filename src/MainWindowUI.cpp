@@ -560,6 +560,12 @@ MainWindowUI::MainWindowUI() {
         }
     };
 
+    weaponIconsUI_.OnSettingsChanged = [this]() {
+        if (settingsManager_ != nullptr && keybindManager_ != nullptr) {
+            keybindManager_->Save(settingsManager_);
+        }
+    };
+
     hitsoundUI_.OnSettingsChanged = [this]() {
         if (settingsManager_ != nullptr && keybindManager_ != nullptr) {
             keybindManager_->Save(settingsManager_);
@@ -601,6 +607,7 @@ void MainWindowUI::SetSettingsManager(SettingsManager* manager) {
         crosshairUI_.SetSettingsManager(manager);
         squareMapUI_.SetSettingsManager(manager);
         hudSpriteUI_.SetSettingsManager(manager);
+        weaponIconsUI_.SetSettingsManager(manager);
         hitsoundUI_.SetSettingsManager(manager);
         rssTrackerUI_.SetSettingsManager(manager);
     }
@@ -1099,6 +1106,9 @@ void MainWindowUI::RenderModsView() {
         case ModsSubtab::Hud:
             RenderHudModsTab();
             break;
+        case ModsSubtab::WeaponIcons:
+            weaponIconsUI_.Render();
+            break;
     }
 }
 
@@ -1147,6 +1157,9 @@ void MainWindowUI::RenderModsTabs() {
     }
     if (UIComponents::SubTabItem("Hud", currentModsSubtab_ == ModsSubtab::Hud)) {
         currentModsSubtab_ = ModsSubtab::Hud;
+    }
+    if (UIComponents::SubTabItem("Waffenicons", currentModsSubtab_ == ModsSubtab::WeaponIcons)) {
+        currentModsSubtab_ = ModsSubtab::WeaponIcons;
     }
 
     UIComponents::EndSubTabs();
@@ -1965,12 +1978,17 @@ void MainWindowUI::SetHudSpriteManager(HudSpriteManager* manager) {
     hudSpriteUI_.SetHudSpriteManager(manager);
 }
 
+void MainWindowUI::SetWeaponIconManager(WeaponIconManager* manager) {
+    weaponIconsUI_.SetWeaponIconManager(manager);
+}
+
 void MainWindowUI::SetTextureManager(TextureManager* manager) {
     textureManager_ = manager;
     sidebarLogoLoadAttempted_ = false;
     hitmarkerUI_.SetTextureManager(manager);
     crosshairUI_.SetTextureManager(manager);
     hudSpriteUI_.SetTextureManager(manager);
+    weaponIconsUI_.SetTextureManager(manager);
 }
 
 void MainWindowUI::SetDeviceGetter(std::function<IDirect3DDevice9*()> getter) {
@@ -1979,6 +1997,7 @@ void MainWindowUI::SetDeviceGetter(std::function<IDirect3DDevice9*()> getter) {
     hitmarkerUI_.SetDeviceGetter(getter);
     crosshairUI_.SetDeviceGetter(getter);
     hudSpriteUI_.SetDeviceGetter(getter);
+    weaponIconsUI_.SetDeviceGetter(getter);
 }
 
 void MainWindowUI::SetOnlineDataManager(OnlineDataManager* manager) {

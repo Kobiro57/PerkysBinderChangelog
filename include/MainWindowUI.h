@@ -12,6 +12,7 @@
 #include "CrosshairUI.h"
 #include "SquareMapUI.h"
 #include "HudSpriteUI.h"
+#include "WeaponIconsUI.h"
 #include "HitsoundUI.h"
 #include "InterfaceEditorUI.h"
 #include "RssTrackerUI.h"
@@ -39,6 +40,7 @@ class HitsoundPlayer;
 class CrosshairSwitcher;
 class SquareMap;
 class HudSpriteManager;
+class WeaponIconManager;
 class TextureManager;
 class RssFeedManager;
 class SpeedometerManager;
@@ -64,6 +66,7 @@ enum class ModsSubtab {
     Hitmarker = 0,
     Hitsound = 1,
     Hud = 2,
+    WeaponIcons = 3,
 };
 
 enum class HudSpriteLibrarySubtab {
@@ -91,6 +94,7 @@ public:
     void SetCrosshairSwitcher(CrosshairSwitcher* switcher);
     void SetSquareMap(SquareMap* squareMap);
     void SetHudSpriteManager(HudSpriteManager* manager);
+    void SetWeaponIconManager(WeaponIconManager* manager);
     void SetHitsoundPlayer(HitsoundPlayer* player);
     void SetInterfaceEditor(InterfaceEditor* editor);
     void SetTextureManager(TextureManager* manager);
@@ -165,6 +169,7 @@ private:
     CrosshairUI crosshairUI_;
     SquareMapUI squareMapUI_;
     HudSpriteUI hudSpriteUI_;
+    WeaponIconsUI weaponIconsUI_;
     HitsoundUI hitsoundUI_;
     InterfaceEditorUI interfaceEditorUI_;
     RssTrackerUI rssTrackerUI_;

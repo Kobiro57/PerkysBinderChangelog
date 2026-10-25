@@ -1,0 +1,35 @@
+NLBinder v.0.1.1 by KOBiRO – Überarbeitung 7
+Erstellt: 25.10.2026 16:29:12 (Europe/Berlin)
+Datei: Keybinder.asi
+Format: Win32 Release, PE32/x86 DLL
+Größe: 18420224 Bytes
+SHA256: abdcca5a0f89ea6e2391834199eef83f267dfee4ac05e28cff7a946b3db9341d
+Eingebetteter Reconnect-Helfer: Ressource 300, 101376 Bytes
+Helfer-SHA256: edf6418f5d7eed1e3c6fac92b0bf0337703d10cc400fd48ebd18c7a1770cee60
+
+Verifikation:
+- Vollständige automatisierte Tests: Exitcode 0
+- Release-Build: Exitcode 0
+- ASI-Format, Windows-Imports und eingebetteter Helfer geprüft
+- Eingebetteter Reconnect-Helfer stimmt mit dem geprüften Helfer überein
+- Nativer Reconnect-Helfer: 18 Prüfungen, 0 Fehler
+- Dafür ausschließlich harmlose Testprozesse verwendet
+- Kein echtes Spiel und kein installierter Launcher gestartet oder beendet
+- Kein Ingame-Test durchgeführt
+
+Neue Änderungen:
+- Waffenicons unter Mods, mit 43 Waffenordnern und PNG-Auswahl pro Waffe
+- Globale Aktivierung, einzelne Waffen ein-/ausschalten und Originaldarstellung
+- /speed ID führt die bestätigte Wanted-Dialogfolge inklusive Vergeben einmal aus
+- Start-Synchronisation liest /stats und anschließend /jobskills
+- Bereits vorhandene absolute Job-Skillpunkte werden ohne Verdienstereignis übernommen
+- Bestätigter serverseitiger Motorstart wird beim automatischen Motorstart berücksichtigt
+
+Die früheren Job-, Skilltree-, Fraktions-, Radar-, Tacho- und Reconnect-
+Anpassungen sind enthalten. Die ursprüngliche Oberfläche bleibt Grundlage.
+Der Reconnect-Helfer ist in der ASI enthalten.
+
+Grenzen: Die Synchronisation wartet auf eine echte Serverantwort. Mehrere
+Schadensereignisse zwischen Messungen erscheinen als gemessener Gesamtverlust.
+Ein Live-Test mit dem konkreten Server und Launcher steht weiterhin aus.
+Installation und weitere Hinweise stehen in LIESMICH.md.

@@ -28,8 +28,11 @@ struct Context {
     FakeObject<sampapi::v03dl::CLocalPlayer> local;
     std::string name = "SyncPlayer";
     bool ready = false;
+    bool jobSkillsReady = false; // Phase two is exercised by its own complete-dialog test below.
     unsigned long now = 1000;
     int closed = 0;
+    int hidden = 0;
+    std::vector<std::tuple<int, int, int, std::string>> replies;
     std::vector<std::string> commands, messages, localMessages;
 
     Context() {
@@ -57,6 +60,7 @@ struct Context {
         hooks.getPlayerName = [](int) { return std::string("AnotherPlayer"); };
         hooks.getTickCount = [&]() { return now; };
         hooks.isStartupStatsReady = [&]() { return ready; };
+        hooks.isStartupJobSkillsReady = [&]() { return jobSkillsReady; };
         hooks.getCityLevel = []() { return 1; };
         hooks.getDistrictName = []() { return std::string("Market"); };
         hooks.sendInput = [&](sampapi::v03dl::CInput*, const char* text) { commands.push_back(text); };
@@ -67,17 +71,58 @@ struct Context {
         hooks.setDefaultCommand = [](sampapi::v03dl::CInput*, sampapi::CMDPROC) {};
         hooks.installIncomingChatInterceptor = [](const auto&) {};
         hooks.closeStatsDialog = [&](int id) { if (id == dialog.get()->m_nId) { ++closed; dialog.get()->m_bIsActive = FALSE; } };
+        hooks.hideDialog = [&](int id) { if (id == dialog.get()->m_nId) { ++hidden; dialog.get()->m_bIsActive = FALSE; } };
+        hooks.sendDialogResponse = [&](RakNet::BitStream* payload) {
+            short id = -1, row = -1;
+            unsigned char response = 0, length = 0;
+            if (!payload->Read(id) || !payload->Read(response) || !payload->Read(row) || !payload->Read(length)) return false;
+            std::string text(length, '\0');
+            if (length && !payload->Read(text.data(), length)) return false;
+            replies.emplace_back(id, response, row, text);
+            return payload->GetNumberOfUnreadBits() == 0;
+        };
         return hooks;
     }
-    std::size_t Completions() const {
+    std::size_t StatsImports() const {
         std::size_t count = 0;
-        for (const auto& message : localMessages) if (message.find("Synchronisation abgeschlossen.") != std::string::npos) ++count;
+        for (const auto& message : localMessages)
+            if (message.find("Statistik \xC3\xBC" "bernommen.") != std::string::npos
+                || message.find("Statistik \xFC" "bernommen.") != std::string::npos) ++count;
         return count;
     }
 };
 
 const char* levelLine = "Level:[9] Erfahrungspunkte [21/500] Geschlecht: [Mann] Alter: [22] Bargeld: [1.234$] Kontostand: [5.000$]";
 const char* countLine = "Kills: [12] Tode: [4] Fraktion: [Zivilist] Gang: [-] Nächster Zahltag in: [10 Min] Gold: [3] Eventcoins: [2]";
+
+bool DeliverDialog(SAMPBridge& bridge, Context& context, unsigned short id, unsigned char style,
+                   const std::string& caption, const std::string& body) {
+    auto* dialog = context.dialog.get();
+    dialog->m_bIsActive = TRUE;
+    dialog->m_nId = id;
+    dialog->m_nType = style;
+    std::strcpy(dialog->m_szCaption, caption.c_str());
+    dialog->m_szText = nullptr;
+    RakNet::BitStream payload;
+    payload.Write(id); payload.Write(style);
+    for (const auto& text : {caption, std::string("Auswaehlen"), std::string("Zurueck")}) {
+        payload.Write(static_cast<unsigned char>(text.size()));
+        if (!text.empty()) payload.Write(text.data(), static_cast<int>(text.size()));
+    }
+    StringCompressor::Instance()->EncodeString(body.c_str(), 0, &payload);
+    return bridge.ProcessStatsDialogRpcForTesting(&payload) && payload.GetReadOffset() == 0;
+}
+
+std::string TestGameEncoding(const std::string& utf8) {
+    const int count = MultiByteToWideChar(CP_UTF8, 0, utf8.c_str(), -1, nullptr, 0);
+    std::wstring wide(count, L'\0');
+    MultiByteToWideChar(CP_UTF8, 0, utf8.c_str(), -1, wide.data(), count);
+    const int size = WideCharToMultiByte(CP_ACP, 0, wide.data(), -1, nullptr, 0, nullptr, nullptr);
+    std::string result(size, '\0');
+    WideCharToMultiByte(CP_ACP, 0, wide.data(), -1, result.data(), size, nullptr, nullptr);
+    result.resize(size - 1);
+    return result;
+}
 
 void TestOneFastRequestImportsBaselineAndPreservesChatChannelForSimulation() {
     Context context;
@@ -115,7 +160,7 @@ void TestOneFastRequestImportsBaselineAndPreservesChatChannelForSimulation() {
     CHECK(!bridge.ProcessIncomingChatLineForTesting(nullptr, countLine));
     bridge.Update();
     CHECK(bridge.AreStatsSynchronized());
-    CHECK(context.Completions() == 1);
+    CHECK(context.StatsImports() == 1);
     CHECK(bridge.GetTotalKills() == 12 && bridge.GetTotalDeaths() == 4);
     CHECK(bridge.GetKillTracker()->GetSessionKills() == 0 && bridge.GetKillTracker()->GetSessionDeaths() == 0);
     CHECK(context.commands.size() == 1 && context.messages.empty());
@@ -129,7 +174,7 @@ void TestOneFastRequestImportsBaselineAndPreservesChatChannelForSimulation() {
     ++context.now;
     bridge.Update();
     CHECK(bridge.GetSynchronizedStats().wantedPoints == 5 && saved == 2);
-    CHECK(context.Completions() == 1);
+    CHECK(context.StatsImports() == 1);
     std::string error;
     CHECK(bridge.SendSimulatedKillMessage("/r Kills {total_kills} in {city}, {bezirk}", error));
     CHECK(context.commands.back() == "/r [Testkill] Kills 12 in Los Santos, Market");
@@ -157,7 +202,7 @@ void TestTimeoutDoesNotSpamOrClaimSuccessAndReconnectCanSyncAgain() {
     CHECK(context.commands.size() == 1);
     context.now += 8000;
     bridge.Update();
-    CHECK(!bridge.AreStatsSynchronized() && context.Completions() == 0);
+    CHECK(!bridge.AreStatsSynchronized() && context.StatsImports() == 0);
     for (int index = 0; index < 10; ++index) bridge.Update();
     CHECK(context.commands.size() == 1);
     CHECK(bridge.ProcessIncomingChatLineForTesting(nullptr, "*** SyncPlayer ***"));
@@ -191,7 +236,7 @@ void TestOnlyAnIdentifiedOwnStatsDialogCloses() {
     dialog->m_szText = body.data();
     bridge.Update();
     CHECK(context.closed == 1 && !dialog->m_bIsActive);
-    CHECK(bridge.AreStatsSynchronized() && context.Completions() == 1);
+    CHECK(bridge.AreStatsSynchronized() && context.StatsImports() == 1);
     CHECK(bridge.GetTotalKills() == 12 && bridge.GetTotalDeaths() == 4);
     CHECK(context.commands.size() == 1);
     bridge.Shutdown();
@@ -256,7 +301,7 @@ void TestAllStatsDialogStylesImportCloseAndSendRealTotalInSameFrame() {
         bridge.Update(); // same clock value: no artificial delay or timeout wait
         CHECK(bridge.AreStatsSynchronized());
         CHECK(context.closed == 1 && !dialog->m_bIsActive);
-        CHECK(context.Completions() == 1 && saved == 1);
+        CHECK(context.StatsImports() == 1 && saved == 1);
         CHECK(bridge.GetTotalKills() == 341 && bridge.GetTotalDeaths() == 119);
         CHECK(bridge.GetKillTracker()->GetSessionKills() == 0);
         CHECK(bridge.GetSynchronizedStats().GetAvailableWealth() == 80235);
@@ -270,7 +315,7 @@ void TestAllStatsDialogStylesImportCloseAndSendRealTotalInSameFrame() {
         bridge.Update();
         CHECK(context.closed == 1 && dialog->m_bIsActive);
         CHECK(bridge.GetTotalKills() == 342 && bridge.GetTotalDeaths() == 120);
-        CHECK(context.Completions() == 1 && saved == 2);
+        CHECK(context.StatsImports() == 1 && saved == 2);
         CHECK(!bridge.GetSynchronizedStats().cash && !bridge.GetSynchronizedStats().bank);
         keybinder::SettingsManager restored;
         CHECK(restored.LoadFromJson(settings.GetSettingsJson()));
@@ -296,7 +341,7 @@ void TestManualStatsRecoversAfterTimeoutAndOtherDialogsStayOpen() {
     bridge.Update();
     context.now += 8000;
     bridge.Update();
-    CHECK(!bridge.AreStatsSynchronized() && context.Completions() == 0);
+    CHECK(!bridge.AreStatsSynchronized() && context.StatsImports() == 0);
     auto* dialog = context.dialog.get();
     dialog->m_bIsActive = TRUE;
     dialog->m_nId = 345;
@@ -312,7 +357,7 @@ void TestManualStatsRecoversAfterTimeoutAndOtherDialogsStayOpen() {
     CHECK(!bridge.AreStatsSynchronized() && context.closed == 0);
     bridge.ProcessStatsDialogForTesting({345, 4, "Statistiken", "Kills: 67\nTode: 89"});
     bridge.Update();
-    CHECK(bridge.AreStatsSynchronized() && context.Completions() == 1);
+    CHECK(bridge.AreStatsSynchronized() && context.StatsImports() == 1);
     CHECK(context.closed == 1 && !dialog->m_bIsActive);
     CHECK(bridge.GetTotalKills() == 67 && bridge.GetTotalDeaths() == 89);
     CHECK(context.commands == std::vector<std::string>{"/stats"});
@@ -367,7 +412,7 @@ void TestObservedNovaScreenshotLayoutThroughCompressedRpcWithDynamicPlayerName()
         bridge.Update(); // no clock advance or manual dialog close
         CHECK(bridge.AreStatsSynchronized() && saved == 1);
         CHECK(context.closed == 1 && !dialog->m_bIsActive);
-        CHECK(context.Completions() == 1);
+        CHECK(context.StatsImports() == 1);
         CHECK(bridge.GetTotalKills() == 73 && bridge.GetTotalDeaths() == 219);
         const auto& snapshot = bridge.GetSynchronizedStats();
         CHECK(snapshot.playerName == context.name);
@@ -385,6 +430,91 @@ void TestObservedNovaScreenshotLayoutThroughCompressedRpcWithDynamicPlayerName()
         SAMPBridge::ResetTestingHooks();
     }
 }
+
+void TestSpeedCommandPerformsThreeExactDialogRepliesAndSubmitsOnlyOnce() {
+    Context context;
+    SAMPBridge::SetTestingHooks(context.Hooks());
+    SAMPBridge bridge;
+    CHECK(bridge.Initialize());
+    bridge.Update();
+    std::string error;
+    CHECK(!bridge.RequestSpeedTicket("1004", error));
+    CHECK(context.commands.empty());
+    CHECK(bridge.RequestSpeedTicket("57", error));
+    CHECK(context.commands == std::vector<std::string>{"/su"});
+    CHECK(!bridge.RequestSpeedTicket("58", error));
+    CHECK(DeliverDialog(bridge, context, 500, 2, "Staat \xBB Wantedkatalog", "Ordnungswidrigkeit\nVergehen\nVerbrechen"));
+    bridge.Update();
+    CHECK(context.replies.size() == 1 && context.hidden == 1);
+    CHECK(context.replies[0] == std::make_tuple(500, 1, 0, std::string("Ordnungswidrigkeit")));
+    const std::string offence = "Geschwindigkeits\xFC" "berschreitung ab 20km/h";
+    const std::string catalogue = "Tatbestand\tWantedpunkte\nLeichter Versto\xDF gegen die StVO\t3\n"
+        "Schwerer Versto\xDF gegen die StVO\t5\nParken innerhalb eines Sperrgebiets\t2\n"
+        "Erregung \xF6" "ffentlichen \xC4rgernisses\t8\nUmweltverschmutzung\t9\n" + offence + "\t15";
+    CHECK(DeliverDialog(bridge, context, 501, 5, "Wanteds \xBB Ordnungswidrigkeit", catalogue));
+    bridge.Update();
+    CHECK(context.replies.size() == 2 && context.hidden == 2);
+    CHECK(context.replies[1] == std::make_tuple(501, 1, 5, offence));
+    CHECK(DeliverDialog(bridge, context, 502, 1, "Wanteds vergeben", "Grund: " + offence
+        + "\nWantedpunkte: 15\n\nBitte Spieler-ID oder Name eingeben:"));
+    bridge.Update();
+    CHECK(context.replies.size() == 3 && context.hidden == 3);
+    CHECK(context.replies[2] == std::make_tuple(502, 1, -1, std::string("57")));
+    CHECK(DeliverDialog(bridge, context, 502, 1, "Wanteds vergeben", "Grund: " + offence
+        + "\nWantedpunkte: 15\n\nBitte Spieler-ID oder Name eingeben:"));
+    bridge.Update();
+    CHECK(context.replies.size() == 3);
+    bridge.Shutdown();
+    SAMPBridge::ResetTestingHooks();
+}
+
+void TestStartupSynchronizesStatsThenJobSkillsAndKeepsExistingEarnings() {
+    Context context;
+    context.ready = context.jobSkillsReady = true;
+    SAMPBridge::SetTestingHooks(context.Hooks());
+    SAMPBridge bridge;
+    CHECK(bridge.Initialize());
+    bridge.Update();
+    CHECK(context.commands == std::vector<std::string>{"/stats"});
+    CHECK(DeliverDialog(bridge, context, 700, 0, "Statistiken \xBB SyncPlayer", "Name: SyncPlayer\nKills: 73\nTode: 219"));
+    bridge.Update();
+    CHECK(bridge.AreStatsSynchronized() && !bridge.AreJobSkillsSynchronized());
+    CHECK(context.commands == (std::vector<std::string>{"/stats", "/jobskills"}));
+    auto* tracker = bridge.GetJobTracker();
+    CHECK(tracker && tracker->HasRegistryData());
+    std::string table = "T\xC3\xA4tigkeit\tStufe\n";
+    std::map<jobs::JobId, int> expected;
+    std::map<jobs::JobId, int> earnings;
+    int index = 0;
+    for (const auto& job : tracker->GetJobs()) {
+        const int points = index++ * 100;
+        expected[job.id] = points;
+        earnings[job.id] = tracker->GetAggregates(job.id).lifetime;
+        table += job.name + "\t" + std::to_string(points) + "\n";
+    }
+    table += "Security Guard\t0\nTrucker\t0\n";
+    CHECK(DeliverDialog(bridge, context, 701, 5, "Jobs \xBB Skill\xFC" "bersicht", TestGameEncoding(table)));
+    bridge.Update();
+    CHECK(bridge.AreJobSkillsSynchronized() && context.closed == 2);
+    int notices = 0;
+    for (const auto& message : context.localMessages) if (message.find("Synchronisation abgeschlossen.") != std::string::npos) ++notices;
+    CHECK(notices == 1);
+    for (const auto& point : expected) {
+        CHECK(tracker->GetAdjustedHighestSkill(point.first) == point.second);
+        CHECK(tracker->GetAggregates(point.first).lifetime == earnings[point.first]);
+        const auto feed = tracker->GetEventsForJob(point.first);
+        CHECK(!feed.empty());
+    }
+    const auto eventCount = tracker->GetEvents().size();
+    bridge.ObserveStatsCommand("/jobskills");
+    CHECK(DeliverDialog(bridge, context, 701, 5, "Jobs \xBB Skill\xFC" "bersicht", TestGameEncoding(table)));
+    bridge.Update();
+    CHECK(tracker->GetEvents().size() == eventCount);
+    CHECK(context.dialog.get()->m_bIsActive && context.closed == 2); // later manual view stays open
+    CHECK(context.commands == (std::vector<std::string>{"/stats", "/jobskills"}));
+    bridge.Shutdown();
+    SAMPBridge::ResetTestingHooks();
+}
 } // namespace
 
 int RunStartupStatsSyncTests() {
@@ -396,6 +526,8 @@ int RunStartupStatsSyncTests() {
     TestAllStatsDialogStylesImportCloseAndSendRealTotalInSameFrame();
     TestManualStatsRecoversAfterTimeoutAndOtherDialogsStayOpen();
     TestObservedNovaScreenshotLayoutThroughCompressedRpcWithDynamicPlayerName();
+    TestSpeedCommandPerformsThreeExactDialogRepliesAndSubmitsOnlyOnce();
+    TestStartupSynchronizesStatsThenJobSkillsAndKeepsExistingEarnings();
     std::printf("StartupStatsSyncTests: %d checks, %d failures\n", checks, failures);
     return failures;
 }
