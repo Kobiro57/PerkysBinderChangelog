@@ -1527,7 +1527,7 @@ void MainWindowUI::RenderSettingsKillCounterCard() {
         SaveKillCounterSettings();
     }
 
-    ImGui::TextWrapped("Der Todeszähler meldet jeden Tod nur lokal im Chat. Echte Gesamtstände werden aus empfangenen Serverstatistiken übernommen.");
+    ImGui::TextWrapped("Beim Einloggen werden die Serverstatistiken einmal synchronisiert. Der Todeszähler meldet jeden Tod nur lokal im Chat.");
     UIComponents::Separator();
     if (UIComponents::Toggle("Kill-Nachricht an Server senden", &settings.kill_tracker_server_kill_message_enabled)) {
         SaveKillCounterSettings();
@@ -1537,7 +1537,7 @@ void MainWindowUI::RenderSettingsKillCounterCard() {
     const float inputWidth = (std::max)(Scale(120.0f),
         ImGui::GetContentRegionAvail().x - buttonWidth - ImGui::GetStyle().ItemSpacing.x);
     if (UIComponents::InputText("##GeneralKillMessage", &settings.kill_tracker_server_kill_message_template,
-        "/f Ich habe einen Kill in {zone}. Meine Kills: {total_kills}", inputWidth)) {
+        "/f Kill in {city}, {bezirk}. Meine Kills: {total_kills}", inputWidth)) {
         if (bridge_ != nullptr) {
             bridge_->SetKillTrackerServerKillMessageTemplate(settings.kill_tracker_server_kill_message_template);
         }
@@ -1551,7 +1551,20 @@ void MainWindowUI::RenderSettingsKillCounterCard() {
     }
     ImGui::TextColored(ThemeManager::Instance().GetColor(ThemeColorRole::TextMuted),
         "%d / 144 Zeichen vor Ersetzung", static_cast<int>(settings.kill_tracker_server_kill_message_template.size()));
-    ImGui::TextWrapped("Beispiel: /f Ich habe einen Kill in {zone}. Meine Kills: {total_kills}");
+    ImGui::TextWrapped("Beispiel: /f Kill in {city}, {bezirk}. Meine Kills: {total_kills}");
+    ImGui::Spacing();
+    ImGui::BeginDisabled(bridge_ == nullptr);
+    if (UIComponents::SecondaryButton("Kill simulieren", ImVec2(Scale(160.0f), 0.0f))) {
+        SaveKillCounterSettings();
+        std::string error;
+        if (bridge_ != nullptr && !bridge_->SendSimulatedKillMessage(settings.kill_tracker_server_kill_message_template, error)) {
+            bridge_->QueueLocalMessage("{FF6600}[NL-BINDER]{FFFFFF} " + error);
+        }
+    }
+    if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) {
+        ImGui::SetTooltip("Sendet den aktuellen Text mit [Testkill] im gewählten Chatkanal. Die Zähler werden dabei nicht verändert.");
+    }
+    ImGui::EndDisabled();
     UIComponents::EndCard();
     RenderMessageVariablesModal("Verfügbare Variablen##GeneralKillVariables", &showKillMessageVariables_, true);
 }

@@ -203,6 +203,105 @@ bool TestShutdownRemovesTestingInterceptor() {
     return true;
 }
 
+bool TestVisibilityDefaultsToShownAndHiddenLinesStillReachCallback() {
+    IncomingChatHookContext context;
+    SAMPBridge::SetTestingHooks(context.BuildHooks());
+    jobs::JobChatAdapter adapter;
+    std::vector<std::string> order;
+    std::vector<jobs::JobChatEvent> received;
+    adapter.SetCallback([&](const jobs::JobChatEvent& event) {
+        order.push_back("callback:" + event.normalizedLine);
+        received.push_back(event);
+    });
+    ASSERT_TRUE(adapter.Initialize());
+    ASSERT_TRUE(adapter.DispatchLineForTesting(nullptr, "Normale Chatzeile"));
+    ASSERT_EQ(received.size(), static_cast<std::size_t>(1));
+
+    adapter.SetVisibilityFilter([&](const jobs::JobChatEvent& event) {
+        order.push_back("filter:" + event.normalizedLine);
+        return event.normalizedLine.find("Kills:") != 0;
+    });
+    ASSERT_TRUE(!adapter.DispatchLineForTesting(nullptr, "[18:28:35] {FFFFFF}Kills: [64] Tode: [205]"));
+    ASSERT_EQ(received.size(), static_cast<std::size_t>(2));
+    ASSERT_EQ(order[1], std::string("filter:Kills: [64] Tode: [205]"));
+    ASSERT_EQ(order[2], std::string("callback:Kills: [64] Tode: [205]"));
+    ASSERT_TRUE(adapter.DispatchLineForTesting("Landwirt", "Route abgeschlossen"));
+    ASSERT_EQ(received.back().jobPrefix, std::string("Landwirt"));
+    adapter.Shutdown();
+    SAMPBridge::ResetTestingHooks();
+    return true;
+}
+
+bool TestVisibilityFilterReceivesEmptyLinesWithoutNormalCallbacks() {
+    IncomingChatHookContext context;
+    SAMPBridge::SetTestingHooks(context.BuildHooks());
+    jobs::JobChatAdapter adapter;
+    int filters = 0;
+    int callbacks = 0;
+    bool allNormalizedEmpty = true;
+    adapter.SetCallback([&](const jobs::JobChatEvent&) { ++callbacks; });
+    adapter.SetVisibilityFilter([&](const jobs::JobChatEvent& event) {
+        ++filters;
+        allNormalizedEmpty = allNormalizedEmpty && event.normalizedLine.empty();
+        return false;
+    });
+    ASSERT_TRUE(adapter.Initialize());
+    ASSERT_TRUE(!adapter.DispatchLineForTesting(nullptr, ""));
+    ASSERT_TRUE(!adapter.DispatchLineForTesting(nullptr, "{FFFFFF}  "));
+    ASSERT_TRUE(!adapter.DispatchLineForTesting(nullptr, "[18:28:35] {FFFFFF}  "));
+    ASSERT_TRUE(!adapter.DispatchLineForTesting(nullptr, nullptr));
+    ASSERT_EQ(filters, 4);
+    ASSERT_EQ(callbacks, 0);
+    ASSERT_TRUE(allNormalizedEmpty);
+    adapter.Shutdown();
+    SAMPBridge::ResetTestingHooks();
+    return true;
+}
+
+bool TestVisibilityFilterNormalizesEncodingWithoutAnEventCallback() {
+    IncomingChatHookContext context;
+    SAMPBridge::SetTestingHooks(context.BuildHooks());
+    jobs::JobChatAdapter adapter;
+    std::string normalized;
+    adapter.SetVisibilityFilter([&](const jobs::JobChatEvent& event) {
+        normalized = event.normalizedLine;
+        return false;
+    });
+    ASSERT_TRUE(adapter.Initialize());
+    std::string ansi = "[18:28:35] {FFFFFF}Verm";
+    ansi.push_back(static_cast<char>(0xF6));
+    ansi += "gen: [1.234$]";
+    ASSERT_TRUE(!adapter.DispatchLineForTesting(nullptr, ansi.c_str()));
+    ASSERT_EQ(normalized, std::string("Vermögen: [1.234$]"));
+    adapter.Shutdown();
+    SAMPBridge::ResetTestingHooks();
+    return true;
+}
+
+bool TestShutdownClearsVisibilityFilterIncludingBeforeInitialization() {
+    IncomingChatHookContext context;
+    SAMPBridge::SetTestingHooks(context.BuildHooks());
+    jobs::JobChatAdapter adapter;
+    int calls = 0;
+    adapter.SetVisibilityFilter([&](const jobs::JobChatEvent&) { ++calls; return false; });
+    adapter.Shutdown();
+    ASSERT_TRUE(adapter.Initialize());
+    ASSERT_TRUE(adapter.DispatchLineForTesting(nullptr, "Nicht ausblenden"));
+    ASSERT_EQ(calls, 0);
+    adapter.SetVisibilityFilter([&](const jobs::JobChatEvent&) { ++calls; return false; });
+    ASSERT_TRUE(!adapter.DispatchLineForTesting(nullptr, "Ausblenden"));
+    ASSERT_EQ(calls, 1);
+    adapter.Shutdown();
+    ASSERT_TRUE(adapter.DispatchLineForTesting(nullptr, "Nach Shutdown anzeigen"));
+    ASSERT_EQ(calls, 1);
+    ASSERT_TRUE(adapter.Initialize());
+    ASSERT_TRUE(adapter.DispatchLineForTesting(nullptr, "Nach Neustart anzeigen"));
+    ASSERT_EQ(calls, 1);
+    adapter.Shutdown();
+    SAMPBridge::ResetTestingHooks();
+    return true;
+}
+
 } // namespace
 
 int RunJobChatAdapterTests() {
@@ -214,6 +313,10 @@ int RunJobChatAdapterTests() {
     RUN_TEST(TestConvertsAnsiUmlautCompletionLineToUtf8);
     RUN_TEST(TestEmptyAndMalformedLinesAreIgnoredSafely);
     RUN_TEST(TestShutdownRemovesTestingInterceptor);
+    RUN_TEST(TestVisibilityDefaultsToShownAndHiddenLinesStillReachCallback);
+    RUN_TEST(TestVisibilityFilterReceivesEmptyLinesWithoutNormalCallbacks);
+    RUN_TEST(TestVisibilityFilterNormalizesEncodingWithoutAnEventCallback);
+    RUN_TEST(TestShutdownClearsVisibilityFilterIncludingBeforeInitialization);
 
     std::printf("JobChatAdapterTests: %d passed, %d failed\n", g_state.passed, g_state.failed);
     return g_state.failed;

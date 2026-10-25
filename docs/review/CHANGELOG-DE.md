@@ -1,6 +1,6 @@
 # Änderungen am Perkys Binder – NLBinder v.0.1.1 by KOBiRO
 
-Stand: 24. Oktober 2026, veröffentlichte Arbeitsfassung **r3 mit Damagelog und bereinigten Killtext-Variablen**.
+Stand: 25. Oktober 2026, Arbeitsfassung **r4 mit direktem Damagelog, bereinigten Variablen, Testkill, Login-Synchronisation und Motorstart-Korrektur**. Die Abschnitte 1 bis 9 dokumentieren die bisherigen Änderungen; Abschnitt 10 beschreibt die Änderungen seit r3.
 
 Die Grundlage ist der vorhandene Perkys/NLBinder. Die Änderungen erweitern dessen bestehende Oberfläche und verwenden weiterhin die vorhandenen ImGui-Komponenten, Karten, Schalter und Darstellungseinstellungen. Der Ordner KOBiRO_ASI diente als funktionale Referenz für die Overlay-Erweiterung; seine Oberfläche wurde nicht als neue Binder-Oberfläche übernommen.
 
@@ -187,3 +187,123 @@ Quellen: [IncomingDamageDetector.h](../../include/IncomingDamageDetector.h), [SA
 Quellen: [Keybinder.vcxproj](../../Keybinder.vcxproj), [setup_msvc.bat](../../tools/setup_msvc.bat), [build_plugin_sdk.bat](../../tools/build_plugin_sdk.bat), [build_release.bat](../../tools/build_release.bat), [build_reconnect_helper.bat](../../tools/build_reconnect_helper.bat), [run_tests.bat](../../tools/run_tests.bat), [PersistentPaths.cpp](../../src/PersistentPaths.cpp).
 
 Die automatisierten Tests und der Release-Build der ausgelieferten Fassung waren erfolgreich. Der Reconnect-Helfer wurde zusätzlich mit eigenen harmlosen Testprozessen geprüft. **Es wurde kein echter Ingame-Test mit der konkreten Server- und Launcher-Version durchgeführt.** Details und die eindeutige ASI-Prüfsumme stehen in [PRUEFUNG-DE.md](PRUEFUNG-DE.md).
+
+## 10. Nachtrag r4 – 25. Oktober 2026
+
+Die Abschnitte 1 bis 9 halten den veröffentlichten r3-Stand fest. Dieser
+Nachtrag beschreibt die darauf folgenden Korrekturen und ersetzt für die
+betroffenen Funktionen die damaligen r3-Aussagen. Die ausführliche
+[r4-Bedienungsbeschreibung](../NLBinder-0.1.1-r4-DE.md) gehört zum neuen Stand;
+eine neue endgültige ASI-Prüfsumme und neue Testergebnisse werden mit dessen
+Buildnachweisen dokumentiert.
+
+### Damagelog nach dem AHK-Prinzip
+
+Der Damagelog benötigt keine eingehende Schadens-RPC mehr. HP und Weste werden
+getrennt mit der vorigen gültigen Probe verglichen. Sinkt mindestens einer der
+Werte um mindestens 1 HP, erscheint der gemessene Verlust unmittelbar nach der
+Probe mit einer Nachkommastelle im eigenen Chat. Die Typen heißen **HP Schaden**,
+**Weste getroffen** und **Weste + HP Schaden**.
+
+Serverseitige SetHealth-/SetArmour-Abnahmen und Umweltschaden einschließlich Fallschaden werden während
+des Spiels mit erfasst. Die Script-/Umweltschaden-Unterdrückung des Hitsounds
+blockiert den Log nicht mehr. Gleichzeitige Heilung eines Werts vermindert den
+gemessenen Schaden am anderen Wert nicht. Login-/Spawn-/Pedwechsel und erneutes
+Einschalten setzen die Ausgangswerte zurück. Bei mehreren Treffern zwischen
+zwei Proben wird nur die gemessene Summe ausgegeben; es gibt keine Behauptung
+einer garantierten einzelnen Zeile pro Schuss. Die Ausgabe bleibt lokal.
+
+Quellen: [SAMPBridge.cpp](../../src/SAMPBridge.cpp),
+[IncomingDamageDetector.h](../../include/IncomingDamageDetector.h).
+Tests: [SAMPBridgeTests.cpp](../../tests/SAMPBridgeTests.cpp).
+
+### Getrennte Ortswerte und bereinigte Variablen
+
+Die angebotenen Ortsvariablen heißen **`{city}`** für Stadt/übergeordnetes
+Gebiet und **`{bezirk}`** für den aktuellen Bezirk, beispielsweise Los Santos
+und Market. Die Daten werden lokal aus den GTA-Zonen gelesen. Großgeschriebene
+Doppelungen sowie die unzuverlässigen Ereignisfelder `victim`, `killer` und
+`weapon` werden nicht mehr angeboten. Standardtexte verwenden die bereinigten
+Orts-/Zählerwerte; vorhandene alte Vorlagen bleiben lesbar.
+
+Quellen: [MessageVariables.h](../../include/MessageVariables.h),
+[MessageVariablesUI.h](../../include/MessageVariablesUI.h),
+[ActionExecutor.cpp](../../src/ActionExecutor.cpp),
+[SAMPBridge.cpp](../../src/SAMPBridge.cpp),
+[KillTrackerUI.cpp](../../src/KillTrackerUI.cpp).
+
+### Killtext ohne echten Kill testen
+
+Unter General / Kill- & Todeszähler wurde **Kill simulieren** ergänzt. Der
+aktuelle Text wird mit den aktuellen Variablenwerten expandiert und tatsächlich
+gesendet. Normaler Chat erhält `[Testkill]` am Anfang; bei Slash-Befehlen steht
+der Befehl weiterhin zuerst: `/f [Testkill] …`, `/r [Testkill] …`,
+`/d [Testkill] …`. Ein erster beliebiger Befehlstoken wird auf dieselbe Weise
+beibehalten. Der Test erhöht keine Kill-/Todes-/Sitzungszähler und benötigt
+keine aktivierte automatische Killnachricht. Leere oder mehrzeilige Texte
+werden abgelehnt; die Chatlänge wird begrenzt.
+
+Quellen: [MainWindowUI.cpp](../../src/MainWindowUI.cpp),
+[KillMessageTest.h](../../include/KillMessageTest.h),
+[SAMPBridge.cpp](../../src/SAMPBridge.cpp).
+Tests: [KillMessageTestTests.cpp](../../tests/KillMessageTestTests.cpp).
+
+### Einmalige eigene `/stats`-Synchronisation
+
+Auf ausdrücklichen neuen Benutzerwunsch fragt der Binder nach dem sicheren
+Loginzustand einmal `/stats` ab. Das ist eine Änderung gegenüber der zuvor
+rein passiven Statistikübernahme. Der Versuch startet im ersten geeigneten
+Spielframe ohne zusätzliche feste Wartepause; die Serverantwort bleibt
+zeitbestimmend. Offener Chat, Dialog, Cursor oder ein noch nicht spielbereiter
+Client blockieren den Start.
+
+Die eigene automatisch angeforderte Nova-Chatstatistik wird beim Anzeigen
+unterdrückt, während der Parser die normalisierten Zeilen weiterhin erhält.
+Leere Zeilen durchlaufen ebenfalls den Sichtbarkeitsfilter. Eine identifizierte
+eigene Statistik-Messagebox kann nach dem Lesen geschlossen werden. Andere
+Dialoge, fremde Statistikblöcke und normale Chatzeilen werden nicht pauschal
+versteckt oder geschlossen.
+
+Der lokale Cache umfasst empfangene Kills/Tode, Bargeld/Kontostand und einen
+gegebenenfalls gelieferten Gesamtvermögenswert sowie Level/XP/Levelziel, Gold,
+Eventcoins, Wantedpunkte und die Zeit bis zum Zahltag. Ohne eigenen
+Gesamtvermögenswert kann Bargeld plus Kontostand als verfügbare Summe dienen.
+Nicht gelieferte Zusatzwerte werden nicht erfunden. Die ersten Gesamtzähler
+sind ein Ausgangsstand und kein neuer Kill oder Tod.
+
+Nach erfolgreicher Übernahme und lokaler Speicherung meldet der Binder
+`[NL-BINDER] Synchronisation abgeschlossen.`. Nachfolgende Zeilen desselben
+Blocks können den Cache bis zum Footer beziehungsweise innerhalb von drei
+Sekunden ergänzen. Nach acht Sekunden ohne vollständige Antwort erscheint
+stattdessen ein lokaler Fehlerhinweis; es gibt weder eine Erfolgsmeldung ohne
+Daten noch wiederholten automatischen Abfragespam. Persönliche Cachewerte
+bleiben in der lokalen Konfiguration und gehören nicht in GitHub.
+
+Quellen: [StartupStatsSync.cpp](../../src/StartupStatsSync.cpp),
+[SAMPBridge.h](../../include/SAMPBridge.h),
+[ServerStatsSnapshot.h](../../include/ServerStatsSnapshot.h),
+[JobChatAdapter.cpp](../../src/JobChatAdapter.cpp),
+[SettingsManager.cpp](../../src/SettingsManager.cpp), [Main.cpp](../../src/Main.cpp).
+Tests: [ServerStatsParserTests.cpp](../../tests/ServerStatsParserTests.cpp),
+[SAMPBridgeTests.cpp](../../tests/SAMPBridgeTests.cpp),
+[JobChatAdapterTests.cpp](../../tests/JobChatAdapterTests.cpp).
+
+Die r4-Änderungen wurden nicht in einer echten Spielsitzung geprüft. Die
+abschließenden automatisierten Tests, der neue Release-Build und die
+Veröffentlichung erfolgen mit den zugehörigen r4-Prüfnachweisen; die frühere
+r3-Prüfsumme beschreibt weiterhin ausschließlich die frühere Binärdatei.
+
+### Automatischer Motorstart erneut korrigiert
+
+Nach der erneuten Fehlermeldung des Benutzers wurde der automatische Motorstart
+überarbeitet. GTA kann beim Einsteigen kurz einen laufenden Motor melden,
+bevor der Server ihn ausschaltet. Die Entscheidung erfolgt deshalb erst bei
+vollständig erkanntem Fahrersitz und nach der bestehenden Wartezeit von
+1,5 Sekunden. Ein vorübergehendes EngineOn verwirft den geplanten Start nicht
+mehr. Ein alter „Motor Startet“-Chattext zählt nicht als neue Bestätigung;
+die begrenzte Wiederholungsphase beginnt erst beim tatsächlichen Tastendruck.
+Länger geöffneter Chat oder Binder lassen die Planung nicht vorzeitig ablaufen.
+Der Schutz vor Eingaben in Chat, Dialog oder Binder bleibt erhalten.
+Die konkrete Änderung und die ergänzten Regressionstests stehen in
+[SAMPBridge.cpp](../../src/SAMPBridge.cpp) und
+[SAMPBridgeTests.cpp](../../tests/SAMPBridgeTests.cpp).

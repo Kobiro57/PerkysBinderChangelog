@@ -16,6 +16,7 @@
 #include "KillfeedAdapter.h"
 #include "DamageRPCAdapter.h"
 #include "IncomingDamageDetector.h"
+#include "ServerStatsSnapshot.h"
 #include "DeathMessageRPCAdapter.h"
 #include "JobChatAdapter.h"
 #include "JobTracker.h"
@@ -52,11 +53,15 @@ public:
 
     bool SendChat(const std::string& text) const override;
     bool SendCommand(const std::string& cmd) const override;
+    bool SendSimulatedKillMessage(const std::string& text, std::string& error) const;
 
     bool IsChatOpen() const;
     bool IsDialogOpen() const;
     bool IsCursorActive() const;
     void SetSettingsManager(const keybinder::SettingsManager* manager);
+    void SetStatsSynchronizedCallback(std::function<bool(const keybinder::ServerStatsSnapshot&)> callback) { statsSynchronizedCallback_ = std::move(callback); }
+    const keybinder::ServerStatsSnapshot& GetSynchronizedStats() const { return synchronizedStats_; }
+    bool AreStatsSynchronized() const { return startupStatsComplete_; }
 
     void Update();
 
@@ -150,6 +155,10 @@ public:
         std::function<void(bool)> setEngineStartKeyDown;
         std::function<bool()> hasEngineStartSuccessText;
         std::function<bool(float&, float&, int&, const void*&)> readLocalDamageSample;
+        std::function<int()> getCityLevel;
+        std::function<std::string()> getDistrictName;
+        std::function<bool()> isStartupStatsReady;
+        std::function<void(int)> closeStatsDialog;
     };
 
     static void SetTestingHooks(const TestingHooks& hooks);
@@ -160,12 +169,18 @@ public:
     void ProcessDamageFeedbackForTesting(const killtracker::DamageEvent& event);
     void ProcessDamageRpcForTesting(RakNet::BitStream* payload);
     void RequestScriptedHealthSuppressionForTesting();
+    bool ProcessIncomingChatLineForTesting(const char* prefix, const char* text);
 #endif
 
 private:
     void HandleDeathMessage(const killtracker::DeathMessageEvent& event);
     void HandleLocalKill(killtracker::KillEvent event);
     void ObserveServerCombatStats(const std::string& text);
+    void UpdateStartupStats(unsigned long now);
+    void ResetStartupStats();
+    void CaptureStartupStatsLine(const std::string& text);
+    bool ShouldDisplayStartupStatsChat(const jobs::JobChatEvent& event);
+    void CompleteStartupStats(unsigned long now);
     void UpdateAutoEngineStart(unsigned long now);
     bool ReadDriverVehicle(unsigned short& vehicleId, bool& engineOn) const;
     bool IsEngineInputAvailable() const;
@@ -217,6 +232,8 @@ public:
     float GetPlayerArmour() const override;
     float GetVehicleHP() const override;
     std::string GetVehicleName() const override;
+    std::string GetCityName() const override;
+    std::string GetDistrictName() const override;
     int GetTotalKills() const override;
     int GetTotalDeaths() const override;
 
@@ -234,8 +251,7 @@ private:
     bool IsLocalCombatActive(bool allowFinalDeathSample = false) const;
     void ResetIncomingDamageState();
     void NotifyDamageFeedback(const killtracker::DamageEvent& event);
-    void QueueIncomingDamageReport(const killtracker::DamageEvent& event);
-    void FlushIncomingDamageLog(unsigned long now, bool finishLife = false);
+    void LogIncomingDamage(const keybinder::IncomingDamageLogEntry& damage);
     bool IsDamageLogEnabled() const;
     void InstallScriptedHealthRpcHook();
 
@@ -309,6 +325,7 @@ private:
     int autoEngineStartInjectedVk_;
     bool autoEngineStartReleasePending_;
     unsigned short autoEngineObservedVehicle_ = 0xFFFF;
+    bool autoEngineStartLastSuccessText_ = false;
 
     bool killTrackerEnabled_;
     bool killTrackerLocalKillMessageEnabled_;
@@ -334,9 +351,6 @@ private:
     keybinder::IncomingDamageDetector incomingDamageDetector_;
     keybinder::IncomingDamageLog incomingDamageLog_;
     bool incomingDamageLogEnabledLastFrame_ = false;
-    struct IncomingDamageReport { float damage; unsigned long tick; };
-    std::mutex incomingDamageRpcMutex_;
-    std::vector<IncomingDamageReport> incomingDamageRpcQueue_;
     const void* incomingDamagePed_ = nullptr;
     bool killTrackerInitialized_;
     bool localPlayerWasDead_;
@@ -357,4 +371,21 @@ private:
     int lastServerDeathTotal_ = 0;
     std::time_t lastLocalKillTime_ = 0;
     std::time_t lastLocalDeathTime_ = 0;
+    keybinder::ServerStatsCollector startupStatsCollector_;
+    keybinder::ServerStatsSnapshot synchronizedStats_;
+    std::function<bool(const keybinder::ServerStatsSnapshot&)> statsSynchronizedCallback_;
+    bool startupStatsConnected_ = false;
+    bool startupStatsRequested_ = false;
+    bool startupStatsComplete_ = false;
+    bool startupStatsFailed_ = false;
+    unsigned long startupStatsRequestedAt_ = 0;
+    unsigned long startupStatsCompletedAt_ = 0;
+    std::string startupStatsIdentity_;
+    std::atomic<bool> captureStartupStats_{false};
+    std::mutex startupStatsMutex_;
+    std::vector<std::string> startupStatsLines_;
+    std::string startupStatsOwnName_;
+    bool startupStatsPendingChat_ = false;
+    bool startupStatsHiddenChat_ = false;
+    unsigned long startupStatsChatHeaderAt_ = 0;
 };

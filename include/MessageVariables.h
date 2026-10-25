@@ -7,15 +7,11 @@ struct MessageVariableInfo {
     const char* description;
 };
 
-// These values are available directly from the current game or Binder state.
-// Keep combat help separate from text bindings; vehicle fields are only useful
-// in the latter. Legacy templates can still resolve the vehicle fields.
+// Offer one spelling per value, using directly available local data. Legacy
+// aliases may still be read by the runtime, but are not duplicated in the help.
 inline constexpr MessageVariableInfo kCombatMessageVariables[] = {
-    {"victim", "Getöteter Spieler; bei unbekanntem Namen: Unbekannt"},
-    {"killer", "Killername; im eigenen Killtext ist das dein Name"},
-    {"weapon", "Waffe; ohne empfangene Waffenangabe: Unbekannt"},
-    {"zone", "Deine aktuelle Zone"},
-    {"ZONE", "Deine aktuelle Zone in Großbuchstaben"},
+    {"city", "Deine Stadt, z.B. Los Santos"},
+    {"bezirk", "Dein Bezirk, z.B. Market"},
     {"hp", "Deine aktuellen Lebenspunkte"},
     {"weste", "Deine aktuelle Weste"},
     {"total_kills", "Gespeicherter Killstand des Binders"},
@@ -23,12 +19,11 @@ inline constexpr MessageVariableInfo kCombatMessageVariables[] = {
     {"session_kills", "Erfasste Kills seit dem Spielstart"},
     {"session_deaths", "Erfasste Tode seit dem Spielstart"},
     {"kd", "K/D aus den gespeicherten Zählerständen"},
-    {"KD", "Gleicher Wert wie {kd}"},
 };
 
 inline constexpr MessageVariableInfo kTextBindingVariables[] = {
-    {"zone", "Aktueller Zonenname"},
-    {"ZONE", "Aktueller Zonenname in Großbuchstaben"},
+    {"city", "Aktuelle Stadt, z.B. Los Santos"},
+    {"bezirk", "Aktueller Bezirk, z.B. Market"},
     {"hp", "Aktuelle Lebenspunkte"},
     {"weste", "Aktuelle Weste (Rüstung)"},
     {"carhp", "Fahrzeug-Lebenspunkte (0 ohne Fahrzeug)"},

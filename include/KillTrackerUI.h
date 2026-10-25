@@ -26,10 +26,10 @@ struct KillTrackerSettings {
     bool sendServerKillMessage = false;
     bool sendServerDeathMessage = false;
     bool trackDamage = true;
-    std::string customLocalKillMessage = "{FF6600}[Kill] {FFFFFF}{victim} {AAAAAA}mit {FFCC00}{weapon}";
-    std::string customLocalDeathMessage = "{FF3333}[Tod] {FFFFFF}{killer} {AAAAAA}mit {FFCC00}{weapon}";
-    std::string customServerKillMessage = "Ich habe {victim} mit {weapon} getoetet.";
-    std::string customServerDeathMessage = "Ich wurde von {killer} mit {weapon} getoetet.";
+    std::string customLocalKillMessage = "{33CCFF}[NL-BINDER]{FFFFFF} Kill in {city}, {bezirk}. Meine Kills: {total_kills}";
+    std::string customLocalDeathMessage = "{33CCFF}[NL-BINDER]{FFFFFF} Du bist gestorben. Deine aktuelle Tode: {total_deaths}";
+    std::string customServerKillMessage = "Kill in {city}, {bezirk}. Meine Kills: {total_kills}";
+    std::string customServerDeathMessage = "Tode: {total_deaths}";
 
     // Manual stat editing
     bool allowManualEdits = false;

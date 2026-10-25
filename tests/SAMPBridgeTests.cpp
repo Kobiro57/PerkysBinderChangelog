@@ -198,11 +198,11 @@ bool EmitDamageRpc(SAMPBridge& bridge, float amount, bool incoming = true, int w
 
 std::size_t DamageLogCount(const MockContext& context) {
     return static_cast<std::size_t>(std::count_if(context.localMessages.begin(), context.localMessages.end(), [](const std::string& text) {
-        return text.find("HP Schaden erhalten.") != std::string::npos;
+        return text.find(" HP {FFFFFF}Schaden (") != std::string::npos;
     }));
 }
 
-bool TestDamageLogWorksWithoutCountersSoundsOrDamageTrackingAndMatchesEachShot() {
+bool TestDamageLogAhkBlueprintReportsDirectServerLossWithoutRpc() {
     CombatSoundContext context;
     SAMPBridge::SetTestingHooks(context.BuildCombatHooks());
     keybinder::SettingsManager settings;
@@ -218,124 +218,77 @@ bool TestDamageLogWorksWithoutCountersSoundsOrDamageTrackingAndMatchesEachShot()
     ASSERT_TRUE(bridge.Initialize());
     bridge.Update();
 
-    // Two client-reported shots in one frame must yield two local lines,
-    // backed by the same measured 37.5 HP+armour loss, with no poll duplicate.
-    ASSERT_TRUE(EmitDamageRpc(bridge, 25.0f));
-    ASSERT_TRUE(EmitDamageRpc(bridge, 12.5f));
-    context.health = 62.5f;
-    bridge.Update();
-    ASSERT_EQ(DamageLogCount(context), static_cast<std::size_t>(2));
-    ASSERT_TRUE(context.localMessages[0].find("[NL-BINDER]{FFFFFF} Du hast -25 HP Schaden erhalten.") != std::string::npos);
-    ASSERT_TRUE(context.localMessages[1].find("Du hast -12,5 HP Schaden erhalten.") != std::string::npos);
-    context.tick += 500;
-    bridge.Update();
-    ASSERT_EQ(DamageLogCount(context), static_cast<std::size_t>(2));
-    ASSERT_TRUE(context.serverMessages.empty());
-
-    // Enabling then disabling the statistics must not disable this pipeline.
-    bridge.SetKillTrackerEnabled(true);
-    bridge.SetKillTrackerEnabled(false);
-    ASSERT_TRUE(EmitDamageRpc(bridge, 0.25f));
-    context.armour -= 0.25f;
-    bridge.Update();
-    ASSERT_EQ(DamageLogCount(context), static_cast<std::size_t>(3));
-    ASSERT_TRUE(context.localMessages.back().find("Du hast -0,25 HP Schaden erhalten.") != std::string::npos);
-    ASSERT_TRUE(context.serverMessages.empty());
-    bridge.Shutdown();
-    SAMPBridge::ResetTestingHooks();
-    return true;
-}
-
-bool TestDamageLogPollingFallbackUsesActualLossAndStopsImmediatelyWhenDisabled() {
-    CombatSoundContext context;
-    SAMPBridge::SetTestingHooks(context.BuildCombatHooks());
-    keybinder::SettingsManager settings;
-    settings.GetMutable().damage_log_enabled = true;
-    SAMPBridge bridge;
-    bridge.SetSettingsManager(&settings);
-    ASSERT_TRUE(bridge.Initialize());
-    bridge.Update();
-    context.armour = 75.0f;
-    bridge.Update();
-    ASSERT_EQ(DamageLogCount(context), static_cast<std::size_t>(0));
-    context.tick += keybinder::IncomingDamageLog::kMatchWindowMs;
-    bridge.Update();
-    ASSERT_EQ(DamageLogCount(context), static_cast<std::size_t>(1));
-    ASSERT_TRUE(context.localMessages.back().find("Du hast -25 HP Schaden erhalten.") != std::string::npos);
-    // A fractional fallback drop is not subject to the hitsound's 0.5 HP threshold.
-    context.armour -= 0.25f;
-    bridge.Update();
-    context.tick += keybinder::IncomingDamageLog::kMatchWindowMs;
-    bridge.Update();
-    ASSERT_EQ(DamageLogCount(context), static_cast<std::size_t>(2));
-    ASSERT_TRUE(context.localMessages.back().find("Du hast -0,25 HP Schaden erhalten.") != std::string::npos);
-
-    context.health -= 10.0f;
-    bridge.Update();
-    settings.GetMutable().damage_log_enabled = false;
-    context.tick += 500;
-    bridge.Update();
-    ASSERT_TRUE(EmitDamageRpc(bridge, 20.0f));
-    context.health -= 20.0f;
-    bridge.Update();
-    ASSERT_EQ(DamageLogCount(context), static_cast<std::size_t>(2));
-    settings.GetMutable().damage_log_enabled = true;
-    bridge.Update();
-    context.tick += 500;
-    bridge.Update();
-    ASSERT_EQ(DamageLogCount(context), static_cast<std::size_t>(2));
-    ASSERT_TRUE(context.serverMessages.empty());
-    bridge.Shutdown();
-    SAMPBridge::ResetTestingHooks();
-    return true;
-}
-
-bool TestDamageLogReconcilesLateRpcScriptedServerHealthAndRejectsUnmeasuredDamage() {
-    CombatSoundContext context;
-    SAMPBridge::SetTestingHooks(context.BuildCombatHooks());
-    keybinder::SettingsManager settings;
-    settings.GetMutable().damage_log_enabled = true;
-    SAMPBridge bridge;
-    bridge.SetSettingsManager(&settings);
-    ASSERT_TRUE(bridge.Initialize());
-    bridge.Update();
-
-    // RPC alone (e.g. rejected/invulnerable hit) may not invent a loss.
-    ASSERT_TRUE(EmitDamageRpc(bridge, 50.0f));
-    context.tick += 500;
-    bridge.Update();
-    ASSERT_EQ(DamageLogCount(context), static_cast<std::size_t>(0));
-
-    // Server-applied health has a scripted flag, but a matching combat RPC
-    // confirms the actual measured loss, even if it arrives one frame later.
+    // Nova applies damage with SetPlayerHealth/Armour. No take-damage RPC is
+    // needed, and the hitsound suppression flag must not mute the chat log.
     bridge.RequestScriptedHealthSuppressionForTesting();
     context.health = 75.0f;
     bridge.Update();
-    context.tick += 30;
-    ASSERT_TRUE(EmitDamageRpc(bridge, 25.0f));
-    bridge.Update();
     ASSERT_EQ(DamageLogCount(context), static_cast<std::size_t>(1));
-    context.tick += 500;
-    bridge.Update();
-    ASSERT_EQ(DamageLogCount(context), static_cast<std::size_t>(1));
-
-    // If server-specific damage disagrees with a raw RPC's weapon amount,
-    // use only the measured loss; do not split it using guessed proportions.
-    ASSERT_TRUE(EmitDamageRpc(bridge, 46.2f));
+    ASSERT_EQ(context.localMessages.back(), std::string("{1E90FF}[NL-BINDER] {FF0000}-25,0 HP {FFFFFF}Schaden (HP Schaden)"));
     bridge.RequestScriptedHealthSuppressionForTesting();
-    context.health = 50.0f;
-    bridge.Update();
-    context.tick += 200;
+    context.armour = 87.5f;
     bridge.Update();
     ASSERT_EQ(DamageLogCount(context), static_cast<std::size_t>(2));
-    ASSERT_TRUE(context.localMessages.back().find("Du hast -25 HP Schaden erhalten.") != std::string::npos);
+    ASSERT_TRUE(context.localMessages.back().find("-12,5 HP {FFFFFF}Schaden (Weste getroffen)") != std::string::npos);
+    context.health -= 4.5f;
+    context.armour -= 2.5f;
+    bridge.Update();
+    ASSERT_EQ(DamageLogCount(context), static_cast<std::size_t>(3));
+    ASSERT_TRUE(context.localMessages.back().find("-7,0 HP {FFFFFF}Schaden (Weste + HP Schaden)") != std::string::npos);
+    bridge.SetKillTrackerEnabled(true);
+    bridge.SetKillTrackerEnabled(false);
+    context.health -= 1.0f;
+    bridge.Update();
+    ASSERT_EQ(DamageLogCount(context), static_cast<std::size_t>(4));
     ASSERT_TRUE(context.serverMessages.empty());
     bridge.Shutdown();
     SAMPBridge::ResetTestingHooks();
     return true;
 }
 
-bool TestDamageLogCombatRpcConfirmsServerHealthWithStaleEnvironmentalSource() {
+bool TestDamageLogSeparatesHealingFromDamageAndFormatsOneDecimal() {
+    CombatSoundContext context;
+    context.health = 80.0f;
+    context.armour = 50.0f;
+    SAMPBridge::SetTestingHooks(context.BuildCombatHooks());
+    keybinder::SettingsManager settings;
+    settings.GetMutable().damage_log_enabled = true;
+    SAMPBridge bridge;
+    bridge.SetSettingsManager(&settings);
+    ASSERT_TRUE(bridge.Initialize());
+    bridge.Update();
+    // A heal must not cancel a loss in the other pool.
+    context.health += 20.0f;
+    context.armour -= 5.25f;
+    bridge.Update();
+    ASSERT_EQ(DamageLogCount(context), static_cast<std::size_t>(1));
+    ASSERT_TRUE(context.localMessages.back().find("-5,3 HP {FFFFFF}Schaden (Weste getroffen)") != std::string::npos);
+    context.health -= 2.5f;
+    context.armour += 10.0f;
+    bridge.Update();
+    ASSERT_EQ(DamageLogCount(context), static_cast<std::size_t>(2));
+    ASSERT_TRUE(context.localMessages.back().find("-2,5 HP {FFFFFF}Schaden (HP Schaden)") != std::string::npos);
+    // Match the supplied AHK threshold: at least one pool must lose >= 1 HP.
+    context.health -= 0.5f;
+    context.armour -= 0.5f;
+    bridge.Update();
+    ASSERT_EQ(DamageLogCount(context), static_cast<std::size_t>(2));
+    context.health += 1.0f;
+    context.armour += 1.0f;
+    bridge.Update();
+    bridge.Update();
+    ASSERT_EQ(DamageLogCount(context), static_cast<std::size_t>(2));
+    context.armour -= 1.0f;
+    bridge.Update();
+    ASSERT_EQ(DamageLogCount(context), static_cast<std::size_t>(3));
+    ASSERT_TRUE(context.localMessages.back().find("-1,0 HP {FFFFFF}Schaden (Weste getroffen)") != std::string::npos);
+    ASSERT_TRUE(context.serverMessages.empty());
+    bridge.Shutdown();
+    SAMPBridge::ResetTestingHooks();
+    return true;
+}
+
+bool TestDamageLogDoesNotRequireOrDuplicateDamageRpcs() {
     CombatSoundContext context;
     SAMPBridge::SetTestingHooks(context.BuildCombatHooks());
     keybinder::SettingsManager settings;
@@ -344,24 +297,30 @@ bool TestDamageLogCombatRpcConfirmsServerHealthWithStaleEnvironmentalSource() {
     bridge.SetSettingsManager(&settings);
     ASSERT_TRUE(bridge.Initialize());
     bridge.Update();
-    context.damageSource = 54; // retained from an earlier fall, not this gunshot
     ASSERT_TRUE(EmitDamageRpc(bridge, 25.0f));
-    bridge.RequestScriptedHealthSuppressionForTesting();
-    context.health -= 25.0f;
+    ASSERT_TRUE(EmitDamageRpc(bridge, 12.5f));
+    context.health -= 37.5f;
     bridge.Update();
+    // Like the AHK code, one sampled change produces exactly one line. A
+    // client RPC cannot invent another hit or split the sampled amount.
     ASSERT_EQ(DamageLogCount(context), static_cast<std::size_t>(1));
-    context.health -= 10.0f; // environmental loss without any combat report
-    bridge.Update();
+    ASSERT_TRUE(context.localMessages.back().find("-37,5 HP {FFFFFF}Schaden (HP Schaden)") != std::string::npos);
+    ASSERT_TRUE(EmitDamageRpc(bridge, 50.0f));
     context.tick += 500;
     bridge.Update();
     ASSERT_EQ(DamageLogCount(context), static_cast<std::size_t>(1));
+    context.damageSource = 54; // source metadata is irrelevant for this log
+    context.health -= 5.0f;
+    bridge.RequestScriptedHealthSuppressionForTesting();
+    bridge.Update();
+    ASSERT_EQ(DamageLogCount(context), static_cast<std::size_t>(2));
     ASSERT_TRUE(context.serverMessages.empty());
     bridge.Shutdown();
     SAMPBridge::ResetTestingHooks();
     return true;
 }
 
-bool TestDamageLogEnableTransitionDiscardsOldDamageAndKeepsOutgoingFeedbackIndependent() {
+bool TestDamageLogToggleDiscardsOldLossAndKeepsSoundFeedbackIndependent() {
     CombatSoundContext context;
     SAMPBridge::SetTestingHooks(context.BuildCombatHooks());
     keybinder::SettingsManager settings;
@@ -369,46 +328,40 @@ bool TestDamageLogEnableTransitionDiscardsOldDamageAndKeepsOutgoingFeedbackIndep
     bridge.SetSettingsManager(&settings);
     bridge.SetKillTrackerEnabled(false);
     bridge.SetKillTrackerTrackDamage(false);
-    int incomingSounds = 0;
-    int outgoingSounds = 0;
-    int hitmarkers = 0;
+    int incomingSounds = 0, outgoingSounds = 0, hitmarkers = 0;
     bridge.SetHitsoundIncomingCallback([&]() { ++incomingSounds; });
     bridge.SetHitsoundDamageCallback([&](const killtracker::DamageEvent&) { ++outgoingSounds; });
     bridge.SetHitmarkerDamageCallback([&](const killtracker::DamageEvent&) { ++hitmarkers; });
     ASSERT_TRUE(bridge.Initialize());
-    bridge.Update(); // log off, but hitsound HP baseline is active
+    bridge.Update();
     context.health -= 10.0f;
     bridge.Update();
     ASSERT_EQ(incomingSounds, 1);
-
-    ASSERT_TRUE(EmitDamageRpc(bridge, 12.5f));
-    context.health -= 12.5f;
-    settings.GetMutable().damage_log_enabled = true; // between the damage and its next poll
-    bridge.Update();
-    ASSERT_EQ(incomingSounds, 2);
-    context.tick += 500;
-    bridge.Update();
     ASSERT_EQ(DamageLogCount(context), static_cast<std::size_t>(0));
-    ASSERT_TRUE(EmitDamageRpc(bridge, 5.0f));
+    context.health -= 12.5f;
+    settings.GetMutable().damage_log_enabled = true;
+    bridge.Update(); // starts the log at the current values, preserves sound
+    ASSERT_EQ(incomingSounds, 2);
+    ASSERT_EQ(DamageLogCount(context), static_cast<std::size_t>(0));
     context.health -= 5.0f;
     bridge.Update();
     ASSERT_EQ(DamageLogCount(context), static_cast<std::size_t>(1));
-    ASSERT_TRUE(context.localMessages.back().find("Du hast -5 HP Schaden erhalten.") != std::string::npos);
-
+    settings.GetMutable().damage_log_enabled = false;
+    context.health -= 3.0f;
+    bridge.Update();
+    ASSERT_EQ(DamageLogCount(context), static_cast<std::size_t>(1));
     ASSERT_TRUE(EmitDamageRpc(bridge, 25.0f, false));
     ASSERT_EQ(outgoingSounds, 1);
     ASSERT_EQ(hitmarkers, 1);
-    context.tick += 500;
-    bridge.Update();
-    ASSERT_EQ(DamageLogCount(context), static_cast<std::size_t>(1));
     ASSERT_TRUE(context.serverMessages.empty());
     bridge.Shutdown();
     SAMPBridge::ResetTestingHooks();
     return true;
 }
 
-bool TestDamageLogFiltersLoginHealScriptResetEnvironmentalDamageAndRespawn() {
+bool TestDamageLogSeedsLoginRespawnAndPedChangeAndReportsLethalLossOnce() {
     CombatSoundContext context;
+    context.armour = 0.0f;
     SAMPBridge::SetTestingHooks(context.BuildCombatHooks());
     keybinder::SettingsManager settings;
     settings.GetMutable().damage_log_enabled = true;
@@ -417,55 +370,45 @@ bool TestDamageLogFiltersLoginHealScriptResetEnvironmentalDamageAndRespawn() {
     ASSERT_TRUE(bridge.Initialize());
     context.localPlayer->m_bDoesSpectating = TRUE;
     bridge.Update();
-    ASSERT_TRUE(EmitDamageRpc(bridge, 50.0f));
     context.health = 50.0f;
     bridge.Update();
-    context.tick += 500;
-    bridge.Update();
+    ASSERT_EQ(DamageLogCount(context), static_cast<std::size_t>(0));
     context.localPlayer->m_bDoesSpectating = FALSE;
-    bridge.Update(); // first playing sample seeds, no login delta
+    bridge.Update(); // first playing values establish a baseline
     context.health = 100.0f;
-    bridge.Update(); // healing
+    bridge.Update(); // healing is not damage
     bridge.RequestScriptedHealthSuppressionForTesting();
-    context.health = 80.0f;
-    bridge.Update(); // pure scripted reset has no combat proof
-    context.tick += 500;
-    bridge.Update();
-    context.damageSource = 54;
-    ASSERT_TRUE(EmitDamageRpc(bridge, 10.0f, true, 54));
     context.health = 70.0f;
     bridge.Update();
-    context.tick += 500;
-    bridge.Update();
-    ASSERT_EQ(DamageLogCount(context), static_cast<std::size_t>(0));
-
-    // The final lethal hit is still measured once if SA-MP set Wasted before
-    // the poll. Reading HP=0 must not throw away the previous living baseline.
-    context.damageSource = 24;
-    context.armour = 0.0f;
-    bridge.RequestScriptedHealthSuppressionForTesting();
-    bridge.Update(); // discard armour reset before the fatal shot
-    context.tick += 500;
-    bridge.Update();
-    ASSERT_TRUE(EmitDamageRpc(bridge, 90.0f));
+    ASSERT_EQ(DamageLogCount(context), static_cast<std::size_t>(1));
     context.health = -20.0f;
     context.localPlayer->m_bIsWasted = TRUE;
     context.localPlayer->m_bIsActive = FALSE;
     bridge.Update();
-    ASSERT_EQ(DamageLogCount(context), static_cast<std::size_t>(1));
-    ASSERT_TRUE(context.localMessages.back().find("Du hast -70 HP Schaden erhalten.") != std::string::npos);
-    context.tick += 500;
+    ASSERT_EQ(DamageLogCount(context), static_cast<std::size_t>(2));
+    ASSERT_TRUE(context.localMessages.back().find("-70,0 HP {FFFFFF}Schaden (HP Schaden)") != std::string::npos);
     bridge.Update();
+    ASSERT_EQ(DamageLogCount(context), static_cast<std::size_t>(2));
     context.localPlayer->m_bIsWasted = FALSE;
     context.localPlayer->m_bIsActive = TRUE;
     context.health = 100.0f;
     bridge.Update();
+    context.pedIdentity = reinterpret_cast<const void*>(0x3000);
+    context.health = 60.0f;
+    bridge.Update();
+    ASSERT_EQ(DamageLogCount(context), static_cast<std::size_t>(2));
     context.health = 50.0f;
-    bridge.RequestScriptedHealthSuppressionForTesting();
     bridge.Update();
-    context.tick += 500;
+    ASSERT_EQ(DamageLogCount(context), static_cast<std::size_t>(3));
+    context.sampleAvailable = false;
     bridge.Update();
-    ASSERT_EQ(DamageLogCount(context), static_cast<std::size_t>(1));
+    context.sampleAvailable = true;
+    context.health = 20.0f;
+    bridge.Update();
+    ASSERT_EQ(DamageLogCount(context), static_cast<std::size_t>(3));
+    context.health = 19.0f;
+    bridge.Update();
+    ASSERT_EQ(DamageLogCount(context), static_cast<std::size_t>(4));
     ASSERT_TRUE(context.serverMessages.empty());
     bridge.Shutdown();
     SAMPBridge::ResetTestingHooks();
@@ -1217,7 +1160,7 @@ bool TestEveryOfferedCombatVariableResolvesWithoutServerQueries() {
     bridge.ImportKillCount(7);
     bridge.ImportDeathCount(4);
     bridge.ProcessDeathMessageForTesting({5, 7, 31, std::time(nullptr), true});
-    ASSERT_EQ(context.lastLocalMessage, std::string("Enemy|KOBiRO|M4|Unknown|UNKNOWN|75|26|8|4|1|0|2.00|2.00"));
+    ASSERT_EQ(context.lastLocalMessage, std::string("Unknown|Unknown|75|26|8|4|1|0|2.00"));
     ASSERT_TRUE(context.serverMessages.empty());
     bridge.SetKillTrackerLocalKillMessageTemplate("{victim}|{killer}|{weapon}");
     bridge.ProcessDeathMessageForTesting({5, 9, -1, std::time(nullptr), true});
@@ -1597,6 +1540,118 @@ bool TestAutoEngineStartDoesNotTypeIntoBinder() {
     return true;
 }
 
+bool TestAutoEngineStartWaitsForServerEngineStateAfterEntry() {
+    MockContext context;
+    auto hooks = context.BuildHooks();
+    unsigned long now = 1000;
+    bool engineOn = true; // transient GTA state during entry
+    std::vector<bool> keys;
+    hooks.getTickCount = [&]() { return now; };
+    hooks.getDriverVehicle = [&](unsigned short& id, bool& running) { id = 20; running = engineOn; return true; };
+    hooks.isEngineInputAvailable = []() { return true; };
+    hooks.setEngineStartKeyDown = [&](bool down) { keys.push_back(down); };
+    SAMPBridge::SetTestingHooks(hooks);
+    SAMPBridge bridge;
+    bridge.SetAutoEngineStart(true);
+    ASSERT_TRUE(bridge.Initialize());
+    bridge.Update();
+    now = 1200;
+    bridge.Update();
+    engineOn = false; // server applies engine-off after seating
+    now = 1600;
+    bridge.Update();
+    bridge.SetAutoEngineStart(true); // repeated settings application is harmless
+    now = 2500;
+    bridge.Update();
+    ASSERT_EQ(keys.size(), std::size_t(1));
+    ASSERT_TRUE(keys.back());
+    now = 2650;
+    bridge.Update();
+    ASSERT_EQ(keys.size(), std::size_t(2));
+    ASSERT_TRUE(!keys.back());
+    engineOn = true;
+    now = 5000;
+    bridge.Update();
+    ASSERT_EQ(keys.size(), std::size_t(2));
+    bridge.Shutdown();
+    SAMPBridge::ResetTestingHooks();
+    return true;
+}
+
+bool TestAutoEngineStartIgnoresOldStartNotice() {
+    MockContext context;
+    auto hooks = context.BuildHooks();
+    unsigned long now = 1000;
+    bool oldStartNotice = true;
+    std::vector<bool> keys;
+    hooks.getTickCount = [&]() { return now; };
+    hooks.getDriverVehicle = [](unsigned short& id, bool& running) { id = 21; running = false; return true; };
+    hooks.isEngineInputAvailable = []() { return true; };
+    hooks.hasEngineStartSuccessText = [&]() { return oldStartNotice; };
+    hooks.setEngineStartKeyDown = [&](bool down) { keys.push_back(down); };
+    SAMPBridge::SetTestingHooks(hooks);
+    SAMPBridge bridge;
+    bridge.SetAutoEngineStart(true);
+    ASSERT_TRUE(bridge.Initialize());
+    bridge.Update();
+    now = 2500;
+    bridge.Update();
+    now = 2650;
+    bridge.Update();
+    now = 4300;
+    bridge.Update(); // old text must not prevent a necessary second attempt
+    ASSERT_EQ(keys.size(), std::size_t(3));
+    ASSERT_TRUE(keys.back());
+    oldStartNotice = false;
+    now = 4450;
+    bridge.Update();
+    oldStartNotice = true; // newly appearing live confirmation after our press
+    now = 4600;
+    bridge.Update();
+    now = 9000;
+    bridge.Update();
+    ASSERT_EQ(keys.size(), std::size_t(4));
+    ASSERT_TRUE(!keys.back());
+    bridge.Shutdown();
+    SAMPBridge::ResetTestingHooks();
+    return true;
+}
+
+bool TestAutoEngineStartWaitsUntilChatCanReleaseInput() {
+    MockContext context;
+    auto hooks = context.BuildHooks();
+    unsigned long now = 1000;
+    bool inputAvailable = false;
+    std::vector<bool> keys;
+    hooks.getTickCount = [&]() { return now; };
+    hooks.getDriverVehicle = [](unsigned short& id, bool& running) { id = 22; running = false; return true; };
+    hooks.isEngineInputAvailable = [&]() { return inputAvailable; };
+    hooks.setEngineStartKeyDown = [&](bool down) { keys.push_back(down); };
+    SAMPBridge::SetTestingHooks(hooks);
+    SAMPBridge bridge;
+    bridge.SetAutoEngineStart(true);
+    ASSERT_TRUE(bridge.Initialize());
+    bridge.Update();
+    now = 25000; // chat/binder was open longer than the retry window
+    bridge.Update();
+    ASSERT_TRUE(keys.empty());
+    inputAvailable = true;
+    bridge.Update();
+    ASSERT_EQ(keys.size(), std::size_t(1));
+    ASSERT_TRUE(keys.back());
+    now = 25150;
+    bridge.Update();
+    ASSERT_EQ(keys.size(), std::size_t(2));
+    ASSERT_TRUE(!keys.back());
+    now = 26800;
+    bridge.Update();
+    ASSERT_EQ(keys.size(), std::size_t(3));
+    ASSERT_TRUE(keys.back());
+    bridge.Shutdown();
+    SAMPBridge::ResetTestingHooks();
+    return true;
+}
+
 bool TestWeaponNamesKnownWeapons() {
     ASSERT_EQ(killtracker::GetWeaponName(0), std::string("Fist"));
     ASSERT_EQ(killtracker::GetWeaponName(24), std::string("Desert Eagle"));
@@ -1741,12 +1796,11 @@ int RunSAMPBridgeTests() {
     RUN_TEST(TestFallbackInterceptorIgnoresPlainChatText);
     RUN_TEST(TestJobChatAdapterLifecycleHooksAreWired);
     RUN_TEST(TestTrackedIncomeShowsLocalKeybinderMessage);
-    RUN_TEST(TestDamageLogWorksWithoutCountersSoundsOrDamageTrackingAndMatchesEachShot);
-    RUN_TEST(TestDamageLogPollingFallbackUsesActualLossAndStopsImmediatelyWhenDisabled);
-    RUN_TEST(TestDamageLogReconcilesLateRpcScriptedServerHealthAndRejectsUnmeasuredDamage);
-    RUN_TEST(TestDamageLogCombatRpcConfirmsServerHealthWithStaleEnvironmentalSource);
-    RUN_TEST(TestDamageLogEnableTransitionDiscardsOldDamageAndKeepsOutgoingFeedbackIndependent);
-    RUN_TEST(TestDamageLogFiltersLoginHealScriptResetEnvironmentalDamageAndRespawn);
+    RUN_TEST(TestDamageLogAhkBlueprintReportsDirectServerLossWithoutRpc);
+    RUN_TEST(TestDamageLogSeparatesHealingFromDamageAndFormatsOneDecimal);
+    RUN_TEST(TestDamageLogDoesNotRequireOrDuplicateDamageRpcs);
+    RUN_TEST(TestDamageLogToggleDiscardsOldLossAndKeepsSoundFeedbackIndependent);
+    RUN_TEST(TestDamageLogSeedsLoginRespawnAndPedChangeAndReportsLethalLossOnce);
     RUN_TEST(TestHitsoundsIgnoreLoginPreviewAndResumeImmediatelyAfterSpawn);
     RUN_TEST(TestIncomingHitsoundReseedsAcrossReconnectRespawnAndPedReplacement);
     
@@ -1772,6 +1826,9 @@ int RunSAMPBridgeTests() {
     RUN_TEST(TestDeathRpcBeforeWastedStateCountsOnceAndRespawnAllowsNextDeath);
     RUN_TEST(TestAutoEngineStartUsesDriverTransitionsAndHeldInput);
     RUN_TEST(TestAutoEngineStartDoesNotTypeIntoBinder);
+    RUN_TEST(TestAutoEngineStartWaitsForServerEngineStateAfterEntry);
+    RUN_TEST(TestAutoEngineStartIgnoresOldStartNotice);
+    RUN_TEST(TestAutoEngineStartWaitsUntilChatCanReleaseInput);
     
     std::printf("\n--- Weapon Names Tests ---\n");
     RUN_TEST(TestWeaponNamesKnownWeapons);

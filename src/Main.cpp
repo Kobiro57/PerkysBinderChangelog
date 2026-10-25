@@ -453,6 +453,11 @@ public:
         bridge_.SetAutoHudScaleFix(settingsManager_.Get().auto_hudscalefix);
         bridge_.SetAutoEngineStart(settingsManager_.Get().auto_engine_start);
         bridge_.SetSettingsManager(&settingsManager_);
+        bridge_.SetStatsSynchronizedCallback([&](const keybinder::ServerStatsSnapshot& snapshot) {
+            settingsManager_.GetMutable().synchronized_player_stats = snapshot;
+            ExportKillTrackerStateToSettings();
+            return keybindManager_.Save(&settingsManager_);
+        });
         textDrawAdapter_.SetSpeedometerEnabled(keybinder::speedometer::kCustomTachoAvailable && settingsManager_.Get().speedometer_enabled);
         textDrawAdapter_.Initialize();
         speedometerManager_.Initialize(&textDrawAdapter_, &bridge_);

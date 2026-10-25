@@ -8,6 +8,7 @@
 #include "Hitmarker.h"
 #include "InterfaceEditor.h"
 #include "RssTypes.h"
+#include "ServerStatsSnapshot.h"
 
 namespace keybinder {
 
@@ -59,10 +60,10 @@ struct Settings {
     bool kill_tracker_server_kill_message_enabled = false;
     bool kill_tracker_server_death_message_enabled = false;
     bool kill_tracker_track_damage = true;
-    std::string kill_tracker_local_kill_message_template = "{FF6600}[Kill] {FFFFFF}{victim} {AAAAAA}mit {FFCC00}{weapon}";
+    std::string kill_tracker_local_kill_message_template = "{33CCFF}[NL-BINDER]{FFFFFF} Kill in {city}, {bezirk}. Meine Kills: {total_kills}";
     std::string kill_tracker_local_death_message_template = "{33CCFF}[NL-BINDER]{FFFFFF} Du bist gestorben. Deine aktuelle Tode: {total_deaths}";
-    std::string kill_tracker_server_kill_message_template = "Ich habe {victim} mit {weapon} getoetet.";
-    std::string kill_tracker_server_death_message_template = "Ich wurde von {killer} mit {weapon} getoetet.";
+    std::string kill_tracker_server_kill_message_template = "Kill in {city}, {bezirk}. Meine Kills: {total_kills}";
+    std::string kill_tracker_server_death_message_template = "Tode: {total_deaths}";
     bool kill_tracker_allow_manual_edits = false;
     bool auto_hudscalefix = true;
     bool auto_engine_start = false;
@@ -219,6 +220,7 @@ struct Settings {
     std::vector<DeathEventData> kill_tracker_recent_deaths;
     int kill_tracker_kill_count = 0;
     int kill_tracker_death_count = 0;
+    ServerStatsSnapshot synchronized_player_stats;
 };
 
 class SettingsManager {

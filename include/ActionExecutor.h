@@ -30,6 +30,9 @@ public:
     virtual int GetTotalKills() const = 0;
     virtual int GetTotalDeaths() const = 0;
     virtual std::string GetVehicleName() const = 0;
+    // Defaults preserve existing providers that do not expose location data.
+    virtual std::string GetCityName() const { return {}; }
+    virtual std::string GetDistrictName() const { return {}; }
 };
 
 class ActionExecutor {
@@ -82,6 +85,7 @@ private:
 
     std::string ExpandPlaceholders(const std::string& text) const;
     std::string GetCurrentZone() const;
+    std::string GetCurrentCity() const;
     std::string GetPlayerHPString() const;
     std::string GetPlayerArmourString() const;
     std::string GetVehicleHPString() const;

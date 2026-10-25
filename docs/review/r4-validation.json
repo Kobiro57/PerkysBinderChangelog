@@ -1,0 +1,21 @@
+{
+  "revision": "v0.1.1-r4",
+  "date": "2026-10-25",
+  "asi_bytes": 18324992,
+  "asi_sha256": "b9344521a38573a9252879bb362c354b85561fc3647f53a8a36f97f9b5b44450",
+  "full_test_suite_exit_code": 0,
+  "release_build_exit_code": 0,
+  "focused_checks": {
+    "SAMPBridge": 401,
+    "KillMessageTest": 53,
+    "LocationVariable": 88,
+    "ServerStatsParser": 110,
+    "StartupStatsSync": 57,
+    "native_reconnect_helper": 18
+  },
+  "failures": 0,
+  "pe32_x86_dll": true,
+  "embedded_helper_matches": true,
+  "archive_asi_matches": true,
+  "live_game_test_performed": false
+}

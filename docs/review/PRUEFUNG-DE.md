@@ -1,5 +1,81 @@
 # Hinweise zur Prüfung durch die Projektleitung
 
+## Aktueller Stand r4 – 25. Oktober 2026
+
+Der aktuelle Quellstand ist **NLBinder v.0.1.1 by KOBiRO, r4**. Die
+[Bedienungsbeschreibung](../NLBinder-0.1.1-r4-DE.md) und der
+[r4-Nachtrag der Änderungsübersicht](CHANGELOG-DE.md#10-nachtrag-r4--25-oktober-2026)
+beschreiben die Änderungen seit r3. Die historischen r3-Angaben weiter unten
+gelten weiterhin für die dort ausdrücklich genannte frühere Binärdatei.
+
+Die eindeutig ausgelieferte r4-Datei und ihre Messwerte werden zusammen
+bereitgestellt:
+
+- [Keybinder.asi](../../dist/NLBinder-0.1.1-r4/Keybinder.asi)
+- [SHA-256](../../dist/NLBinder-0.1.1-r4/SHA256SUMS.txt)
+- [Build- und Prüfangaben](../../dist/NLBinder-0.1.1-r4/BUILD-INFO.txt)
+- [PE-/Import-/Ressourcenprüfung](../../dist/NLBinder-0.1.1-r4/PRUEFBERICHT.json)
+- [Nativer Helfertest](../../dist/NLBinder-0.1.1-r4/RECONNECT-TEST.json)
+
+### Geändertes Verhalten gegenüber r3
+
+- Der Damagelog misst HP und Weste direkt und getrennt. Eine Abnahme von
+  mindestens 1 HP in einem der Werte wird lokal ausgegeben, auch bei
+  Fallschaden oder serverseitigem SetHealth/SetArmour. Es wird kein bestätigendes
+  Damage-RPC vorausgesetzt. Die getrennte Hitsound-Unterdrückung bleibt erhalten.
+- `{city}` bezeichnet die GTA-Stadt beziehungsweise das übergeordnete Gebiet,
+  `{bezirk}` den Bezirk. Die Hilfe bietet je Wert eine kleine Schreibweise an;
+  unzuverlässige Ereignisvariablen werden dort nicht mehr angeboten.
+- **Kill simulieren** sendet den aktuellen Killtext tatsächlich im gewählten
+  Chatkanal, mit `[Testkill]` nach einem gegebenenfalls vorhandenen Slash-Befehl.
+  Der Knopf verändert keine Zähler und braucht keinen echten Kill.
+- Auf ausdrücklichen Benutzerwunsch wird nach dem Login im ersten sicheren
+  Spielzustand einmal `/stats` gesendet. Die eigene Antwort wird gelesen und
+  lokal gespeichert. Der eigene automatisch angeforderte Chatblock wird
+  verborgen; nur eine identifizierte eigene Statistik-Messagebox wird
+  geschlossen. Fremde Statistikblöcke und normale Chatnachrichten bleiben
+  sichtbar. Es gibt keine Abfrageschleife und keine Erfolgsmeldung ohne Daten.
+- Der automatische Motorstart bewertet den Motor erst nach vollständig
+  erkanntem Fahrersitz und der bestehenden Wartezeit von 1,5 Sekunden. Ein
+  vorübergehendes EngineOn beim Einsteigen verwirft die Planung nicht mehr.
+  Alte „Motor Startet“-Chattexte gelten nicht als neue Bestätigung. Die
+  Wiederholungsphase beginnt erst mit dem echten Tastendruck; Chat-/Binder-
+  Eingaben bleiben geschützt.
+
+### Zusätzliche r4-Prüfpfade
+
+| Bereich | Implementierung | Tests |
+| --- | --- | --- |
+| Direkte HP-/Westenabnahme und Spielphasen | [IncomingDamageDetector.h](../../include/IncomingDamageDetector.h), [SAMPBridge.cpp](../../src/SAMPBridge.cpp) | [SAMPBridgeTests.cpp](../../tests/SAMPBridgeTests.cpp) |
+| Stadt/Bezirk und Variablenkatalog | [LocationNames.h](../../include/LocationNames.h), [MessageVariables.h](../../include/MessageVariables.h), [ActionExecutor.cpp](../../src/ActionExecutor.cpp) | [LocationVariableTests.cpp](../../tests/LocationVariableTests.cpp) |
+| Testkill und Chatkanal | [KillMessageTest.h](../../include/KillMessageTest.h), [MainWindowUI.cpp](../../src/MainWindowUI.cpp) | [KillMessageTestTests.cpp](../../tests/KillMessageTestTests.cpp), [StartupStatsSyncTests.cpp](../../tests/StartupStatsSyncTests.cpp) |
+| Eigene Statistik, Cache und Dialogabschluss | [StartupStatsSync.cpp](../../src/StartupStatsSync.cpp), [ServerStatsSnapshot.h](../../include/ServerStatsSnapshot.h), [SettingsManager.cpp](../../src/SettingsManager.cpp) | [ServerStatsParserTests.cpp](../../tests/ServerStatsParserTests.cpp), [StartupStatsSyncTests.cpp](../../tests/StartupStatsSyncTests.cpp) |
+| Nur den angeforderten Statistikblock verbergen | [JobChatAdapter.cpp](../../src/JobChatAdapter.cpp) | [JobChatAdapterTests.cpp](../../tests/JobChatAdapterTests.cpp) |
+| Binärprüfung und Paketgleichheit | [verify_revision4_artifact.py](../../tools/verify_revision4_artifact.py), [package_revision4.ps1](../../tools/package_revision4.ps1) | PE32/x86, Ressource 300, Helfer- und Paket-SHA-256 |
+
+### Ausgeführte Prüfungen für r4
+
+Die vollständige Testsuite und der anschließende Win32-Release-Build sind mit
+Exitcode 0 abgeschlossen. Die SAMPBridge-Suite meldet 401 erfolgreiche
+Prüfungen und 0 Fehler, darunter Fallschaden und die drei neuen Motorstartfälle.
+Die zusätzlichen Tests melden 53 Prüfungen für Testkill, 88 für Ortsvariablen,
+110 für den Statistikparser und 57 für die Synchronisation, jeweils ohne Fehler.
+
+Die geprüfte ASI umfasst 18.324.992 Bytes. Ihre SHA-256 lautet
+`b9344521a38573a9252879bb362c354b85561fc3647f53a8a36f97f9b5b44450`.
+PE32/x86, Windows-Imports und die eingebettete Helferressource 300 wurden
+geprüft. Der enthaltene Helfer entspricht bytegenau dem geprüften Build;
+der native Helfertest umfasst 18 erfolgreiche Prüfungen mit harmlosen
+Testprozessen. Die ASI im ZIP und die separat ausgelieferte Datei haben dieselbe
+Prüfsumme. [Maschinenlesbare Ergebnisse](r4-validation.json) ergänzen die
+verlinkten Paketnachweise.
+
+Ein echter Ingame-Test auf dem konkreten Server mit dem installierten Launcher
+steht aus. Die früheren Testergebnisse gelten ausschließlich für ihren
+jeweiligen älteren Binärstand.
+
+## Historischer Prüfstand r3
+
 Diese Übersicht bezieht sich auf **NLBinder v.0.1.1 by KOBiRO, Arbeitsfassung r3 mit Damagelog und bereinigten Killtext-Variablen**, Stand 24. Oktober 2026. Die ursprüngliche Grundlage ist der Perkys/NLBinder.
 
 Die [vollständige Änderungsübersicht](CHANGELOG-DE.md) erklärt alle im Bearbeitungsverlauf umgesetzten Erweiterungen und Korrekturen. Für die eigene Beurteilung können die verlinkten Implementierungen und Tests direkt im Repository gelesen werden.

@@ -11,6 +11,8 @@
 #include <cctype>
 #include <cmath>
 #include <utility>
+#include <charconv>
+#include <type_traits>
 #include "../include/Logger.h"
 #include "../include/SpeedometerManager.h"
 
@@ -1958,6 +1960,32 @@ bool SettingsManager::LoadFromJson(const std::string& json_content) {
             settings_.hitmarker_enabled ? "true" : "false");
     }
 
+    ServerStatsSnapshot cachedStats;
+    ParseStringField(json_content, "\"stats_cache_player\"", cachedStats.playerName);
+    ParseStringField(json_content, "\"stats_cache_server\"", cachedStats.serverAddress);
+    ParseIntField(json_content, "\"stats_cache_port\"", cachedStats.serverPort);
+    auto readCachedNumber = [&](const char* name, auto& destination) {
+        std::string value;
+        const std::string key = std::string("\"") + name + "\"";
+        if (!ParseStringField(json_content, key.c_str(), value)) return;
+        typename std::decay_t<decltype(destination)>::value_type parsed = 0;
+        const auto result = std::from_chars(value.data(), value.data() + value.size(), parsed);
+        if (result.ec == std::errc() && result.ptr == value.data() + value.size()) destination = parsed;
+    };
+    readCachedNumber("stats_cache_kills", cachedStats.kills);
+    readCachedNumber("stats_cache_deaths", cachedStats.deaths);
+    readCachedNumber("stats_cache_cash", cachedStats.cash);
+    readCachedNumber("stats_cache_bank", cachedStats.bank);
+    readCachedNumber("stats_cache_wealth", cachedStats.wealth);
+    readCachedNumber("stats_cache_level", cachedStats.level);
+    readCachedNumber("stats_cache_gold", cachedStats.gold);
+    readCachedNumber("stats_cache_eventcoins", cachedStats.eventcoins);
+    readCachedNumber("stats_cache_wanted", cachedStats.wantedPoints);
+    readCachedNumber("stats_cache_experience", cachedStats.experience);
+    readCachedNumber("stats_cache_next_level", cachedStats.nextLevelExperience);
+    readCachedNumber("stats_cache_payday_minutes", cachedStats.nextPaydayMinutes);
+    settings_.synchronized_player_stats = cachedStats.HasCore() && !cachedStats.playerName.empty()
+        && *cachedStats.kills >= 0 && *cachedStats.deaths >= 0 ? std::move(cachedStats) : ServerStatsSnapshot{};
     return true;
 }
 
@@ -2315,6 +2343,28 @@ std::string SettingsManager::GetSettingsJson() const {
     oss << "    \"kill_tracker_kill_count\": " << settings_.kill_tracker_kill_count << ",\n";
 
     oss << "    \"kill_tracker_death_count\": " << settings_.kill_tracker_death_count << ",\n";
+
+    const auto& cachedStats = settings_.synchronized_player_stats;
+    if (cachedStats.HasCore()) {
+        oss << "    \"stats_cache_player\": \"" << EscapeJsonString(cachedStats.playerName) << "\",\n";
+        oss << "    \"stats_cache_server\": \"" << EscapeJsonString(cachedStats.serverAddress) << "\",\n";
+        oss << "    \"stats_cache_port\": " << cachedStats.serverPort << ",\n";
+        auto writeCachedNumber = [&](const char* name, const auto& value) {
+            if (value) oss << "    \"" << name << "\": \"" << *value << "\",\n";
+        };
+        writeCachedNumber("stats_cache_kills", cachedStats.kills);
+        writeCachedNumber("stats_cache_deaths", cachedStats.deaths);
+        writeCachedNumber("stats_cache_cash", cachedStats.cash);
+        writeCachedNumber("stats_cache_bank", cachedStats.bank);
+        writeCachedNumber("stats_cache_wealth", cachedStats.wealth);
+        writeCachedNumber("stats_cache_level", cachedStats.level);
+        writeCachedNumber("stats_cache_gold", cachedStats.gold);
+        writeCachedNumber("stats_cache_eventcoins", cachedStats.eventcoins);
+        writeCachedNumber("stats_cache_wanted", cachedStats.wantedPoints);
+        writeCachedNumber("stats_cache_experience", cachedStats.experience);
+        writeCachedNumber("stats_cache_next_level", cachedStats.nextLevelExperience);
+        writeCachedNumber("stats_cache_payday_minutes", cachedStats.nextPaydayMinutes);
+    }
 
     oss << "    \"kill_tracker_recent_deaths\": [";
     first = true;

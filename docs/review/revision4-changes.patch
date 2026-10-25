@@ -1,0 +1,3954 @@
+diff --git a/Keybinder.vcxproj b/Keybinder.vcxproj
+index a3c8ee9..69d5637 100644
+--- a/Keybinder.vcxproj
++++ b/Keybinder.vcxproj
+@@ -199,6 +199,7 @@
+     <ClCompile Include="src\KeybindManager.cpp" />
+     <ClCompile Include="src\ImGuiOverlay.cpp" />
+     <ClCompile Include="src\SAMPBridge.cpp" />
++    <ClCompile Include="src\StartupStatsSync.cpp" />
+     <ClCompile Include="src\ActionExecutor.cpp" />
+     <ClCompile Include="src\InputManager.cpp" />
+     <ClCompile Include="src\Logger.cpp" />
+diff --git a/README.md b/README.md
+index c193dbc..f9eac5a 100644
+--- a/README.md
++++ b/README.md
+@@ -2,8 +2,10 @@
+ 
+ Vollständiger Prüfstand der Änderungen am **Perkys / NLBinder**, angepasst für
+ KOBiRO. Grundlage und ursprüngliche Urheberschaft bleiben beim Originalprojekt.
+-Der Stand lautet **NLBinder v.0.1.1 by KOBiRO, r3**, einschließlich Damagelog
+-und bereinigter Killtext-Variablen.
++Der Stand lautet **NLBinder v.0.1.1 by KOBiRO, r4**. Neu sind der Damagelog
++über direkte HP-/Westenmessung einschließlich Fallschaden, getrennte Stadt-
++und Bezirksvariablen, **Kill simulieren**, die einmalige `/stats`-Synchronisation
++nach dem Login und eine erneute Korrektur des automatischen Motorstarts.
+ 
+ ## Einstieg für die Projektleitung
+ 
+@@ -11,8 +13,9 @@ und bereinigter Killtext-Variablen.
+ 2. [Technisches Verhalten, Prüfungen und Grenzen](docs/review/PRUEFUNG-DE.md)
+ 3. [Dateien im Vergleich zum Original](docs/review/DATEIVERGLEICH.md)
+ 4. [Herkunft und Abhängigkeiten](docs/review/DEPENDENCIES.md)
+-5. [Programmänderungen als GitHub-Vergleich](https://github.com/Kobiro57/PerkysBinderChangelog/compare/build-dependencies-baseline...v0.1.1-r3)
++5. [Programmänderungen als GitHub-Vergleich](https://github.com/Kobiro57/PerkysBinderChangelog/compare/build-dependencies-baseline...v0.1.1-r4)
+    oder als [kompakter Quellcode-Patch](docs/review/first-party-changes.patch)
++6. [Änderungen seit r3](https://github.com/Kobiro57/PerkysBinderChangelog/compare/v0.1.1-r3...v0.1.1-r4)
+ 
+ Der vollständige bearbeitete Code liegt in `src/`, `include/`, `res/`,
+ `tests/`, `tools/` und `third_party/`. Die Übersicht verlinkt direkt zu den
+@@ -36,20 +39,18 @@ die [aktuelle Build-Anleitung](docs/BUILD-README.md) beschreibt das Bauen des Bi
+ 
+ ## Geprüfte ASI
+ 
+-- [Keybinder.asi herunterladen](dist/NLBinder-0.1.1-r3/Keybinder.asi)
+-- [Installation und Bedienung](dist/NLBinder-0.1.1-r3/LIESMICH.md)
+-- [Build- und Prüfangaben](dist/NLBinder-0.1.1-r3/BUILD-INFO.txt)
+-- [Maschinenlesbarer Prüfnachweis](dist/NLBinder-0.1.1-r3/PRUEFBERICHT.json)
+-
+-SHA-256 der ausgelieferten ASI:
+-
+-```text
+-fc27a8a39fc2f78c40f1b686d5a71dcc0c2956854d1250278a84bd79200c7cef
+-```
+-
+-Automatisierte Gesamttests, Win32-Release-Build, PE-/Ressourcenvergleich und der
+-Reconnect-Helfertest mit harmlosen Testprozessen wurden erfolgreich ausgeführt.
+-Ein echter Ingame-Test mit dem konkreten Server und Launcher steht aus.
++- [Keybinder.asi herunterladen](dist/NLBinder-0.1.1-r4/Keybinder.asi)
++- [Komplettes ZIP-Paket herunterladen](dist/NLBinder-v0.1.1-KOBiRO-r4.zip)
++- [Installation und Bedienung](dist/NLBinder-0.1.1-r4/LIESMICH.md)
++- [Build- und Prüfangaben](dist/NLBinder-0.1.1-r4/BUILD-INFO.txt)
++- [Maschinenlesbarer Prüfnachweis](dist/NLBinder-0.1.1-r4/PRUEFBERICHT.json)
++- [SHA-256 der ausgelieferten ASI](dist/NLBinder-0.1.1-r4/SHA256SUMS.txt)
++
++Die Nachweise gehören zum jeweiligen Binärstand: automatisierte Gesamttests,
++Win32-Release-Build, PE-/Ressourcenvergleich und Reconnect-Helfertest mit
++harmlosen Testprozessen. Ein echter Ingame-Test mit dem konkreten Server und
++Launcher steht aus. Die [vorherige r3-Fassung](dist/NLBinder-0.1.1-r3/BUILD-INFO.txt)
++und ihre Prüfsumme bleiben zur Nachverfolgung erhalten.
+ 
+ ## Weitere Updates
+ 
+diff --git a/docs/NLBinder-0.1.1-r4-DE.md b/docs/NLBinder-0.1.1-r4-DE.md
+new file mode 100644
+index 0000000..eba958b
+--- /dev/null
++++ b/docs/NLBinder-0.1.1-r4-DE.md
+@@ -0,0 +1,165 @@
++# NLBinder v.0.1.1 by KOBiRO – Überarbeitung 4
++
++Stand: 25. Oktober 2026. Diese Fassung ergänzt die bisherigen Binder-Anpassungen
++um den Damagelog nach dem vorgegebenen AHK-Prinzip, getrennte Ortsvariablen,
++einen Testknopf für den Killtext und die einmalige Statistik-Synchronisation.
++Die vorhandene Oberfläche und die bisherigen Job-, Radar-, Tacho-, Motorstart-
++und Reconnect-Anpassungen bleiben die Grundlage.
++
++## Installation
++
++1. GTA/SA-MP schließen und die bisherige Binder-ASI sichern.
++2. Die bisherige ASI durch `Keybinder.asi` aus diesem Paket ersetzen. Nur eine
++   Binder-Fassung laden. Ein vorhandener ASI-Loader wird weiterhin benötigt.
++3. GTA San Andreas 1.0 US mit SA-MP 0.3.DL-R1 starten und normal einloggen.
++   Das Menü öffnet sich wie bisher mit F2, `/kb` oder `/keybinder`, sofern die
++   eigene Konfiguration nicht davon abweicht.
++
++Vorhandene Einstellungen werden übernommen. Die genaue Prüfsumme und die
++Ergebnisse des finalen Builds stehen in `BUILD-INFO.txt` und `SHA256SUMS.txt`
++des Pakets. Ein echter Ingame-Test mit der konkreten Server- und
++Launcher-Version steht aus.
++
++## Damagelog
++
++Unter **Einstellungen → General → Gameplay**, direkt unter
++**Automatischer Motorstart**, lässt sich **Damagelog** einschalten.
++
++Der Log vergleicht die aktuellen HP und die aktuelle Weste jeweils mit der
++vorigen gültigen Messung. Sinkt mindestens einer der beiden Werte um mindestens
++1 HP, erscheint unmittelbar nach der Messung eine lokale Chatzeile, zum Beispiel:
++
++```text
++[NL-BINDER] -25,0 HP Schaden (HP Schaden)
++[NL-BINDER] -12,5 HP Schaden (Weste getroffen)
++[NL-BINDER] -30,0 HP Schaden (Weste + HP Schaden)
++```
++
++Die Anzeige verwendet eine Nachkommastelle und den tatsächlich gemessenen
++Verlust. Eine gleichzeitige Heilung in einem Wert zieht keinen Schaden am
++anderen Wert ab. HP unter null werden als null behandelt, damit kein
++zusätzlicher Overkill ausgegeben wird.
++
++Anders als in r3 braucht dieser Log keine bestätigende Schadens-RPC und keine
++passende Waffenangabe. Er erfasst auch serverseitig gesetzte HP-/Westenabnahmen
++und Umweltschaden einschließlich Fallschaden während des Spiels. Die Hitsound-Unterdrückung wirkt nicht
++auf den Log. Kill-/Todeszähler, Schadenstatistik und Hitsounds können unabhängig
++ausgeschaltet bleiben.
++
++Login, Spawn, Pedwechsel, ungültige Messwerte und erneutes Einschalten setzen
++die Vergleichswerte neu. Heilung allein erzeugt keine Schadensmeldung. Mehrere
++Schüsse zwischen zwei Messungen können als eine gemeinsame Abnahme erscheinen;
++aus dieser Summe werden keine einzelnen Schusswerte erfunden. Der Log sendet
++keine dieser Meldungen an den Server.
++
++## Automatischer Motorstart
++
++Der vorhandene Schalter unter **General → Gameplay** bleibt bestehen. Der
++Motorzustand wird erst bei vollständig erkanntem Fahrersitz und nach der
++bestehenden Wartezeit von 1,5 Sekunden bewertet. Ein kurzzeitig von GTA als
++laufend gemeldeter Motor beim Einsteigen verwirft den geplanten Start nicht
++mehr, wenn der Server ihn danach ausschaltet.
++
++Ein alter Eintrag „Motor Startet“ im Chatverlauf zählt nicht als neue
++Startbestätigung. Die begrenzte Wiederholungsphase beginnt erst mit dem
++tatsächlichen Tastendruck; länger geöffneter Chat oder Binder lassen den
++geplanten Start nicht vorher ablaufen. Offene Chat-, Dialog- oder
++Binder-Eingaben erhalten dabei keine simulierte Motor-Taste.
++Die automatisierten Prüfungen ersetzen keinen Fahrversuch auf dem Server.
++
++## Stadt und Bezirk
++
++Es gibt je Wert eine angebotene Schreibweise:
++
++| Variable | Bedeutung | Beispiel |
++| --- | --- | --- |
++| `{city}` | Stadt beziehungsweise übergeordnetes Gebiet | Los Santos |
++| `{bezirk}` | Aktueller Bezirk | Market |
++
++Die Ortswerte stammen aus den lokalen GTA-Zonen. Großgeschriebene Doppelungen
++werden in der Hilfe nicht mehr angeboten. Auch die unzuverlässigen
++Ereignisvariablen `{victim}`, `{killer}` und `{weapon}` entfallen dort und aus
++den Standardvorlagen. Bestehende Vorlagen mit alten Schreibweisen bleiben
++lesbar; neue Texte sollten die bereinigte Liste verwenden.
++
++Im Killtext bleiben außerdem `{hp}`, `{weste}`, `{total_kills}`,
++`{total_deaths}`, `{session_kills}`, `{session_deaths}` und `{kd}` verfügbar.
++Fahrzeugwerte bleiben bei der Textbelegung. Die geschweiften Klammern gehören
++zur Variable.
++
++## Kill simulieren
++
++Unter **Einstellungen → General → Kill- & Todeszähler** sendet
++**Kill simulieren** den gerade eingetragenen Killtext mit den aktuellen
++Variablenwerten. Der Knopf erzeugt keinen echten Kill und verändert keine
++Kill-, Todes- oder Sitzungszähler. Er ist auch zum Testen bei ausgeschalteter
++automatischer Killnachricht vorgesehen.
++
++Der Chatkanal bleibt am Anfang erhalten:
++
++```text
++Eingabe: Kill in {city}, {bezirk}. Kills: {total_kills}
++Ausgabe: [Testkill] Kill in Los Santos, Market. Kills: 64
++
++Eingabe: /f Kill in {bezirk}. Kills: {total_kills}
++Ausgabe: /f [Testkill] Kill in Market. Kills: 64
++```
++
++Dasselbe Prinzip gilt für `/r`, `/d` und andere Slash-Befehle. Der erste
++Befehlstoken bleibt vorne; der Binder ergänzt danach die Testmarkierung.
++Ein leerer oder mehrzeiliger Text wird nicht gesendet. Die maximale Chatlänge
++wird eingehalten. Der Testknopf sendet tatsächlich in den gewählten Chatkanal;
++die Meldung kann deshalb für die jeweiligen Empfänger sichtbar sein.
++
++## Einmalige Synchronisation nach dem Einloggen
++
++Sobald der Client verbunden, die eigene Spielfigur bereit und keine Chat-,
++Dialog- oder Cursor-Eingabe offen ist, fordert der Binder einmal `/stats` an.
++Eine zusätzliche feste Wartepause oder ein blockierendes Sleep wird nicht
++eingefügt. Die Dauer hängt trotzdem von der Serverantwort ab.
++
++Der Binder übernimmt nur den erkannten eigenen Statistikblock. Die Zeilen der
++automatisch angeforderten Nova-Chatstatistik werden beim Anzeigen unterdrückt,
++aber weiter ausgewertet. Eine als eigene Statistikantwort identifizierte
++Messagebox wird nach dem Lesen geschlossen. Andere Dialoge und normale
++Chatnachrichten werden nicht geschlossen oder pauschal ausgeblendet.
++
++Gespeichert werden die tatsächlich gelieferten Werte: Kills, Tode, Bargeld,
++Kontostand, gegebenenfalls Gesamtvermögen, Level, Erfahrungspunkte und nächstes
++Levelziel, Gold, Eventcoins, Wantedpunkte und verbleibende Zeit bis zum
++Zahltag. Liefert der Server keinen gesonderten Gesamtvermögenswert, wird
++Bargeld plus Kontostand als verfügbare Summe verwendet. Fehlende Zusatzwerte
++werden nicht erfunden.
++
++Die gelesenen Gesamtzähler bilden einen Ausgangsstand und erzeugen keinen
++zusätzlichen Kill oder Tod. Der Cache wird lokal in den Binder-Einstellungen
++gespeichert. Nach erfolgreicher Übernahme erscheint ausschließlich lokal:
++
++```text
++[NL-BINDER] Synchronisation abgeschlossen.
++```
++
++Nachfolgende Zeilen desselben Statistikblocks können den Cache bis zur
++Abschlusszeile beziehungsweise innerhalb des begrenzten Drei-Sekunden-
++Kontexts ergänzen. Ohne vollständige Antwort endet der automatische Versuch
++nach acht Sekunden mit einem lokalen Hinweis statt einer Erfolgsmeldung.
++Es gibt keine wiederholten automatischen `/stats`-Abfragen in einer Schleife.
++
++## Quellen und Prüfung
++
++Die Implementierungen und zugehörigen Tests stehen im
++[GitHub-Prüfrepository](https://github.com/Kobiro57/PerkysBinderChangelog):
++
++- Damagelog und Spielanbindung: `src/SAMPBridge.cpp`,
++  `include/IncomingDamageDetector.h`, `tests/SAMPBridgeTests.cpp`.
++- Ortswerte und Variablen: `include/MessageVariables.h`,
++  `src/ActionExecutor.cpp` und die jeweiligen Orts-/Variablentests.
++- Testkill: `include/KillMessageTest.h`, `tests/KillMessageTestTests.cpp`.
++- Synchronisation: `src/StartupStatsSync.cpp`, `include/SAMPBridge.h`,
++  `include/ServerStatsSnapshot.h`, `tests/ServerStatsParserTests.cpp`.
++- Sichtbarkeit eigener Statistikzeilen: `src/JobChatAdapter.cpp` und
++  `tests/JobChatAdapterTests.cpp`.
++
++Die früheren r3-Unterlagen dokumentieren den damaligen Stand. Für die hier
++genannten Änderungen ist der r4-Quellstand mit den zugehörigen finalen
++Buildnachweisen maßgeblich.
+diff --git a/docs/review/CHANGELOG-DE.md b/docs/review/CHANGELOG-DE.md
+index 36547df..7af81c0 100644
+--- a/docs/review/CHANGELOG-DE.md
++++ b/docs/review/CHANGELOG-DE.md
+@@ -1,6 +1,6 @@
+ # Änderungen am Perkys Binder – NLBinder v.0.1.1 by KOBiRO
+ 
+-Stand: 24. Oktober 2026, veröffentlichte Arbeitsfassung **r3 mit Damagelog und bereinigten Killtext-Variablen**.
++Stand: 25. Oktober 2026, Arbeitsfassung **r4 mit direktem Damagelog, bereinigten Variablen, Testkill, Login-Synchronisation und Motorstart-Korrektur**. Die Abschnitte 1 bis 9 dokumentieren die bisherigen Änderungen; Abschnitt 10 beschreibt die Änderungen seit r3.
+ 
+ Die Grundlage ist der vorhandene Perkys/NLBinder. Die Änderungen erweitern dessen bestehende Oberfläche und verwenden weiterhin die vorhandenen ImGui-Komponenten, Karten, Schalter und Darstellungseinstellungen. Der Ordner KOBiRO_ASI diente als funktionale Referenz für die Overlay-Erweiterung; seine Oberfläche wurde nicht als neue Binder-Oberfläche übernommen.
+ 
+@@ -187,3 +187,123 @@ Quellen: [IncomingDamageDetector.h](../../include/IncomingDamageDetector.h), [SA
+ Quellen: [Keybinder.vcxproj](../../Keybinder.vcxproj), [setup_msvc.bat](../../tools/setup_msvc.bat), [build_plugin_sdk.bat](../../tools/build_plugin_sdk.bat), [build_release.bat](../../tools/build_release.bat), [build_reconnect_helper.bat](../../tools/build_reconnect_helper.bat), [run_tests.bat](../../tools/run_tests.bat), [PersistentPaths.cpp](../../src/PersistentPaths.cpp).
+ 
+ Die automatisierten Tests und der Release-Build der ausgelieferten Fassung waren erfolgreich. Der Reconnect-Helfer wurde zusätzlich mit eigenen harmlosen Testprozessen geprüft. **Es wurde kein echter Ingame-Test mit der konkreten Server- und Launcher-Version durchgeführt.** Details und die eindeutige ASI-Prüfsumme stehen in [PRUEFUNG-DE.md](PRUEFUNG-DE.md).
++
++## 10. Nachtrag r4 – 25. Oktober 2026
++
++Die Abschnitte 1 bis 9 halten den veröffentlichten r3-Stand fest. Dieser
++Nachtrag beschreibt die darauf folgenden Korrekturen und ersetzt für die
++betroffenen Funktionen die damaligen r3-Aussagen. Die ausführliche
++[r4-Bedienungsbeschreibung](../NLBinder-0.1.1-r4-DE.md) gehört zum neuen Stand;
++eine neue endgültige ASI-Prüfsumme und neue Testergebnisse werden mit dessen
++Buildnachweisen dokumentiert.
++
++### Damagelog nach dem AHK-Prinzip
++
++Der Damagelog benötigt keine eingehende Schadens-RPC mehr. HP und Weste werden
++getrennt mit der vorigen gültigen Probe verglichen. Sinkt mindestens einer der
++Werte um mindestens 1 HP, erscheint der gemessene Verlust unmittelbar nach der
++Probe mit einer Nachkommastelle im eigenen Chat. Die Typen heißen **HP Schaden**,
++**Weste getroffen** und **Weste + HP Schaden**.
++
++Serverseitige SetHealth-/SetArmour-Abnahmen und Umweltschaden einschließlich Fallschaden werden während
++des Spiels mit erfasst. Die Script-/Umweltschaden-Unterdrückung des Hitsounds
++blockiert den Log nicht mehr. Gleichzeitige Heilung eines Werts vermindert den
++gemessenen Schaden am anderen Wert nicht. Login-/Spawn-/Pedwechsel und erneutes
++Einschalten setzen die Ausgangswerte zurück. Bei mehreren Treffern zwischen
++zwei Proben wird nur die gemessene Summe ausgegeben; es gibt keine Behauptung
++einer garantierten einzelnen Zeile pro Schuss. Die Ausgabe bleibt lokal.
++
++Quellen: [SAMPBridge.cpp](../../src/SAMPBridge.cpp),
++[IncomingDamageDetector.h](../../include/IncomingDamageDetector.h).
++Tests: [SAMPBridgeTests.cpp](../../tests/SAMPBridgeTests.cpp).
++
++### Getrennte Ortswerte und bereinigte Variablen
++
++Die angebotenen Ortsvariablen heißen **`{city}`** für Stadt/übergeordnetes
++Gebiet und **`{bezirk}`** für den aktuellen Bezirk, beispielsweise Los Santos
++und Market. Die Daten werden lokal aus den GTA-Zonen gelesen. Großgeschriebene
++Doppelungen sowie die unzuverlässigen Ereignisfelder `victim`, `killer` und
++`weapon` werden nicht mehr angeboten. Standardtexte verwenden die bereinigten
++Orts-/Zählerwerte; vorhandene alte Vorlagen bleiben lesbar.
++
++Quellen: [MessageVariables.h](../../include/MessageVariables.h),
++[MessageVariablesUI.h](../../include/MessageVariablesUI.h),
++[ActionExecutor.cpp](../../src/ActionExecutor.cpp),
++[SAMPBridge.cpp](../../src/SAMPBridge.cpp),
++[KillTrackerUI.cpp](../../src/KillTrackerUI.cpp).
++
++### Killtext ohne echten Kill testen
++
++Unter General / Kill- & Todeszähler wurde **Kill simulieren** ergänzt. Der
++aktuelle Text wird mit den aktuellen Variablenwerten expandiert und tatsächlich
++gesendet. Normaler Chat erhält `[Testkill]` am Anfang; bei Slash-Befehlen steht
++der Befehl weiterhin zuerst: `/f [Testkill] …`, `/r [Testkill] …`,
++`/d [Testkill] …`. Ein erster beliebiger Befehlstoken wird auf dieselbe Weise
++beibehalten. Der Test erhöht keine Kill-/Todes-/Sitzungszähler und benötigt
++keine aktivierte automatische Killnachricht. Leere oder mehrzeilige Texte
++werden abgelehnt; die Chatlänge wird begrenzt.
++
++Quellen: [MainWindowUI.cpp](../../src/MainWindowUI.cpp),
++[KillMessageTest.h](../../include/KillMessageTest.h),
++[SAMPBridge.cpp](../../src/SAMPBridge.cpp).
++Tests: [KillMessageTestTests.cpp](../../tests/KillMessageTestTests.cpp).
++
++### Einmalige eigene `/stats`-Synchronisation
++
++Auf ausdrücklichen neuen Benutzerwunsch fragt der Binder nach dem sicheren
++Loginzustand einmal `/stats` ab. Das ist eine Änderung gegenüber der zuvor
++rein passiven Statistikübernahme. Der Versuch startet im ersten geeigneten
++Spielframe ohne zusätzliche feste Wartepause; die Serverantwort bleibt
++zeitbestimmend. Offener Chat, Dialog, Cursor oder ein noch nicht spielbereiter
++Client blockieren den Start.
++
++Die eigene automatisch angeforderte Nova-Chatstatistik wird beim Anzeigen
++unterdrückt, während der Parser die normalisierten Zeilen weiterhin erhält.
++Leere Zeilen durchlaufen ebenfalls den Sichtbarkeitsfilter. Eine identifizierte
++eigene Statistik-Messagebox kann nach dem Lesen geschlossen werden. Andere
++Dialoge, fremde Statistikblöcke und normale Chatzeilen werden nicht pauschal
++versteckt oder geschlossen.
++
++Der lokale Cache umfasst empfangene Kills/Tode, Bargeld/Kontostand und einen
++gegebenenfalls gelieferten Gesamtvermögenswert sowie Level/XP/Levelziel, Gold,
++Eventcoins, Wantedpunkte und die Zeit bis zum Zahltag. Ohne eigenen
++Gesamtvermögenswert kann Bargeld plus Kontostand als verfügbare Summe dienen.
++Nicht gelieferte Zusatzwerte werden nicht erfunden. Die ersten Gesamtzähler
++sind ein Ausgangsstand und kein neuer Kill oder Tod.
++
++Nach erfolgreicher Übernahme und lokaler Speicherung meldet der Binder
++`[NL-BINDER] Synchronisation abgeschlossen.`. Nachfolgende Zeilen desselben
++Blocks können den Cache bis zum Footer beziehungsweise innerhalb von drei
++Sekunden ergänzen. Nach acht Sekunden ohne vollständige Antwort erscheint
++stattdessen ein lokaler Fehlerhinweis; es gibt weder eine Erfolgsmeldung ohne
++Daten noch wiederholten automatischen Abfragespam. Persönliche Cachewerte
++bleiben in der lokalen Konfiguration und gehören nicht in GitHub.
++
++Quellen: [StartupStatsSync.cpp](../../src/StartupStatsSync.cpp),
++[SAMPBridge.h](../../include/SAMPBridge.h),
++[ServerStatsSnapshot.h](../../include/ServerStatsSnapshot.h),
++[JobChatAdapter.cpp](../../src/JobChatAdapter.cpp),
++[SettingsManager.cpp](../../src/SettingsManager.cpp), [Main.cpp](../../src/Main.cpp).
++Tests: [ServerStatsParserTests.cpp](../../tests/ServerStatsParserTests.cpp),
++[SAMPBridgeTests.cpp](../../tests/SAMPBridgeTests.cpp),
++[JobChatAdapterTests.cpp](../../tests/JobChatAdapterTests.cpp).
++
++Die r4-Änderungen wurden nicht in einer echten Spielsitzung geprüft. Die
++abschließenden automatisierten Tests, der neue Release-Build und die
++Veröffentlichung erfolgen mit den zugehörigen r4-Prüfnachweisen; die frühere
++r3-Prüfsumme beschreibt weiterhin ausschließlich die frühere Binärdatei.
++
++### Automatischer Motorstart erneut korrigiert
++
++Nach der erneuten Fehlermeldung des Benutzers wurde der automatische Motorstart
++überarbeitet. GTA kann beim Einsteigen kurz einen laufenden Motor melden,
++bevor der Server ihn ausschaltet. Die Entscheidung erfolgt deshalb erst bei
++vollständig erkanntem Fahrersitz und nach der bestehenden Wartezeit von
++1,5 Sekunden. Ein vorübergehendes EngineOn verwirft den geplanten Start nicht
++mehr. Ein alter „Motor Startet“-Chattext zählt nicht als neue Bestätigung;
++die begrenzte Wiederholungsphase beginnt erst beim tatsächlichen Tastendruck.
++Länger geöffneter Chat oder Binder lassen die Planung nicht vorzeitig ablaufen.
++Der Schutz vor Eingaben in Chat, Dialog oder Binder bleibt erhalten.
++Die konkrete Änderung und die ergänzten Regressionstests stehen in
++[SAMPBridge.cpp](../../src/SAMPBridge.cpp) und
++[SAMPBridgeTests.cpp](../../tests/SAMPBridgeTests.cpp).
+diff --git a/docs/review/PRUEFUNG-DE.md b/docs/review/PRUEFUNG-DE.md
+index 21e21ef..a8d9f18 100644
+--- a/docs/review/PRUEFUNG-DE.md
++++ b/docs/review/PRUEFUNG-DE.md
+@@ -1,5 +1,81 @@
+ # Hinweise zur Prüfung durch die Projektleitung
+ 
++## Aktueller Stand r4 – 25. Oktober 2026
++
++Der aktuelle Quellstand ist **NLBinder v.0.1.1 by KOBiRO, r4**. Die
++[Bedienungsbeschreibung](../NLBinder-0.1.1-r4-DE.md) und der
++[r4-Nachtrag der Änderungsübersicht](CHANGELOG-DE.md#10-nachtrag-r4--25-oktober-2026)
++beschreiben die Änderungen seit r3. Die historischen r3-Angaben weiter unten
++gelten weiterhin für die dort ausdrücklich genannte frühere Binärdatei.
++
++Die eindeutig ausgelieferte r4-Datei und ihre Messwerte werden zusammen
++bereitgestellt:
++
++- [Keybinder.asi](../../dist/NLBinder-0.1.1-r4/Keybinder.asi)
++- [SHA-256](../../dist/NLBinder-0.1.1-r4/SHA256SUMS.txt)
++- [Build- und Prüfangaben](../../dist/NLBinder-0.1.1-r4/BUILD-INFO.txt)
++- [PE-/Import-/Ressourcenprüfung](../../dist/NLBinder-0.1.1-r4/PRUEFBERICHT.json)
++- [Nativer Helfertest](../../dist/NLBinder-0.1.1-r4/RECONNECT-TEST.json)
++
++### Geändertes Verhalten gegenüber r3
++
++- Der Damagelog misst HP und Weste direkt und getrennt. Eine Abnahme von
++  mindestens 1 HP in einem der Werte wird lokal ausgegeben, auch bei
++  Fallschaden oder serverseitigem SetHealth/SetArmour. Es wird kein bestätigendes
++  Damage-RPC vorausgesetzt. Die getrennte Hitsound-Unterdrückung bleibt erhalten.
++- `{city}` bezeichnet die GTA-Stadt beziehungsweise das übergeordnete Gebiet,
++  `{bezirk}` den Bezirk. Die Hilfe bietet je Wert eine kleine Schreibweise an;
++  unzuverlässige Ereignisvariablen werden dort nicht mehr angeboten.
++- **Kill simulieren** sendet den aktuellen Killtext tatsächlich im gewählten
++  Chatkanal, mit `[Testkill]` nach einem gegebenenfalls vorhandenen Slash-Befehl.
++  Der Knopf verändert keine Zähler und braucht keinen echten Kill.
++- Auf ausdrücklichen Benutzerwunsch wird nach dem Login im ersten sicheren
++  Spielzustand einmal `/stats` gesendet. Die eigene Antwort wird gelesen und
++  lokal gespeichert. Der eigene automatisch angeforderte Chatblock wird
++  verborgen; nur eine identifizierte eigene Statistik-Messagebox wird
++  geschlossen. Fremde Statistikblöcke und normale Chatnachrichten bleiben
++  sichtbar. Es gibt keine Abfrageschleife und keine Erfolgsmeldung ohne Daten.
++- Der automatische Motorstart bewertet den Motor erst nach vollständig
++  erkanntem Fahrersitz und der bestehenden Wartezeit von 1,5 Sekunden. Ein
++  vorübergehendes EngineOn beim Einsteigen verwirft die Planung nicht mehr.
++  Alte „Motor Startet“-Chattexte gelten nicht als neue Bestätigung. Die
++  Wiederholungsphase beginnt erst mit dem echten Tastendruck; Chat-/Binder-
++  Eingaben bleiben geschützt.
++
++### Zusätzliche r4-Prüfpfade
++
++| Bereich | Implementierung | Tests |
++| --- | --- | --- |
++| Direkte HP-/Westenabnahme und Spielphasen | [IncomingDamageDetector.h](../../include/IncomingDamageDetector.h), [SAMPBridge.cpp](../../src/SAMPBridge.cpp) | [SAMPBridgeTests.cpp](../../tests/SAMPBridgeTests.cpp) |
++| Stadt/Bezirk und Variablenkatalog | [LocationNames.h](../../include/LocationNames.h), [MessageVariables.h](../../include/MessageVariables.h), [ActionExecutor.cpp](../../src/ActionExecutor.cpp) | [LocationVariableTests.cpp](../../tests/LocationVariableTests.cpp) |
++| Testkill und Chatkanal | [KillMessageTest.h](../../include/KillMessageTest.h), [MainWindowUI.cpp](../../src/MainWindowUI.cpp) | [KillMessageTestTests.cpp](../../tests/KillMessageTestTests.cpp), [StartupStatsSyncTests.cpp](../../tests/StartupStatsSyncTests.cpp) |
++| Eigene Statistik, Cache und Dialogabschluss | [StartupStatsSync.cpp](../../src/StartupStatsSync.cpp), [ServerStatsSnapshot.h](../../include/ServerStatsSnapshot.h), [SettingsManager.cpp](../../src/SettingsManager.cpp) | [ServerStatsParserTests.cpp](../../tests/ServerStatsParserTests.cpp), [StartupStatsSyncTests.cpp](../../tests/StartupStatsSyncTests.cpp) |
++| Nur den angeforderten Statistikblock verbergen | [JobChatAdapter.cpp](../../src/JobChatAdapter.cpp) | [JobChatAdapterTests.cpp](../../tests/JobChatAdapterTests.cpp) |
++| Binärprüfung und Paketgleichheit | [verify_revision4_artifact.py](../../tools/verify_revision4_artifact.py), [package_revision4.ps1](../../tools/package_revision4.ps1) | PE32/x86, Ressource 300, Helfer- und Paket-SHA-256 |
++
++### Ausgeführte Prüfungen für r4
++
++Die vollständige Testsuite und der anschließende Win32-Release-Build sind mit
++Exitcode 0 abgeschlossen. Die SAMPBridge-Suite meldet 401 erfolgreiche
++Prüfungen und 0 Fehler, darunter Fallschaden und die drei neuen Motorstartfälle.
++Die zusätzlichen Tests melden 53 Prüfungen für Testkill, 88 für Ortsvariablen,
++110 für den Statistikparser und 57 für die Synchronisation, jeweils ohne Fehler.
++
++Die geprüfte ASI umfasst 18.324.992 Bytes. Ihre SHA-256 lautet
++`b9344521a38573a9252879bb362c354b85561fc3647f53a8a36f97f9b5b44450`.
++PE32/x86, Windows-Imports und die eingebettete Helferressource 300 wurden
++geprüft. Der enthaltene Helfer entspricht bytegenau dem geprüften Build;
++der native Helfertest umfasst 18 erfolgreiche Prüfungen mit harmlosen
++Testprozessen. Die ASI im ZIP und die separat ausgelieferte Datei haben dieselbe
++Prüfsumme. [Maschinenlesbare Ergebnisse](r4-validation.json) ergänzen die
++verlinkten Paketnachweise.
++
++Ein echter Ingame-Test auf dem konkreten Server mit dem installierten Launcher
++steht aus. Die früheren Testergebnisse gelten ausschließlich für ihren
++jeweiligen älteren Binärstand.
++
++## Historischer Prüfstand r3
++
+ Diese Übersicht bezieht sich auf **NLBinder v.0.1.1 by KOBiRO, Arbeitsfassung r3 mit Damagelog und bereinigten Killtext-Variablen**, Stand 24. Oktober 2026. Die ursprüngliche Grundlage ist der Perkys/NLBinder.
+ 
+ Die [vollständige Änderungsübersicht](CHANGELOG-DE.md) erklärt alle im Bearbeitungsverlauf umgesetzten Erweiterungen und Korrekturen. Für die eigene Beurteilung können die verlinkten Implementierungen und Tests direkt im Repository gelesen werden.
+diff --git a/docs/review/PUBLICATION.json b/docs/review/PUBLICATION.json
+index 7c18d96..583e835 100644
+--- a/docs/review/PUBLICATION.json
++++ b/docs/review/PUBLICATION.json
+@@ -3,8 +3,11 @@
+   "baseline_import_commit": "2da75e6c54a098243bf00ab48d86c5e3ee3cd261",
+   "baseline_tag": "original-archive-92ce219",
+   "original_archive_commit_comment": "92ce21971bee2d166d830e23ad20950f1dc98921",
+-  "history_note": "Three reconstructed publication commits: original archive, pinned dependencies, all Binder modifications.",
+-  "asi_sha256": "fc27a8a39fc2f78c40f1b686d5a71dcc0c2956854d1250278a84bd79200c7cef",
++  "history_note": "Original archive and pinned-dependency imports remain intact. r4 is a subsequent Binder update; no previous history is rewritten.",
++  "asi_sha256": "b9344521a38573a9252879bb362c354b85561fc3647f53a8a36f97f9b5b44450",
+   "dependencies_import_commit": "3c8e11a76bc8d94962da0ce447a8d1a8b7c3eb83",
+-  "dependencies_tag": "build-dependencies-baseline"
++  "dependencies_tag": "build-dependencies-baseline",
++  "release": "v0.1.1-r4",
++  "previous_release": "v0.1.1-r3",
++  "previous_published_commit": "9241ad3385c612af16916f6ace525af41eb74230"
+ }
+diff --git a/docs/review/README-GITHUB.md b/docs/review/README-GITHUB.md
+index 30ffd87..532c523 100644
+--- a/docs/review/README-GITHUB.md
++++ b/docs/review/README-GITHUB.md
+@@ -2,8 +2,10 @@
+ 
+ Vollständiger Prüfstand der Änderungen am **Perkys / NLBinder**, angepasst für
+ KOBiRO. Grundlage und ursprüngliche Urheberschaft bleiben beim Originalprojekt.
+-Der Stand lautet **NLBinder v.0.1.1 by KOBiRO, r3**, einschließlich Damagelog
+-und bereinigter Killtext-Variablen.
++Der Stand lautet **NLBinder v.0.1.1 by KOBiRO, r4**. Neu sind der Damagelog
++über direkte HP-/Westenmessung einschließlich Fallschaden, getrennte Stadt-
++und Bezirksvariablen, **Kill simulieren**, die einmalige `/stats`-Synchronisation
++nach dem Login und eine erneute Korrektur des automatischen Motorstarts.
+ 
+ ## Einstieg für die Projektleitung
+ 
+@@ -11,8 +13,9 @@ und bereinigter Killtext-Variablen.
+ 2. [Technisches Verhalten, Prüfungen und Grenzen](../../docs/review/PRUEFUNG-DE.md)
+ 3. [Dateien im Vergleich zum Original](../../docs/review/DATEIVERGLEICH.md)
+ 4. [Herkunft und Abhängigkeiten](../../docs/review/DEPENDENCIES.md)
+-5. [Programmänderungen als GitHub-Vergleich](https://github.com/Kobiro57/PerkysBinderChangelog/compare/build-dependencies-baseline...v0.1.1-r3)
++5. [Programmänderungen als GitHub-Vergleich](https://github.com/Kobiro57/PerkysBinderChangelog/compare/build-dependencies-baseline...v0.1.1-r4)
+    oder als [kompakter Quellcode-Patch](../../docs/review/first-party-changes.patch)
++6. [Änderungen seit r3](https://github.com/Kobiro57/PerkysBinderChangelog/compare/v0.1.1-r3...v0.1.1-r4)
+ 
+ Der vollständige bearbeitete Code liegt in `src/`, `include/`, `res/`,
+ `tests/`, `tools/` und `third_party/`. Die Übersicht verlinkt direkt zu den
+@@ -36,20 +39,18 @@ die [aktuelle Build-Anleitung](../../docs/BUILD-README.md) beschreibt das Bauen
+ 
+ ## Geprüfte ASI
+ 
+-- [Keybinder.asi herunterladen](../../dist/NLBinder-0.1.1-r3/Keybinder.asi)
+-- [Installation und Bedienung](../../dist/NLBinder-0.1.1-r3/LIESMICH.md)
+-- [Build- und Prüfangaben](../../dist/NLBinder-0.1.1-r3/BUILD-INFO.txt)
+-- [Maschinenlesbarer Prüfnachweis](../../dist/NLBinder-0.1.1-r3/PRUEFBERICHT.json)
+-
+-SHA-256 der ausgelieferten ASI:
+-
+-```text
+-fc27a8a39fc2f78c40f1b686d5a71dcc0c2956854d1250278a84bd79200c7cef
+-```
+-
+-Automatisierte Gesamttests, Win32-Release-Build, PE-/Ressourcenvergleich und der
+-Reconnect-Helfertest mit harmlosen Testprozessen wurden erfolgreich ausgeführt.
+-Ein echter Ingame-Test mit dem konkreten Server und Launcher steht aus.
++- [Keybinder.asi herunterladen](../../dist/NLBinder-0.1.1-r4/Keybinder.asi)
++- [Komplettes ZIP-Paket herunterladen](../../dist/NLBinder-v0.1.1-KOBiRO-r4.zip)
++- [Installation und Bedienung](../../dist/NLBinder-0.1.1-r4/LIESMICH.md)
++- [Build- und Prüfangaben](../../dist/NLBinder-0.1.1-r4/BUILD-INFO.txt)
++- [Maschinenlesbarer Prüfnachweis](../../dist/NLBinder-0.1.1-r4/PRUEFBERICHT.json)
++- [SHA-256 der ausgelieferten ASI](../../dist/NLBinder-0.1.1-r4/SHA256SUMS.txt)
++
++Die Nachweise gehören zum jeweiligen Binärstand: automatisierte Gesamttests,
++Win32-Release-Build, PE-/Ressourcenvergleich und Reconnect-Helfertest mit
++harmlosen Testprozessen. Ein echter Ingame-Test mit dem konkreten Server und
++Launcher steht aus. Die [vorherige r3-Fassung](../../dist/NLBinder-0.1.1-r3/BUILD-INFO.txt)
++und ihre Prüfsumme bleiben zur Nachverfolgung erhalten.
+ 
+ ## Weitere Updates
+ 
+diff --git a/docs/review/r4-validation.json b/docs/review/r4-validation.json
+new file mode 100644
+index 0000000..9bbb579
+--- /dev/null
++++ b/docs/review/r4-validation.json
+@@ -0,0 +1,21 @@
++{
++  "revision": "v0.1.1-r4",
++  "date": "2026-10-25",
++  "asi_bytes": 18324992,
++  "asi_sha256": "b9344521a38573a9252879bb362c354b85561fc3647f53a8a36f97f9b5b44450",
++  "full_test_suite_exit_code": 0,
++  "release_build_exit_code": 0,
++  "focused_checks": {
++    "SAMPBridge": 401,
++    "KillMessageTest": 53,
++    "LocationVariable": 88,
++    "ServerStatsParser": 110,
++    "StartupStatsSync": 57,
++    "native_reconnect_helper": 18
++  },
++  "failures": 0,
++  "pe32_x86_dll": true,
++  "embedded_helper_matches": true,
++  "archive_asi_matches": true,
++  "live_game_test_performed": false
++}
+diff --git a/include/ActionExecutor.h b/include/ActionExecutor.h
+index 60eb77d..6ec695c 100644
+--- a/include/ActionExecutor.h
++++ b/include/ActionExecutor.h
+@@ -30,6 +30,9 @@ public:
+     virtual int GetTotalKills() const = 0;
+     virtual int GetTotalDeaths() const = 0;
+     virtual std::string GetVehicleName() const = 0;
++    // Defaults preserve existing providers that do not expose location data.
++    virtual std::string GetCityName() const { return {}; }
++    virtual std::string GetDistrictName() const { return {}; }
+ };
+ 
+ class ActionExecutor {
+@@ -82,6 +85,7 @@ private:
+ 
+     std::string ExpandPlaceholders(const std::string& text) const;
+     std::string GetCurrentZone() const;
++    std::string GetCurrentCity() const;
+     std::string GetPlayerHPString() const;
+     std::string GetPlayerArmourString() const;
+     std::string GetVehicleHPString() const;
+diff --git a/include/IncomingDamageDetector.h b/include/IncomingDamageDetector.h
+index b3c4ceb..19cd923 100644
+--- a/include/IncomingDamageDetector.h
++++ b/include/IncomingDamageDetector.h
+@@ -74,9 +74,8 @@ public:
+         return observation.IsCombat() && observation.damage > kDamageEpsilon;
+     }
+ 
+-    // Keep the measured amount for the damage log, including fractional hits.
+-    // Scripted drops remain distinguishable so only a nearby combat RPC may
+-    // confirm one; a SetHealth reset alone must never produce a log message.
++    // Retain the measured amount and suppression category for hitsounds.
++    // The independently sampled chat log below does not use this suppression.
+     IncomingDamageObservation ObserveDetailed(bool alive, float combinedHp, bool environmental) {
+         if (!alive || !std::isfinite(combinedHp) || combinedHp < 0.0f) {
+             initialized_ = false;
+@@ -155,109 +154,55 @@ private:
+     int scriptedSuppressionFramesLeft_ = 0;
+ };
+ 
+-// Only measured losses may become chat lines. RPCs can split a measured loss
+-// into individual shots when their sum agrees; a lone RPC never invents HP
+-// damage. A brief window accommodates RPC/health updates arriving in either
+-// order. Without matching RPCs, each eligible sampled loss is logged once.
++// The chat damage log deliberately mirrors the AHK HP/armour comparison.
++// Server-applied health changes are real measured losses too; this path does
++// not depend on damage RPCs, scripted-health suppression or weapon metadata.
++struct IncomingDamageLogEntry {
++    float healthDamage = 0.0f;
++    float armourDamage = 0.0f;
++    bool HasDamage() const { return healthDamage >= 1.0f || armourDamage >= 1.0f; }
++    float Total() const { return healthDamage + armourDamage; }
++    const char* Type() const {
++        if (armourDamage > 0.0f && healthDamage <= 0.0f) return "Weste getroffen";
++        if (armourDamage > 0.0f && healthDamage > 0.0f) return "Weste + HP Schaden";
++        return "HP Schaden";
++    }
++};
++
+ class IncomingDamageLog {
+ public:
+-    static constexpr unsigned long kMatchWindowMs = 180;
+-
+-    void Report(float damage, unsigned long tick) {
+-        if (std::isfinite(damage) && damage > 0.0001f) {
+-            reports_.push_back({damage, tick, false});
+-            if (reports_.size() > 64) reports_.erase(reports_.begin());
++    IncomingDamageLogEntry Observe(float health, float armour) {
++        if (!std::isfinite(health) || !std::isfinite(armour) || armour < 0.0f) {
++            Reset();
++            return {};
+         }
+-    }
+-
+-    void Observe(const IncomingDamageObservation& observation, unsigned long tick) {
+-        if (observation.damage > 0.0001f && std::isfinite(observation.damage)) {
+-            // A server-applied hit can retain an old environmental weapon ID.
+-            // Only an accompanying combat RPC may confirm such a loss.
+-            losses_.push_back({observation.damage, tick, !observation.scripted && !observation.environmental});
++        health = (std::max)(0.0f, health);
++        if (!initialized_) {
++            initialized_ = true;
++            lastHealth_ = health;
++            lastArmour_ = armour;
++            return {};
+         }
++        // A heal in one pool must not cancel damage to the other pool.
++        IncomingDamageLogEntry damage{
++            (std::max)(0.0f, lastHealth_ - health),
++            (std::max)(0.0f, lastArmour_ - armour)
++        };
++        lastHealth_ = health;
++        lastArmour_ = armour;
++        return damage.HasDamage() ? damage : IncomingDamageLogEntry{};
+     }
+ 
+-    std::vector<float> Drain(unsigned long now, bool finishLife = false) {
+-        std::vector<float> result;
+-        while (!losses_.empty()) {
+-            bool matched = false;
+-            float measuredSum = 0.0f;
+-            for (std::size_t lossCount = 1; lossCount <= losses_.size() && !matched; ++lossCount) {
+-                measuredSum += losses_[lossCount - 1].damage;
+-                if (!WithinWindow(losses_.front().tick, losses_[lossCount - 1].tick)) break;
+-                for (std::size_t firstReport = 0; firstReport < reports_.size() && !matched; ++firstReport) {
+-                    float reportedSum = 0.0f;
+-                    for (std::size_t reportCount = 1; firstReport + reportCount <= reports_.size(); ++reportCount) {
+-                        const auto& report = reports_[firstReport + reportCount - 1];
+-                        if (!WithinWindow(report.tick, losses_.front().tick)
+-                            || !WithinWindow(report.tick, losses_[lossCount - 1].tick)) break;
+-                        reportedSum += report.damage;
+-                        if (std::fabs(measuredSum - reportedSum) <= 0.001f) {
+-                            float emitted = 0.0f;
+-                            for (std::size_t index = 0; index < reportCount; ++index) {
+-                                // Preserve the exact measured total despite float rounding.
+-                                const float amount = index + 1 == reportCount
+-                                    ? measuredSum - emitted : reports_[firstReport + index].damage;
+-                                if (amount > 0.0001f) result.push_back(amount);
+-                                emitted += amount;
+-                            }
+-                            losses_.erase(losses_.begin(), losses_.begin() + lossCount);
+-                            reports_.erase(reports_.begin() + firstReport,
+-                                           reports_.begin() + firstReport + reportCount);
+-                            matched = true;
+-                            break;
+-                        }
+-                        if (reportedSum > measuredSum + 0.001f) break;
+-                    }
+-                }
+-            }
+-            if (matched) continue;
+-            if (!finishLife && now - losses_.front().tick < kMatchWindowMs) break;
+-            const auto proof = std::find_if(reports_.begin(), reports_.end(), [this](const Entry& report) {
+-                return WithinWindow(report.tick, losses_.front().tick);
+-            });
+-            if (proof != reports_.end()) {
+-                // Server rules/overkill may make raw weapon damage disagree
+-                // with HP actually lost. The RPC confirms combat, but cannot
+-                // justify inventing per-shot values: report the measured sum.
+-                const unsigned long firstTick = losses_.front().tick;
+-                const unsigned long proofTick = proof->tick;
+-                float measured = 0.0f;
+-                std::size_t count = 0;
+-                while (count < losses_.size() && WithinWindow(firstTick, losses_[count].tick)
+-                       && WithinWindow(proofTick, losses_[count].tick)) {
+-                    measured += losses_[count++].damage;
+-                }
+-                result.push_back(measured);
+-                losses_.erase(losses_.begin(), losses_.begin() + count);
+-                reports_.erase(std::remove_if(reports_.begin(), reports_.end(), [firstTick](const Entry& report) {
+-                    return WithinWindow(firstTick, report.tick);
+-                }), reports_.end());
+-                continue;
+-            }
+-            if (losses_.front().allowFallback) result.push_back(losses_.front().damage);
+-            losses_.erase(losses_.begin());
+-        }
+-        reports_.erase(std::remove_if(reports_.begin(), reports_.end(), [now](const Entry& report) {
+-            return now - report.tick > kMatchWindowMs;
+-        }), reports_.end());
+-        return result;
++    void Reset() {
++        initialized_ = false;
++        lastHealth_ = 0.0f;
++        lastArmour_ = 0.0f;
+     }
+ 
+-    void Reset() { losses_.clear(); reports_.clear(); }
+-
+ private:
+-    struct Entry {
+-        float damage;
+-        unsigned long tick;
+-        bool allowFallback;
+-    };
+-    static bool WithinWindow(unsigned long first, unsigned long second) {
+-        return (std::min)(first - second, second - first) <= kMatchWindowMs;
+-    }
+-    std::vector<Entry> reports_;
+-    std::vector<Entry> losses_;
++    bool initialized_ = false;
++    float lastHealth_ = 0.0f;
++    float lastArmour_ = 0.0f;
+ };
+ 
+-}  // namespace keybinder
++} // namespace keybinder
+diff --git a/include/JobChatAdapter.h b/include/JobChatAdapter.h
+index 486a6e9..153a691 100644
+--- a/include/JobChatAdapter.h
++++ b/include/JobChatAdapter.h
+@@ -19,10 +19,12 @@ struct JobChatEvent {
+ };
+ 
+ using JobChatEventCallback = std::function<void(const JobChatEvent&)>;
++using JobChatVisibilityFilter = std::function<bool(const JobChatEvent&)>;
+ 
+ struct JobChatAdapterState {
+     bool isAlive = false;
+     JobChatEventCallback callback;
++    JobChatVisibilityFilter visibilityFilter;
+ };
+ 
+ class JobChatAdapter {
+@@ -34,8 +36,15 @@ public:
+     void Shutdown();
+ 
+     void SetCallback(JobChatEventCallback callback);
++    // Return false only for lines that should not reach the visible chat.
++    // The normal event callback still receives hidden, non-empty lines.
++    void SetVisibilityFilter(JobChatVisibilityFilter filter);
+     bool IsInitialized() const { return initialized_; }
+ 
++#ifdef KEYBINDER_TESTING
++    bool DispatchLineForTesting(const char* prefix, const char* text) const;
++#endif
++
+ private:
+     bool initialized_;
+     std::shared_ptr<JobChatAdapterState> state_;
+diff --git a/include/KillMessageTest.h b/include/KillMessageTest.h
+new file mode 100644
+index 0000000..73a07f0
+--- /dev/null
++++ b/include/KillMessageTest.h
+@@ -0,0 +1,56 @@
++#pragma once
++
++#include <string>
++
++namespace keybinder {
++
++// The caller expands variables first and routes the result as chat or command.
++// This adds the visible test marker without changing a command's first token.
++inline bool BuildSimulatedKillMessage(const std::string& expandedText,
++                                      std::string& message, std::string& error) {
++    message.clear();
++    error.clear();
++    const auto first = expandedText.find_first_not_of(" \t\r\n");
++    if (first == std::string::npos) {
++        error = "Bitte zuerst einen Killtext eintragen.";
++        return false;
++    }
++    const auto last = expandedText.find_last_not_of(" \t\r\n");
++    const std::string text = expandedText.substr(first, last - first + 1);
++    if (text.find_first_of("\r\n") != std::string::npos || text.find('\0') != std::string::npos) {
++        error = "Der Killtext muss aus einer einzelnen Chatzeile bestehen.";
++        return false;
++    }
++
++    if (text.front() == '/') {
++        const auto separator = text.find_first_of(" \t");
++        const std::string command = text.substr(0, separator);
++        if (command.size() == 1) {
++            error = "Nach dem Schrägstrich fehlt ein Chatbefehl.";
++            return false;
++        }
++        message = command + " [Testkill]";
++        if (separator != std::string::npos) {
++            const auto payload = text.find_first_not_of(" \t", separator);
++            if (payload != std::string::npos) message += " " + text.substr(payload);
++        }
++    } else {
++        message = "[Testkill] " + text;
++    }
++
++    constexpr std::size_t maximumLength = 144;
++    if (message.size() > maximumLength) {
++        if (text.front() == '/' && message.find(" [Testkill]") + 11 > maximumLength) {
++            message.clear();
++            error = "Der Chatbefehl ist für eine Testnachricht zu lang.";
++            return false;
++        }
++        std::size_t length = maximumLength;
++        // Do not split a multibyte UTF-8 character at the chat length limit.
++        while (length > 0 && (static_cast<unsigned char>(message[length]) & 0xC0) == 0x80) --length;
++        message.resize(length);
++    }
++    return true;
++}
++
++} // namespace keybinder
+diff --git a/include/KillTrackerUI.h b/include/KillTrackerUI.h
+index 2bd4729..30d48b3 100644
+--- a/include/KillTrackerUI.h
++++ b/include/KillTrackerUI.h
+@@ -26,10 +26,10 @@ struct KillTrackerSettings {
+     bool sendServerKillMessage = false;
+     bool sendServerDeathMessage = false;
+     bool trackDamage = true;
+-    std::string customLocalKillMessage = "{FF6600}[Kill] {FFFFFF}{victim} {AAAAAA}mit {FFCC00}{weapon}";
+-    std::string customLocalDeathMessage = "{FF3333}[Tod] {FFFFFF}{killer} {AAAAAA}mit {FFCC00}{weapon}";
+-    std::string customServerKillMessage = "Ich habe {victim} mit {weapon} getoetet.";
+-    std::string customServerDeathMessage = "Ich wurde von {killer} mit {weapon} getoetet.";
++    std::string customLocalKillMessage = "{33CCFF}[NL-BINDER]{FFFFFF} Kill in {city}, {bezirk}. Meine Kills: {total_kills}";
++    std::string customLocalDeathMessage = "{33CCFF}[NL-BINDER]{FFFFFF} Du bist gestorben. Deine aktuelle Tode: {total_deaths}";
++    std::string customServerKillMessage = "Kill in {city}, {bezirk}. Meine Kills: {total_kills}";
++    std::string customServerDeathMessage = "Tode: {total_deaths}";
+ 
+     // Manual stat editing
+     bool allowManualEdits = false;
+diff --git a/include/LocationNames.h b/include/LocationNames.h
+new file mode 100644
+index 0000000..b8f8804
+--- /dev/null
++++ b/include/LocationNames.h
+@@ -0,0 +1,18 @@
++#pragma once
++
++namespace keybinder {
++
++// Matches GTA:SA's eLevelName returned by CTheZones::GetLevelFromPosition.
++// A city is intentionally different from the smallest navigation zone:
++// e.g. level 1 + district Market -> Los Santos / Market.
++inline const char* CityNameFromGtaLevel(int level) {
++    switch (level) {
++    case 0: return "San Andreas";
++    case 1: return "Los Santos";
++    case 2: return "San Fierro";
++    case 3: return "Las Venturas";
++    default: return "Unknown";
++    }
++}
++
++} // namespace keybinder
+diff --git a/include/MessageVariables.h b/include/MessageVariables.h
+index 14816c6..ea4f343 100644
+--- a/include/MessageVariables.h
++++ b/include/MessageVariables.h
+@@ -7,15 +7,11 @@ struct MessageVariableInfo {
+     const char* description;
+ };
+ 
+-// These values are available directly from the current game or Binder state.
+-// Keep combat help separate from text bindings; vehicle fields are only useful
+-// in the latter. Legacy templates can still resolve the vehicle fields.
++// Offer one spelling per value, using directly available local data. Legacy
++// aliases may still be read by the runtime, but are not duplicated in the help.
+ inline constexpr MessageVariableInfo kCombatMessageVariables[] = {
+-    {"victim", "Getöteter Spieler; bei unbekanntem Namen: Unbekannt"},
+-    {"killer", "Killername; im eigenen Killtext ist das dein Name"},
+-    {"weapon", "Waffe; ohne empfangene Waffenangabe: Unbekannt"},
+-    {"zone", "Deine aktuelle Zone"},
+-    {"ZONE", "Deine aktuelle Zone in Großbuchstaben"},
++    {"city", "Deine Stadt, z.B. Los Santos"},
++    {"bezirk", "Dein Bezirk, z.B. Market"},
+     {"hp", "Deine aktuellen Lebenspunkte"},
+     {"weste", "Deine aktuelle Weste"},
+     {"total_kills", "Gespeicherter Killstand des Binders"},
+@@ -23,12 +19,11 @@ inline constexpr MessageVariableInfo kCombatMessageVariables[] = {
+     {"session_kills", "Erfasste Kills seit dem Spielstart"},
+     {"session_deaths", "Erfasste Tode seit dem Spielstart"},
+     {"kd", "K/D aus den gespeicherten Zählerständen"},
+-    {"KD", "Gleicher Wert wie {kd}"},
+ };
+ 
+ inline constexpr MessageVariableInfo kTextBindingVariables[] = {
+-    {"zone", "Aktueller Zonenname"},
+-    {"ZONE", "Aktueller Zonenname in Großbuchstaben"},
++    {"city", "Aktuelle Stadt, z.B. Los Santos"},
++    {"bezirk", "Aktueller Bezirk, z.B. Market"},
+     {"hp", "Aktuelle Lebenspunkte"},
+     {"weste", "Aktuelle Weste (Rüstung)"},
+     {"carhp", "Fahrzeug-Lebenspunkte (0 ohne Fahrzeug)"},
+diff --git a/include/SAMPBridge.h b/include/SAMPBridge.h
+index 415e753..5d1067e 100644
+--- a/include/SAMPBridge.h
++++ b/include/SAMPBridge.h
+@@ -16,6 +16,7 @@
+ #include "KillfeedAdapter.h"
+ #include "DamageRPCAdapter.h"
+ #include "IncomingDamageDetector.h"
++#include "ServerStatsSnapshot.h"
+ #include "DeathMessageRPCAdapter.h"
+ #include "JobChatAdapter.h"
+ #include "JobTracker.h"
+@@ -52,11 +53,15 @@ public:
+ 
+     bool SendChat(const std::string& text) const override;
+     bool SendCommand(const std::string& cmd) const override;
++    bool SendSimulatedKillMessage(const std::string& text, std::string& error) const;
+ 
+     bool IsChatOpen() const;
+     bool IsDialogOpen() const;
+     bool IsCursorActive() const;
+     void SetSettingsManager(const keybinder::SettingsManager* manager);
++    void SetStatsSynchronizedCallback(std::function<bool(const keybinder::ServerStatsSnapshot&)> callback) { statsSynchronizedCallback_ = std::move(callback); }
++    const keybinder::ServerStatsSnapshot& GetSynchronizedStats() const { return synchronizedStats_; }
++    bool AreStatsSynchronized() const { return startupStatsComplete_; }
+ 
+     void Update();
+ 
+@@ -150,6 +155,10 @@ public:
+         std::function<void(bool)> setEngineStartKeyDown;
+         std::function<bool()> hasEngineStartSuccessText;
+         std::function<bool(float&, float&, int&, const void*&)> readLocalDamageSample;
++        std::function<int()> getCityLevel;
++        std::function<std::string()> getDistrictName;
++        std::function<bool()> isStartupStatsReady;
++        std::function<void(int)> closeStatsDialog;
+     };
+ 
+     static void SetTestingHooks(const TestingHooks& hooks);
+@@ -160,12 +169,18 @@ public:
+     void ProcessDamageFeedbackForTesting(const killtracker::DamageEvent& event);
+     void ProcessDamageRpcForTesting(RakNet::BitStream* payload);
+     void RequestScriptedHealthSuppressionForTesting();
++    bool ProcessIncomingChatLineForTesting(const char* prefix, const char* text);
+ #endif
+ 
+ private:
+     void HandleDeathMessage(const killtracker::DeathMessageEvent& event);
+     void HandleLocalKill(killtracker::KillEvent event);
+     void ObserveServerCombatStats(const std::string& text);
++    void UpdateStartupStats(unsigned long now);
++    void ResetStartupStats();
++    void CaptureStartupStatsLine(const std::string& text);
++    bool ShouldDisplayStartupStatsChat(const jobs::JobChatEvent& event);
++    void CompleteStartupStats(unsigned long now);
+     void UpdateAutoEngineStart(unsigned long now);
+     bool ReadDriverVehicle(unsigned short& vehicleId, bool& engineOn) const;
+     bool IsEngineInputAvailable() const;
+@@ -217,6 +232,8 @@ public:
+     float GetPlayerArmour() const override;
+     float GetVehicleHP() const override;
+     std::string GetVehicleName() const override;
++    std::string GetCityName() const override;
++    std::string GetDistrictName() const override;
+     int GetTotalKills() const override;
+     int GetTotalDeaths() const override;
+ 
+@@ -234,8 +251,7 @@ private:
+     bool IsLocalCombatActive(bool allowFinalDeathSample = false) const;
+     void ResetIncomingDamageState();
+     void NotifyDamageFeedback(const killtracker::DamageEvent& event);
+-    void QueueIncomingDamageReport(const killtracker::DamageEvent& event);
+-    void FlushIncomingDamageLog(unsigned long now, bool finishLife = false);
++    void LogIncomingDamage(const keybinder::IncomingDamageLogEntry& damage);
+     bool IsDamageLogEnabled() const;
+     void InstallScriptedHealthRpcHook();
+ 
+@@ -309,6 +325,7 @@ private:
+     int autoEngineStartInjectedVk_;
+     bool autoEngineStartReleasePending_;
+     unsigned short autoEngineObservedVehicle_ = 0xFFFF;
++    bool autoEngineStartLastSuccessText_ = false;
+ 
+     bool killTrackerEnabled_;
+     bool killTrackerLocalKillMessageEnabled_;
+@@ -334,9 +351,6 @@ private:
+     keybinder::IncomingDamageDetector incomingDamageDetector_;
+     keybinder::IncomingDamageLog incomingDamageLog_;
+     bool incomingDamageLogEnabledLastFrame_ = false;
+-    struct IncomingDamageReport { float damage; unsigned long tick; };
+-    std::mutex incomingDamageRpcMutex_;
+-    std::vector<IncomingDamageReport> incomingDamageRpcQueue_;
+     const void* incomingDamagePed_ = nullptr;
+     bool killTrackerInitialized_;
+     bool localPlayerWasDead_;
+@@ -357,4 +371,21 @@ private:
+     int lastServerDeathTotal_ = 0;
+     std::time_t lastLocalKillTime_ = 0;
+     std::time_t lastLocalDeathTime_ = 0;
++    keybinder::ServerStatsCollector startupStatsCollector_;
++    keybinder::ServerStatsSnapshot synchronizedStats_;
++    std::function<bool(const keybinder::ServerStatsSnapshot&)> statsSynchronizedCallback_;
++    bool startupStatsConnected_ = false;
++    bool startupStatsRequested_ = false;
++    bool startupStatsComplete_ = false;
++    bool startupStatsFailed_ = false;
++    unsigned long startupStatsRequestedAt_ = 0;
++    unsigned long startupStatsCompletedAt_ = 0;
++    std::string startupStatsIdentity_;
++    std::atomic<bool> captureStartupStats_{false};
++    std::mutex startupStatsMutex_;
++    std::vector<std::string> startupStatsLines_;
++    std::string startupStatsOwnName_;
++    bool startupStatsPendingChat_ = false;
++    bool startupStatsHiddenChat_ = false;
++    unsigned long startupStatsChatHeaderAt_ = 0;
+ };
+diff --git a/include/ServerStatsSnapshot.h b/include/ServerStatsSnapshot.h
+new file mode 100644
+index 0000000..e03549b
+--- /dev/null
++++ b/include/ServerStatsSnapshot.h
+@@ -0,0 +1,296 @@
++#pragma once
++
++#include <algorithm>
++#include <cctype>
++#include <cstdint>
++#include <limits>
++#include <optional>
++#include <string>
++#include <string_view>
++#include <utility>
++#include <vector>
++
++namespace keybinder {
++
++struct ServerStatsSnapshot {
++    std::string playerName;
++    std::string serverAddress;
++    int serverPort = 0;
++    std::optional<int> kills, deaths, level, gold, eventcoins, wantedPoints;
++    std::optional<long long> cash, bank, wealth;
++    std::optional<int> experience, nextLevelExperience, nextPaydayMinutes;
++
++    bool HasCounters() const { return kills.has_value() && deaths.has_value(); }
++    bool HasCore() const { return HasCounters() && cash.has_value() && bank.has_value(); }
++    std::optional<long long> GetAvailableWealth() const {
++        if (wealth) return wealth;
++        if (!cash || !bank) return {};
++        if ((*bank > 0 && *cash > (std::numeric_limits<long long>::max)() - *bank)
++            || (*bank < 0 && *cash < (std::numeric_limits<long long>::min)() - *bank)) return {};
++        return *cash + *bank;
++    }
++};
++
++// Collects only the short, explicitly own server-statistics context. It never
++// sends a command, touches game memory, or interprets arbitrary player chat.
++class ServerStatsCollector {
++public:
++    static constexpr unsigned long kContextTtlMs = 3000;
++    static constexpr int kMaximumBodyLines = 16;
++
++    void Reset() { snapshot_ = {}; ownContext_ = false; startedAt_ = 0; bodyLines_ = 0; }
++    const ServerStatsSnapshot& Snapshot() const { return snapshot_; }
++    bool IsOwnContext() const { return ownContext_; }
++
++    bool ConsumeLine(const std::string& normalizedUtf8, const std::string& ownName, unsigned long now) {
++        const std::string line = Clean(normalizedUtf8);
++        const std::string expected = Trim(ownName);
++        if (expected.empty()) { Reset(); return false; }
++        if (const auto header = HeaderName(line)) {
++            if (!EqualName(*header, expected)) { Reset(); return false; }
++            Reset();
++            snapshot_.playerName = *header;
++            ownContext_ = true;
++            startedAt_ = now;
++            return true;
++        }
++        if (!ownContext_) return false;
++        if (!EqualName(snapshot_.playerName, expected)) { Reset(); return false; }
++        if (now - startedAt_ >= kContextTtlMs || bodyLines_ >= kMaximumBodyLines) {
++            ownContext_ = false;
++            return false;
++        }
++        ++bodyLines_;
++        const bool recognized = IsRecognizedStatsLine(line);
++        if (recognized) ParseValues(line);
++        if (bodyLines_ >= kMaximumBodyLines) ownContext_ = false;
++        return recognized;
++    }
++
++    static bool IsRecognizedStatsLine(const std::string& text) {
++        const std::string line = Lower(Clean(text));
++        if (line.empty()) return true;
++        constexpr const char* numericLabels[] = {"level", "erfahrungspunkte", "bargeld", "kontostand", "bankguthaben", "bank",
++            "vermögen", "vermoegen", "gesamtvermögen", "gesamtvermoegen", "kills", "tode", "gold", "eventcoins", "wantedpunkte",
++            "nächster zahltag in", "naechster zahltag in"};
++        for (const char* label : numericLabels) {
++            const std::size_t length = std::char_traits<char>::length(label);
++            if (line.compare(0, length, label) != 0 || !FieldBoundary(line, length)) continue;
++            std::size_t value = length;
++            SkipSpaceAndColon(line, value);
++            if (value < line.size() && (line[value] == '[' || line[value] == '+' || line[value] == '-'
++                || std::isdigit(static_cast<unsigned char>(line[value])))) return true;
++        }
++        // Remaining server-statistic rows contain descriptive data, not
++        // numbers needed by the Binder. Recognize them without inventing values.
++        constexpr const char* descriptiveLabels[] = {"fraktion", "gang", "geschlecht", "alter", "offene rechnungen",
++            "führerscheine", "fuehrerscheine", "lizenzen", "waffenschein", "waffenscheine", "führerschein", "fuehrerschein"};
++        for (const char* label : descriptiveLabels) {
++            const std::size_t length = std::char_traits<char>::length(label);
++            if (line.compare(0, length, label) == 0 && FieldBoundary(line, length)) return true;
++        }
++        return false;
++    }
++
++    // A requested statistics dialog can legitimately omit the chat header.
++    // Accept only neutral statistics captions or an explicitly own identity;
++    // reject every foreign name before modifying this collector's state.
++    bool ConsumeDialog(const std::string& caption, const std::string& body, const std::string& ownName,
++                       unsigned long now, bool trustedOwnRequest) {
++        if (!trustedOwnRequest || Trim(ownName).empty()) return false;
++        const std::string cleanCaption = Clean(caption);
++        const auto captionName = HeaderName(cleanCaption);
++        if (captionName && !EqualName(*captionName, ownName)) return false;
++        const std::string lowerCaption = Lower(cleanCaption);
++        constexpr const char* harmlessCaptions[] = {"stats", "statistik", "statistiken", "deine stats", "deine statistik",
++            "deine statistiken", "spielerstatistiken", "spieler-statistiken", "spieler statistik", "spieler-statistik"};
++        bool safeCaption = captionName.has_value();
++        for (const char* harmless : harmlessCaptions) if (lowerCaption == harmless) safeCaption = true;
++        constexpr const char* namedPrefixes[] = {"stats von ", "statistik von ", "statistiken von "};
++        for (const char* prefix : namedPrefixes) {
++            const std::size_t length = std::char_traits<char>::length(prefix);
++            if (lowerCaption.compare(0, length, prefix) == 0) {
++                if (!EqualName(cleanCaption.substr(length), ownName)) return false;
++                safeCaption = true;
++            }
++        }
++        const std::vector<std::string> lines = SplitLines(body);
++        bool ownHeader = false;
++        for (const std::string& raw : lines) {
++            const std::string line = Clean(raw);
++            if (const auto name = HeaderName(line)) {
++                if (!EqualName(*name, ownName)) return false;
++                ownHeader = true;
++            }
++            for (const char* identity : {"Spieler", "Name"}) {
++                if (const auto value = FindField(line, identity)) {
++                    if (!EqualName(*value, ownName)) return false;
++                }
++            }
++        }
++        if (!safeCaption && !ownHeader) return false;
++        // An unknown caption with an own header is accepted only if it does
++        // not claim a different player's statistics in a known named form.
++        ServerStatsCollector temporary;
++        temporary.ConsumeLine("*** " + Trim(ownName) + " ***", ownName, now);
++        for (const std::string& line : lines) temporary.ConsumeLine(line, ownName, now);
++        if (!temporary.HasAnyValue()) return false;
++        *this = std::move(temporary);
++        return true;
++    }
++
++private:
++    static std::string Trim(std::string_view value) {
++        std::size_t first = 0, end = value.size();
++        while (first < end && std::isspace(static_cast<unsigned char>(value[first]))) ++first;
++        while (end > first && std::isspace(static_cast<unsigned char>(value[end - 1]))) --end;
++        return std::string(value.substr(first, end - first));
++    }
++    static std::string Lower(std::string value) {
++        for (char& ch : value) if (static_cast<unsigned char>(ch) < 128) ch = static_cast<char>(std::tolower(static_cast<unsigned char>(ch)));
++        return value;
++    }
++    static bool EqualName(const std::string& first, const std::string& second) { return Lower(Trim(first)) == Lower(Trim(second)); }
++    static std::string Clean(const std::string& text) {
++        std::string result;
++        for (std::size_t index = 0; index < text.size();) {
++            if (text[index] == '{') {
++                const auto end = text.find('}', index + 1);
++                if (end != std::string::npos && (end - index == 7 || end - index == 9)
++                    && std::all_of(text.begin() + index + 1, text.begin() + end, [](unsigned char ch) { return std::isxdigit(ch) != 0; })) {
++                    index = end + 1;
++                    continue;
++                }
++            }
++            result += text[index++];
++        }
++        return Trim(result);
++    }
++    static std::optional<std::string> HeaderName(const std::string& line) {
++        if (line.size() < 7 || line.compare(0, 3, "***") != 0 || line.compare(line.size() - 3, 3, "***") != 0) return {};
++        const std::string name = Trim(std::string_view(line).substr(3, line.size() - 6));
++        if (name.empty() || name.find_first_of("*\r\n") != std::string::npos) return {};
++        return name;
++    }
++    static bool FieldBoundary(const std::string& line, std::size_t at) {
++        return at == line.size() || std::isspace(static_cast<unsigned char>(line[at])) || line[at] == ':' || line[at] == '[';
++    }
++    static void SkipSpaceAndColon(const std::string& line, std::size_t& at) {
++        while (at < line.size() && std::isspace(static_cast<unsigned char>(line[at]))) ++at;
++        if (at < line.size() && line[at] == ':') ++at;
++        while (at < line.size() && std::isspace(static_cast<unsigned char>(line[at]))) ++at;
++    }
++    static std::optional<std::string> FindField(const std::string& line, const std::string& label) {
++        const std::string lower = Lower(line), key = Lower(label);
++        std::size_t at = 0;
++        while ((at = lower.find(key, at)) != std::string::npos) {
++            const bool begins = at == 0 || std::isspace(static_cast<unsigned char>(line[at - 1])) || line[at - 1] == '|';
++            std::size_t value = at + key.size();
++            if (begins && FieldBoundary(line, value)) {
++                SkipSpaceAndColon(line, value);
++                if (value >= line.size()) return {};
++                if (line[value] == '[') {
++                    const auto end = line.find(']', value + 1);
++                    if (end == std::string::npos) return {};
++                    return Trim(std::string_view(line).substr(value + 1, end - value - 1));
++                }
++                std::size_t end = value;
++                while (end < line.size() && !std::isspace(static_cast<unsigned char>(line[end])) && line[end] != '|') ++end;
++                return Trim(std::string_view(line).substr(value, end - value));
++            }
++            at += key.size();
++        }
++        return {};
++    }
++    static std::optional<long long> Integer(std::string value, bool signedValue = true) {
++        value = Trim(value);
++        if (!value.empty() && value.front() == '$') value.erase(value.begin());
++        if (!value.empty() && value.back() == '$') value.pop_back();
++        value = Trim(value);
++        bool negative = false;
++        if (!value.empty() && (value.front() == '-' || value.front() == '+')) {
++            negative = value.front() == '-';
++            value.erase(value.begin());
++        }
++        if (value.empty() || (negative && !signedValue)) return {};
++        std::string digits;
++        std::size_t groupStart = 0;
++        bool grouped = value.find('.') != std::string::npos;
++        for (std::size_t index = 0; index <= value.size(); ++index) {
++            if (index == value.size() || value[index] == '.') {
++                const std::size_t length = index - groupStart;
++                if (length == 0 || (grouped && (groupStart == 0 ? length > 3 : length != 3))) return {};
++                groupStart = index + 1;
++            } else {
++                const unsigned char ch = static_cast<unsigned char>(value[index]);
++                if (ch < '0' || ch > '9') return {};
++                digits += static_cast<char>(ch);
++            }
++        }
++        const std::uint64_t limit = static_cast<std::uint64_t>((std::numeric_limits<long long>::max)()) + (negative ? 1ULL : 0ULL);
++        std::uint64_t result = 0;
++        for (char ch : digits) {
++            const unsigned digit = static_cast<unsigned>(ch - '0');
++            if (result > (limit - digit) / 10) return {};
++            result = result * 10 + digit;
++        }
++        if (!negative) return static_cast<long long>(result);
++        if (result == limit) return (std::numeric_limits<long long>::min)();
++        return -static_cast<long long>(result);
++    }
++    static std::optional<int> SmallInteger(const std::string& value) {
++        const auto parsed = Integer(value, false);
++        if (!parsed || *parsed > (std::numeric_limits<int>::max)()) return {};
++        return static_cast<int>(*parsed);
++    }
++    void ParseValues(const std::string& line) {
++        const auto readSmallInteger = [&](const char* label, std::optional<int>& output) {
++            if (const auto value = FindField(line, label)) if (const auto parsed = SmallInteger(*value)) output = parsed;
++        };
++        const auto money = [&](const char* label, std::optional<long long>& output) {
++            if (const auto value = FindField(line, label)) if (const auto parsed = Integer(*value)) output = parsed;
++        };
++        readSmallInteger("Level", snapshot_.level); readSmallInteger("Kills", snapshot_.kills); readSmallInteger("Tode", snapshot_.deaths);
++        readSmallInteger("Gold", snapshot_.gold); readSmallInteger("Eventcoins", snapshot_.eventcoins); readSmallInteger("Wantedpunkte", snapshot_.wantedPoints);
++        money("Bargeld", snapshot_.cash); money("Kontostand", snapshot_.bank); money("Bankguthaben", snapshot_.bank);
++        money("Bank", snapshot_.bank); money("Vermögen", snapshot_.wealth); money("Vermoegen", snapshot_.wealth);
++        money("Gesamtvermögen", snapshot_.wealth); money("Gesamtvermoegen", snapshot_.wealth);
++        if (const auto experience = FindField(line, "Erfahrungspunkte")) {
++            const auto separator = experience->find('/');
++            if (separator != std::string::npos && experience->find('/', separator + 1) == std::string::npos) {
++                const auto current = SmallInteger(experience->substr(0, separator));
++                const auto next = SmallInteger(experience->substr(separator + 1));
++                if (current && next) { snapshot_.experience = current; snapshot_.nextLevelExperience = next; }
++            }
++        }
++        for (const char* label : {"Nächster Zahltag in", "Naechster Zahltag in"}) {
++            if (auto value = FindField(line, label)) {
++                const auto space = value->find(' ');
++                if (space != std::string::npos) *value = value->substr(0, space);
++                if (const auto parsed = SmallInteger(*value)) snapshot_.nextPaydayMinutes = parsed;
++            }
++        }
++    }
++    static std::vector<std::string> SplitLines(const std::string& value) {
++        std::vector<std::string> lines;
++        std::size_t start = 0;
++        while (start <= value.size()) {
++            const auto end = value.find('\n', start);
++            lines.push_back(value.substr(start, end == std::string::npos ? end : end - start));
++            if (end == std::string::npos) break;
++            start = end + 1;
++        }
++        return lines;
++    }
++    bool HasAnyValue() const {
++        return snapshot_.kills || snapshot_.deaths || snapshot_.level || snapshot_.gold || snapshot_.eventcoins || snapshot_.wantedPoints
++            || snapshot_.cash || snapshot_.bank || snapshot_.wealth || snapshot_.experience || snapshot_.nextLevelExperience || snapshot_.nextPaydayMinutes;
++    }
++
++    ServerStatsSnapshot snapshot_;
++    bool ownContext_ = false;
++    unsigned long startedAt_ = 0;
++    int bodyLines_ = 0;
++};
++
++} // namespace keybinder
+diff --git a/include/SettingsManager.h b/include/SettingsManager.h
+index 81ac10f..af32ab0 100644
+--- a/include/SettingsManager.h
++++ b/include/SettingsManager.h
+@@ -8,6 +8,7 @@
+ #include "Hitmarker.h"
+ #include "InterfaceEditor.h"
+ #include "RssTypes.h"
++#include "ServerStatsSnapshot.h"
+ 
+ namespace keybinder {
+ 
+@@ -59,10 +60,10 @@ struct Settings {
+     bool kill_tracker_server_kill_message_enabled = false;
+     bool kill_tracker_server_death_message_enabled = false;
+     bool kill_tracker_track_damage = true;
+-    std::string kill_tracker_local_kill_message_template = "{FF6600}[Kill] {FFFFFF}{victim} {AAAAAA}mit {FFCC00}{weapon}";
++    std::string kill_tracker_local_kill_message_template = "{33CCFF}[NL-BINDER]{FFFFFF} Kill in {city}, {bezirk}. Meine Kills: {total_kills}";
+     std::string kill_tracker_local_death_message_template = "{33CCFF}[NL-BINDER]{FFFFFF} Du bist gestorben. Deine aktuelle Tode: {total_deaths}";
+-    std::string kill_tracker_server_kill_message_template = "Ich habe {victim} mit {weapon} getoetet.";
+-    std::string kill_tracker_server_death_message_template = "Ich wurde von {killer} mit {weapon} getoetet.";
++    std::string kill_tracker_server_kill_message_template = "Kill in {city}, {bezirk}. Meine Kills: {total_kills}";
++    std::string kill_tracker_server_death_message_template = "Tode: {total_deaths}";
+     bool kill_tracker_allow_manual_edits = false;
+     bool auto_hudscalefix = true;
+     bool auto_engine_start = false;
+@@ -219,6 +220,7 @@ struct Settings {
+     std::vector<DeathEventData> kill_tracker_recent_deaths;
+     int kill_tracker_kill_count = 0;
+     int kill_tracker_death_count = 0;
++    ServerStatsSnapshot synchronized_player_stats;
+ };
+ 
+ class SettingsManager {
+diff --git a/src/ActionExecutor.cpp b/src/ActionExecutor.cpp
+index 50cd120..0af2104 100644
+--- a/src/ActionExecutor.cpp
++++ b/src/ActionExecutor.cpp
+@@ -4,6 +4,7 @@
+ */
+ 
+ #include "ActionExecutor.h"
++#include "LocationNames.h"
+ 
+ #include <algorithm>
+ #include <atomic>
+@@ -400,7 +401,13 @@ std::string ActionExecutor::ExpandPlaceholders(const std::string& text) const
+             if (end != std::string::npos) {
+                 std::string tag = text.substr(i + 1, end - i - 1);
+ 
+-                if (tag == "zone") {
++                if (tag == "city") {
++                    result += GetCurrentCity();
++                    i = end;
++                    continue;
++                }
++
++                if (tag == "bezirk" || tag == "district" || tag == "zone") {
+                     result += GetCurrentZone();
+                     i = end;
+                     continue;
+@@ -475,6 +482,11 @@ std::string ActionExecutor::GetCurrentZone() const
+         return zone.empty() ? "Unknown" : zone;
+     }
+ 
++    if (gameDataProvider_) {
++        const std::string district = gameDataProvider_->GetDistrictName();
++        if (!district.empty()) return district;
++    }
++
+ #ifndef KEYBINDER_TESTING
+     // Runtime: use GTA SA CTheZones
+     CPlayerPed* player = FindPlayerPed(0);
+@@ -498,6 +510,22 @@ std::string ActionExecutor::GetCurrentZone() const
+ #endif
+ }
+ 
++std::string ActionExecutor::GetCurrentCity() const
++{
++    if (gameDataProvider_) {
++        const std::string city = gameDataProvider_->GetCityName();
++        if (!city.empty()) return city;
++    }
++#ifndef KEYBINDER_TESTING
++    CPlayerPed* player = FindPlayerPed(0);
++    if (!player) return "Unknown";
++    const CVector position = player->GetPosition();
++    return CityNameFromGtaLevel(static_cast<int>(CTheZones::GetLevelFromPosition(&position)));
++#else
++    return "Unknown";
++#endif
++}
++
+ std::string ActionExecutor::GetPlayerHPString() const
+ {
+     if (gameDataProvider_) {
+diff --git a/src/JobChatAdapter.cpp b/src/JobChatAdapter.cpp
+index 21360e3..872c9c4 100644
+--- a/src/JobChatAdapter.cpp
++++ b/src/JobChatAdapter.cpp
+@@ -172,11 +172,11 @@ std::string ExtractJobPrefix(const std::string& normalizedLine) {
+     return TrimCopy(normalizedLine.substr(0, separator));
+ }
+ 
+-void EmitChatEvent(const std::shared_ptr<jobs::JobChatAdapterState>& state,
++bool EmitChatEvent(const std::shared_ptr<jobs::JobChatAdapterState>& state,
+                    const char* prefix,
+                    const char* text) {
+-    if (!state || !state->isAlive || !state->callback) {
+-        return;
++    if (!state || !state->isAlive || (!state->callback && !state->visibilityFilter)) {
++        return true;
+     }
+ 
+     jobs::JobChatEvent event;
+@@ -186,9 +186,10 @@ void EmitChatEvent(const std::shared_ptr<jobs::JobChatAdapterState>& state,
+     event.jobPrefix = ExtractJobPrefix(event.normalizedLine);
+     event.arrivalTime = std::time(nullptr);
+ 
+-    if (event.normalizedLine.empty()) {
+-        return;
+-    }
++    // Decide visibility before delivering the event: a callback may complete
++    // the automatic statistics block and clear its filter state on this line.
++    const bool visible = !state->visibilityFilter || state->visibilityFilter(event);
++    if (event.normalizedLine.empty()) return visible;
+ 
+     if (!event.jobPrefix.empty()) {
+         keybinder::Logger::Debug(
+@@ -198,7 +199,8 @@ void EmitChatEvent(const std::shared_ptr<jobs::JobChatAdapterState>& state,
+             event.jobPrefix.c_str());
+     }
+ 
+-    state->callback(event);
++    if (state->callback) state->callback(event);
++    return visible;
+ }
+ 
+ #ifndef KEYBINDER_TESTING
+@@ -220,11 +222,12 @@ void __fastcall HookedAddEntry(sampapi::v03dl::CChat* chat,
+     (void)textColor;
+     (void)prefixColor;
+ 
++    bool visible = true;
+     if (auto state = GetAdapterStateSlot().lock()) {
+-        EmitChatEvent(state, prefix, text);
++        visible = EmitChatEvent(state, prefix, text);
+     }
+ 
+-    if (g_addEntryHook != nullptr) {
++    if (visible && g_addEntryHook != nullptr) {
+         g_addEntryHook->thiscall<void>(chat, nType, text, prefix, textColor, prefixColor);
+     }
+ }
+@@ -294,13 +297,13 @@ bool JobChatAdapter::Initialize() {
+ }
+ 
+ void JobChatAdapter::Shutdown() {
++    state_->isAlive = false;
++    state_->callback = nullptr;
++    state_->visibilityFilter = nullptr;
+     if (!initialized_) {
+         return;
+     }
+ 
+-    state_->isAlive = false;
+-    state_->callback = nullptr;
+-
+ #ifdef KEYBINDER_TESTING
+     const auto& hooks = SAMPBridge::GetTestingHooks();
+     if (hooks.installIncomingChatInterceptor) {
+@@ -320,4 +323,14 @@ void JobChatAdapter::SetCallback(JobChatEventCallback callback) {
+     state_->callback = std::move(callback);
+ }
+ 
++void JobChatAdapter::SetVisibilityFilter(JobChatVisibilityFilter filter) {
++    state_->visibilityFilter = std::move(filter);
++}
++
++#ifdef KEYBINDER_TESTING
++bool JobChatAdapter::DispatchLineForTesting(const char* prefix, const char* text) const {
++    return EmitChatEvent(state_, prefix, text);
++}
++#endif
++
+ } // namespace jobs
+diff --git a/src/KeybindEditorUI.cpp b/src/KeybindEditorUI.cpp
+index e6210d7..fffaedc 100644
+--- a/src/KeybindEditorUI.cpp
++++ b/src/KeybindEditorUI.cpp
+@@ -331,11 +331,11 @@ void KeybindEditorUI::RenderActionEditor() {
+         switch (m_currentAction.type) {
+             case ActionType::Chat:
+                 UIComponents::InputText("Nachricht", &m_currentAction.data, "Nachricht eingeben...");
+-                RenderMutedWrappedText("Variablen: {zone}, {hp}, {weste}, {carhp}, {total_kills}, {total_deaths}, {kd}");
++                RenderMutedWrappedText("Variablen: {city}, {bezirk}, {hp}, {weste}, {carhp}, {total_kills}, {total_deaths}, {kd}");
+                 break;
+             case ActionType::Command:
+                 UIComponents::InputText("Befehl", &m_currentAction.data, "Befehl eingeben (ohne /)...");
+-                RenderMutedWrappedText("Variablen: {zone}, {hp}, {weste}, {carhp}, {total_kills}, {total_deaths}, {kd}");
++                RenderMutedWrappedText("Variablen: {city}, {bezirk}, {hp}, {weste}, {carhp}, {total_kills}, {total_deaths}, {kd}");
+                 break;
+             case ActionType::Delay:
+                 UIComponents::InputText("Millisekunden", &m_currentAction.data, "Z.B. 500");
+diff --git a/src/KillTrackerUI.cpp b/src/KillTrackerUI.cpp
+index 327280a..e120ae4 100644
+--- a/src/KillTrackerUI.cpp
++++ b/src/KillTrackerUI.cpp
+@@ -265,7 +265,7 @@ void KillTrackerUI::RenderMessageSettings() {
+     }
+     ImGui::SameLine();
+     if (UIComponents::SecondaryButton("Standard")) {
+-        settings_.customLocalKillMessage = "{FF6600}[Kill] {FFFFFF}{victim} {AAAAAA}mit {FFCC00}{weapon}";
++        settings_.customLocalKillMessage = "{33CCFF}[NL-BINDER]{FFFFFF} Kill in {city}, {bezirk}. Meine Kills: {total_kills}";
+         strncpy(customLocalKillMessageBuf_, settings_.customLocalKillMessage.c_str(), sizeof(customLocalKillMessageBuf_) - 1);
+         customLocalKillMessageBuf_[sizeof(customLocalKillMessageBuf_) - 1] = '\0';
+         if (bridge_) bridge_->SetKillTrackerLocalKillMessageTemplate(settings_.customLocalKillMessage);
+@@ -305,7 +305,7 @@ void KillTrackerUI::RenderMessageSettings() {
+     }
+     ImGui::SameLine();
+     if (UIComponents::SecondaryButton("Standard")) {
+-        settings_.customServerKillMessage = "Ich habe {victim} mit {weapon} getötet.";
++        settings_.customServerKillMessage = "Kill in {city}, {bezirk}. Meine Kills: {total_kills}";
+         strncpy(customServerKillMessageBuf_, settings_.customServerKillMessage.c_str(), sizeof(customServerKillMessageBuf_) - 1);
+         customServerKillMessageBuf_[sizeof(customServerKillMessageBuf_) - 1] = '\0';
+         if (bridge_) bridge_->SetKillTrackerServerKillMessageTemplate(settings_.customServerKillMessage);
+diff --git a/src/Main.cpp b/src/Main.cpp
+index b029683..f8c9b13 100644
+--- a/src/Main.cpp
++++ b/src/Main.cpp
+@@ -453,6 +453,11 @@ public:
+         bridge_.SetAutoHudScaleFix(settingsManager_.Get().auto_hudscalefix);
+         bridge_.SetAutoEngineStart(settingsManager_.Get().auto_engine_start);
+         bridge_.SetSettingsManager(&settingsManager_);
++        bridge_.SetStatsSynchronizedCallback([&](const keybinder::ServerStatsSnapshot& snapshot) {
++            settingsManager_.GetMutable().synchronized_player_stats = snapshot;
++            ExportKillTrackerStateToSettings();
++            return keybindManager_.Save(&settingsManager_);
++        });
+         textDrawAdapter_.SetSpeedometerEnabled(keybinder::speedometer::kCustomTachoAvailable && settingsManager_.Get().speedometer_enabled);
+         textDrawAdapter_.Initialize();
+         speedometerManager_.Initialize(&textDrawAdapter_, &bridge_);
+diff --git a/src/MainWindowUI.cpp b/src/MainWindowUI.cpp
+index 5397789..b0e6038 100644
+--- a/src/MainWindowUI.cpp
++++ b/src/MainWindowUI.cpp
+@@ -1527,7 +1527,7 @@ void MainWindowUI::RenderSettingsKillCounterCard() {
+         SaveKillCounterSettings();
+     }
+ 
+-    ImGui::TextWrapped("Der Todeszähler meldet jeden Tod nur lokal im Chat. Echte Gesamtstände werden aus empfangenen Serverstatistiken übernommen.");
++    ImGui::TextWrapped("Beim Einloggen werden die Serverstatistiken einmal synchronisiert. Der Todeszähler meldet jeden Tod nur lokal im Chat.");
+     UIComponents::Separator();
+     if (UIComponents::Toggle("Kill-Nachricht an Server senden", &settings.kill_tracker_server_kill_message_enabled)) {
+         SaveKillCounterSettings();
+@@ -1537,7 +1537,7 @@ void MainWindowUI::RenderSettingsKillCounterCard() {
+     const float inputWidth = (std::max)(Scale(120.0f),
+         ImGui::GetContentRegionAvail().x - buttonWidth - ImGui::GetStyle().ItemSpacing.x);
+     if (UIComponents::InputText("##GeneralKillMessage", &settings.kill_tracker_server_kill_message_template,
+-        "/f Ich habe einen Kill in {zone}. Meine Kills: {total_kills}", inputWidth)) {
++        "/f Kill in {city}, {bezirk}. Meine Kills: {total_kills}", inputWidth)) {
+         if (bridge_ != nullptr) {
+             bridge_->SetKillTrackerServerKillMessageTemplate(settings.kill_tracker_server_kill_message_template);
+         }
+@@ -1551,7 +1551,20 @@ void MainWindowUI::RenderSettingsKillCounterCard() {
+     }
+     ImGui::TextColored(ThemeManager::Instance().GetColor(ThemeColorRole::TextMuted),
+         "%d / 144 Zeichen vor Ersetzung", static_cast<int>(settings.kill_tracker_server_kill_message_template.size()));
+-    ImGui::TextWrapped("Beispiel: /f Ich habe einen Kill in {zone}. Meine Kills: {total_kills}");
++    ImGui::TextWrapped("Beispiel: /f Kill in {city}, {bezirk}. Meine Kills: {total_kills}");
++    ImGui::Spacing();
++    ImGui::BeginDisabled(bridge_ == nullptr);
++    if (UIComponents::SecondaryButton("Kill simulieren", ImVec2(Scale(160.0f), 0.0f))) {
++        SaveKillCounterSettings();
++        std::string error;
++        if (bridge_ != nullptr && !bridge_->SendSimulatedKillMessage(settings.kill_tracker_server_kill_message_template, error)) {
++            bridge_->QueueLocalMessage("{FF6600}[NL-BINDER]{FFFFFF} " + error);
++        }
++    }
++    if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) {
++        ImGui::SetTooltip("Sendet den aktuellen Text mit [Testkill] im gewählten Chatkanal. Die Zähler werden dabei nicht verändert.");
++    }
++    ImGui::EndDisabled();
+     UIComponents::EndCard();
+     RenderMessageVariablesModal("Verfügbare Variablen##GeneralKillVariables", &showKillMessageVariables_, true);
+ }
+diff --git a/src/SAMPBridge.cpp b/src/SAMPBridge.cpp
+index 263b2e1..0152acd 100644
+--- a/src/SAMPBridge.cpp
++++ b/src/SAMPBridge.cpp
+@@ -16,13 +16,13 @@
+ #include "../include/SettingsManager.h"
+ #include "../include/WeaponNames.h"
+ #include "../include/DeathMessageRPCAdapter.h"
++#include "../include/KillMessageTest.h"
++#include "../include/LocationNames.h"
+ 
+ #include "../include/RakHook/include/RakHook/rakhook.hpp"
+ #include "../include/SAMP-API/include/sampapi/sampapi.h"
+ #ifndef KEYBINDER_TESTING
+ #include "../include/plugin-sdk/plugin_sa/game_sa/CHud.h"
+-#include "../include/plugin-sdk/plugin_sa/game_sa/CMessages.h"
+-#include "../include/plugin-sdk/plugin_sa/game_sa/CPad.h"
+ #include "../include/plugin-sdk/plugin_sa/game_sa/CPlayerPed.h"
+ #include "../include/plugin-sdk/plugin_sa/game_sa/CVehicle.h"
+ #include "../include/plugin-sdk/plugin_sa/game_sa/CModelInfo.h"
+@@ -37,6 +37,7 @@
+ #include "../include/SAMP-API/include/sampapi/0.3.DL-1/KeyStuff.h"
+ 
+ extern std::atomic<int> g_shutdown_phase;
++static std::string StripSampColorCodes(const std::string& text);
+ 
+ namespace {
+ constexpr std::size_t kInvalidDispatcherIndex = static_cast<std::size_t>(-1);
+@@ -45,7 +46,6 @@ constexpr unsigned long kStartupMessageColor = 0xFFFFFFFF;
+ constexpr int kTrackedIncomeMessageDelayFrames = 10;
+ constexpr int kLocalDeathFallbackDelayFrames = 12;
+ constexpr unsigned long kAutoEngineStartDelayMs = 1500;
+-constexpr unsigned long kAutoEngineStartReadyDwellMs = 400;
+ constexpr unsigned long kAutoEngineStartHoldMs = 150;
+ constexpr unsigned long kAutoEngineStartRetryMs = 1800;
+ constexpr unsigned long kAutoEngineStartRetryWindowMs = 12000;
+@@ -102,26 +102,6 @@ const char* TranslateVehicleGameNameKey(const std::string& gameNameKey)
+ #endif
+ 
+ #ifndef KEYBINDER_TESTING
+-void PulseNativeGameKeyDown(int vk)
+-{
+-    if (vk < 0 || vk > 255) {
+-        return;
+-    }
+-
+-    CPad::NewKeyState.standardKeys[vk] = 0xFF;
+-    CPad::OldKeyState.standardKeys[vk] = 0;
+-}
+-
+-void ReleaseNativeGameKey(int vk)
+-{
+-    if (vk < 0 || vk > 255) {
+-        return;
+-    }
+-
+-    CPad::NewKeyState.standardKeys[vk] = 0;
+-    CPad::OldKeyState.standardKeys[vk] = 0;
+-}
+-
+ bool ContainsAsciiNoCase(const char* haystack, const char* needle)
+ {
+     if (haystack == nullptr || needle == nullptr || *needle == '\0') {
+@@ -165,117 +145,17 @@ const char* DetectEngineStartSuccessTextSource()
+     }
+ 
+     for (int i = 0; i < 7; ++i) {
+-        if (ContainsAsciiNoCase(CHud::m_BigMessage[i], "Motor Startet")) {
++        if (BigMessageInUse[i] != 0.0f && BigMessageAlpha[i] > 0.0f
++            && ContainsAsciiNoCase(CHud::m_BigMessage[i], "Motor Startet")) {
+             return "big-message";
+         }
+     }
+ 
+-    for (const auto& message : CMessages::BriefMessages) {
+-        if (ContainsAsciiNoCase(message.m_pText, "Motor Startet") || ContainsAsciiNoCase(message.m_pString, "Motor Startet")) {
+-            return "brief-message";
+-        }
+-    }
+-
+-    for (const auto& bigMessage : CMessages::BIGMessages) {
+-        if (ContainsAsciiNoCase(bigMessage.m_Current.m_pText, "Motor Startet") ||
+-            ContainsAsciiNoCase(bigMessage.m_Current.m_pString, "Motor Startet")) {
+-            return "queued-big-message";
+-        }
+-        for (const auto& stacked : bigMessage.m_Stack) {
+-            if (ContainsAsciiNoCase(stacked.m_pText, "Motor Startet") || ContainsAsciiNoCase(stacked.m_pString, "Motor Startet")) {
+-                return "queued-big-message-stack";
+-            }
+-        }
+-    }
+-
++    // BriefMessages and the queued stacks retain old engine notices. They
++    // cannot acknowledge a new key press in another vehicle.
+     return nullptr;
+ }
+ 
+-bool IsLocalPlayerDriverReady(SAMPBridge* bridge, unsigned short vehicleId, std::string* reason)
+-{
+-    if (bridge == nullptr) {
+-        if (reason != nullptr) {
+-            *reason = "bridge-unavailable";
+-        }
+-        return false;
+-    }
+-
+-    auto* localPlayer = bridge->GetLocalPlayer();
+-    if (localPlayer == nullptr || localPlayer->m_pPed == nullptr) {
+-        if (reason != nullptr) {
+-            *reason = "local-player-unavailable";
+-        }
+-        return false;
+-    }
+-
+-    CPlayerPed* playerPed = FindPlayerPed(0);
+-    if (playerPed == nullptr) {
+-        if (reason != nullptr) {
+-            *reason = "game-ped-unavailable";
+-        }
+-        return false;
+-    }
+-
+-    if (!playerPed->bInVehicle || playerPed->m_pVehicle == nullptr) {
+-        if (reason != nullptr) {
+-            *reason = "not-in-vehicle";
+-        }
+-        return false;
+-    }
+-
+-    if (localPlayer->m_nCurrentVehicle != vehicleId) {
+-        if (reason != nullptr) {
+-            *reason = "vehicle-sync-pending";
+-        }
+-        return false;
+-    }
+-
+-    if (localPlayer->m_pPed->IsPassenger()) {
+-        if (reason != nullptr) {
+-            *reason = "passenger-seat";
+-        }
+-        return false;
+-    }
+-
+-    if (playerPed->m_ePedState != PEDSTATE_DRIVING) {
+-        if (reason != nullptr) {
+-            *reason = "ped-not-driving";
+-        }
+-        return false;
+-    }
+-
+-    if (reason != nullptr) {
+-        *reason = "driver-ready";
+-    }
+-    return true;
+-}
+-
+-bool IsLocalPlayerEngineAlreadyOn(SAMPBridge* bridge, unsigned short vehicleId)
+-{
+-    if (bridge == nullptr) {
+-        return false;
+-    }
+-
+-    auto* localPlayer = bridge->GetLocalPlayer();
+-    if (localPlayer == nullptr || localPlayer->m_pPed == nullptr) {
+-        return false;
+-    }
+-
+-    CPlayerPed* playerPed = FindPlayerPed(0);
+-    if (playerPed == nullptr || !playerPed->bInVehicle || playerPed->m_pVehicle == nullptr) {
+-        return false;
+-    }
+-
+-    if (localPlayer->m_nCurrentVehicle != vehicleId) {
+-        return false;
+-    }
+-
+-    if (localPlayer->m_pPed->IsPassenger()) {
+-        return false;
+-    }
+-
+-    return playerPed->m_pVehicle->bEngineOn;
+-}
+ #endif
+ 
+ std::string ConvertUtf8ToGameEncoding(const std::string& text) {
+@@ -818,10 +698,10 @@ SAMPBridge::SAMPBridge()
+       killTrackerServerKillMessageEnabled_(false),
+       killTrackerServerDeathMessageEnabled_(false),
+       killTrackerTrackDamage_(true),
+-      killTrackerLocalKillMessageTemplate_("{FF6600}[Kill] {FFFFFF}{victim} {AAAAAA}mit {FFCC00}{weapon}"),
+-      killTrackerLocalDeathMessageTemplate_("{FF3333}[Tod] {FFFFFF}{killer} {AAAAAA}mit {FFCC00}{weapon}"),
+-      killTrackerServerKillMessageTemplate_("Ich habe {victim} mit {weapon} getoetet."),
+-      killTrackerServerDeathMessageTemplate_("Ich wurde von {killer} mit {weapon} getoetet."),
++      killTrackerLocalKillMessageTemplate_("{FF6600}[NL-BINDER] {FFFFFF}Kill in {city}, {bezirk}. Kills: {total_kills}"),
++      killTrackerLocalDeathMessageTemplate_("{FF3333}[NL-BINDER] {FFFFFF}Du bist gestorben. Deine aktuellen Tode: {total_deaths}"),
++      killTrackerServerKillMessageTemplate_("Ich habe einen Kill in {city}, {bezirk}. Meine Kills: {total_kills}"),
++      killTrackerServerDeathMessageTemplate_("Ich bin gestorben. Meine Tode: {total_deaths}"),
+       killTrackerInitialized_(false),
+       localPlayerWasDead_(false),
+       localDeathHandledForCurrentLife_(false),
+@@ -1002,6 +882,7 @@ void SAMPBridge::Shutdown() {
+         return;
+     }
+     shutting_down_ = true;
++    ResetStartupStats();
+ 
+     Log("Shutting down SAMPBridge");
+     SetAutoEngineStart(false);
+@@ -1101,6 +982,15 @@ void SAMPBridge::SendKillTrackerServerMessage(const std::string& message) const
+     }
+ }
+ 
++bool SAMPBridge::SendSimulatedKillMessage(const std::string& text, std::string& error) const {
++    std::string message;
++    const std::string expanded = StripSampColorCodes(ExpandMessageVars(text, "", GetLocalPlayerName(), ""));
++    if (!keybinder::BuildSimulatedKillMessage(expanded, message, error)) return false;
++    const bool sent = message.front() == '/' ? SendCommand(message) : SendChat(message);
++    if (!sent) error = "Die Testnachricht konnte gerade nicht gesendet werden.";
++    return sent;
++}
++
+ bool SAMPBridge::IsChatOpen() const {
+     const auto* input = GetInput();
+     return input != nullptr && input->m_bEnabled != FALSE;
+@@ -1133,6 +1023,8 @@ void SAMPBridge::SetSettingsManager(const keybinder::SettingsManager* manager) {
+         killTracker_->SetCountKills(manager->Get().kill_tracker_count_kills);
+         killTracker_->SetCountDeaths(manager->Get().kill_tracker_count_deaths);
+     }
++    if (manager && !startupStatsComplete_ && manager->Get().synchronized_player_stats.HasCore())
++        synchronizedStats_ = manager->Get().synchronized_player_stats;
+ }
+ 
+ void SAMPBridge::Update() {
+@@ -1145,6 +1037,7 @@ void SAMPBridge::Update() {
+     if (!jobTrackerInitialized_) {
+         InitializeJobTracker();
+     }
++    UpdateStartupStats(now);
+ 
+     if (!HasCommandRouting()) {
+         RegisterPendingCommands();
+@@ -1689,6 +1582,9 @@ void SAMPBridge::InitializeJobTracker() {
+             }
+         }
+     });
++    jobChatAdapter_->SetVisibilityFilter([this](const jobs::JobChatEvent& event) {
++        return ShouldDisplayStartupStatsChat(event);
++    });
+ 
+     if (!jobChatAdapter_->Initialize()) {
+         keybinder::Logger::Warning("[SAMPBridge] Failed to initialize Job Chat Adapter; jobs chat pipeline will retry on the next bridge update.");
+@@ -1884,7 +1780,7 @@ void SAMPBridge::SetHitmarkerKillCallback(std::function<void(const killtracker::
+ 
+ void SAMPBridge::SetKillTrackerLocalKillMessageTemplate(const std::string& messageTemplate) {
+     if (messageTemplate.empty()) {
+-        killTrackerLocalKillMessageTemplate_ = "{FF6600}[Kill] {FFFFFF}{victim} {AAAAAA}mit {FFCC00}{weapon}";
++        killTrackerLocalKillMessageTemplate_ = "{FF6600}[NL-BINDER] {FFFFFF}Kill in {city}, {bezirk}. Kills: {total_kills}";
+         return;
+     }
+     killTrackerLocalKillMessageTemplate_ = messageTemplate;
+@@ -1892,7 +1788,7 @@ void SAMPBridge::SetKillTrackerLocalKillMessageTemplate(const std::string& messa
+ 
+ void SAMPBridge::SetKillTrackerLocalDeathMessageTemplate(const std::string& messageTemplate) {
+     if (messageTemplate.empty()) {
+-        killTrackerLocalDeathMessageTemplate_ = "{FF3333}[Tod] {FFFFFF}{killer} {AAAAAA}mit {FFCC00}{weapon}";
++        killTrackerLocalDeathMessageTemplate_ = "{FF3333}[NL-BINDER] {FFFFFF}Du bist gestorben. Deine aktuellen Tode: {total_deaths}";
+         return;
+     }
+     killTrackerLocalDeathMessageTemplate_ = messageTemplate;
+@@ -1904,7 +1800,7 @@ void SAMPBridge::SetKillTrackerServerKillMessageTemplate(const std::string& mess
+ 
+ void SAMPBridge::SetKillTrackerServerDeathMessageTemplate(const std::string& messageTemplate) {
+     if (messageTemplate.empty()) {
+-        killTrackerServerDeathMessageTemplate_ = "Ich wurde von {killer} mit {weapon} getoetet.";
++        killTrackerServerDeathMessageTemplate_ = "Ich bin gestorben. Meine Tode: {total_deaths}";
+         return;
+     }
+     killTrackerServerDeathMessageTemplate_ = messageTemplate;
+@@ -1920,6 +1816,7 @@ void SAMPBridge::SetAutoHudScaleFix(bool enabled) {
+ }
+ 
+ void SAMPBridge::SetAutoEngineStart(bool enabled) {
++    if (autoEngineStartEnabled_ == enabled) return;
+     autoEngineStartEnabled_ = enabled;
+     autoEngineObservedVehicle_ = 0xFFFF;
+ 
+@@ -1936,6 +1833,7 @@ void SAMPBridge::SetAutoEngineStart(bool enabled) {
+         }
+         autoEngineStartInjectedVk_ = 0;
+         autoEngineStartReleasePending_ = false;
++        autoEngineStartLastSuccessText_ = false;
+     }
+ }
+ 
+@@ -1946,6 +1844,7 @@ bool SAMPBridge::ReadDriverVehicle(unsigned short& vehicleId, bool& engineOn) co
+     auto* local = GetLocalPlayer();
+     auto* ped = local && local->m_pPed ? local->m_pPed->m_pGamePed : nullptr;
+     if (!ped || !ped->bInVehicle || !ped->m_pVehicle || ped->m_pVehicle->m_pDriver != ped
++        || ped->m_ePedState != PEDSTATE_DRIVING
+         || local->m_nCurrentVehicle == 0xFFFF || local->m_pPed->IsPassenger()) return false;
+     vehicleId = local->m_nCurrentVehicle;
+     engineOn = ped->m_pVehicle->bEngineOn;
+@@ -1999,29 +1898,41 @@ void SAMPBridge::UpdateAutoEngineStart(unsigned long now) {
+         releaseKey();
+         return;
+     }
++    bool successText = false;
++#ifdef KEYBINDER_TESTING
++    if (g_testingHooks.hasEngineStartSuccessText) successText = g_testingHooks.hasEngineStartSuccessText();
++#else
++    successText = DetectEngineStartSuccessTextSource() != nullptr;
++#endif
+     if (vehicleId != autoEngineObservedVehicle_) {
+         autoEngineObservedVehicle_ = vehicleId;
+-        autoEngineStartPending_ = !engineOn;
++        // GTA can briefly set bEngineOn while seating the driver, before the
++        // server applies its manual engine state. Decide after the entry delay.
++        autoEngineStartPending_ = true;
+         autoEngineStartScheduledAt_ = now;
+         autoEngineStartNextAttemptAt_ = now + kAutoEngineStartDelayMs;
+         autoEngineStartAttempts_ = 0;
++        autoEngineStartLastSuccessText_ = successText;
+         releaseKey();
+         Log("Auto engine start: driver vehicle detected, id=" + std::to_string(vehicleId));
+     }
++    const bool starting = autoEngineStartAttempts_ > 0 && successText && !autoEngineStartLastSuccessText_;
++    autoEngineStartLastSuccessText_ = successText;
+     if (!autoEngineStartPending_) return;
+-    bool starting = false;
+-#ifdef KEYBINDER_TESTING
+-    if (g_testingHooks.hasEngineStartSuccessText) starting = g_testingHooks.hasEngineStartSuccessText();
+-#else
+-    starting = autoEngineStartAttempts_ > 0 && DetectEngineStartSuccessTextSource() != nullptr;
+-#endif
+-    if (engineOn || starting || now - autoEngineStartScheduledAt_ > kAutoEngineStartRetryWindowMs) {
++    const bool firstAttemptDue = static_cast<long>(now - autoEngineStartNextAttemptAt_) >= 0;
++    const bool entrySettled = autoEngineStartAttempts_ > 0 || firstAttemptDue;
++    const bool timedOut = autoEngineStartAttempts_ > 0
++        && now - autoEngineStartScheduledAt_ > kAutoEngineStartRetryWindowMs;
++    if ((engineOn && entrySettled) || starting || timedOut) {
+         autoEngineStartPending_ = false;
+         releaseKey();
+         return;
+     }
+     if (!inputAvailable || autoEngineStartAttempts_ >= kAutoEngineStartMaxAttempts
+         || static_cast<long>(now - autoEngineStartNextAttemptAt_) < 0) return;
++    // The retry window begins with the actual first press, so opening chat or
++    // the binder during entry cannot silently expire the pending start.
++    if (autoEngineStartAttempts_ == 0) autoEngineStartScheduledAt_ = now;
+     SetEngineStartKeyDown(true);
+     autoEngineStartReleasePending_ = true;
+     autoEngineStartHoldUntil_ = now + kAutoEngineStartHoldMs;
+@@ -2056,10 +1967,25 @@ std::string SAMPBridge::GetCurrentZone() const {
+     }
+     return std::string(name);
+ #else
+-    return "Unknown";
++    return g_testingHooks.getDistrictName ? g_testingHooks.getDistrictName() : "Unknown";
+ #endif
+ }
+ 
++std::string SAMPBridge::GetCityName() const {
++#ifndef KEYBINDER_TESTING
++    CPlayerPed* player = FindPlayerPed(0);
++    if (!player) return "Unknown";
++    CVector position = player->GetPosition();
++    return keybinder::CityNameFromGtaLevel(static_cast<int>(CTheZones::GetLevelFromPosition(&position)));
++#else
++    return g_testingHooks.getCityLevel ? keybinder::CityNameFromGtaLevel(g_testingHooks.getCityLevel()) : "Unknown";
++#endif
++}
++
++std::string SAMPBridge::GetDistrictName() const {
++    return GetCurrentZone();
++}
++
+ std::string SAMPBridge::GetLocalPlayerName() const {
+ #ifndef KEYBINDER_TESTING
+     auto* netGame = GetNetGame();
+@@ -2380,10 +2306,6 @@ void SAMPBridge::ResetIncomingDamageState() {
+     scriptedHealthState_->lastKnownArmour.store(0.0f, std::memory_order_relaxed);
+     incomingDamageDetector_.Reset();
+     incomingDamageLog_.Reset();
+-    {
+-        std::lock_guard<std::mutex> lock(incomingDamageRpcMutex_);
+-        incomingDamageRpcQueue_.clear();
+-    }
+     incomingDamagePed_ = nullptr;
+ }
+ 
+@@ -2391,31 +2313,15 @@ bool SAMPBridge::IsDamageLogEnabled() const {
+     return settingsManager_ != nullptr && settingsManager_->Get().damage_log_enabled;
+ }
+ 
+-void SAMPBridge::QueueIncomingDamageReport(const killtracker::DamageEvent& event) {
+-    // This callback may run on a RakNet thread: no UI, settings or ped reads.
+-    if (event.isOutgoing || !std::isfinite(event.damage) || event.damage <= 0.0001f
+-        || event.targetId < 0 || event.targetId >= 1004 || event.weaponId < 0 || event.weaponId > 46
+-        || keybinder::IsNonCombatDamageSource(event.weaponId)
+-        || !scriptedHealthState_->active.load(std::memory_order_acquire)) return;
+-    std::lock_guard<std::mutex> lock(incomingDamageRpcMutex_);
+-    incomingDamageRpcQueue_.push_back({event.damage, RuntimeTickCount()});
+-    if (incomingDamageRpcQueue_.size() > 64) incomingDamageRpcQueue_.erase(incomingDamageRpcQueue_.begin());
+-}
+-
+-void SAMPBridge::FlushIncomingDamageLog(unsigned long now, bool finishLife) {
+-    if (!IsDamageLogEnabled()) {
+-        incomingDamageLog_.Reset();
+-        return;
+-    }
+-    for (const float damage : incomingDamageLog_.Drain(now, finishLife)) {
+-        char amount[48];
+-        std::snprintf(amount, sizeof(amount), "%.4f", static_cast<double>(damage));
+-        std::string formatted = amount;
+-        while (!formatted.empty() && formatted.back() == '0') formatted.pop_back();
+-        if (!formatted.empty() && formatted.back() == '.') formatted.pop_back();
+-        std::replace(formatted.begin(), formatted.end(), '.', ',');
+-        SendLocalMessage("{FF6600}[NL-BINDER]{FFFFFF} Du hast -" + formatted + " HP Schaden erhalten.");
+-    }
++void SAMPBridge::LogIncomingDamage(const keybinder::IncomingDamageLogEntry& damage) {
++    if (!damage.HasDamage()) return;
++    char amount[48];
++    const double rounded = std::round(static_cast<double>(damage.Total()) * 10.0) / 10.0;
++    std::snprintf(amount, sizeof(amount), "%.1f", rounded);
++    std::string formatted = amount;
++    std::replace(formatted.begin(), formatted.end(), '.', ',');
++    SendLocalMessage("{1E90FF}[NL-BINDER] {FF0000}-" + formatted
++        + " HP {FFFFFF}Schaden (" + damage.Type() + ")");
+ }
+ 
+ bool SAMPBridge::ReadLocalDamageSample(float& health, float& armour, int& damageSource, const void*& pedIdentity) const {
+@@ -2436,19 +2342,15 @@ bool SAMPBridge::ReadLocalDamageSample(float& health, float& armour, int& damage
+ }
+ 
+ void SAMPBridge::PollLocalIncomingDamage() {
+-    const unsigned long now = RuntimeTickCount();
+     const bool logEnabled = IsDamageLogEnabled();
+     const bool logJustEnabled = logEnabled && !incomingDamageLogEnabledLastFrame_;
+     incomingDamageLogEnabledLastFrame_ = logEnabled;
+     if (!logEnabled || logJustEnabled) {
+         incomingDamageLog_.Reset();
+-        std::lock_guard<std::mutex> lock(incomingDamageRpcMutex_);
+-        incomingDamageRpcQueue_.clear();
+     }
+     const bool playing = IsLocalCombatActive();
+     const bool finalDeathSample = !playing && incomingDamagePed_ != nullptr && IsLocalCombatActive(true);
+     if ((!hitsoundIncomingCallback_ && !IsDamageLogEnabled()) || (!playing && !finalDeathSample)) {
+-        FlushIncomingDamageLog(now, true);
+         ResetIncomingDamageState();
+         return;
+     }
+@@ -2460,7 +2362,6 @@ void SAMPBridge::PollLocalIncomingDamage() {
+     const bool hasSample = ReadLocalDamageSample(health, armour, damageSource, pedIdentity);
+     if (!hasSample || pedIdentity == nullptr || !std::isfinite(health)
+         || !std::isfinite(armour) || armour < 0.0f || !std::isfinite(health + armour)) {
+-        FlushIncomingDamageLog(now, true);
+         ResetIncomingDamageState();
+         return;
+     }
+@@ -2469,7 +2370,6 @@ void SAMPBridge::PollLocalIncomingDamage() {
+     health = (std::max)(health, 0.0f);
+ 
+     if (pedIdentity != incomingDamagePed_) {
+-        FlushIncomingDamageLog(now, true);
+         ResetIncomingDamageState();
+         incomingDamagePed_ = pedIdentity;
+     }
+@@ -2489,16 +2389,11 @@ void SAMPBridge::PollLocalIncomingDamage() {
+         && observation.damage > keybinder::IncomingDamageDetector::kDamageEpsilon && hitsoundIncomingCallback_) {
+         hitsoundIncomingCallback_();
+     }
+-    std::vector<IncomingDamageReport> reports;
+-    {
+-        std::lock_guard<std::mutex> lock(incomingDamageRpcMutex_);
+-        reports.swap(incomingDamageRpcQueue_);
+-    }
+-    if (logEnabled && !logJustEnabled) {
+-        for (const auto& report : reports) incomingDamageLog_.Report(report.damage, report.tick);
+-        incomingDamageLog_.Observe(observation, now);
++    if (logEnabled) {
++        // Keep the log independent from hitsound suppression. In particular,
++        // Nova's server-applied SetPlayerHealth/Armour must be logged at once.
++        LogIncomingDamage(incomingDamageLog_.Observe(health, armour));
+     }
+-    FlushIncomingDamageLog(now, finalDeathSample || health == 0.0f);
+     if (finalDeathSample || health == 0.0f) ResetIncomingDamageState();
+ }
+ 
+@@ -2521,6 +2416,9 @@ void SAMPBridge::ProcessDamageRpcForTesting(RakNet::BitStream* payload) {
+ void SAMPBridge::RequestScriptedHealthSuppressionForTesting() {
+     scriptedHealthState_->suppressionRequested.store(true, std::memory_order_release);
+ }
++bool SAMPBridge::ProcessIncomingChatLineForTesting(const char* prefix, const char* text) {
++    return jobChatAdapter_ ? jobChatAdapter_->DispatchLineForTesting(prefix, text) : true;
++}
+ #endif
+ 
+ static std::string ReplaceAll(std::string str, const std::string& from, const std::string& to) {
+@@ -2544,6 +2442,12 @@ std::string SAMPBridge::ExpandMessageVars(const std::string& tmpl,
+     msg = ReplaceAll(msg, "{victim}", victim.empty() ? "Unbekannt" : victim);
+     msg = ReplaceAll(msg, "{killer}", killer.empty() ? "Unbekannt" : killer);
+     msg = ReplaceAll(msg, "{weapon}", weapon.empty() ? "Unbekannt" : weapon);
++    if (msg.find("{city}") != std::string::npos) msg = ReplaceAll(msg, "{city}", GetCityName());
++    if (msg.find("{bezirk}") != std::string::npos || msg.find("{district}") != std::string::npos) {
++        const std::string district = GetDistrictName();
++        msg = ReplaceAll(msg, "{bezirk}", district);
++        msg = ReplaceAll(msg, "{district}", district);
++    }
+ 
+     if (msg.find("{zone}") != std::string::npos || msg.find("{ZONE}") != std::string::npos) {
+         const std::string zone = GetCurrentZone();
+@@ -2645,7 +2549,6 @@ void SAMPBridge::RefreshDamageTracking() {
+     EnsureKillTrackerRpcAdaptersRegistered();
+     damageAdapter_->Initialize();
+     damageAdapter_->SetDamageCallback([this](const killtracker::DamageEvent& event) {
+-        QueueIncomingDamageReport(event);
+         if (killTrackerInitialized_ && killTrackerTrackDamage_ && killTracker_) {
+             killTracker_->ProcessDamageEvent(event);
+ 
+@@ -2947,6 +2850,7 @@ void SAMPBridge::SetIncomingChatCallback(IncomingChatCallback callback) {
+ }
+ 
+ void SAMPBridge::NotifyIncomingChat(const std::string& text) {
++    CaptureStartupStatsLine(text);
+     ObserveServerCombatStats(text);
+     if (incomingChatCallback_) {
+         incomingChatCallback_(text);
+diff --git a/src/SettingsManager.cpp b/src/SettingsManager.cpp
+index 435f9ec..46fe2f3 100644
+--- a/src/SettingsManager.cpp
++++ b/src/SettingsManager.cpp
+@@ -11,6 +11,8 @@
+ #include <cctype>
+ #include <cmath>
+ #include <utility>
++#include <charconv>
++#include <type_traits>
+ #include "../include/Logger.h"
+ #include "../include/SpeedometerManager.h"
+ 
+@@ -1958,6 +1960,32 @@ bool SettingsManager::LoadFromJson(const std::string& json_content) {
+             settings_.hitmarker_enabled ? "true" : "false");
+     }
+ 
++    ServerStatsSnapshot cachedStats;
++    ParseStringField(json_content, "\"stats_cache_player\"", cachedStats.playerName);
++    ParseStringField(json_content, "\"stats_cache_server\"", cachedStats.serverAddress);
++    ParseIntField(json_content, "\"stats_cache_port\"", cachedStats.serverPort);
++    auto readCachedNumber = [&](const char* name, auto& destination) {
++        std::string value;
++        const std::string key = std::string("\"") + name + "\"";
++        if (!ParseStringField(json_content, key.c_str(), value)) return;
++        typename std::decay_t<decltype(destination)>::value_type parsed = 0;
++        const auto result = std::from_chars(value.data(), value.data() + value.size(), parsed);
++        if (result.ec == std::errc() && result.ptr == value.data() + value.size()) destination = parsed;
++    };
++    readCachedNumber("stats_cache_kills", cachedStats.kills);
++    readCachedNumber("stats_cache_deaths", cachedStats.deaths);
++    readCachedNumber("stats_cache_cash", cachedStats.cash);
++    readCachedNumber("stats_cache_bank", cachedStats.bank);
++    readCachedNumber("stats_cache_wealth", cachedStats.wealth);
++    readCachedNumber("stats_cache_level", cachedStats.level);
++    readCachedNumber("stats_cache_gold", cachedStats.gold);
++    readCachedNumber("stats_cache_eventcoins", cachedStats.eventcoins);
++    readCachedNumber("stats_cache_wanted", cachedStats.wantedPoints);
++    readCachedNumber("stats_cache_experience", cachedStats.experience);
++    readCachedNumber("stats_cache_next_level", cachedStats.nextLevelExperience);
++    readCachedNumber("stats_cache_payday_minutes", cachedStats.nextPaydayMinutes);
++    settings_.synchronized_player_stats = cachedStats.HasCore() && !cachedStats.playerName.empty()
++        && *cachedStats.kills >= 0 && *cachedStats.deaths >= 0 ? std::move(cachedStats) : ServerStatsSnapshot{};
+     return true;
+ }
+ 
+@@ -2316,6 +2344,28 @@ std::string SettingsManager::GetSettingsJson() const {
+ 
+     oss << "    \"kill_tracker_death_count\": " << settings_.kill_tracker_death_count << ",\n";
+ 
++    const auto& cachedStats = settings_.synchronized_player_stats;
++    if (cachedStats.HasCore()) {
++        oss << "    \"stats_cache_player\": \"" << EscapeJsonString(cachedStats.playerName) << "\",\n";
++        oss << "    \"stats_cache_server\": \"" << EscapeJsonString(cachedStats.serverAddress) << "\",\n";
++        oss << "    \"stats_cache_port\": " << cachedStats.serverPort << ",\n";
++        auto writeCachedNumber = [&](const char* name, const auto& value) {
++            if (value) oss << "    \"" << name << "\": \"" << *value << "\",\n";
++        };
++        writeCachedNumber("stats_cache_kills", cachedStats.kills);
++        writeCachedNumber("stats_cache_deaths", cachedStats.deaths);
++        writeCachedNumber("stats_cache_cash", cachedStats.cash);
++        writeCachedNumber("stats_cache_bank", cachedStats.bank);
++        writeCachedNumber("stats_cache_wealth", cachedStats.wealth);
++        writeCachedNumber("stats_cache_level", cachedStats.level);
++        writeCachedNumber("stats_cache_gold", cachedStats.gold);
++        writeCachedNumber("stats_cache_eventcoins", cachedStats.eventcoins);
++        writeCachedNumber("stats_cache_wanted", cachedStats.wantedPoints);
++        writeCachedNumber("stats_cache_experience", cachedStats.experience);
++        writeCachedNumber("stats_cache_next_level", cachedStats.nextLevelExperience);
++        writeCachedNumber("stats_cache_payday_minutes", cachedStats.nextPaydayMinutes);
++    }
++
+     oss << "    \"kill_tracker_recent_deaths\": [";
+     first = true;
+     for (const auto& death : settings_.kill_tracker_recent_deaths) {
+diff --git a/src/StartupStatsSync.cpp b/src/StartupStatsSync.cpp
+new file mode 100644
+index 0000000..1a20124
+--- /dev/null
++++ b/src/StartupStatsSync.cpp
+@@ -0,0 +1,211 @@
++#include "../include/SAMPBridge.h"
++#include "../include/SettingsManager.h"
++#include "../include/Logger.h"
++
++#include <algorithm>
++#include <cctype>
++#include <cstring>
++#include <regex>
++#include <tuple>
++
++namespace {
++constexpr unsigned long kStatsResponseTimeoutMs = 8000;
++
++std::string LowerStatsName(std::string value) {
++    std::transform(value.begin(), value.end(), value.begin(), [](unsigned char ch) { return static_cast<char>(std::tolower(ch)); });
++    return value;
++}
++
++bool IsOwnStatsHeader(const std::string& line, const std::string& name) {
++    static const std::regex header(R"(^\*\*\*\s*([^\s*]+)\s*\*\*\*$)");
++    std::smatch result;
++    return !name.empty() && std::regex_match(line, result, header)
++        && LowerStatsName(result[1].str()) == LowerStatsName(name);
++}
++
++bool EqualStats(const keybinder::ServerStatsSnapshot& first, const keybinder::ServerStatsSnapshot& second) {
++    return std::tie(first.playerName, first.serverAddress, first.serverPort, first.kills, first.deaths,
++        first.cash, first.bank, first.wealth, first.level, first.gold, first.eventcoins,
++        first.wantedPoints, first.experience, first.nextLevelExperience, first.nextPaydayMinutes)
++        == std::tie(second.playerName, second.serverAddress, second.serverPort, second.kills, second.deaths,
++        second.cash, second.bank, second.wealth, second.level, second.gold, second.eventcoins,
++        second.wantedPoints, second.experience, second.nextLevelExperience, second.nextPaydayMinutes);
++}
++
++std::string StatsGameTextToUtf8(const char* text, std::size_t maximum) {
++    if (!text) return {};
++    const int size = static_cast<int>(strnlen(text, maximum));
++    if (size == 0 || size == static_cast<int>(maximum)) return {};
++    if (MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, text, size, nullptr, 0) > 0) return {text, static_cast<std::size_t>(size)};
++    const int wideSize = MultiByteToWideChar(CP_ACP, 0, text, size, nullptr, 0);
++    if (wideSize <= 0) return {};
++    std::wstring wide(wideSize, L'\0');
++    MultiByteToWideChar(CP_ACP, 0, text, size, wide.data(), wideSize);
++    const int utf8Size = WideCharToMultiByte(CP_UTF8, 0, wide.data(), wideSize, nullptr, 0, nullptr, nullptr);
++    std::string result(utf8Size, '\0');
++    WideCharToMultiByte(CP_UTF8, 0, wide.data(), wideSize, result.data(), utf8Size, nullptr, nullptr);
++    return result;
++}
++} // namespace
++
++void SAMPBridge::ResetStartupStats() {
++    captureStartupStats_.store(false, std::memory_order_release);
++    startupStatsConnected_ = startupStatsRequested_ = startupStatsComplete_ = startupStatsFailed_ = false;
++    startupStatsIdentity_.clear();
++    startupStatsCollector_.Reset();
++    std::lock_guard<std::mutex> lock(startupStatsMutex_);
++    startupStatsLines_.clear();
++    startupStatsOwnName_.clear();
++    startupStatsPendingChat_ = startupStatsHiddenChat_ = false;
++}
++
++void SAMPBridge::CaptureStartupStatsLine(const std::string& text) {
++    if (!captureStartupStats_.load(std::memory_order_acquire)) return;
++    std::lock_guard<std::mutex> lock(startupStatsMutex_);
++    if (startupStatsLines_.size() < 128) startupStatsLines_.push_back(text);
++}
++
++bool SAMPBridge::ShouldDisplayStartupStatsChat(const jobs::JobChatEvent& event) {
++    // CChat may be called from a network callback. Only protect the small
++    // capture/filter state here; parsing, persistence and notices run in Update.
++    std::lock_guard<std::mutex> lock(startupStatsMutex_);
++    const std::string& line = event.normalizedLine;
++#ifdef KEYBINDER_TESTING
++    const unsigned long now = GetTestingHooks().getTickCount ? GetTestingHooks().getTickCount() : GetTickCount();
++#else
++    const unsigned long now = GetTickCount();
++#endif
++    if (startupStatsHiddenChat_ && now - startupStatsChatHeaderAt_ >= keybinder::ServerStatsCollector::kContextTtlMs)
++        startupStatsHiddenChat_ = false;
++    if (line.rfind("***", 0) == 0 && !IsOwnStatsHeader(line, startupStatsOwnName_)) {
++        startupStatsHiddenChat_ = false;
++        return true;
++    }
++    if (IsOwnStatsHeader(line, startupStatsOwnName_)) {
++        startupStatsHiddenChat_ = startupStatsPendingChat_;
++        if (startupStatsHiddenChat_) startupStatsChatHeaderAt_ = now;
++        return !startupStatsHiddenChat_;
++    }
++    if (!startupStatsHiddenChat_ || !keybinder::ServerStatsCollector::IsRecognizedStatsLine(line)) return true;
++    // This is the last line in the observed Nova /stats chat block.
++    if (line.rfind("Waffenscheine:", 0) == 0) startupStatsHiddenChat_ = false;
++    return false;
++}
++
++void SAMPBridge::CompleteStartupStats(unsigned long now) {
++    const bool firstCompletion = !startupStatsComplete_;
++    const auto previous = synchronizedStats_;
++    synchronizedStats_ = startupStatsCollector_.Snapshot();
++    auto* netGame = GetNetGame();
++    synchronizedStats_.serverAddress = netGame ? std::string(netGame->m_szHostAddress, strnlen(netGame->m_szHostAddress, 257)) : std::string();
++    synchronizedStats_.serverPort = netGame ? netGame->m_nPort : 0;
++    if (!firstCompletion && EqualStats(previous, synchronizedStats_)) return;
++    // The first received account snapshot is a baseline, never a newly made
++    // kill/death. Chat snapshots may already have updated these counters.
++    auto* tracker = GetKillTracker();
++    if (firstCompletion && !serverCombatBaselineEstablished_) {
++        tracker->ImportKillCount(*synchronizedStats_.kills);
++        tracker->ImportDeathCount(*synchronizedStats_.deaths);
++    }
++    lastServerKillTotal_ = *synchronizedStats_.kills;
++    lastServerDeathTotal_ = *synchronizedStats_.deaths;
++    serverCombatBaselineEstablished_ = true;
++    startupStatsComplete_ = true;
++    if (firstCompletion) startupStatsCompletedAt_ = now;
++    {
++        std::lock_guard<std::mutex> lock(startupStatsMutex_);
++        startupStatsPendingChat_ = false;
++    }
++    const bool saved = !statsSynchronizedCallback_ || statsSynchronizedCallback_(synchronizedStats_);
++    if (firstCompletion) QueueLocalMessage(saved
++        ? "{33CCFF}[NL-BINDER]{FFFFFF} Synchronisation abgeschlossen."
++        : "{FF6600}[NL-BINDER]{FFFFFF} Synchronisation gelesen, aber die Daten konnten nicht gespeichert werden.");
++}
++
++void SAMPBridge::UpdateStartupStats(unsigned long now) {
++    const auto* netGame = GetNetGame();
++    const bool connected = netGame && netGame->m_nGameState == sampapi::v03dl::CNetGame::GAME_MODE_CONNECTED;
++    if (!connected) {
++        if (startupStatsConnected_) ResetStartupStats();
++        return;
++    }
++    const std::string name = GetLocalPlayerName();
++    const std::string identity = std::string(netGame->m_szHostAddress, strnlen(netGame->m_szHostAddress, 257))
++        + ":" + std::to_string(netGame->m_nPort) + "/" + LowerStatsName(name);
++    if (!startupStatsConnected_ || startupStatsIdentity_ != identity) {
++        ResetStartupStats();
++        startupStatsConnected_ = true;
++        startupStatsIdentity_ = identity;
++        // Received totals from a previous server/account are not a baseline
++        // for this connection. Saved values remain visible until the reply.
++        serverCombatBaselineEstablished_ = false;
++        ownStatsContext_ = false;
++    }
++    if (!startupStatsRequested_) {
++#ifdef KEYBINDER_TESTING
++        const bool ready = GetTestingHooks().isStartupStatsReady && GetTestingHooks().isStartupStatsReady();
++#else
++        const bool ready = IsLocalCombatActive();
++#endif
++        if (!ready || name.empty() || IsChatOpen() || IsDialogOpen() || IsCursorActive()) return;
++        startupStatsRequested_ = true;
++        startupStatsRequestedAt_ = now;
++        startupStatsCollector_.Reset();
++        {
++            std::lock_guard<std::mutex> lock(startupStatsMutex_);
++            startupStatsLines_.clear();
++            startupStatsOwnName_ = name;
++            startupStatsPendingChat_ = true;
++        }
++        captureStartupStats_.store(true, std::memory_order_release);
++        if (!SendCommand("/stats")) {
++            startupStatsFailed_ = true;
++            captureStartupStats_.store(false, std::memory_order_release);
++            std::lock_guard<std::mutex> lock(startupStatsMutex_);
++            startupStatsPendingChat_ = false;
++        }
++    }
++    if (startupStatsFailed_) return;
++    if (startupStatsComplete_ && now - startupStatsCompletedAt_ >= keybinder::ServerStatsCollector::kContextTtlMs) {
++        captureStartupStats_.store(false, std::memory_order_release);
++        return;
++    }
++    std::vector<std::string> lines;
++    {
++        std::lock_guard<std::mutex> lock(startupStatsMutex_);
++        lines.swap(startupStatsLines_);
++    }
++    bool finalChatLine = false;
++    for (const auto& line : lines) {
++        const bool ownLine = startupStatsCollector_.ConsumeLine(line, name, now);
++        if (ownLine && line.rfind("Waffenscheine:", 0) == 0) finalChatLine = true;
++    }
++    if (auto* dialog = GetDialog(); !startupStatsComplete_ && dialog && dialog->m_bIsActive
++        && dialog->m_nType == sampapi::v03dl::CDialog::DIALOG_MESSAGEBOX) {
++        const int dialogId = dialog->m_nId;
++        keybinder::ServerStatsCollector candidate;
++        if (candidate.ConsumeDialog(StatsGameTextToUtf8(dialog->m_szCaption, 65),
++                StatsGameTextToUtf8(dialog->m_szText, 32768), name, now, true) && candidate.Snapshot().HasCore()) {
++            startupStatsCollector_ = std::move(candidate);
++            // Only dismiss the identified own stats response, never another
++            // open dialog or the login UI.
++#ifdef KEYBINDER_TESTING
++            if (GetTestingHooks().closeStatsDialog) GetTestingHooks().closeStatsDialog(dialogId);
++#else
++            if (dialog == GetDialog() && dialog->m_nId == dialogId) dialog->Close(0);
++#endif
++        }
++    }
++    if (startupStatsCollector_.Snapshot().HasCore()) {
++        CompleteStartupStats(now);
++        if (finalChatLine) captureStartupStats_.store(false, std::memory_order_release);
++    } else if (now - startupStatsRequestedAt_ >= kStatsResponseTimeoutMs) {
++        startupStatsFailed_ = true;
++        captureStartupStats_.store(false, std::memory_order_release);
++        {
++            std::lock_guard<std::mutex> lock(startupStatsMutex_);
++            startupStatsPendingChat_ = startupStatsHiddenChat_ = false;
++        }
++        QueueLocalMessage("{FF6600}[NL-BINDER]{FFFFFF} Synchronisation nicht abgeschlossen. /stats kann manuell erneut geöffnet werden.");
++    }
++}
+diff --git a/tests/JobChatAdapterTests.cpp b/tests/JobChatAdapterTests.cpp
+index 82b477a..4ed8e50 100644
+--- a/tests/JobChatAdapterTests.cpp
++++ b/tests/JobChatAdapterTests.cpp
+@@ -203,6 +203,105 @@ bool TestShutdownRemovesTestingInterceptor() {
+     return true;
+ }
+ 
++bool TestVisibilityDefaultsToShownAndHiddenLinesStillReachCallback() {
++    IncomingChatHookContext context;
++    SAMPBridge::SetTestingHooks(context.BuildHooks());
++    jobs::JobChatAdapter adapter;
++    std::vector<std::string> order;
++    std::vector<jobs::JobChatEvent> received;
++    adapter.SetCallback([&](const jobs::JobChatEvent& event) {
++        order.push_back("callback:" + event.normalizedLine);
++        received.push_back(event);
++    });
++    ASSERT_TRUE(adapter.Initialize());
++    ASSERT_TRUE(adapter.DispatchLineForTesting(nullptr, "Normale Chatzeile"));
++    ASSERT_EQ(received.size(), static_cast<std::size_t>(1));
++
++    adapter.SetVisibilityFilter([&](const jobs::JobChatEvent& event) {
++        order.push_back("filter:" + event.normalizedLine);
++        return event.normalizedLine.find("Kills:") != 0;
++    });
++    ASSERT_TRUE(!adapter.DispatchLineForTesting(nullptr, "[18:28:35] {FFFFFF}Kills: [64] Tode: [205]"));
++    ASSERT_EQ(received.size(), static_cast<std::size_t>(2));
++    ASSERT_EQ(order[1], std::string("filter:Kills: [64] Tode: [205]"));
++    ASSERT_EQ(order[2], std::string("callback:Kills: [64] Tode: [205]"));
++    ASSERT_TRUE(adapter.DispatchLineForTesting("Landwirt", "Route abgeschlossen"));
++    ASSERT_EQ(received.back().jobPrefix, std::string("Landwirt"));
++    adapter.Shutdown();
++    SAMPBridge::ResetTestingHooks();
++    return true;
++}
++
++bool TestVisibilityFilterReceivesEmptyLinesWithoutNormalCallbacks() {
++    IncomingChatHookContext context;
++    SAMPBridge::SetTestingHooks(context.BuildHooks());
++    jobs::JobChatAdapter adapter;
++    int filters = 0;
++    int callbacks = 0;
++    bool allNormalizedEmpty = true;
++    adapter.SetCallback([&](const jobs::JobChatEvent&) { ++callbacks; });
++    adapter.SetVisibilityFilter([&](const jobs::JobChatEvent& event) {
++        ++filters;
++        allNormalizedEmpty = allNormalizedEmpty && event.normalizedLine.empty();
++        return false;
++    });
++    ASSERT_TRUE(adapter.Initialize());
++    ASSERT_TRUE(!adapter.DispatchLineForTesting(nullptr, ""));
++    ASSERT_TRUE(!adapter.DispatchLineForTesting(nullptr, "{FFFFFF}  "));
++    ASSERT_TRUE(!adapter.DispatchLineForTesting(nullptr, "[18:28:35] {FFFFFF}  "));
++    ASSERT_TRUE(!adapter.DispatchLineForTesting(nullptr, nullptr));
++    ASSERT_EQ(filters, 4);
++    ASSERT_EQ(callbacks, 0);
++    ASSERT_TRUE(allNormalizedEmpty);
++    adapter.Shutdown();
++    SAMPBridge::ResetTestingHooks();
++    return true;
++}
++
++bool TestVisibilityFilterNormalizesEncodingWithoutAnEventCallback() {
++    IncomingChatHookContext context;
++    SAMPBridge::SetTestingHooks(context.BuildHooks());
++    jobs::JobChatAdapter adapter;
++    std::string normalized;
++    adapter.SetVisibilityFilter([&](const jobs::JobChatEvent& event) {
++        normalized = event.normalizedLine;
++        return false;
++    });
++    ASSERT_TRUE(adapter.Initialize());
++    std::string ansi = "[18:28:35] {FFFFFF}Verm";
++    ansi.push_back(static_cast<char>(0xF6));
++    ansi += "gen: [1.234$]";
++    ASSERT_TRUE(!adapter.DispatchLineForTesting(nullptr, ansi.c_str()));
++    ASSERT_EQ(normalized, std::string("Vermögen: [1.234$]"));
++    adapter.Shutdown();
++    SAMPBridge::ResetTestingHooks();
++    return true;
++}
++
++bool TestShutdownClearsVisibilityFilterIncludingBeforeInitialization() {
++    IncomingChatHookContext context;
++    SAMPBridge::SetTestingHooks(context.BuildHooks());
++    jobs::JobChatAdapter adapter;
++    int calls = 0;
++    adapter.SetVisibilityFilter([&](const jobs::JobChatEvent&) { ++calls; return false; });
++    adapter.Shutdown();
++    ASSERT_TRUE(adapter.Initialize());
++    ASSERT_TRUE(adapter.DispatchLineForTesting(nullptr, "Nicht ausblenden"));
++    ASSERT_EQ(calls, 0);
++    adapter.SetVisibilityFilter([&](const jobs::JobChatEvent&) { ++calls; return false; });
++    ASSERT_TRUE(!adapter.DispatchLineForTesting(nullptr, "Ausblenden"));
++    ASSERT_EQ(calls, 1);
++    adapter.Shutdown();
++    ASSERT_TRUE(adapter.DispatchLineForTesting(nullptr, "Nach Shutdown anzeigen"));
++    ASSERT_EQ(calls, 1);
++    ASSERT_TRUE(adapter.Initialize());
++    ASSERT_TRUE(adapter.DispatchLineForTesting(nullptr, "Nach Neustart anzeigen"));
++    ASSERT_EQ(calls, 1);
++    adapter.Shutdown();
++    SAMPBridge::ResetTestingHooks();
++    return true;
++}
++
+ } // namespace
+ 
+ int RunJobChatAdapterTests() {
+@@ -214,6 +313,10 @@ int RunJobChatAdapterTests() {
+     RUN_TEST(TestConvertsAnsiUmlautCompletionLineToUtf8);
+     RUN_TEST(TestEmptyAndMalformedLinesAreIgnoredSafely);
+     RUN_TEST(TestShutdownRemovesTestingInterceptor);
++    RUN_TEST(TestVisibilityDefaultsToShownAndHiddenLinesStillReachCallback);
++    RUN_TEST(TestVisibilityFilterReceivesEmptyLinesWithoutNormalCallbacks);
++    RUN_TEST(TestVisibilityFilterNormalizesEncodingWithoutAnEventCallback);
++    RUN_TEST(TestShutdownClearsVisibilityFilterIncludingBeforeInitialization);
+ 
+     std::printf("JobChatAdapterTests: %d passed, %d failed\n", g_state.passed, g_state.failed);
+     return g_state.failed;
+diff --git a/tests/KeybindTests.cpp b/tests/KeybindTests.cpp
+index b72a58e..0b25c45 100644
+--- a/tests/KeybindTests.cpp
++++ b/tests/KeybindTests.cpp
+@@ -6,6 +6,10 @@
+ 
+ int RunActionExecutorTests();
+ int RunReconnectTests();
++int RunKillMessageTestTests();
++int RunLocationVariableTests();
++int RunServerStatsParserTests();
++int RunStartupStatsSyncTests();
+ int RunSpeedometerFocusedTests();
+ int RunInterfaceEditorTests();
+ int RunInputManagerTests();
+@@ -82,6 +86,11 @@ int main() {
+     const int hud_sprite_failures = run_suite("Running HudSpriteManagerTests...", RunHudSpriteManagerTests);
+     const int source_contract_failures = run_suite("Running SourceContractTests...", RunSourceContractTests);
+ 
++    const int r4_failures = run_suite("Running KillMessageTestTests...", RunKillMessageTestTests)
++        + run_suite("Running LocationVariableTests...", RunLocationVariableTests)
++        + run_suite("Running ServerStatsParserTests...", RunServerStatsParserTests)
++        + run_suite("Running StartupStatsSyncTests...", RunStartupStatsSyncTests);
++    if (r4_failures != 0) return r4_failures;
+     log_line("All tests finished.");
+     return reconnect_failures + speedometer_failures + keybind_failures + executor_failures + interface_editor_failures + input_failures + regression_failures + samp_bridge_failures + imgui_overlay_failures + hitmarker_failures + hitsound_failures + theme_failures + quickmap_failures + job_registry_failures + job_chat_adapter_failures + job_event_store_failures + job_parser_failures + job_tracker_lifecycle_failures + main_window_jobs_nav_failures + jobs_ui_failures + jobs_correction_failures + job_adjustment_failures + online_ui_failures + online_data_manager_failures + online_settings_failures + online_overlay_renderer_failures + online_event_detector_failures + ui_components_failures + squaremap_failures + hud_sprite_failures + source_contract_failures;
+ }
+diff --git a/tests/KillMessageTestTests.cpp b/tests/KillMessageTestTests.cpp
+new file mode 100644
+index 0000000..9f4cdd3
+--- /dev/null
++++ b/tests/KillMessageTestTests.cpp
+@@ -0,0 +1,59 @@
++#include "../include/KillMessageTest.h"
++
++#include <cstdio>
++#include <string>
++
++namespace {
++int failures = 0;
++int checks = 0;
++#define CHECK(value) do { ++checks; if (!(value)) { ++failures; std::printf("[FAIL] Testkill: %s (line %d)\n", #value, __LINE__); } } while (0)
++
++void CheckMessage(const std::string& input, const std::string& expected) {
++    std::string message, error;
++    CHECK(keybinder::BuildSimulatedKillMessage(input, message, error));
++    CHECK(message == expected);
++    CHECK(error.empty());
++}
++
++void TestChatAndArbitraryCommandChannels() {
++    CheckMessage("Kill in Los Santos, Market. Meine Kills: 64", "[Testkill] Kill in Los Santos, Market. Meine Kills: 64");
++    CheckMessage("/f Kill in Market", "/f [Testkill] Kill in Market");
++    CheckMessage("/d Kill in Market", "/d [Testkill] Kill in Market");
++    CheckMessage("/r Kill in Market", "/r [Testkill] Kill in Market");
++    CheckMessage("/me meldet einen Test", "/me [Testkill] meldet einen Test");
++    CheckMessage("  /custom_channel\t  Nachricht  ", "/custom_channel [Testkill] Nachricht");
++    CheckMessage("/f", "/f [Testkill]");
++    CheckMessage("Eine Zahl 1/2", "[Testkill] Eine Zahl 1/2");
++}
++
++void TestInvalidAndLongMessages() {
++    for (const std::string input : {std::string(), std::string(" \t\n"), std::string("/"), std::string("/  "),
++                                  std::string("eins\nzwei"), std::string("/f eins\rzwei"), std::string("eins\0zwei", 9)}) {
++        std::string message = "old", error;
++        CHECK(!keybinder::BuildSimulatedKillMessage(input, message, error));
++        CHECK(message.empty());
++        CHECK(!error.empty());
++    }
++    std::string message, error;
++    CHECK(keybinder::BuildSimulatedKillMessage("/f " + std::string(200, 'x'), message, error));
++    CHECK(message.size() == 144);
++    CHECK(message.starts_with("/f [Testkill] "));
++    CHECK(keybinder::BuildSimulatedKillMessage(std::string(132, 'a') + "\xC3\xA4", message, error));
++    CHECK(message == "[Testkill] " + std::string(132, 'a'));
++    CHECK(message.size() == 143);
++    CHECK(!keybinder::BuildSimulatedKillMessage("/" + std::string(140, 'x'), message, error));
++    CHECK(message.empty());
++}
++} // namespace
++
++int RunKillMessageTestTests() {
++    failures = checks = 0;
++    TestChatAndArbitraryCommandChannels();
++    TestInvalidAndLongMessages();
++    std::printf("KillMessageTestTests: %d checks, %d failures\n", checks, failures);
++    return failures;
++}
++
++#ifdef KILL_MESSAGE_TEST_MAIN
++int main() { return RunKillMessageTestTests(); }
++#endif
+diff --git a/tests/LocationVariableTests.cpp b/tests/LocationVariableTests.cpp
+new file mode 100644
+index 0000000..b740477
+--- /dev/null
++++ b/tests/LocationVariableTests.cpp
+@@ -0,0 +1,112 @@
++#include "../include/ActionExecutor.h"
++#include "../include/LocationNames.h"
++#include "../include/MessageVariables.h"
++
++#include <algorithm>
++#include <cctype>
++#include <cstdio>
++#include <set>
++#include <string>
++#include <vector>
++
++#ifdef LOCATION_VARIABLE_TEST_MAIN
++#include <atomic>
++std::atomic<int> g_shutdown_phase{0};
++#endif
++
++namespace {
++int checks = 0;
++int failures = 0;
++#define LOCATION_CHECK(condition) do { ++checks; if (!(condition)) { ++failures; std::printf("[FAIL] LocationVariables line %d: %s\n", __LINE__, #condition); } } while (0)
++
++struct Bridge : keybinder::SAMPBridgeInterface {
++    mutable std::vector<std::string> chat;
++    mutable std::vector<std::string> commands;
++    bool SendChat(const std::string& text) const override { chat.push_back(text); return true; }
++    bool SendCommand(const std::string& text) const override { commands.push_back(text); return true; }
++};
++
++struct Data : keybinder::GameDataProvider {
++    int cityLevel = 1;
++    std::string district = "Market";
++    float GetPlayerHP() const override { return 67.0f; }
++    float GetPlayerArmour() const override { return 12.0f; }
++    float GetVehicleHP() const override { return 1000.0f; }
++    int GetTotalKills() const override { return 12; }
++    int GetTotalDeaths() const override { return 3; }
++    std::string GetVehicleName() const override { return "Bobcat"; }
++    std::string GetCityName() const override { return keybinder::CityNameFromGtaLevel(cityLevel); }
++    std::string GetDistrictName() const override { return district; }
++};
++
++void TestCityAndDistrictAreDifferentValues() {
++    Bridge bridge;
++    Data data;
++    keybinder::ActionExecutor executor;
++    executor.SetSAMPBridge(&bridge);
++    executor.SetGameDataProvider(&data);
++    executor.Execute({keybinder::Action(keybinder::ActionType::Chat, "{city}|{bezirk}|{zone}|{hp}|{weste}|{total_kills}|{kd}")});
++    executor.Update();
++    LOCATION_CHECK(bridge.chat.size() == 1);
++    LOCATION_CHECK(bridge.chat.back() == "Los Santos|Market|Market|67|12|12|4.00");
++    LOCATION_CHECK(bridge.commands.empty());
++    data.cityLevel = 2;
++    data.district = "Garcia";
++    executor.Execute({keybinder::Action(keybinder::ActionType::Command, "/r {city}: {bezirk}")});
++    executor.Update();
++    LOCATION_CHECK(bridge.commands.size() == 1);
++    LOCATION_CHECK(bridge.commands.back() == "/r San Fierro: Garcia");
++    data.cityLevel = 0; // GTA handles the actual boundary, not a copied approximation.
++    data.district = "Blueberry";
++    executor.Execute({keybinder::Action(keybinder::ActionType::Chat, "{city}|{bezirk}")});
++    executor.Update();
++    LOCATION_CHECK(bridge.chat.back() == "San Andreas|Blueberry");
++    LOCATION_CHECK(std::string(keybinder::CityNameFromGtaLevel(3)) == "Las Venturas");
++    LOCATION_CHECK(std::string(keybinder::CityNameFromGtaLevel(-1)) == "Unknown");
++    LOCATION_CHECK(std::string(keybinder::CityNameFromGtaLevel(4)) == "Unknown");
++}
++
++void TestMissingLocationDoesNotQueryServer() {
++    Bridge bridge;
++    keybinder::ActionExecutor executor;
++    executor.SetSAMPBridge(&bridge);
++    executor.Execute({keybinder::Action(keybinder::ActionType::Chat, "{city}|{bezirk}")});
++    executor.Update();
++    LOCATION_CHECK(bridge.chat.size() == 1);
++    LOCATION_CHECK(bridge.chat.back() == "Unknown|Unknown");
++    LOCATION_CHECK(bridge.commands.empty());
++}
++
++template <std::size_t Count>
++void CheckCatalog(const keybinder::MessageVariableInfo (&catalog)[Count]) {
++    std::set<std::string> names;
++    bool hasCity = false, hasDistrict = false;
++    for (const auto& variable : catalog) {
++        std::string lower = variable.tag;
++        std::transform(lower.begin(), lower.end(), lower.begin(), [](unsigned char value) { return static_cast<char>(std::tolower(value)); });
++        LOCATION_CHECK(lower == variable.tag);
++        LOCATION_CHECK(names.insert(lower).second);
++        LOCATION_CHECK(lower != "victim" && lower != "killer" && lower != "weapon");
++        LOCATION_CHECK(lower != "zone" && lower != "district");
++        hasCity = hasCity || lower == "city";
++        hasDistrict = hasDistrict || lower == "bezirk";
++    }
++    LOCATION_CHECK(hasCity);
++    LOCATION_CHECK(hasDistrict);
++}
++} // namespace
++
++int RunLocationVariableTests() {
++    checks = 0;
++    failures = 0;
++    TestCityAndDistrictAreDifferentValues();
++    TestMissingLocationDoesNotQueryServer();
++    CheckCatalog(keybinder::kCombatMessageVariables);
++    CheckCatalog(keybinder::kTextBindingVariables);
++    std::printf("LocationVariableTests: %d checks, %d failures\n", checks, failures);
++    return failures;
++}
++
++#ifdef LOCATION_VARIABLE_TEST_MAIN
++int main() { return RunLocationVariableTests(); }
++#endif
+diff --git a/tests/SAMPBridgeTests.cpp b/tests/SAMPBridgeTests.cpp
+index 37f38c3..b99c89f 100644
+--- a/tests/SAMPBridgeTests.cpp
++++ b/tests/SAMPBridgeTests.cpp
+@@ -198,11 +198,11 @@ bool EmitDamageRpc(SAMPBridge& bridge, float amount, bool incoming = true, int w
+ 
+ std::size_t DamageLogCount(const MockContext& context) {
+     return static_cast<std::size_t>(std::count_if(context.localMessages.begin(), context.localMessages.end(), [](const std::string& text) {
+-        return text.find("HP Schaden erhalten.") != std::string::npos;
++        return text.find(" HP {FFFFFF}Schaden (") != std::string::npos;
+     }));
+ }
+ 
+-bool TestDamageLogWorksWithoutCountersSoundsOrDamageTrackingAndMatchesEachShot() {
++bool TestDamageLogAhkBlueprintReportsDirectServerLossWithoutRpc() {
+     CombatSoundContext context;
+     SAMPBridge::SetTestingHooks(context.BuildCombatHooks());
+     keybinder::SettingsManager settings;
+@@ -218,36 +218,38 @@ bool TestDamageLogWorksWithoutCountersSoundsOrDamageTrackingAndMatchesEachShot()
+     ASSERT_TRUE(bridge.Initialize());
+     bridge.Update();
+ 
+-    // Two client-reported shots in one frame must yield two local lines,
+-    // backed by the same measured 37.5 HP+armour loss, with no poll duplicate.
+-    ASSERT_TRUE(EmitDamageRpc(bridge, 25.0f));
+-    ASSERT_TRUE(EmitDamageRpc(bridge, 12.5f));
+-    context.health = 62.5f;
++    // Nova applies damage with SetPlayerHealth/Armour. No take-damage RPC is
++    // needed, and the hitsound suppression flag must not mute the chat log.
++    bridge.RequestScriptedHealthSuppressionForTesting();
++    context.health = 75.0f;
+     bridge.Update();
+-    ASSERT_EQ(DamageLogCount(context), static_cast<std::size_t>(2));
+-    ASSERT_TRUE(context.localMessages[0].find("[NL-BINDER]{FFFFFF} Du hast -25 HP Schaden erhalten.") != std::string::npos);
+-    ASSERT_TRUE(context.localMessages[1].find("Du hast -12,5 HP Schaden erhalten.") != std::string::npos);
+-    context.tick += 500;
++    ASSERT_EQ(DamageLogCount(context), static_cast<std::size_t>(1));
++    ASSERT_EQ(context.localMessages.back(), std::string("{1E90FF}[NL-BINDER] {FF0000}-25,0 HP {FFFFFF}Schaden (HP Schaden)"));
++    bridge.RequestScriptedHealthSuppressionForTesting();
++    context.armour = 87.5f;
+     bridge.Update();
+     ASSERT_EQ(DamageLogCount(context), static_cast<std::size_t>(2));
+-    ASSERT_TRUE(context.serverMessages.empty());
+-
+-    // Enabling then disabling the statistics must not disable this pipeline.
++    ASSERT_TRUE(context.localMessages.back().find("-12,5 HP {FFFFFF}Schaden (Weste getroffen)") != std::string::npos);
++    context.health -= 4.5f;
++    context.armour -= 2.5f;
++    bridge.Update();
++    ASSERT_EQ(DamageLogCount(context), static_cast<std::size_t>(3));
++    ASSERT_TRUE(context.localMessages.back().find("-7,0 HP {FFFFFF}Schaden (Weste + HP Schaden)") != std::string::npos);
+     bridge.SetKillTrackerEnabled(true);
+     bridge.SetKillTrackerEnabled(false);
+-    ASSERT_TRUE(EmitDamageRpc(bridge, 0.25f));
+-    context.armour -= 0.25f;
++    context.health -= 1.0f;
+     bridge.Update();
+-    ASSERT_EQ(DamageLogCount(context), static_cast<std::size_t>(3));
+-    ASSERT_TRUE(context.localMessages.back().find("Du hast -0,25 HP Schaden erhalten.") != std::string::npos);
++    ASSERT_EQ(DamageLogCount(context), static_cast<std::size_t>(4));
+     ASSERT_TRUE(context.serverMessages.empty());
+     bridge.Shutdown();
+     SAMPBridge::ResetTestingHooks();
+     return true;
+ }
+ 
+-bool TestDamageLogPollingFallbackUsesActualLossAndStopsImmediatelyWhenDisabled() {
++bool TestDamageLogSeparatesHealingFromDamageAndFormatsOneDecimal() {
+     CombatSoundContext context;
++    context.health = 80.0f;
++    context.armour = 50.0f;
+     SAMPBridge::SetTestingHooks(context.BuildCombatHooks());
+     keybinder::SettingsManager settings;
+     settings.GetMutable().damage_log_enabled = true;
+@@ -255,42 +257,38 @@ bool TestDamageLogPollingFallbackUsesActualLossAndStopsImmediatelyWhenDisabled()
+     bridge.SetSettingsManager(&settings);
+     ASSERT_TRUE(bridge.Initialize());
+     bridge.Update();
+-    context.armour = 75.0f;
+-    bridge.Update();
+-    ASSERT_EQ(DamageLogCount(context), static_cast<std::size_t>(0));
+-    context.tick += keybinder::IncomingDamageLog::kMatchWindowMs;
++    // A heal must not cancel a loss in the other pool.
++    context.health += 20.0f;
++    context.armour -= 5.25f;
+     bridge.Update();
+     ASSERT_EQ(DamageLogCount(context), static_cast<std::size_t>(1));
+-    ASSERT_TRUE(context.localMessages.back().find("Du hast -25 HP Schaden erhalten.") != std::string::npos);
+-    // A fractional fallback drop is not subject to the hitsound's 0.5 HP threshold.
+-    context.armour -= 0.25f;
+-    bridge.Update();
+-    context.tick += keybinder::IncomingDamageLog::kMatchWindowMs;
++    ASSERT_TRUE(context.localMessages.back().find("-5,3 HP {FFFFFF}Schaden (Weste getroffen)") != std::string::npos);
++    context.health -= 2.5f;
++    context.armour += 10.0f;
+     bridge.Update();
+     ASSERT_EQ(DamageLogCount(context), static_cast<std::size_t>(2));
+-    ASSERT_TRUE(context.localMessages.back().find("Du hast -0,25 HP Schaden erhalten.") != std::string::npos);
+-
+-    context.health -= 10.0f;
+-    bridge.Update();
+-    settings.GetMutable().damage_log_enabled = false;
+-    context.tick += 500;
+-    bridge.Update();
+-    ASSERT_TRUE(EmitDamageRpc(bridge, 20.0f));
+-    context.health -= 20.0f;
++    ASSERT_TRUE(context.localMessages.back().find("-2,5 HP {FFFFFF}Schaden (HP Schaden)") != std::string::npos);
++    // Match the supplied AHK threshold: at least one pool must lose >= 1 HP.
++    context.health -= 0.5f;
++    context.armour -= 0.5f;
+     bridge.Update();
+     ASSERT_EQ(DamageLogCount(context), static_cast<std::size_t>(2));
+-    settings.GetMutable().damage_log_enabled = true;
++    context.health += 1.0f;
++    context.armour += 1.0f;
+     bridge.Update();
+-    context.tick += 500;
+     bridge.Update();
+     ASSERT_EQ(DamageLogCount(context), static_cast<std::size_t>(2));
++    context.armour -= 1.0f;
++    bridge.Update();
++    ASSERT_EQ(DamageLogCount(context), static_cast<std::size_t>(3));
++    ASSERT_TRUE(context.localMessages.back().find("-1,0 HP {FFFFFF}Schaden (Weste getroffen)") != std::string::npos);
+     ASSERT_TRUE(context.serverMessages.empty());
+     bridge.Shutdown();
+     SAMPBridge::ResetTestingHooks();
+     return true;
+ }
+ 
+-bool TestDamageLogReconcilesLateRpcScriptedServerHealthAndRejectsUnmeasuredDamage() {
++bool TestDamageLogDoesNotRequireOrDuplicateDamageRpcs() {
+     CombatSoundContext context;
+     SAMPBridge::SetTestingHooks(context.BuildCombatHooks());
+     keybinder::SettingsManager settings;
+@@ -299,69 +297,30 @@ bool TestDamageLogReconcilesLateRpcScriptedServerHealthAndRejectsUnmeasuredDamag
+     bridge.SetSettingsManager(&settings);
+     ASSERT_TRUE(bridge.Initialize());
+     bridge.Update();
+-
+-    // RPC alone (e.g. rejected/invulnerable hit) may not invent a loss.
+-    ASSERT_TRUE(EmitDamageRpc(bridge, 50.0f));
+-    context.tick += 500;
+-    bridge.Update();
+-    ASSERT_EQ(DamageLogCount(context), static_cast<std::size_t>(0));
+-
+-    // Server-applied health has a scripted flag, but a matching combat RPC
+-    // confirms the actual measured loss, even if it arrives one frame later.
+-    bridge.RequestScriptedHealthSuppressionForTesting();
+-    context.health = 75.0f;
+-    bridge.Update();
+-    context.tick += 30;
+     ASSERT_TRUE(EmitDamageRpc(bridge, 25.0f));
++    ASSERT_TRUE(EmitDamageRpc(bridge, 12.5f));
++    context.health -= 37.5f;
+     bridge.Update();
++    // Like the AHK code, one sampled change produces exactly one line. A
++    // client RPC cannot invent another hit or split the sampled amount.
+     ASSERT_EQ(DamageLogCount(context), static_cast<std::size_t>(1));
++    ASSERT_TRUE(context.localMessages.back().find("-37,5 HP {FFFFFF}Schaden (HP Schaden)") != std::string::npos);
++    ASSERT_TRUE(EmitDamageRpc(bridge, 50.0f));
+     context.tick += 500;
+     bridge.Update();
+     ASSERT_EQ(DamageLogCount(context), static_cast<std::size_t>(1));
+-
+-    // If server-specific damage disagrees with a raw RPC's weapon amount,
+-    // use only the measured loss; do not split it using guessed proportions.
+-    ASSERT_TRUE(EmitDamageRpc(bridge, 46.2f));
++    context.damageSource = 54; // source metadata is irrelevant for this log
++    context.health -= 5.0f;
+     bridge.RequestScriptedHealthSuppressionForTesting();
+-    context.health = 50.0f;
+-    bridge.Update();
+-    context.tick += 200;
+     bridge.Update();
+     ASSERT_EQ(DamageLogCount(context), static_cast<std::size_t>(2));
+-    ASSERT_TRUE(context.localMessages.back().find("Du hast -25 HP Schaden erhalten.") != std::string::npos);
+     ASSERT_TRUE(context.serverMessages.empty());
+     bridge.Shutdown();
+     SAMPBridge::ResetTestingHooks();
+     return true;
+ }
+ 
+-bool TestDamageLogCombatRpcConfirmsServerHealthWithStaleEnvironmentalSource() {
+-    CombatSoundContext context;
+-    SAMPBridge::SetTestingHooks(context.BuildCombatHooks());
+-    keybinder::SettingsManager settings;
+-    settings.GetMutable().damage_log_enabled = true;
+-    SAMPBridge bridge;
+-    bridge.SetSettingsManager(&settings);
+-    ASSERT_TRUE(bridge.Initialize());
+-    bridge.Update();
+-    context.damageSource = 54; // retained from an earlier fall, not this gunshot
+-    ASSERT_TRUE(EmitDamageRpc(bridge, 25.0f));
+-    bridge.RequestScriptedHealthSuppressionForTesting();
+-    context.health -= 25.0f;
+-    bridge.Update();
+-    ASSERT_EQ(DamageLogCount(context), static_cast<std::size_t>(1));
+-    context.health -= 10.0f; // environmental loss without any combat report
+-    bridge.Update();
+-    context.tick += 500;
+-    bridge.Update();
+-    ASSERT_EQ(DamageLogCount(context), static_cast<std::size_t>(1));
+-    ASSERT_TRUE(context.serverMessages.empty());
+-    bridge.Shutdown();
+-    SAMPBridge::ResetTestingHooks();
+-    return true;
+-}
+-
+-bool TestDamageLogEnableTransitionDiscardsOldDamageAndKeepsOutgoingFeedbackIndependent() {
++bool TestDamageLogToggleDiscardsOldLossAndKeepsSoundFeedbackIndependent() {
+     CombatSoundContext context;
+     SAMPBridge::SetTestingHooks(context.BuildCombatHooks());
+     keybinder::SettingsManager settings;
+@@ -369,46 +328,40 @@ bool TestDamageLogEnableTransitionDiscardsOldDamageAndKeepsOutgoingFeedbackIndep
+     bridge.SetSettingsManager(&settings);
+     bridge.SetKillTrackerEnabled(false);
+     bridge.SetKillTrackerTrackDamage(false);
+-    int incomingSounds = 0;
+-    int outgoingSounds = 0;
+-    int hitmarkers = 0;
++    int incomingSounds = 0, outgoingSounds = 0, hitmarkers = 0;
+     bridge.SetHitsoundIncomingCallback([&]() { ++incomingSounds; });
+     bridge.SetHitsoundDamageCallback([&](const killtracker::DamageEvent&) { ++outgoingSounds; });
+     bridge.SetHitmarkerDamageCallback([&](const killtracker::DamageEvent&) { ++hitmarkers; });
+     ASSERT_TRUE(bridge.Initialize());
+-    bridge.Update(); // log off, but hitsound HP baseline is active
++    bridge.Update();
+     context.health -= 10.0f;
+     bridge.Update();
+     ASSERT_EQ(incomingSounds, 1);
+-
+-    ASSERT_TRUE(EmitDamageRpc(bridge, 12.5f));
++    ASSERT_EQ(DamageLogCount(context), static_cast<std::size_t>(0));
+     context.health -= 12.5f;
+-    settings.GetMutable().damage_log_enabled = true; // between the damage and its next poll
+-    bridge.Update();
++    settings.GetMutable().damage_log_enabled = true;
++    bridge.Update(); // starts the log at the current values, preserves sound
+     ASSERT_EQ(incomingSounds, 2);
+-    context.tick += 500;
+-    bridge.Update();
+     ASSERT_EQ(DamageLogCount(context), static_cast<std::size_t>(0));
+-    ASSERT_TRUE(EmitDamageRpc(bridge, 5.0f));
+     context.health -= 5.0f;
+     bridge.Update();
+     ASSERT_EQ(DamageLogCount(context), static_cast<std::size_t>(1));
+-    ASSERT_TRUE(context.localMessages.back().find("Du hast -5 HP Schaden erhalten.") != std::string::npos);
+-
++    settings.GetMutable().damage_log_enabled = false;
++    context.health -= 3.0f;
++    bridge.Update();
++    ASSERT_EQ(DamageLogCount(context), static_cast<std::size_t>(1));
+     ASSERT_TRUE(EmitDamageRpc(bridge, 25.0f, false));
+     ASSERT_EQ(outgoingSounds, 1);
+     ASSERT_EQ(hitmarkers, 1);
+-    context.tick += 500;
+-    bridge.Update();
+-    ASSERT_EQ(DamageLogCount(context), static_cast<std::size_t>(1));
+     ASSERT_TRUE(context.serverMessages.empty());
+     bridge.Shutdown();
+     SAMPBridge::ResetTestingHooks();
+     return true;
+ }
+ 
+-bool TestDamageLogFiltersLoginHealScriptResetEnvironmentalDamageAndRespawn() {
++bool TestDamageLogSeedsLoginRespawnAndPedChangeAndReportsLethalLossOnce() {
+     CombatSoundContext context;
++    context.armour = 0.0f;
+     SAMPBridge::SetTestingHooks(context.BuildCombatHooks());
+     keybinder::SettingsManager settings;
+     settings.GetMutable().damage_log_enabled = true;
+@@ -417,55 +370,45 @@ bool TestDamageLogFiltersLoginHealScriptResetEnvironmentalDamageAndRespawn() {
+     ASSERT_TRUE(bridge.Initialize());
+     context.localPlayer->m_bDoesSpectating = TRUE;
+     bridge.Update();
+-    ASSERT_TRUE(EmitDamageRpc(bridge, 50.0f));
+     context.health = 50.0f;
+     bridge.Update();
+-    context.tick += 500;
+-    bridge.Update();
++    ASSERT_EQ(DamageLogCount(context), static_cast<std::size_t>(0));
+     context.localPlayer->m_bDoesSpectating = FALSE;
+-    bridge.Update(); // first playing sample seeds, no login delta
++    bridge.Update(); // first playing values establish a baseline
+     context.health = 100.0f;
+-    bridge.Update(); // healing
++    bridge.Update(); // healing is not damage
+     bridge.RequestScriptedHealthSuppressionForTesting();
+-    context.health = 80.0f;
+-    bridge.Update(); // pure scripted reset has no combat proof
+-    context.tick += 500;
+-    bridge.Update();
+-    context.damageSource = 54;
+-    ASSERT_TRUE(EmitDamageRpc(bridge, 10.0f, true, 54));
+     context.health = 70.0f;
+     bridge.Update();
+-    context.tick += 500;
+-    bridge.Update();
+-    ASSERT_EQ(DamageLogCount(context), static_cast<std::size_t>(0));
+-
+-    // The final lethal hit is still measured once if SA-MP set Wasted before
+-    // the poll. Reading HP=0 must not throw away the previous living baseline.
+-    context.damageSource = 24;
+-    context.armour = 0.0f;
+-    bridge.RequestScriptedHealthSuppressionForTesting();
+-    bridge.Update(); // discard armour reset before the fatal shot
+-    context.tick += 500;
+-    bridge.Update();
+-    ASSERT_TRUE(EmitDamageRpc(bridge, 90.0f));
++    ASSERT_EQ(DamageLogCount(context), static_cast<std::size_t>(1));
+     context.health = -20.0f;
+     context.localPlayer->m_bIsWasted = TRUE;
+     context.localPlayer->m_bIsActive = FALSE;
+     bridge.Update();
+-    ASSERT_EQ(DamageLogCount(context), static_cast<std::size_t>(1));
+-    ASSERT_TRUE(context.localMessages.back().find("Du hast -70 HP Schaden erhalten.") != std::string::npos);
+-    context.tick += 500;
++    ASSERT_EQ(DamageLogCount(context), static_cast<std::size_t>(2));
++    ASSERT_TRUE(context.localMessages.back().find("-70,0 HP {FFFFFF}Schaden (HP Schaden)") != std::string::npos);
+     bridge.Update();
++    ASSERT_EQ(DamageLogCount(context), static_cast<std::size_t>(2));
+     context.localPlayer->m_bIsWasted = FALSE;
+     context.localPlayer->m_bIsActive = TRUE;
+     context.health = 100.0f;
+     bridge.Update();
++    context.pedIdentity = reinterpret_cast<const void*>(0x3000);
++    context.health = 60.0f;
++    bridge.Update();
++    ASSERT_EQ(DamageLogCount(context), static_cast<std::size_t>(2));
+     context.health = 50.0f;
+-    bridge.RequestScriptedHealthSuppressionForTesting();
+     bridge.Update();
+-    context.tick += 500;
++    ASSERT_EQ(DamageLogCount(context), static_cast<std::size_t>(3));
++    context.sampleAvailable = false;
+     bridge.Update();
+-    ASSERT_EQ(DamageLogCount(context), static_cast<std::size_t>(1));
++    context.sampleAvailable = true;
++    context.health = 20.0f;
++    bridge.Update();
++    ASSERT_EQ(DamageLogCount(context), static_cast<std::size_t>(3));
++    context.health = 19.0f;
++    bridge.Update();
++    ASSERT_EQ(DamageLogCount(context), static_cast<std::size_t>(4));
+     ASSERT_TRUE(context.serverMessages.empty());
+     bridge.Shutdown();
+     SAMPBridge::ResetTestingHooks();
+@@ -1217,7 +1160,7 @@ bool TestEveryOfferedCombatVariableResolvesWithoutServerQueries() {
+     bridge.ImportKillCount(7);
+     bridge.ImportDeathCount(4);
+     bridge.ProcessDeathMessageForTesting({5, 7, 31, std::time(nullptr), true});
+-    ASSERT_EQ(context.lastLocalMessage, std::string("Enemy|KOBiRO|M4|Unknown|UNKNOWN|75|26|8|4|1|0|2.00|2.00"));
++    ASSERT_EQ(context.lastLocalMessage, std::string("Unknown|Unknown|75|26|8|4|1|0|2.00"));
+     ASSERT_TRUE(context.serverMessages.empty());
+     bridge.SetKillTrackerLocalKillMessageTemplate("{victim}|{killer}|{weapon}");
+     bridge.ProcessDeathMessageForTesting({5, 9, -1, std::time(nullptr), true});
+@@ -1597,6 +1540,118 @@ bool TestAutoEngineStartDoesNotTypeIntoBinder() {
+     return true;
+ }
+ 
++bool TestAutoEngineStartWaitsForServerEngineStateAfterEntry() {
++    MockContext context;
++    auto hooks = context.BuildHooks();
++    unsigned long now = 1000;
++    bool engineOn = true; // transient GTA state during entry
++    std::vector<bool> keys;
++    hooks.getTickCount = [&]() { return now; };
++    hooks.getDriverVehicle = [&](unsigned short& id, bool& running) { id = 20; running = engineOn; return true; };
++    hooks.isEngineInputAvailable = []() { return true; };
++    hooks.setEngineStartKeyDown = [&](bool down) { keys.push_back(down); };
++    SAMPBridge::SetTestingHooks(hooks);
++    SAMPBridge bridge;
++    bridge.SetAutoEngineStart(true);
++    ASSERT_TRUE(bridge.Initialize());
++    bridge.Update();
++    now = 1200;
++    bridge.Update();
++    engineOn = false; // server applies engine-off after seating
++    now = 1600;
++    bridge.Update();
++    bridge.SetAutoEngineStart(true); // repeated settings application is harmless
++    now = 2500;
++    bridge.Update();
++    ASSERT_EQ(keys.size(), std::size_t(1));
++    ASSERT_TRUE(keys.back());
++    now = 2650;
++    bridge.Update();
++    ASSERT_EQ(keys.size(), std::size_t(2));
++    ASSERT_TRUE(!keys.back());
++    engineOn = true;
++    now = 5000;
++    bridge.Update();
++    ASSERT_EQ(keys.size(), std::size_t(2));
++    bridge.Shutdown();
++    SAMPBridge::ResetTestingHooks();
++    return true;
++}
++
++bool TestAutoEngineStartIgnoresOldStartNotice() {
++    MockContext context;
++    auto hooks = context.BuildHooks();
++    unsigned long now = 1000;
++    bool oldStartNotice = true;
++    std::vector<bool> keys;
++    hooks.getTickCount = [&]() { return now; };
++    hooks.getDriverVehicle = [](unsigned short& id, bool& running) { id = 21; running = false; return true; };
++    hooks.isEngineInputAvailable = []() { return true; };
++    hooks.hasEngineStartSuccessText = [&]() { return oldStartNotice; };
++    hooks.setEngineStartKeyDown = [&](bool down) { keys.push_back(down); };
++    SAMPBridge::SetTestingHooks(hooks);
++    SAMPBridge bridge;
++    bridge.SetAutoEngineStart(true);
++    ASSERT_TRUE(bridge.Initialize());
++    bridge.Update();
++    now = 2500;
++    bridge.Update();
++    now = 2650;
++    bridge.Update();
++    now = 4300;
++    bridge.Update(); // old text must not prevent a necessary second attempt
++    ASSERT_EQ(keys.size(), std::size_t(3));
++    ASSERT_TRUE(keys.back());
++    oldStartNotice = false;
++    now = 4450;
++    bridge.Update();
++    oldStartNotice = true; // newly appearing live confirmation after our press
++    now = 4600;
++    bridge.Update();
++    now = 9000;
++    bridge.Update();
++    ASSERT_EQ(keys.size(), std::size_t(4));
++    ASSERT_TRUE(!keys.back());
++    bridge.Shutdown();
++    SAMPBridge::ResetTestingHooks();
++    return true;
++}
++
++bool TestAutoEngineStartWaitsUntilChatCanReleaseInput() {
++    MockContext context;
++    auto hooks = context.BuildHooks();
++    unsigned long now = 1000;
++    bool inputAvailable = false;
++    std::vector<bool> keys;
++    hooks.getTickCount = [&]() { return now; };
++    hooks.getDriverVehicle = [](unsigned short& id, bool& running) { id = 22; running = false; return true; };
++    hooks.isEngineInputAvailable = [&]() { return inputAvailable; };
++    hooks.setEngineStartKeyDown = [&](bool down) { keys.push_back(down); };
++    SAMPBridge::SetTestingHooks(hooks);
++    SAMPBridge bridge;
++    bridge.SetAutoEngineStart(true);
++    ASSERT_TRUE(bridge.Initialize());
++    bridge.Update();
++    now = 25000; // chat/binder was open longer than the retry window
++    bridge.Update();
++    ASSERT_TRUE(keys.empty());
++    inputAvailable = true;
++    bridge.Update();
++    ASSERT_EQ(keys.size(), std::size_t(1));
++    ASSERT_TRUE(keys.back());
++    now = 25150;
++    bridge.Update();
++    ASSERT_EQ(keys.size(), std::size_t(2));
++    ASSERT_TRUE(!keys.back());
++    now = 26800;
++    bridge.Update();
++    ASSERT_EQ(keys.size(), std::size_t(3));
++    ASSERT_TRUE(keys.back());
++    bridge.Shutdown();
++    SAMPBridge::ResetTestingHooks();
++    return true;
++}
++
+ bool TestWeaponNamesKnownWeapons() {
+     ASSERT_EQ(killtracker::GetWeaponName(0), std::string("Fist"));
+     ASSERT_EQ(killtracker::GetWeaponName(24), std::string("Desert Eagle"));
+@@ -1741,12 +1796,11 @@ int RunSAMPBridgeTests() {
+     RUN_TEST(TestFallbackInterceptorIgnoresPlainChatText);
+     RUN_TEST(TestJobChatAdapterLifecycleHooksAreWired);
+     RUN_TEST(TestTrackedIncomeShowsLocalKeybinderMessage);
+-    RUN_TEST(TestDamageLogWorksWithoutCountersSoundsOrDamageTrackingAndMatchesEachShot);
+-    RUN_TEST(TestDamageLogPollingFallbackUsesActualLossAndStopsImmediatelyWhenDisabled);
+-    RUN_TEST(TestDamageLogReconcilesLateRpcScriptedServerHealthAndRejectsUnmeasuredDamage);
+-    RUN_TEST(TestDamageLogCombatRpcConfirmsServerHealthWithStaleEnvironmentalSource);
+-    RUN_TEST(TestDamageLogEnableTransitionDiscardsOldDamageAndKeepsOutgoingFeedbackIndependent);
+-    RUN_TEST(TestDamageLogFiltersLoginHealScriptResetEnvironmentalDamageAndRespawn);
++    RUN_TEST(TestDamageLogAhkBlueprintReportsDirectServerLossWithoutRpc);
++    RUN_TEST(TestDamageLogSeparatesHealingFromDamageAndFormatsOneDecimal);
++    RUN_TEST(TestDamageLogDoesNotRequireOrDuplicateDamageRpcs);
++    RUN_TEST(TestDamageLogToggleDiscardsOldLossAndKeepsSoundFeedbackIndependent);
++    RUN_TEST(TestDamageLogSeedsLoginRespawnAndPedChangeAndReportsLethalLossOnce);
+     RUN_TEST(TestHitsoundsIgnoreLoginPreviewAndResumeImmediatelyAfterSpawn);
+     RUN_TEST(TestIncomingHitsoundReseedsAcrossReconnectRespawnAndPedReplacement);
+     
+@@ -1772,6 +1826,9 @@ int RunSAMPBridgeTests() {
+     RUN_TEST(TestDeathRpcBeforeWastedStateCountsOnceAndRespawnAllowsNextDeath);
+     RUN_TEST(TestAutoEngineStartUsesDriverTransitionsAndHeldInput);
+     RUN_TEST(TestAutoEngineStartDoesNotTypeIntoBinder);
++    RUN_TEST(TestAutoEngineStartWaitsForServerEngineStateAfterEntry);
++    RUN_TEST(TestAutoEngineStartIgnoresOldStartNotice);
++    RUN_TEST(TestAutoEngineStartWaitsUntilChatCanReleaseInput);
+     
+     std::printf("\n--- Weapon Names Tests ---\n");
+     RUN_TEST(TestWeaponNamesKnownWeapons);
+diff --git a/tests/ServerStatsParserTests.cpp b/tests/ServerStatsParserTests.cpp
+new file mode 100644
+index 0000000..f2e9900
+--- /dev/null
++++ b/tests/ServerStatsParserTests.cpp
+@@ -0,0 +1,164 @@
++#include "../include/ServerStatsSnapshot.h"
++
++#include <cstdio>
++#include <limits>
++#include <string>
++
++namespace {
++int checks = 0;
++int failures = 0;
++#define STATS_CHECK(value) do { ++checks; if (!(value)) { ++failures; std::printf("[FAIL] ServerStatsParser line %d: %s\n", __LINE__, #value); } } while (0)
++
++void TestOwnChatBlockCollectsAllRows() {
++    keybinder::ServerStatsCollector collector;
++    const std::string name = "[TEST]Sample_Player";
++    STATS_CHECK(!collector.ConsumeLine("Kills: [999] Tode: [999]", name, 1000));
++    STATS_CHECK(!collector.Snapshot().HasCounters());
++    STATS_CHECK(collector.ConsumeLine("{FFCC00}*** [TEST]Sample_Player ***", "[test]sample_player", 1000));
++    STATS_CHECK(collector.IsOwnContext());
++    STATS_CHECK(collector.ConsumeLine("Level:[12] Erfahrungspunkte [345/1200] Geschlecht: [Männlich] Alter: [4] Bargeld: [12.345$] Kontostand: [67.890$]", name, 1010));
++    STATS_CHECK(!collector.Snapshot().HasCounters());
++    STATS_CHECK(collector.ConsumeLine("Kills: [41] Tode: [19] Fraktion: [Testfraktion] Gang: [-] Nächster Zahltag in: [37 Min] Gold: [8] Eventcoins: [3]", name, 1020));
++    STATS_CHECK(collector.Snapshot().HasCore());
++    STATS_CHECK(collector.IsOwnContext());
++    STATS_CHECK(collector.ConsumeLine("Wantedpunkte: [2] Offene Rechnungen: [Nein]", name, 1030));
++    STATS_CHECK(collector.ConsumeLine("Führerscheine: [Auto, Boot]", name, 1040));
++    const auto& snapshot = collector.Snapshot();
++    STATS_CHECK(snapshot.playerName == name);
++    STATS_CHECK(snapshot.kills == 41);
++    STATS_CHECK(snapshot.deaths == 19);
++    STATS_CHECK(snapshot.cash == 12345);
++    STATS_CHECK(snapshot.bank == 67890);
++    STATS_CHECK(snapshot.GetAvailableWealth() == 80235);
++    STATS_CHECK(snapshot.level == 12);
++    STATS_CHECK(snapshot.experience == 345);
++    STATS_CHECK(snapshot.nextLevelExperience == 1200);
++    STATS_CHECK(snapshot.nextPaydayMinutes == 37);
++    STATS_CHECK(snapshot.gold == 8);
++    STATS_CHECK(snapshot.eventcoins == 3);
++    STATS_CHECK(snapshot.wantedPoints == 2);
++}
++
++void TestForeignPlayerOrOrdinaryChatCannotSupplyValues() {
++    keybinder::ServerStatsCollector collector;
++    STATS_CHECK(!collector.ConsumeLine("*** Other_Player ***", "Own_Player", 1000));
++    STATS_CHECK(!collector.IsOwnContext());
++    STATS_CHECK(!collector.ConsumeLine("Kills: [100] Tode: [200]", "Own_Player", 1010));
++    STATS_CHECK(!collector.Snapshot().kills);
++    STATS_CHECK(collector.ConsumeLine("*** Own_Player ***", "Own_Player", 1020));
++    STATS_CHECK(!collector.ConsumeLine("Other_Player sagt: Kills: [900] Tode: [800]", "Own_Player", 1030));
++    STATS_CHECK(!collector.Snapshot().HasCounters());
++    STATS_CHECK(!collector.ConsumeLine("Level: Ich habe Kills: [777]", "Own_Player", 1040));
++    STATS_CHECK(!collector.Snapshot().kills);
++    STATS_CHECK(collector.ConsumeLine("Kills: [11]", "Own_Player", 1050));
++    STATS_CHECK(!collector.ConsumeLine("*** Other_Player ***", "Own_Player", 1060));
++    STATS_CHECK(!collector.IsOwnContext());
++    STATS_CHECK(!collector.Snapshot().kills);
++    STATS_CHECK(!collector.ConsumeLine("Tode: [22]", "Own_Player", 1070));
++    STATS_CHECK(!collector.Snapshot().deaths);
++    collector.ConsumeLine("*** Own_Player ***", "Own_Player", 1080);
++    STATS_CHECK(!collector.ConsumeLine("Kills: [11]", "Changed_Player", 1090));
++    STATS_CHECK(!collector.IsOwnContext());
++    STATS_CHECK(!collector.Snapshot().kills);
++}
++
++void TestContextHasBoundedLifetimeAndLineBudget() {
++    keybinder::ServerStatsCollector collector;
++    collector.ConsumeLine("*** Own_Player ***", "Own_Player", 1000);
++    STATS_CHECK(collector.ConsumeLine("Kills: [11]", "Own_Player", 3999));
++    STATS_CHECK(!collector.ConsumeLine("Tode: [22]", "Own_Player", 4000));
++    STATS_CHECK(!collector.IsOwnContext());
++    STATS_CHECK(!collector.Snapshot().deaths);
++    collector.Reset();
++    STATS_CHECK(!collector.Snapshot().kills);
++    collector.ConsumeLine("*** Own_Player ***", "Own_Player", 5000);
++    for (int line = 0; line < keybinder::ServerStatsCollector::kMaximumBodyLines; ++line)
++        STATS_CHECK(collector.ConsumeLine("", "Own_Player", 5001 + line));
++    STATS_CHECK(!collector.IsOwnContext());
++    STATS_CHECK(!collector.ConsumeLine("Kills: [99] Tode: [88]", "Own_Player", 5030));
++    STATS_CHECK(!collector.Snapshot().HasCounters());
++    collector.ConsumeLine("*** Own_Player ***", "Own_Player", (std::numeric_limits<unsigned long>::max)() - 20);
++    STATS_CHECK(collector.ConsumeLine("Kills: [11] Tode: [22]", "Own_Player", 10));
++    STATS_CHECK(collector.Snapshot().HasCounters());
++}
++
++void TestGermanNumbersAndOverflowNeverWrap() {
++    keybinder::ServerStatsCollector collector;
++    collector.ConsumeLine("*** Own_Player ***", "Own_Player", 1000);
++    STATS_CHECK(collector.ConsumeLine("Kills: [2.147.483.647] Tode: [0] Bargeld: [9.223.372.036.854.775.807$] Kontostand: [0$]", "Own_Player", 1010));
++    STATS_CHECK(collector.Snapshot().kills == (std::numeric_limits<int>::max)());
++    STATS_CHECK(collector.Snapshot().cash == (std::numeric_limits<long long>::max)());
++    STATS_CHECK(collector.Snapshot().GetAvailableWealth() == (std::numeric_limits<long long>::max)());
++    collector.ConsumeLine("*** Own_Player ***", "Own_Player", 1020);
++    collector.ConsumeLine("Kills: [2.147.483.648] Tode: [-1] Bargeld: [9.223.372.036.854.775.808$] Kontostand: [12.34$]", "Own_Player", 1030);
++    STATS_CHECK(!collector.Snapshot().kills);
++    STATS_CHECK(!collector.Snapshot().deaths);
++    STATS_CHECK(!collector.Snapshot().cash);
++    STATS_CHECK(!collector.Snapshot().bank);
++    collector.ConsumeLine("Bargeld: [-9.223.372.036.854.775.808$] Kontostand: [-1$]", "Own_Player", 1040);
++    STATS_CHECK(collector.Snapshot().cash == (std::numeric_limits<long long>::min)());
++    STATS_CHECK(!collector.Snapshot().GetAvailableWealth());
++    collector.ConsumeLine("Vermögen: [123.456$]", "Own_Player", 1050);
++    STATS_CHECK(collector.Snapshot().GetAvailableWealth() == 123456);
++    collector.ConsumeLine("*** Own_Player ***", "Own_Player", 1060);
++    collector.ConsumeLine("Bargeld: [100$]", "Own_Player", 1070);
++    STATS_CHECK(!collector.Snapshot().GetAvailableWealth());
++    STATS_CHECK(!collector.Snapshot().HasCore());
++    collector.ConsumeLine("Kontostand: [-25$]", "Own_Player", 1080);
++    STATS_CHECK(collector.Snapshot().GetAvailableWealth() == 75);
++    collector.ConsumeLine("Erfahrungspunkte [1.234/9.876]", "Own_Player", 1090);
++    STATS_CHECK(collector.Snapshot().experience == 1234);
++    STATS_CHECK(collector.Snapshot().nextLevelExperience == 9876);
++    collector.ConsumeLine("Erfahrungspunkte [2147483648/9]", "Own_Player", 1100);
++    STATS_CHECK(collector.Snapshot().experience == 1234);
++}
++
++void TestDialogRequiresTrustedOwnRequestAndRejectsForeignIdentity() {
++    const std::string body = "Level:\t12\tBargeld:\t12.345$\tKontostand:\t67.890$\nKills:\t41\tTode:\t19\nGold:\t8\tEventcoins:\t3";
++    keybinder::ServerStatsCollector collector;
++    STATS_CHECK(!collector.ConsumeDialog("Statistiken", body, "Own_Player", 1000, false));
++    STATS_CHECK(!collector.Snapshot().HasCore());
++    STATS_CHECK(collector.ConsumeDialog("{FFCC00}Statistiken", body, "Own_Player", 1000, true));
++    STATS_CHECK(collector.Snapshot().HasCore());
++    STATS_CHECK(collector.Snapshot().cash == 12345);
++    STATS_CHECK(collector.Snapshot().bank == 67890);
++    STATS_CHECK(collector.Snapshot().kills == 41);
++    STATS_CHECK(collector.Snapshot().deaths == 19);
++    STATS_CHECK(collector.Snapshot().gold == 8);
++    STATS_CHECK(!collector.ConsumeDialog("Statistiken von Other_Player", body, "Own_Player", 1010, true));
++    STATS_CHECK(!collector.ConsumeDialog("Statistiken", "*** Other_Player ***\n" + body, "Own_Player", 1020, true));
++    STATS_CHECK(!collector.ConsumeDialog("Statistiken", "Name: [Other_Player]\n" + body, "Own_Player", 1030, true));
++    STATS_CHECK(!collector.ConsumeDialog("Inventar", body, "Own_Player", 1040, true));
++    STATS_CHECK(collector.ConsumeDialog("Persönliche Übersicht", "*** OWN_PLAYER ***\n" + body, "Own_Player", 1050, true));
++    STATS_CHECK(collector.Snapshot().HasCore());
++    STATS_CHECK(!collector.ConsumeDialog("*** Other_Player ***", "*** Own_Player ***\n" + body, "Own_Player", 1060, true));
++    STATS_CHECK(!collector.ConsumeDialog("Statistiken", "Nur ein Text ohne Werte", "Own_Player", 1070, true));
++}
++
++void TestRecognizedRowsDoNotIncludeOrdinaryChat() {
++    STATS_CHECK(keybinder::ServerStatsCollector::IsRecognizedStatsLine(""));
++    STATS_CHECK(keybinder::ServerStatsCollector::IsRecognizedStatsLine("  {FFFFFF}Kills: [5] Tode: [6]"));
++    STATS_CHECK(keybinder::ServerStatsCollector::IsRecognizedStatsLine("Bargeld: [1.234$] Kontostand: [5.678$]"));
++    STATS_CHECK(keybinder::ServerStatsCollector::IsRecognizedStatsLine("Führerscheine: [Auto]"));
++    STATS_CHECK(keybinder::ServerStatsCollector::IsRecognizedStatsLine("Waffenscheine: A: [Ja] B: [Nein] C: [Nein]"));
++    STATS_CHECK(!keybinder::ServerStatsCollector::IsRecognizedStatsLine("Other_Player: Kills: [5]"));
++    STATS_CHECK(!keybinder::ServerStatsCollector::IsRecognizedStatsLine("*** Other_Player ***"));
++    STATS_CHECK(!keybinder::ServerStatsCollector::IsRecognizedStatsLine("Level: Das ist Spielerchat"));
++}
++} // namespace
++
++int RunServerStatsParserTests() {
++    checks = failures = 0;
++    TestOwnChatBlockCollectsAllRows();
++    TestForeignPlayerOrOrdinaryChatCannotSupplyValues();
++    TestContextHasBoundedLifetimeAndLineBudget();
++    TestGermanNumbersAndOverflowNeverWrap();
++    TestDialogRequiresTrustedOwnRequestAndRejectsForeignIdentity();
++    TestRecognizedRowsDoNotIncludeOrdinaryChat();
++    std::printf("ServerStatsParserTests: %d checks, %d failures\n", checks, failures);
++    return failures;
++}
++
++#ifdef SERVER_STATS_PARSER_TEST_MAIN
++int main() { return RunServerStatsParserTests(); }
++#endif
+diff --git a/tests/StartupStatsSyncTests.cpp b/tests/StartupStatsSyncTests.cpp
+new file mode 100644
+index 0000000..904e5d8
+--- /dev/null
++++ b/tests/StartupStatsSyncTests.cpp
+@@ -0,0 +1,234 @@
++#include "../include/SAMPBridge.h"
++#include "../include/SettingsManager.h"
++#include "../include/RakHook/include/RakHook/samp.hpp"
++#include <cstring>
++#include <cstdio>
++#include <new>
++#include <string>
++#include <type_traits>
++#include <vector>
++
++namespace {
++int checks = 0, failures = 0;
++#define CHECK(value) do { ++checks; if (!(value)) { ++failures; std::printf("[FAIL] StartupStats: %s (line %d)\n", #value, __LINE__); return; } } while (0)
++
++template<class Type> struct FakeObject {
++    std::aligned_storage_t<sizeof(Type), alignof(Type)> bytes{};
++    Type* get() { return reinterpret_cast<Type*>(&bytes); }
++};
++
++struct Context {
++    FakeObject<sampapi::v03dl::CInput> input;
++    FakeObject<sampapi::v03dl::CChat> chat;
++    FakeObject<sampapi::v03dl::CDialog> dialog;
++    FakeObject<sampapi::v03dl::CGame> game;
++    FakeObject<sampapi::v03dl::CNetGame> network;
++    FakeObject<sampapi::v03dl::CLocalPlayer> local;
++    std::string name = "SyncPlayer";
++    bool ready = false;
++    unsigned long now = 1000;
++    int closed = 0;
++    std::vector<std::string> commands, messages, localMessages;
++
++    Context() {
++        network.get()->m_nGameState = sampapi::v03dl::CNetGame::GAME_MODE_CONNECTED;
++        std::strcpy(network.get()->m_szHostAddress, "127.0.0.1");
++        network.get()->m_nPort = 7777;
++        local.get()->m_bIsActive = TRUE;
++        local.get()->m_pPed = reinterpret_cast<sampapi::v03dl::CPed*>(0x2000);
++    }
++    SAMPBridge::TestingHooks Hooks() {
++        SAMPBridge::TestingHooks hooks{};
++        hooks.getModuleHandle = [](const char*) { return reinterpret_cast<HMODULE>(1); };
++        hooks.getSampBase = []() { return static_cast<uintptr_t>(1); };
++        hooks.getRakHookVersion = []() { return rakhook::samp_ver::v03dlr1; };
++        hooks.initializeRakHook = []() { return true; };
++        hooks.destroyRakHook = []() {};
++        hooks.getInput = [&]() { return input.get(); };
++        hooks.getChat = [&]() { return chat.get(); };
++        hooks.getDialog = [&]() { return dialog.get(); };
++        hooks.getGame = [&]() { return game.get(); };
++        hooks.getNetGame = [&]() { return network.get(); };
++        hooks.getLocalPlayer = [&]() { return local.get(); };
++        hooks.getLocalPlayerName = [&]() { return name; };
++        hooks.getLocalPlayerId = []() { return 5; };
++        hooks.getPlayerName = [](int) { return std::string("AnotherPlayer"); };
++        hooks.getTickCount = [&]() { return now; };
++        hooks.isStartupStatsReady = [&]() { return ready; };
++        hooks.getCityLevel = []() { return 1; };
++        hooks.getDistrictName = []() { return std::string("Market"); };
++        hooks.sendInput = [&](sampapi::v03dl::CInput*, const char* text) { commands.push_back(text); };
++        hooks.sendChat = [&](sampapi::v03dl::CLocalPlayer*, const char* text) { messages.push_back(text); };
++        hooks.addMessage = [&](sampapi::v03dl::CChat*, unsigned long, const char* text) { localMessages.push_back(text); };
++        hooks.getCommandHandler = [](sampapi::v03dl::CInput*, const char*) -> sampapi::CMDPROC { return nullptr; };
++        hooks.addCommand = [](sampapi::v03dl::CInput*, const char*, sampapi::CMDPROC) {};
++        hooks.setDefaultCommand = [](sampapi::v03dl::CInput*, sampapi::CMDPROC) {};
++        hooks.installIncomingChatInterceptor = [](const auto&) {};
++        hooks.closeStatsDialog = [&](int id) { if (id == dialog.get()->m_nId) { ++closed; dialog.get()->m_bIsActive = FALSE; } };
++        return hooks;
++    }
++    std::size_t Completions() const {
++        std::size_t count = 0;
++        for (const auto& message : localMessages) if (message.find("Synchronisation abgeschlossen.") != std::string::npos) ++count;
++        return count;
++    }
++};
++
++const char* levelLine = "Level:[9] Erfahrungspunkte [21/500] Geschlecht: [Mann] Alter: [22] Bargeld: [1.234$] Kontostand: [5.000$]";
++const char* countLine = "Kills: [12] Tode: [4] Fraktion: [Zivilist] Gang: [-] Nächster Zahltag in: [10 Min] Gold: [3] Eventcoins: [2]";
++
++void TestOneFastRequestImportsBaselineAndPreservesChatChannelForSimulation() {
++    Context context;
++    SAMPBridge::SetTestingHooks(context.Hooks());
++    keybinder::SettingsManager settings;
++    SAMPBridge bridge;
++    bridge.SetSettingsManager(&settings);
++    bridge.SetKillTrackerEnabled(true);
++    bridge.SetKillTrackerServerKillMessageEnabled(true);
++    int saved = 0;
++    bridge.SetStatsSynchronizedCallback([&](const keybinder::ServerStatsSnapshot& snapshot) {
++        settings.GetMutable().synchronized_player_stats = snapshot;
++        ++saved;
++        return true;
++    });
++    CHECK(bridge.Initialize());
++    bridge.Update();
++    CHECK(context.commands.empty());
++    context.ready = true;
++    context.dialog.get()->m_bIsActive = TRUE;
++    bridge.Update();
++    CHECK(context.commands.empty());
++    context.dialog.get()->m_bIsActive = FALSE;
++    context.input.get()->m_bEnabled = TRUE;
++    bridge.Update();
++    CHECK(context.commands.empty());
++    context.input.get()->m_bEnabled = FALSE;
++    bridge.Update();
++    CHECK(context.commands == std::vector<std::string>{"/stats"});
++    for (int index = 0; index < 4; ++index) bridge.Update();
++    CHECK(context.commands.size() == 1);
++    CHECK(bridge.ProcessIncomingChatLineForTesting("OtherPlayer", "Kills: [99] Tode: [99]"));
++    CHECK(!bridge.ProcessIncomingChatLineForTesting(nullptr, "***SyncPlayer***"));
++    CHECK(!bridge.ProcessIncomingChatLineForTesting(nullptr, levelLine));
++    CHECK(!bridge.ProcessIncomingChatLineForTesting(nullptr, countLine));
++    bridge.Update();
++    CHECK(bridge.AreStatsSynchronized());
++    CHECK(context.Completions() == 1);
++    CHECK(bridge.GetTotalKills() == 12 && bridge.GetTotalDeaths() == 4);
++    CHECK(bridge.GetKillTracker()->GetSessionKills() == 0 && bridge.GetKillTracker()->GetSessionDeaths() == 0);
++    CHECK(context.commands.size() == 1 && context.messages.empty());
++    CHECK(saved == 1);
++    CHECK(bridge.GetSynchronizedStats().cash == 1234 && bridge.GetSynchronizedStats().bank == 5000);
++    CHECK(bridge.GetSynchronizedStats().GetAvailableWealth() == 6234);
++    CHECK(bridge.GetSynchronizedStats().experience == 21 && bridge.GetSynchronizedStats().nextLevelExperience == 500);
++    CHECK(bridge.GetSynchronizedStats().gold == 3 && bridge.GetSynchronizedStats().eventcoins == 2);
++    CHECK(bridge.ProcessIncomingChatLineForTesting(nullptr, "Ein normaler Serverhinweis"));
++    CHECK(!bridge.ProcessIncomingChatLineForTesting(nullptr, "Wantedpunkte: [5] Offene Rechnungen: [Nein]"));
++    ++context.now;
++    bridge.Update();
++    CHECK(bridge.GetSynchronizedStats().wantedPoints == 5 && saved == 2);
++    CHECK(context.Completions() == 1);
++    std::string error;
++    CHECK(bridge.SendSimulatedKillMessage("/r Kills {total_kills} in {city}, {bezirk}", error));
++    CHECK(context.commands.back() == "/r [Testkill] Kills 12 in Los Santos, Market");
++    CHECK(bridge.SendSimulatedKillMessage("Meine Kills: {total_kills}", error));
++    CHECK(context.messages.back() == "[Testkill] Meine Kills: 12");
++    CHECK(bridge.GetTotalKills() == 12 && bridge.GetKillTracker()->GetSessionKills() == 0);
++    CHECK(!bridge.SendSimulatedKillMessage(" \t ", error));
++    CHECK(!error.empty());
++    // A manual own header after completion must cancel any remaining hiding,
++    // even when its automatic block did not include the known footer.
++    CHECK(bridge.ProcessIncomingChatLineForTesting(nullptr, "*** SyncPlayer ***"));
++    CHECK(bridge.ProcessIncomingChatLineForTesting(nullptr, levelLine));
++    CHECK(bridge.ProcessIncomingChatLineForTesting(nullptr, countLine));
++    bridge.Shutdown();
++    SAMPBridge::ResetTestingHooks();
++}
++
++void TestTimeoutDoesNotSpamOrClaimSuccessAndReconnectCanSyncAgain() {
++    Context context;
++    context.ready = true;
++    SAMPBridge::SetTestingHooks(context.Hooks());
++    SAMPBridge bridge;
++    CHECK(bridge.Initialize());
++    bridge.Update();
++    CHECK(context.commands.size() == 1);
++    context.now += 8000;
++    bridge.Update();
++    CHECK(!bridge.AreStatsSynchronized() && context.Completions() == 0);
++    for (int index = 0; index < 10; ++index) bridge.Update();
++    CHECK(context.commands.size() == 1);
++    CHECK(bridge.ProcessIncomingChatLineForTesting(nullptr, "*** SyncPlayer ***"));
++    CHECK(bridge.ProcessIncomingChatLineForTesting(nullptr, countLine));
++    context.network.get()->m_nGameState = sampapi::v03dl::CNetGame::GAME_MODE_RESTARTING;
++    bridge.Update();
++    context.network.get()->m_nGameState = sampapi::v03dl::CNetGame::GAME_MODE_CONNECTED;
++    bridge.Update();
++    CHECK(context.commands.size() == 2 && context.commands.back() == "/stats");
++    bridge.Shutdown();
++    SAMPBridge::ResetTestingHooks();
++}
++
++void TestOnlyAnIdentifiedOwnStatsDialogCloses() {
++    Context context;
++    context.ready = true;
++    SAMPBridge::SetTestingHooks(context.Hooks());
++    SAMPBridge bridge;
++    CHECK(bridge.Initialize());
++    bridge.Update();
++    std::string body = std::string("*** OtherPlayer ***\n") + levelLine + "\n" + countLine;
++    auto* dialog = context.dialog.get();
++    dialog->m_bIsActive = TRUE;
++    dialog->m_nId = 123;
++    dialog->m_nType = sampapi::v03dl::CDialog::DIALOG_MESSAGEBOX;
++    std::strcpy(dialog->m_szCaption, "Stats");
++    dialog->m_szText = body.data();
++    bridge.Update();
++    CHECK(context.closed == 0 && !bridge.AreStatsSynchronized());
++    body = std::string("*** SyncPlayer ***\n") + levelLine + "\n" + countLine;
++    dialog->m_szText = body.data();
++    bridge.Update();
++    CHECK(context.closed == 1 && !dialog->m_bIsActive);
++    CHECK(bridge.AreStatsSynchronized() && context.Completions() == 1);
++    CHECK(bridge.GetTotalKills() == 12 && bridge.GetTotalDeaths() == 4);
++    CHECK(context.commands.size() == 1);
++    bridge.Shutdown();
++    SAMPBridge::ResetTestingHooks();
++}
++
++void TestStatsCacheRoundTripAndOldConfigurations() {
++    keybinder::SettingsManager settings;
++    CHECK(!settings.Get().synchronized_player_stats.HasCore());
++    CHECK(settings.LoadFromJson("{}"));
++    auto& snapshot = settings.GetMutable().synchronized_player_stats;
++    snapshot.playerName = "SyncPlayer";
++    snapshot.serverAddress = "127.0.0.1";
++    snapshot.serverPort = 7777;
++    snapshot.kills = 123;
++    snapshot.deaths = 45;
++    snapshot.cash = 1234;
++    snapshot.bank = 9000000001LL;
++    snapshot.level = 9;
++    snapshot.wantedPoints = 5;
++    keybinder::SettingsManager restored;
++    CHECK(restored.LoadFromJson(settings.GetSettingsJson()));
++    const auto& cache = restored.Get().synchronized_player_stats;
++    CHECK(cache.HasCore() && cache.playerName == "SyncPlayer");
++    CHECK(cache.serverAddress == "127.0.0.1" && cache.serverPort == 7777);
++    CHECK(cache.kills == 123 && cache.deaths == 45 && cache.cash == 1234 && cache.bank == 9000000001LL);
++    CHECK(cache.level == 9 && cache.wantedPoints == 5 && !cache.wealth);
++    CHECK(cache.GetAvailableWealth() == 9000001235LL);
++    CHECK(restored.LoadFromJson("{\"stats_cache_player\":\"Nobody\",\"stats_cache_kills\":\"bad\"}"));
++    CHECK(!restored.Get().synchronized_player_stats.HasCore());
++}
++} // namespace
++
++int RunStartupStatsSyncTests() {
++    checks = failures = 0;
++    TestOneFastRequestImportsBaselineAndPreservesChatChannelForSimulation();
++    TestTimeoutDoesNotSpamOrClaimSuccessAndReconnectCanSyncAgain();
++    TestOnlyAnIdentifiedOwnStatsDialogCloses();
++    TestStatsCacheRoundTripAndOldConfigurations();
++    std::printf("StartupStatsSyncTests: %d checks, %d failures\n", checks, failures);
++    return failures;
++}
+diff --git a/tools/package_revision4.ps1 b/tools/package_revision4.ps1
+new file mode 100644
+index 0000000..b688412
+--- /dev/null
++++ b/tools/package_revision4.ps1
+@@ -0,0 +1,97 @@
++$ErrorActionPreference = 'Stop'
++$projectRoot = Split-Path -Parent $PSScriptRoot
++$binary = Join-Path $projectRoot 'build\Release\Keybinder.asi'
++$reportPath = Join-Path $projectRoot 'build\revision4-artifact.json'
++$report = Get-Content -LiteralPath $reportPath -Raw | ConvertFrom-Json
++$binaryHash = (Get-FileHash -LiteralPath $binary -Algorithm SHA256).Hash.ToLowerInvariant()
++if ($report.revision -ne 'v0.1.1-r4' -or $binaryHash -ne $report.sha256 -or -not $report.embedded_helper_matches) {
++    throw 'Die ASI stimmt nicht mit dem finalen r4-Prüfbericht überein.'
++}
++$helperPath = Join-Path $projectRoot 'build\ReconnectHelper.exe'
++$helperHash = (Get-FileHash -LiteralPath $helperPath -Algorithm SHA256).Hash.ToLowerInvariant()
++if ($helperHash -ne $report.helper_sha256) { throw 'Der Reconnect-Helfer hat sich seit der Artefaktprüfung geändert.' }
++$workerPath = Join-Path $projectRoot 'build\reconnect-worker-tests\result.json'
++$workerResult = Get-Content -LiteralPath $workerPath -Raw | ConvertFrom-Json
++if ($workerResult.failures -ne 0 -or $workerResult.checks -lt 18) { throw 'Reconnect-Helfertest fehlgeschlagen oder unvollständig.' }
++if ((Get-Item -LiteralPath $workerPath).LastWriteTimeUtc -lt (Get-Item -LiteralPath $helperPath).LastWriteTimeUtc) {
++    throw 'Den nativen Helfertest nach dem letzten Helfer-Build erneut ausführen.'
++}
++$testLog = Get-Content -LiteralPath (Join-Path $projectRoot 'build\revision4-tests.log') -Raw
++if ($testLog -notmatch '(?m)^Test exit code: 0\s*$' -or $testLog -match '\[FAIL\]') { throw 'Gesamttests nicht erfolgreich.' }
++$buildLog = Get-Content -LiteralPath (Join-Path $projectRoot 'build\revision4-build.log') -Raw
++if ($buildLog -notmatch '(?m)^RELEASE_BUILD_EXIT_CODE=0\s*$' -or $buildLog -notmatch 'Keybinder\.vcxproj -> .*Keybinder\.asi' -or $buildLog -match ': (fatal )?error [A-Z]+\d+:') {
++    throw 'Erfolgreicher finaler Release-Build nicht bestätigt.'
++}
++
++$packageDirectory = Join-Path $projectRoot 'dist\NLBinder-0.1.1-r4'
++$archive = Join-Path $projectRoot 'dist\NLBinder-v0.1.1-KOBiRO-r4.zip'
++if ((Test-Path -LiteralPath $packageDirectory) -or (Test-Path -LiteralPath $archive)) {
++    throw 'r4-Paket existiert bereits; nicht automatisch überschreiben.'
++}
++New-Item -ItemType Directory -Path $packageDirectory | Out-Null
++Copy-Item -LiteralPath $binary -Destination (Join-Path $packageDirectory 'Keybinder.asi')
++Copy-Item -LiteralPath (Join-Path $projectRoot 'docs\NLBinder-0.1.1-r4-DE.md') -Destination (Join-Path $packageDirectory 'LIESMICH.md')
++Copy-Item -LiteralPath (Join-Path $projectRoot 'docs\jobs-support.md') -Destination (Join-Path $packageDirectory 'JOB-HINWEISE.md')
++Copy-Item -LiteralPath $reportPath -Destination (Join-Path $packageDirectory 'PRUEFBERICHT.json')
++Copy-Item -LiteralPath $workerPath -Destination (Join-Path $packageDirectory 'RECONNECT-TEST.json')
++
++$buildInfo = @"
++NLBinder v.0.1.1 by KOBiRO – Überarbeitung 4
++Erstellt: $([System.TimeZoneInfo]::ConvertTimeBySystemTimeZoneId([DateTime]::UtcNow, 'W. Europe Standard Time').ToString('dd.MM.yyyy HH:mm:ss')) (Europe/Berlin)
++Datei: Keybinder.asi
++Format: Win32 Release, PE32/x86 DLL
++Größe: $($report.bytes) Bytes
++SHA256: $binaryHash
++Eingebetteter Reconnect-Helfer: Ressource 300, $($report.embedded_helper_bytes) Bytes
++Helfer-SHA256: $($report.helper_sha256)
++
++Verifikation:
++- Vollständige automatisierte Tests: Exitcode 0
++- Release-Build: Exitcode 0
++- ASI-Format, Windows-Imports und eingebetteter Helfer geprüft
++- Eingebetteter Reconnect-Helfer stimmt mit dem geprüften Helfer überein
++- Nativer Reconnect-Helfer: $($workerResult.checks) Prüfungen, 0 Fehler
++- Dafür ausschließlich harmlose Testprozesse verwendet
++- Kein echtes Spiel und kein installierter Launcher gestartet oder beendet
++- Kein Ingame-Test durchgeführt
++
++Neue Änderungen:
++- Damagelog über direkte HP-/Westenmessung, einschließlich Fallschaden
++- Getrennte Variablen {city} und {bezirk}; angebotene Doppelungen entfernt
++- Kill simulieren sendet den aktuellen Text mit [Testkill] nach dem Chatbefehl
++- Einmaliger automatischer /stats-Abruf nach dem sicheren Loginzustand
++- Eigener Statistikblock wird gelesen, lokal gespeichert und verborgen
++- Statistik-Gesamtzähler werden ohne künstlichen Kill/Tod übernommen
++- Motorstart bewertet vollständig erkannten Fahrersitz nach 1,5 Sekunden
++- Vorübergehendes EngineOn und alte Chatbestätigungen verwerfen ihn nicht
++- Motorstart-Versuchsphase beginnt erst mit dem tatsächlichen Tastendruck
++
++Die früheren Job-, Skilltree-, Fraktions-, Radar-, Tacho- und Reconnect-
++Anpassungen sind enthalten. Die ursprüngliche Oberfläche bleibt Grundlage.
++Der Reconnect-Helfer ist in der ASI enthalten.
++
++Grenzen: Die Synchronisation wartet auf eine echte Serverantwort. Mehrere
++Schadensereignisse zwischen Messungen erscheinen als gemessener Gesamtverlust.
++Ein Live-Test mit dem konkreten Server und Launcher steht weiterhin aus.
++Installation und weitere Hinweise stehen in LIESMICH.md.
++"@
++$buildInfo | Set-Content -LiteralPath (Join-Path $packageDirectory 'BUILD-INFO.txt') -Encoding utf8
++"$binaryHash  Keybinder.asi" | Set-Content -LiteralPath (Join-Path $packageDirectory 'SHA256SUMS.txt') -Encoding ascii
++Compress-Archive -LiteralPath $packageDirectory -DestinationPath $archive -CompressionLevel Optimal
++
++Add-Type -AssemblyName System.IO.Compression.FileSystem
++$zip = [System.IO.Compression.ZipFile]::OpenRead($archive)
++try {
++    $entry = $zip.Entries | Where-Object { $_.FullName -match '/Keybinder\.asi$' }
++    if (@($entry).Count -ne 1) { throw 'ASI fehlt im Archiv oder ist mehrfach enthalten.' }
++    $stream = $entry.Open()
++    $digest = [System.Security.Cryptography.SHA256]::Create()
++    try {
++        $zippedHash = [BitConverter]::ToString($digest.ComputeHash($stream)).Replace('-', '').ToLowerInvariant()
++        if ($zippedHash -ne $binaryHash) { throw 'ASI-Prüfsumme im Archiv stimmt nicht.' }
++    } finally { $stream.Dispose(); $digest.Dispose() }
++} finally { $zip.Dispose() }
++$stagedHash = (Get-FileHash -LiteralPath (Join-Path $packageDirectory 'Keybinder.asi') -Algorithm SHA256).Hash.ToLowerInvariant()
++if ($stagedHash -ne $binaryHash) { throw 'Kopierte ASI stimmt nicht überein.' }
++Get-Item -LiteralPath (Join-Path $packageDirectory 'Keybinder.asi'), $archive | Select-Object FullName,Length
++Write-Output "SHA256: $binaryHash"
+diff --git a/tools/run_tests.bat b/tools/run_tests.bat
+index 4221d89..16d82eb 100644
+--- a/tools/run_tests.bat
++++ b/tools/run_tests.bat
+@@ -72,6 +72,10 @@ set "KEYBINDER_TEST_RSP=%~dp0..\build\KeybinderTests.rsp"
+     echo "%~dp0..\tests\SourceContractTests.cpp"
+     echo "%~dp0..\tests\SpeedometerFocusedTests.cpp"
+     echo "%~dp0..\tests\ReconnectManagerTests.cpp"
++    echo "%~dp0..\tests\KillMessageTestTests.cpp"
++    echo "%~dp0..\tests\LocationVariableTests.cpp"
++    echo "%~dp0..\tests\ServerStatsParserTests.cpp"
++    echo "%~dp0..\tests\StartupStatsSyncTests.cpp"
+     echo "%~dp0..\tests\ImGuiFreeTypeStubs.cpp"
+     echo "%~dp0..\tests\TestStubs.cpp"
+     echo "%~dp0..\\src\\Logger.cpp"
+@@ -80,6 +84,7 @@ set "KEYBINDER_TEST_RSP=%~dp0..\build\KeybinderTests.rsp"
+     echo "%~dp0..\\src\\KeybindManager.cpp"
+     echo "%~dp0..\\src\\PersistentPaths.cpp"
+     echo "%~dp0..\\src\\SAMPBridge.cpp"
++    echo "%~dp0..\\src\\StartupStatsSync.cpp"
+     echo "%~dp0..\\src\\InputManager.cpp"
+     echo "%~dp0..\\src\\ImGuiOverlay.cpp"
+     echo "%~dp0..\\src\\SettingsManager.cpp"
+diff --git a/tools/verify_revision4_artifact.py b/tools/verify_revision4_artifact.py
+new file mode 100644
+index 0000000..f60c5e6
+--- /dev/null
++++ b/tools/verify_revision4_artifact.py
+@@ -0,0 +1,115 @@
++"""Read-only r4 PE/artifact verification; never loads or executes binaries."""
++import hashlib
++import json
++from pathlib import Path
++import struct
++import sys
++
++
++def require(condition, message):
++    if not condition:
++        raise ValueError(message)
++
++
++class PE:
++    def __init__(self, path):
++        self.path = Path(path)
++        self.data = self.path.read_bytes()
++        require(self.data[:2] == b"MZ", "Missing DOS header")
++        start = self.u32(0x3C)
++        require(self.data[start:start + 4] == b"PE\0\0", "Missing PE signature")
++        self.machine = self.u16(start + 4)
++        count = self.u16(start + 6)
++        self.characteristics = self.u16(start + 22)
++        self.optional = start + 24
++        require(self.u16(self.optional) == 0x10B, "Expected PE32")
++        self.sections = []
++        table = self.optional + self.u16(start + 20)
++        for index in range(count):
++            row = table + index * 40
++            virtual_size, rva, size, raw = struct.unpack_from("<IIII", self.data, row + 8)
++            self.sections.append((rva, max(virtual_size, size), raw, size))
++
++    def u16(self, offset):
++        return struct.unpack_from("<H", self.data, offset)[0]
++
++    def u32(self, offset):
++        return struct.unpack_from("<I", self.data, offset)[0]
++
++    def offset(self, rva):
++        for start, span, raw, size in self.sections:
++            if start <= rva < start + span:
++                require(rva - start < size, "RVA has no raw file data")
++                return raw + rva - start
++        raise ValueError(f"Unmapped RVA: {rva:#x}")
++
++    def imports(self):
++        directory = self.u32(self.optional + 96 + 8)
++        if not directory:
++            return []
++        row = self.offset(directory)
++        result = []
++        while any(struct.unpack_from("<IIIII", self.data, row)):
++            name = self.offset(self.u32(row + 12))
++            end = self.data.index(0, name)
++            result.append(self.data[name:end].decode("ascii"))
++            row += 20
++        return sorted(result, key=str.lower)
++
++    def resource(self, type_id, resource_id):
++        base = self.offset(self.u32(self.optional + 96 + 16))
++
++        def entries(relative):
++            head = base + relative
++            total = self.u16(head + 12) + self.u16(head + 14)
++            return [struct.unpack_from("<II", self.data, head + 16 + i * 8) for i in range(total)]
++
++        directory = 0
++        for expected in (type_id, resource_id):
++            candidates = [value for name, value in entries(directory) if name == expected]
++            require(len(candidates) == 1, f"Resource ID {expected} missing or ambiguous")
++            require(candidates[0] & 0x80000000, "Expected resource directory")
++            directory = candidates[0] & 0x7FFFFFFF
++        languages = entries(directory)
++        require(len(languages) == 1, "Expected one embedded worker language")
++        leaf = languages[0][1]
++        require(not leaf & 0x80000000, "Expected resource data entry")
++        rva, size = struct.unpack_from("<II", self.data, base + leaf)
++        start = self.offset(rva)
++        return self.data[start:start + size]
++
++
++def main():
++    root = Path(__file__).resolve().parents[1]
++    asi = PE(sys.argv[1] if len(sys.argv) > 1 else root / "build/Release/Keybinder.asi")
++    helper = PE(root / "build/ReconnectHelper.exe")
++    require(asi.machine == helper.machine == 0x14C, "Expected both binaries to be x86")
++    require(asi.characteristics & 0x2000, "ASI must be a DLL")
++    require(not helper.characteristics & 0x2000, "Worker must be an executable")
++    require(asi.resource(10, 300) == helper.data, "Embedded helper differs from built helper")
++    imports = asi.imports()
++    require(not any(name.lower().startswith(("vcruntime", "msvcp", "ucrtbased")) for name in imports),
++            "Unexpected external C++ runtime dependency")
++    try:
++        display_path = asi.path.resolve().relative_to(root).as_posix()
++    except ValueError:
++        display_path = asi.path.name
++    result = {
++        "revision": "v0.1.1-r4",
++        "asi": display_path,
++        "bytes": len(asi.data),
++        "format": "PE32 x86 DLL",
++        "sha256": hashlib.sha256(asi.data).hexdigest(),
++        "imports": imports,
++        "embedded_helper_id": 300,
++        "embedded_helper_bytes": len(helper.data),
++        "helper_sha256": hashlib.sha256(helper.data).hexdigest(),
++        "embedded_helper_matches": True,
++    }
++    report = json.dumps(result, indent=2)
++    (root / "build/revision4-artifact.json").write_text(report + "\n", encoding="utf-8")
++    print(report)
++
++
++if __name__ == "__main__":
++    main()

@@ -199,6 +199,7 @@
     <ClCompile Include="src\KeybindManager.cpp" />
     <ClCompile Include="src\ImGuiOverlay.cpp" />
     <ClCompile Include="src\SAMPBridge.cpp" />
+    <ClCompile Include="src\StartupStatsSync.cpp" />
     <ClCompile Include="src\ActionExecutor.cpp" />
     <ClCompile Include="src\InputManager.cpp" />
     <ClCompile Include="src\Logger.cpp" />

@@ -265,7 +265,7 @@ void KillTrackerUI::RenderMessageSettings() {
     }
     ImGui::SameLine();
     if (UIComponents::SecondaryButton("Standard")) {
-        settings_.customLocalKillMessage = "{FF6600}[Kill] {FFFFFF}{victim} {AAAAAA}mit {FFCC00}{weapon}";
+        settings_.customLocalKillMessage = "{33CCFF}[NL-BINDER]{FFFFFF} Kill in {city}, {bezirk}. Meine Kills: {total_kills}";
         strncpy(customLocalKillMessageBuf_, settings_.customLocalKillMessage.c_str(), sizeof(customLocalKillMessageBuf_) - 1);
         customLocalKillMessageBuf_[sizeof(customLocalKillMessageBuf_) - 1] = '\0';
         if (bridge_) bridge_->SetKillTrackerLocalKillMessageTemplate(settings_.customLocalKillMessage);
@@ -305,7 +305,7 @@ void KillTrackerUI::RenderMessageSettings() {
     }
     ImGui::SameLine();
     if (UIComponents::SecondaryButton("Standard")) {
-        settings_.customServerKillMessage = "Ich habe {victim} mit {weapon} getötet.";
+        settings_.customServerKillMessage = "Kill in {city}, {bezirk}. Meine Kills: {total_kills}";
         strncpy(customServerKillMessageBuf_, settings_.customServerKillMessage.c_str(), sizeof(customServerKillMessageBuf_) - 1);
         customServerKillMessageBuf_[sizeof(customServerKillMessageBuf_) - 1] = '\0';
         if (bridge_) bridge_->SetKillTrackerServerKillMessageTemplate(settings_.customServerKillMessage);

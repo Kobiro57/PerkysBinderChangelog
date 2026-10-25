@@ -331,11 +331,11 @@ void KeybindEditorUI::RenderActionEditor() {
         switch (m_currentAction.type) {
             case ActionType::Chat:
                 UIComponents::InputText("Nachricht", &m_currentAction.data, "Nachricht eingeben...");
-                RenderMutedWrappedText("Variablen: {zone}, {hp}, {weste}, {carhp}, {total_kills}, {total_deaths}, {kd}");
+                RenderMutedWrappedText("Variablen: {city}, {bezirk}, {hp}, {weste}, {carhp}, {total_kills}, {total_deaths}, {kd}");
                 break;
             case ActionType::Command:
                 UIComponents::InputText("Befehl", &m_currentAction.data, "Befehl eingeben (ohne /)...");
-                RenderMutedWrappedText("Variablen: {zone}, {hp}, {weste}, {carhp}, {total_kills}, {total_deaths}, {kd}");
+                RenderMutedWrappedText("Variablen: {city}, {bezirk}, {hp}, {weste}, {carhp}, {total_kills}, {total_deaths}, {kd}");
                 break;
             case ActionType::Delay:
                 UIComponents::InputText("Millisekunden", &m_currentAction.data, "Z.B. 500");

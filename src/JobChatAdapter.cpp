@@ -172,11 +172,11 @@ std::string ExtractJobPrefix(const std::string& normalizedLine) {
     return TrimCopy(normalizedLine.substr(0, separator));
 }
 
-void EmitChatEvent(const std::shared_ptr<jobs::JobChatAdapterState>& state,
+bool EmitChatEvent(const std::shared_ptr<jobs::JobChatAdapterState>& state,
                    const char* prefix,
                    const char* text) {
-    if (!state || !state->isAlive || !state->callback) {
-        return;
+    if (!state || !state->isAlive || (!state->callback && !state->visibilityFilter)) {
+        return true;
     }
 
     jobs::JobChatEvent event;
@@ -186,9 +186,10 @@ void EmitChatEvent(const std::shared_ptr<jobs::JobChatAdapterState>& state,
     event.jobPrefix = ExtractJobPrefix(event.normalizedLine);
     event.arrivalTime = std::time(nullptr);
 
-    if (event.normalizedLine.empty()) {
-        return;
-    }
+    // Decide visibility before delivering the event: a callback may complete
+    // the automatic statistics block and clear its filter state on this line.
+    const bool visible = !state->visibilityFilter || state->visibilityFilter(event);
+    if (event.normalizedLine.empty()) return visible;
 
     if (!event.jobPrefix.empty()) {
         keybinder::Logger::Debug(
@@ -198,7 +199,8 @@ void EmitChatEvent(const std::shared_ptr<jobs::JobChatAdapterState>& state,
             event.jobPrefix.c_str());
     }
 
-    state->callback(event);
+    if (state->callback) state->callback(event);
+    return visible;
 }
 
 #ifndef KEYBINDER_TESTING
@@ -220,11 +222,12 @@ void __fastcall HookedAddEntry(sampapi::v03dl::CChat* chat,
     (void)textColor;
     (void)prefixColor;
 
+    bool visible = true;
     if (auto state = GetAdapterStateSlot().lock()) {
-        EmitChatEvent(state, prefix, text);
+        visible = EmitChatEvent(state, prefix, text);
     }
 
-    if (g_addEntryHook != nullptr) {
+    if (visible && g_addEntryHook != nullptr) {
         g_addEntryHook->thiscall<void>(chat, nType, text, prefix, textColor, prefixColor);
     }
 }
@@ -294,12 +297,12 @@ bool JobChatAdapter::Initialize() {
 }
 
 void JobChatAdapter::Shutdown() {
+    state_->isAlive = false;
+    state_->callback = nullptr;
+    state_->visibilityFilter = nullptr;
     if (!initialized_) {
         return;
     }
-
-    state_->isAlive = false;
-    state_->callback = nullptr;
 
 #ifdef KEYBINDER_TESTING
     const auto& hooks = SAMPBridge::GetTestingHooks();
@@ -319,5 +322,15 @@ void JobChatAdapter::Shutdown() {
 void JobChatAdapter::SetCallback(JobChatEventCallback callback) {
     state_->callback = std::move(callback);
 }
+
+void JobChatAdapter::SetVisibilityFilter(JobChatVisibilityFilter filter) {
+    state_->visibilityFilter = std::move(filter);
+}
+
+#ifdef KEYBINDER_TESTING
+bool JobChatAdapter::DispatchLineForTesting(const char* prefix, const char* text) const {
+    return EmitChatEvent(state_, prefix, text);
+}
+#endif
 
 } // namespace jobs

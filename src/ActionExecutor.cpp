@@ -4,6 +4,7 @@
 */
 
 #include "ActionExecutor.h"
+#include "LocationNames.h"
 
 #include <algorithm>
 #include <atomic>
@@ -400,7 +401,13 @@ std::string ActionExecutor::ExpandPlaceholders(const std::string& text) const
             if (end != std::string::npos) {
                 std::string tag = text.substr(i + 1, end - i - 1);
 
-                if (tag == "zone") {
+                if (tag == "city") {
+                    result += GetCurrentCity();
+                    i = end;
+                    continue;
+                }
+
+                if (tag == "bezirk" || tag == "district" || tag == "zone") {
                     result += GetCurrentZone();
                     i = end;
                     continue;
@@ -475,6 +482,11 @@ std::string ActionExecutor::GetCurrentZone() const
         return zone.empty() ? "Unknown" : zone;
     }
 
+    if (gameDataProvider_) {
+        const std::string district = gameDataProvider_->GetDistrictName();
+        if (!district.empty()) return district;
+    }
+
 #ifndef KEYBINDER_TESTING
     // Runtime: use GTA SA CTheZones
     CPlayerPed* player = FindPlayerPed(0);
@@ -493,6 +505,22 @@ std::string ActionExecutor::GetCurrentZone() const
         return (label[0] != '\0') ? std::string(label) : std::string("Unknown");
     }
     return std::string(name);
+#else
+    return "Unknown";
+#endif
+}
+
+std::string ActionExecutor::GetCurrentCity() const
+{
+    if (gameDataProvider_) {
+        const std::string city = gameDataProvider_->GetCityName();
+        if (!city.empty()) return city;
+    }
+#ifndef KEYBINDER_TESTING
+    CPlayerPed* player = FindPlayerPed(0);
+    if (!player) return "Unknown";
+    const CVector position = player->GetPosition();
+    return CityNameFromGtaLevel(static_cast<int>(CTheZones::GetLevelFromPosition(&position)));
 #else
     return "Unknown";
 #endif

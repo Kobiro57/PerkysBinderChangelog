@@ -16,13 +16,13 @@
 #include "../include/SettingsManager.h"
 #include "../include/WeaponNames.h"
 #include "../include/DeathMessageRPCAdapter.h"
+#include "../include/KillMessageTest.h"
+#include "../include/LocationNames.h"
 
 #include "../include/RakHook/include/RakHook/rakhook.hpp"
 #include "../include/SAMP-API/include/sampapi/sampapi.h"
 #ifndef KEYBINDER_TESTING
 #include "../include/plugin-sdk/plugin_sa/game_sa/CHud.h"
-#include "../include/plugin-sdk/plugin_sa/game_sa/CMessages.h"
-#include "../include/plugin-sdk/plugin_sa/game_sa/CPad.h"
 #include "../include/plugin-sdk/plugin_sa/game_sa/CPlayerPed.h"
 #include "../include/plugin-sdk/plugin_sa/game_sa/CVehicle.h"
 #include "../include/plugin-sdk/plugin_sa/game_sa/CModelInfo.h"
@@ -37,6 +37,7 @@
 #include "../include/SAMP-API/include/sampapi/0.3.DL-1/KeyStuff.h"
 
 extern std::atomic<int> g_shutdown_phase;
+static std::string StripSampColorCodes(const std::string& text);
 
 namespace {
 constexpr std::size_t kInvalidDispatcherIndex = static_cast<std::size_t>(-1);
@@ -45,7 +46,6 @@ constexpr unsigned long kStartupMessageColor = 0xFFFFFFFF;
 constexpr int kTrackedIncomeMessageDelayFrames = 10;
 constexpr int kLocalDeathFallbackDelayFrames = 12;
 constexpr unsigned long kAutoEngineStartDelayMs = 1500;
-constexpr unsigned long kAutoEngineStartReadyDwellMs = 400;
 constexpr unsigned long kAutoEngineStartHoldMs = 150;
 constexpr unsigned long kAutoEngineStartRetryMs = 1800;
 constexpr unsigned long kAutoEngineStartRetryWindowMs = 12000;
@@ -102,26 +102,6 @@ const char* TranslateVehicleGameNameKey(const std::string& gameNameKey)
 #endif
 
 #ifndef KEYBINDER_TESTING
-void PulseNativeGameKeyDown(int vk)
-{
-    if (vk < 0 || vk > 255) {
-        return;
-    }
-
-    CPad::NewKeyState.standardKeys[vk] = 0xFF;
-    CPad::OldKeyState.standardKeys[vk] = 0;
-}
-
-void ReleaseNativeGameKey(int vk)
-{
-    if (vk < 0 || vk > 255) {
-        return;
-    }
-
-    CPad::NewKeyState.standardKeys[vk] = 0;
-    CPad::OldKeyState.standardKeys[vk] = 0;
-}
-
 bool ContainsAsciiNoCase(const char* haystack, const char* needle)
 {
     if (haystack == nullptr || needle == nullptr || *needle == '\0') {
@@ -165,117 +145,17 @@ const char* DetectEngineStartSuccessTextSource()
     }
 
     for (int i = 0; i < 7; ++i) {
-        if (ContainsAsciiNoCase(CHud::m_BigMessage[i], "Motor Startet")) {
+        if (BigMessageInUse[i] != 0.0f && BigMessageAlpha[i] > 0.0f
+            && ContainsAsciiNoCase(CHud::m_BigMessage[i], "Motor Startet")) {
             return "big-message";
         }
     }
 
-    for (const auto& message : CMessages::BriefMessages) {
-        if (ContainsAsciiNoCase(message.m_pText, "Motor Startet") || ContainsAsciiNoCase(message.m_pString, "Motor Startet")) {
-            return "brief-message";
-        }
-    }
-
-    for (const auto& bigMessage : CMessages::BIGMessages) {
-        if (ContainsAsciiNoCase(bigMessage.m_Current.m_pText, "Motor Startet") ||
-            ContainsAsciiNoCase(bigMessage.m_Current.m_pString, "Motor Startet")) {
-            return "queued-big-message";
-        }
-        for (const auto& stacked : bigMessage.m_Stack) {
-            if (ContainsAsciiNoCase(stacked.m_pText, "Motor Startet") || ContainsAsciiNoCase(stacked.m_pString, "Motor Startet")) {
-                return "queued-big-message-stack";
-            }
-        }
-    }
-
+    // BriefMessages and the queued stacks retain old engine notices. They
+    // cannot acknowledge a new key press in another vehicle.
     return nullptr;
 }
 
-bool IsLocalPlayerDriverReady(SAMPBridge* bridge, unsigned short vehicleId, std::string* reason)
-{
-    if (bridge == nullptr) {
-        if (reason != nullptr) {
-            *reason = "bridge-unavailable";
-        }
-        return false;
-    }
-
-    auto* localPlayer = bridge->GetLocalPlayer();
-    if (localPlayer == nullptr || localPlayer->m_pPed == nullptr) {
-        if (reason != nullptr) {
-            *reason = "local-player-unavailable";
-        }
-        return false;
-    }
-
-    CPlayerPed* playerPed = FindPlayerPed(0);
-    if (playerPed == nullptr) {
-        if (reason != nullptr) {
-            *reason = "game-ped-unavailable";
-        }
-        return false;
-    }
-
-    if (!playerPed->bInVehicle || playerPed->m_pVehicle == nullptr) {
-        if (reason != nullptr) {
-            *reason = "not-in-vehicle";
-        }
-        return false;
-    }
-
-    if (localPlayer->m_nCurrentVehicle != vehicleId) {
-        if (reason != nullptr) {
-            *reason = "vehicle-sync-pending";
-        }
-        return false;
-    }
-
-    if (localPlayer->m_pPed->IsPassenger()) {
-        if (reason != nullptr) {
-            *reason = "passenger-seat";
-        }
-        return false;
-    }
-
-    if (playerPed->m_ePedState != PEDSTATE_DRIVING) {
-        if (reason != nullptr) {
-            *reason = "ped-not-driving";
-        }
-        return false;
-    }
-
-    if (reason != nullptr) {
-        *reason = "driver-ready";
-    }
-    return true;
-}
-
-bool IsLocalPlayerEngineAlreadyOn(SAMPBridge* bridge, unsigned short vehicleId)
-{
-    if (bridge == nullptr) {
-        return false;
-    }
-
-    auto* localPlayer = bridge->GetLocalPlayer();
-    if (localPlayer == nullptr || localPlayer->m_pPed == nullptr) {
-        return false;
-    }
-
-    CPlayerPed* playerPed = FindPlayerPed(0);
-    if (playerPed == nullptr || !playerPed->bInVehicle || playerPed->m_pVehicle == nullptr) {
-        return false;
-    }
-
-    if (localPlayer->m_nCurrentVehicle != vehicleId) {
-        return false;
-    }
-
-    if (localPlayer->m_pPed->IsPassenger()) {
-        return false;
-    }
-
-    return playerPed->m_pVehicle->bEngineOn;
-}
 #endif
 
 std::string ConvertUtf8ToGameEncoding(const std::string& text) {
@@ -818,10 +698,10 @@ SAMPBridge::SAMPBridge()
       killTrackerServerKillMessageEnabled_(false),
       killTrackerServerDeathMessageEnabled_(false),
       killTrackerTrackDamage_(true),
-      killTrackerLocalKillMessageTemplate_("{FF6600}[Kill] {FFFFFF}{victim} {AAAAAA}mit {FFCC00}{weapon}"),
-      killTrackerLocalDeathMessageTemplate_("{FF3333}[Tod] {FFFFFF}{killer} {AAAAAA}mit {FFCC00}{weapon}"),
-      killTrackerServerKillMessageTemplate_("Ich habe {victim} mit {weapon} getoetet."),
-      killTrackerServerDeathMessageTemplate_("Ich wurde von {killer} mit {weapon} getoetet."),
+      killTrackerLocalKillMessageTemplate_("{FF6600}[NL-BINDER] {FFFFFF}Kill in {city}, {bezirk}. Kills: {total_kills}"),
+      killTrackerLocalDeathMessageTemplate_("{FF3333}[NL-BINDER] {FFFFFF}Du bist gestorben. Deine aktuellen Tode: {total_deaths}"),
+      killTrackerServerKillMessageTemplate_("Ich habe einen Kill in {city}, {bezirk}. Meine Kills: {total_kills}"),
+      killTrackerServerDeathMessageTemplate_("Ich bin gestorben. Meine Tode: {total_deaths}"),
       killTrackerInitialized_(false),
       localPlayerWasDead_(false),
       localDeathHandledForCurrentLife_(false),
@@ -1002,6 +882,7 @@ void SAMPBridge::Shutdown() {
         return;
     }
     shutting_down_ = true;
+    ResetStartupStats();
 
     Log("Shutting down SAMPBridge");
     SetAutoEngineStart(false);
@@ -1101,6 +982,15 @@ void SAMPBridge::SendKillTrackerServerMessage(const std::string& message) const 
     }
 }
 
+bool SAMPBridge::SendSimulatedKillMessage(const std::string& text, std::string& error) const {
+    std::string message;
+    const std::string expanded = StripSampColorCodes(ExpandMessageVars(text, "", GetLocalPlayerName(), ""));
+    if (!keybinder::BuildSimulatedKillMessage(expanded, message, error)) return false;
+    const bool sent = message.front() == '/' ? SendCommand(message) : SendChat(message);
+    if (!sent) error = "Die Testnachricht konnte gerade nicht gesendet werden.";
+    return sent;
+}
+
 bool SAMPBridge::IsChatOpen() const {
     const auto* input = GetInput();
     return input != nullptr && input->m_bEnabled != FALSE;
@@ -1133,6 +1023,8 @@ void SAMPBridge::SetSettingsManager(const keybinder::SettingsManager* manager) {
         killTracker_->SetCountKills(manager->Get().kill_tracker_count_kills);
         killTracker_->SetCountDeaths(manager->Get().kill_tracker_count_deaths);
     }
+    if (manager && !startupStatsComplete_ && manager->Get().synchronized_player_stats.HasCore())
+        synchronizedStats_ = manager->Get().synchronized_player_stats;
 }
 
 void SAMPBridge::Update() {
@@ -1145,6 +1037,7 @@ void SAMPBridge::Update() {
     if (!jobTrackerInitialized_) {
         InitializeJobTracker();
     }
+    UpdateStartupStats(now);
 
     if (!HasCommandRouting()) {
         RegisterPendingCommands();
@@ -1689,6 +1582,9 @@ void SAMPBridge::InitializeJobTracker() {
             }
         }
     });
+    jobChatAdapter_->SetVisibilityFilter([this](const jobs::JobChatEvent& event) {
+        return ShouldDisplayStartupStatsChat(event);
+    });
 
     if (!jobChatAdapter_->Initialize()) {
         keybinder::Logger::Warning("[SAMPBridge] Failed to initialize Job Chat Adapter; jobs chat pipeline will retry on the next bridge update.");
@@ -1884,7 +1780,7 @@ void SAMPBridge::SetHitmarkerKillCallback(std::function<void(const killtracker::
 
 void SAMPBridge::SetKillTrackerLocalKillMessageTemplate(const std::string& messageTemplate) {
     if (messageTemplate.empty()) {
-        killTrackerLocalKillMessageTemplate_ = "{FF6600}[Kill] {FFFFFF}{victim} {AAAAAA}mit {FFCC00}{weapon}";
+        killTrackerLocalKillMessageTemplate_ = "{FF6600}[NL-BINDER] {FFFFFF}Kill in {city}, {bezirk}. Kills: {total_kills}";
         return;
     }
     killTrackerLocalKillMessageTemplate_ = messageTemplate;
@@ -1892,7 +1788,7 @@ void SAMPBridge::SetKillTrackerLocalKillMessageTemplate(const std::string& messa
 
 void SAMPBridge::SetKillTrackerLocalDeathMessageTemplate(const std::string& messageTemplate) {
     if (messageTemplate.empty()) {
-        killTrackerLocalDeathMessageTemplate_ = "{FF3333}[Tod] {FFFFFF}{killer} {AAAAAA}mit {FFCC00}{weapon}";
+        killTrackerLocalDeathMessageTemplate_ = "{FF3333}[NL-BINDER] {FFFFFF}Du bist gestorben. Deine aktuellen Tode: {total_deaths}";
         return;
     }
     killTrackerLocalDeathMessageTemplate_ = messageTemplate;
@@ -1904,7 +1800,7 @@ void SAMPBridge::SetKillTrackerServerKillMessageTemplate(const std::string& mess
 
 void SAMPBridge::SetKillTrackerServerDeathMessageTemplate(const std::string& messageTemplate) {
     if (messageTemplate.empty()) {
-        killTrackerServerDeathMessageTemplate_ = "Ich wurde von {killer} mit {weapon} getoetet.";
+        killTrackerServerDeathMessageTemplate_ = "Ich bin gestorben. Meine Tode: {total_deaths}";
         return;
     }
     killTrackerServerDeathMessageTemplate_ = messageTemplate;
@@ -1920,6 +1816,7 @@ void SAMPBridge::SetAutoHudScaleFix(bool enabled) {
 }
 
 void SAMPBridge::SetAutoEngineStart(bool enabled) {
+    if (autoEngineStartEnabled_ == enabled) return;
     autoEngineStartEnabled_ = enabled;
     autoEngineObservedVehicle_ = 0xFFFF;
 
@@ -1936,6 +1833,7 @@ void SAMPBridge::SetAutoEngineStart(bool enabled) {
         }
         autoEngineStartInjectedVk_ = 0;
         autoEngineStartReleasePending_ = false;
+        autoEngineStartLastSuccessText_ = false;
     }
 }
 
@@ -1946,6 +1844,7 @@ bool SAMPBridge::ReadDriverVehicle(unsigned short& vehicleId, bool& engineOn) co
     auto* local = GetLocalPlayer();
     auto* ped = local && local->m_pPed ? local->m_pPed->m_pGamePed : nullptr;
     if (!ped || !ped->bInVehicle || !ped->m_pVehicle || ped->m_pVehicle->m_pDriver != ped
+        || ped->m_ePedState != PEDSTATE_DRIVING
         || local->m_nCurrentVehicle == 0xFFFF || local->m_pPed->IsPassenger()) return false;
     vehicleId = local->m_nCurrentVehicle;
     engineOn = ped->m_pVehicle->bEngineOn;
@@ -1999,29 +1898,41 @@ void SAMPBridge::UpdateAutoEngineStart(unsigned long now) {
         releaseKey();
         return;
     }
+    bool successText = false;
+#ifdef KEYBINDER_TESTING
+    if (g_testingHooks.hasEngineStartSuccessText) successText = g_testingHooks.hasEngineStartSuccessText();
+#else
+    successText = DetectEngineStartSuccessTextSource() != nullptr;
+#endif
     if (vehicleId != autoEngineObservedVehicle_) {
         autoEngineObservedVehicle_ = vehicleId;
-        autoEngineStartPending_ = !engineOn;
+        // GTA can briefly set bEngineOn while seating the driver, before the
+        // server applies its manual engine state. Decide after the entry delay.
+        autoEngineStartPending_ = true;
         autoEngineStartScheduledAt_ = now;
         autoEngineStartNextAttemptAt_ = now + kAutoEngineStartDelayMs;
         autoEngineStartAttempts_ = 0;
+        autoEngineStartLastSuccessText_ = successText;
         releaseKey();
         Log("Auto engine start: driver vehicle detected, id=" + std::to_string(vehicleId));
     }
+    const bool starting = autoEngineStartAttempts_ > 0 && successText && !autoEngineStartLastSuccessText_;
+    autoEngineStartLastSuccessText_ = successText;
     if (!autoEngineStartPending_) return;
-    bool starting = false;
-#ifdef KEYBINDER_TESTING
-    if (g_testingHooks.hasEngineStartSuccessText) starting = g_testingHooks.hasEngineStartSuccessText();
-#else
-    starting = autoEngineStartAttempts_ > 0 && DetectEngineStartSuccessTextSource() != nullptr;
-#endif
-    if (engineOn || starting || now - autoEngineStartScheduledAt_ > kAutoEngineStartRetryWindowMs) {
+    const bool firstAttemptDue = static_cast<long>(now - autoEngineStartNextAttemptAt_) >= 0;
+    const bool entrySettled = autoEngineStartAttempts_ > 0 || firstAttemptDue;
+    const bool timedOut = autoEngineStartAttempts_ > 0
+        && now - autoEngineStartScheduledAt_ > kAutoEngineStartRetryWindowMs;
+    if ((engineOn && entrySettled) || starting || timedOut) {
         autoEngineStartPending_ = false;
         releaseKey();
         return;
     }
     if (!inputAvailable || autoEngineStartAttempts_ >= kAutoEngineStartMaxAttempts
         || static_cast<long>(now - autoEngineStartNextAttemptAt_) < 0) return;
+    // The retry window begins with the actual first press, so opening chat or
+    // the binder during entry cannot silently expire the pending start.
+    if (autoEngineStartAttempts_ == 0) autoEngineStartScheduledAt_ = now;
     SetEngineStartKeyDown(true);
     autoEngineStartReleasePending_ = true;
     autoEngineStartHoldUntil_ = now + kAutoEngineStartHoldMs;
@@ -2056,8 +1967,23 @@ std::string SAMPBridge::GetCurrentZone() const {
     }
     return std::string(name);
 #else
-    return "Unknown";
+    return g_testingHooks.getDistrictName ? g_testingHooks.getDistrictName() : "Unknown";
 #endif
+}
+
+std::string SAMPBridge::GetCityName() const {
+#ifndef KEYBINDER_TESTING
+    CPlayerPed* player = FindPlayerPed(0);
+    if (!player) return "Unknown";
+    CVector position = player->GetPosition();
+    return keybinder::CityNameFromGtaLevel(static_cast<int>(CTheZones::GetLevelFromPosition(&position)));
+#else
+    return g_testingHooks.getCityLevel ? keybinder::CityNameFromGtaLevel(g_testingHooks.getCityLevel()) : "Unknown";
+#endif
+}
+
+std::string SAMPBridge::GetDistrictName() const {
+    return GetCurrentZone();
 }
 
 std::string SAMPBridge::GetLocalPlayerName() const {
@@ -2380,10 +2306,6 @@ void SAMPBridge::ResetIncomingDamageState() {
     scriptedHealthState_->lastKnownArmour.store(0.0f, std::memory_order_relaxed);
     incomingDamageDetector_.Reset();
     incomingDamageLog_.Reset();
-    {
-        std::lock_guard<std::mutex> lock(incomingDamageRpcMutex_);
-        incomingDamageRpcQueue_.clear();
-    }
     incomingDamagePed_ = nullptr;
 }
 
@@ -2391,31 +2313,15 @@ bool SAMPBridge::IsDamageLogEnabled() const {
     return settingsManager_ != nullptr && settingsManager_->Get().damage_log_enabled;
 }
 
-void SAMPBridge::QueueIncomingDamageReport(const killtracker::DamageEvent& event) {
-    // This callback may run on a RakNet thread: no UI, settings or ped reads.
-    if (event.isOutgoing || !std::isfinite(event.damage) || event.damage <= 0.0001f
-        || event.targetId < 0 || event.targetId >= 1004 || event.weaponId < 0 || event.weaponId > 46
-        || keybinder::IsNonCombatDamageSource(event.weaponId)
-        || !scriptedHealthState_->active.load(std::memory_order_acquire)) return;
-    std::lock_guard<std::mutex> lock(incomingDamageRpcMutex_);
-    incomingDamageRpcQueue_.push_back({event.damage, RuntimeTickCount()});
-    if (incomingDamageRpcQueue_.size() > 64) incomingDamageRpcQueue_.erase(incomingDamageRpcQueue_.begin());
-}
-
-void SAMPBridge::FlushIncomingDamageLog(unsigned long now, bool finishLife) {
-    if (!IsDamageLogEnabled()) {
-        incomingDamageLog_.Reset();
-        return;
-    }
-    for (const float damage : incomingDamageLog_.Drain(now, finishLife)) {
-        char amount[48];
-        std::snprintf(amount, sizeof(amount), "%.4f", static_cast<double>(damage));
-        std::string formatted = amount;
-        while (!formatted.empty() && formatted.back() == '0') formatted.pop_back();
-        if (!formatted.empty() && formatted.back() == '.') formatted.pop_back();
-        std::replace(formatted.begin(), formatted.end(), '.', ',');
-        SendLocalMessage("{FF6600}[NL-BINDER]{FFFFFF} Du hast -" + formatted + " HP Schaden erhalten.");
-    }
+void SAMPBridge::LogIncomingDamage(const keybinder::IncomingDamageLogEntry& damage) {
+    if (!damage.HasDamage()) return;
+    char amount[48];
+    const double rounded = std::round(static_cast<double>(damage.Total()) * 10.0) / 10.0;
+    std::snprintf(amount, sizeof(amount), "%.1f", rounded);
+    std::string formatted = amount;
+    std::replace(formatted.begin(), formatted.end(), '.', ',');
+    SendLocalMessage("{1E90FF}[NL-BINDER] {FF0000}-" + formatted
+        + " HP {FFFFFF}Schaden (" + damage.Type() + ")");
 }
 
 bool SAMPBridge::ReadLocalDamageSample(float& health, float& armour, int& damageSource, const void*& pedIdentity) const {
@@ -2436,19 +2342,15 @@ bool SAMPBridge::ReadLocalDamageSample(float& health, float& armour, int& damage
 }
 
 void SAMPBridge::PollLocalIncomingDamage() {
-    const unsigned long now = RuntimeTickCount();
     const bool logEnabled = IsDamageLogEnabled();
     const bool logJustEnabled = logEnabled && !incomingDamageLogEnabledLastFrame_;
     incomingDamageLogEnabledLastFrame_ = logEnabled;
     if (!logEnabled || logJustEnabled) {
         incomingDamageLog_.Reset();
-        std::lock_guard<std::mutex> lock(incomingDamageRpcMutex_);
-        incomingDamageRpcQueue_.clear();
     }
     const bool playing = IsLocalCombatActive();
     const bool finalDeathSample = !playing && incomingDamagePed_ != nullptr && IsLocalCombatActive(true);
     if ((!hitsoundIncomingCallback_ && !IsDamageLogEnabled()) || (!playing && !finalDeathSample)) {
-        FlushIncomingDamageLog(now, true);
         ResetIncomingDamageState();
         return;
     }
@@ -2460,7 +2362,6 @@ void SAMPBridge::PollLocalIncomingDamage() {
     const bool hasSample = ReadLocalDamageSample(health, armour, damageSource, pedIdentity);
     if (!hasSample || pedIdentity == nullptr || !std::isfinite(health)
         || !std::isfinite(armour) || armour < 0.0f || !std::isfinite(health + armour)) {
-        FlushIncomingDamageLog(now, true);
         ResetIncomingDamageState();
         return;
     }
@@ -2469,7 +2370,6 @@ void SAMPBridge::PollLocalIncomingDamage() {
     health = (std::max)(health, 0.0f);
 
     if (pedIdentity != incomingDamagePed_) {
-        FlushIncomingDamageLog(now, true);
         ResetIncomingDamageState();
         incomingDamagePed_ = pedIdentity;
     }
@@ -2489,16 +2389,11 @@ void SAMPBridge::PollLocalIncomingDamage() {
         && observation.damage > keybinder::IncomingDamageDetector::kDamageEpsilon && hitsoundIncomingCallback_) {
         hitsoundIncomingCallback_();
     }
-    std::vector<IncomingDamageReport> reports;
-    {
-        std::lock_guard<std::mutex> lock(incomingDamageRpcMutex_);
-        reports.swap(incomingDamageRpcQueue_);
+    if (logEnabled) {
+        // Keep the log independent from hitsound suppression. In particular,
+        // Nova's server-applied SetPlayerHealth/Armour must be logged at once.
+        LogIncomingDamage(incomingDamageLog_.Observe(health, armour));
     }
-    if (logEnabled && !logJustEnabled) {
-        for (const auto& report : reports) incomingDamageLog_.Report(report.damage, report.tick);
-        incomingDamageLog_.Observe(observation, now);
-    }
-    FlushIncomingDamageLog(now, finalDeathSample || health == 0.0f);
     if (finalDeathSample || health == 0.0f) ResetIncomingDamageState();
 }
 
@@ -2520,6 +2415,9 @@ void SAMPBridge::ProcessDamageRpcForTesting(RakNet::BitStream* payload) {
 }
 void SAMPBridge::RequestScriptedHealthSuppressionForTesting() {
     scriptedHealthState_->suppressionRequested.store(true, std::memory_order_release);
+}
+bool SAMPBridge::ProcessIncomingChatLineForTesting(const char* prefix, const char* text) {
+    return jobChatAdapter_ ? jobChatAdapter_->DispatchLineForTesting(prefix, text) : true;
 }
 #endif
 
@@ -2544,6 +2442,12 @@ std::string SAMPBridge::ExpandMessageVars(const std::string& tmpl,
     msg = ReplaceAll(msg, "{victim}", victim.empty() ? "Unbekannt" : victim);
     msg = ReplaceAll(msg, "{killer}", killer.empty() ? "Unbekannt" : killer);
     msg = ReplaceAll(msg, "{weapon}", weapon.empty() ? "Unbekannt" : weapon);
+    if (msg.find("{city}") != std::string::npos) msg = ReplaceAll(msg, "{city}", GetCityName());
+    if (msg.find("{bezirk}") != std::string::npos || msg.find("{district}") != std::string::npos) {
+        const std::string district = GetDistrictName();
+        msg = ReplaceAll(msg, "{bezirk}", district);
+        msg = ReplaceAll(msg, "{district}", district);
+    }
 
     if (msg.find("{zone}") != std::string::npos || msg.find("{ZONE}") != std::string::npos) {
         const std::string zone = GetCurrentZone();
@@ -2645,7 +2549,6 @@ void SAMPBridge::RefreshDamageTracking() {
     EnsureKillTrackerRpcAdaptersRegistered();
     damageAdapter_->Initialize();
     damageAdapter_->SetDamageCallback([this](const killtracker::DamageEvent& event) {
-        QueueIncomingDamageReport(event);
         if (killTrackerInitialized_ && killTrackerTrackDamage_ && killTracker_) {
             killTracker_->ProcessDamageEvent(event);
 
@@ -2947,6 +2850,7 @@ void SAMPBridge::SetIncomingChatCallback(IncomingChatCallback callback) {
 }
 
 void SAMPBridge::NotifyIncomingChat(const std::string& text) {
+    CaptureStartupStatsLine(text);
     ObserveServerCombatStats(text);
     if (incomingChatCallback_) {
         incomingChatCallback_(text);

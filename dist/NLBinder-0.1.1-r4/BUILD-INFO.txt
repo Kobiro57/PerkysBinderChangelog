@@ -1,0 +1,38 @@
+NLBinder v.0.1.1 by KOBiRO – Überarbeitung 4
+Erstellt: 25.10.2026 10:50:12 (Europe/Berlin)
+Datei: Keybinder.asi
+Format: Win32 Release, PE32/x86 DLL
+Größe: 18324992 Bytes
+SHA256: b9344521a38573a9252879bb362c354b85561fc3647f53a8a36f97f9b5b44450
+Eingebetteter Reconnect-Helfer: Ressource 300, 101376 Bytes
+Helfer-SHA256: 3c911cd1eeddbfa561a8c28eb7be83aa62f971a19219514345876a7730f6f971
+
+Verifikation:
+- Vollständige automatisierte Tests: Exitcode 0
+- Release-Build: Exitcode 0
+- ASI-Format, Windows-Imports und eingebetteter Helfer geprüft
+- Eingebetteter Reconnect-Helfer stimmt mit dem geprüften Helfer überein
+- Nativer Reconnect-Helfer: 18 Prüfungen, 0 Fehler
+- Dafür ausschließlich harmlose Testprozesse verwendet
+- Kein echtes Spiel und kein installierter Launcher gestartet oder beendet
+- Kein Ingame-Test durchgeführt
+
+Neue Änderungen:
+- Damagelog über direkte HP-/Westenmessung, einschließlich Fallschaden
+- Getrennte Variablen {city} und {bezirk}; angebotene Doppelungen entfernt
+- Kill simulieren sendet den aktuellen Text mit [Testkill] nach dem Chatbefehl
+- Einmaliger automatischer /stats-Abruf nach dem sicheren Loginzustand
+- Eigener Statistikblock wird gelesen, lokal gespeichert und verborgen
+- Statistik-Gesamtzähler werden ohne künstlichen Kill/Tod übernommen
+- Motorstart bewertet vollständig erkannten Fahrersitz nach 1,5 Sekunden
+- Vorübergehendes EngineOn und alte Chatbestätigungen verwerfen ihn nicht
+- Motorstart-Versuchsphase beginnt erst mit dem tatsächlichen Tastendruck
+
+Die früheren Job-, Skilltree-, Fraktions-, Radar-, Tacho- und Reconnect-
+Anpassungen sind enthalten. Die ursprüngliche Oberfläche bleibt Grundlage.
+Der Reconnect-Helfer ist in der ASI enthalten.
+
+Grenzen: Die Synchronisation wartet auf eine echte Serverantwort. Mehrere
+Schadensereignisse zwischen Messungen erscheinen als gemessener Gesamtverlust.
+Ein Live-Test mit dem konkreten Server und Launcher steht weiterhin aus.
+Installation und weitere Hinweise stehen in LIESMICH.md.
