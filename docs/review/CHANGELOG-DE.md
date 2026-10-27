@@ -539,3 +539,42 @@ Die endgültigen automatisierten Ergebnisse und die ASI-Prüfsumme gehören zu
 [r8](../../dist/NLBinder-0.1.1-r8/BUILD-INFO.txt). Die ursprünglichen
 Urheberhinweise und frühere Prüfstände bleiben erhalten. Ein echter
 Ingame-Test mit dem konkreten Server steht aus.
+
+
+## 15. Nachtrag r9 – 27. Oktober 2026
+
+### Interface auf vier Bereiche reduziert
+
+Im Interface-Editor bleiben Geldanzeige, Waffenicon, Munition und Minimap.
+Gebietsname, Fahrzeugname, Wanted-Sterne, Uhrzeit, Atemluft, Rüstung und Leben
+wurden aus der Bearbeitung entfernt. Auch früher gespeicherte Interface-
+Versätze und Farben dieser sieben Bereiche werden nicht mehr angewendet.
+Die normalen Spielanzeigen bleiben vorhanden. Die vier übrigen Bereiche
+behalten separate Positions- und Farboptionen sowie die Preset-Verwaltung.
+
+### Mauszeiger im Verschiebemodus freigegeben
+
+Der Interface-Modus blendete das Menü aus, während einzelne Maus-Hooks nur
+das sichtbare Menü als Eingabezuständigkeit erkannten. GTA konnte deshalb
+weiterhin den Mauszeiger zur Bildschirmmitte zurücksetzen. Interface und
+dauerhafte Online-Overlays verwenden jetzt dieselbe gemeinsame Prüfung für
+die Mauszuständigkeit. Sie berücksichtigt den aktiven Verschiebemodus auch
+bei ausgeblendetem Menü und schützt sowohl die Zeigerposition als auch die
+nativen Mauszustände und Mausereignisse. Esc speichert und beendet den Modus.
+
+Quellen: [InterfaceLayout.h](../../include/InterfaceLayout.h),
+[NativeHudEditor.cpp](../../src/NativeHudEditor.cpp),
+[InterfaceEditor.cpp](../../src/InterfaceEditor.cpp),
+[InterfaceEditorUI.cpp](../../src/InterfaceEditorUI.cpp),
+[ImGuiOverlay.cpp](../../src/ImGuiOverlay.cpp),
+[Main.cpp](../../src/Main.cpp),
+[SettingsManager.cpp](../../src/SettingsManager.cpp).
+Tests: [NativeHudEditorTests.cpp](../../tests/NativeHudEditorTests.cpp),
+[InterfaceEditorTests.cpp](../../tests/InterfaceEditorTests.cpp),
+[ImGuiOverlayTests.cpp](../../tests/ImGuiOverlayTests.cpp),
+[InterfaceLayoutSettingsTests.cpp](../../tests/InterfaceLayoutSettingsTests.cpp).
+
+Die endgültigen Nachweise gehören zum
+[r9-Paket](../../dist/NLBinder-0.1.1-r9/BUILD-INFO.txt). Frühere Prüfstände und
+ursprüngliche Urheberhinweise bleiben erhalten. Ein echter Ingame-Test auf
+dem konkreten Server steht aus.

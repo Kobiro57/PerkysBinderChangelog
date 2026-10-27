@@ -46,21 +46,48 @@ void LegacyColorsAndExplicitOriginal() {
     keybinder::SettingsManager manager;
     CHECK(manager.LoadFromJson(R"({"interface_editor_saved_presets":[{"hp_color_r":0.2,"hp_color_g":0.3,"armor_color_b":0.1,"money_color_a":0.5}]})"));
     const auto& layout = manager.Get().interface_editor_saved_presets[0].layout;
-    CHECK(layout[0].custom_color && layout[0].color[0] == 0.2f && layout[0].color[1] == 0.3f);
-    CHECK(layout[1].custom_color && layout[1].color[2] == 0.1f);
-    CHECK(layout[3].custom_color && layout[3].color[3] == 0.5f);
-    CHECK(!layout[4].custom_color);
-    CHECK(manager.LoadFromJson(R"({"interface_editor_saved_presets":[{"hp_color_r":0.2,"hud_health_custom_color":false,"hud_health_color_r":0.7}]})"));
+    CHECK(layout[0].custom_color && layout[0].color[3] == 0.5f);
+    CHECK(!layout[1].custom_color && !layout[2].custom_color && !layout[3].custom_color);
+    CHECK(manager.LoadFromJson(R"({"interface_editor_saved_presets":[{"money_color_a":0.5,"hud_money_custom_color":false,"hud_money_color_r":0.7}]})"));
     CHECK(!manager.Get().interface_editor_saved_presets[0].layout[0].custom_color);
     CHECK(manager.Get().interface_editor_saved_presets[0].layout[0].color[0] == 0.7f);
 }
+void RemovedCategoriesDoNotSurviveOrAffectRetainedCategories() {
+    using namespace keybinder;
+    CHECK(kHudElementCount == 4 && kHudElements.size() == 4);
+    CHECK(std::string(kHudElements[0].key) == "money");
+    CHECK(std::string(kHudElements[1].key) == "weapon");
+    CHECK(std::string(kHudElements[2].key) == "ammo");
+    CHECK(std::string(kHudElements[3].key) == "radar");
+    SettingsManager manager;
+    CHECK(manager.LoadFromJson(R"({"interface_editor_saved_presets":[{
+        "hud_health_offset_x":0.9,"hud_health_custom_color":true,
+        "hud_armour_offset_x":0.9,"hud_armour_custom_color":true,
+        "hud_breath_offset_x":0.9,"hud_breath_custom_color":true,
+        "hud_clock_offset_x":0.9,"hud_clock_custom_color":true,
+        "hud_wanted_offset_x":0.9,"hud_wanted_custom_color":true,
+        "hud_vehicle_name_offset_x":0.9,"hud_vehicle_name_custom_color":true,
+        "hud_zone_name_offset_x":0.9,"hud_zone_name_custom_color":true,
+        "hud_money_offset_x":0.1,"hud_weapon_offset_y":0.2,
+        "hud_ammo_custom_color":true,"hud_ammo_color_b":0.3,"hud_radar_offset_y":0.4
+    }]})"));
+    const auto& layout = manager.Get().interface_editor_saved_presets[0].layout;
+    CHECK(layout[0].offset_x == 0.1f && !layout[0].custom_color);
+    CHECK(layout[1].offset_y == 0.2f && !layout[1].custom_color);
+    CHECK(layout[2].custom_color && layout[2].color[2] == 0.3f);
+    CHECK(layout[3].offset_y == 0.4f && !layout[3].custom_color);
+    const auto saved = manager.GetSettingsJson();
+    for (const char* key : {"health", "armour", "breath", "clock", "wanted", "vehicle_name", "zone_name"}) {
+        CHECK(saved.find(std::string("\"hud_") + key + "_") == std::string::npos);
+    }
+}
 void InvalidRuntimeAndLoadedValues() {
     keybinder::SettingsManager manager;
-    CHECK(manager.LoadFromJson(R"({"interface_editor_saved_presets":[{"hud_health_offset_x":9,"hud_health_offset_y":-9,"hud_health_custom_color":true,"hud_health_color_r":-1,"hud_health_color_g":8,"hud_radar_offset_x":0.3}]})"));
+    CHECK(manager.LoadFromJson(R"({"interface_editor_saved_presets":[{"hud_money_offset_x":9,"hud_money_offset_y":-9,"hud_money_custom_color":true,"hud_money_color_r":-1,"hud_money_color_g":8,"hud_radar_offset_x":0.3}]})"));
     const auto& layout = manager.Get().interface_editor_saved_presets[0].layout;
     CHECK(layout[0].offset_x == 1.0f && layout[0].offset_y == -1.0f);
     CHECK(layout[0].color[0] == 0.0f && layout[0].color[1] == 1.0f);
-    CHECK(layout[10].offset_x == 0.3f && layout[10].offset_y == 0.0f);
+    CHECK(layout[3].offset_x == 0.3f && layout[3].offset_y == 0.0f);
     auto& style = manager.GetMutable().interface_editor_saved_presets[0].layout[0];
     style.offset_x = std::numeric_limits<float>::quiet_NaN();
     style.offset_y = std::numeric_limits<float>::infinity();
@@ -70,7 +97,7 @@ void InvalidRuntimeAndLoadedValues() {
     const auto& result = restored.Get().interface_editor_saved_presets[0].layout[0];
     CHECK(result.offset_x == 0.0f && result.offset_y == 0.0f);
     CHECK((result.color == std::array<float,4>{1.0f,0.0f,1.0f,0.5f}));
-    CHECK(manager.LoadFromJson(R"({"interface_editor_saved_presets":[{"hud_health_offset_x":null,"hud_health_offset_y":2.5e-5,"hud_health_color_r":"invalid","hud_health_color_g":0.6}]})"));
+    CHECK(manager.LoadFromJson(R"({"interface_editor_saved_presets":[{"hud_money_offset_x":null,"hud_money_offset_y":2.5e-5,"hud_money_color_r":"invalid","hud_money_color_g":0.6}]})"));
     const auto& parsed = manager.Get().interface_editor_saved_presets[0].layout[0];
     CHECK(parsed.offset_x == 0.0f && parsed.offset_y == 2.5e-5f);
     CHECK(parsed.color[0] == 1.0f && parsed.color[1] == 0.6f);
@@ -81,7 +108,7 @@ void InvalidRuntimeAndLoadedValues() {
 }
 int RunInterfaceLayoutSettingsTests() {
     checks = failures = 0;
-    DefaultsAndRoundTrip(); LegacyColorsAndExplicitOriginal(); InvalidRuntimeAndLoadedValues();
+    DefaultsAndRoundTrip(); LegacyColorsAndExplicitOriginal(); RemovedCategoriesDoNotSurviveOrAffectRetainedCategories(); InvalidRuntimeAndLoadedValues();
     std::printf("InterfaceLayoutSettingsTests: %d checks, %d failures\n", checks, failures);
     return failures;
 }

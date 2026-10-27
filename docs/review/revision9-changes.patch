@@ -1,0 +1,1712 @@
+diff --git a/README.md b/README.md
+index b7258f6..61b4f31 100644
+--- a/README.md
++++ b/README.md
+@@ -2,11 +2,12 @@
+ 
+ Vollständiger Prüfstand der Änderungen am **Perkys / NLBinder**, angepasst für
+ KOBiRO. Grundlage und ursprüngliche Urheberschaft bleiben beim Originalprojekt.
+-Der Stand lautet **NLBinder v.0.1.1 by KOBiRO, r8**. Neu ist **Mods →
+-Interface** neben Waffenicons: native HUD-Elemente erhalten getrennte
+-Positions- und Farbeinstellungen. Ein ausgewähltes Element wird mit der Maus
+-verschoben und mit Esc gespeichert. Frühere Binder-Anpassungen und die
+-ursprünglichen Oberflächenkomponenten bleiben enthalten.
++Der Stand lautet **NLBinder v.0.1.1 by KOBiRO, r9**. Unter **Mods →
++Interface** bleiben Geldanzeige, Waffenicon, Munition und Minimap mit
++getrennten Positions- und Farbeinstellungen. Der Verschiebemodus nutzt die
++gemeinsame Maussteuerung der dauerhaften Online-Overlays. Esc speichert.
++Frühere Binder-Anpassungen und die ursprünglichen Oberflächenkomponenten
++bleiben enthalten.
+ 
+ Eigene Waffenbilder liegen unter **Dokumente → GTA San Andreas User Files →
+ NLBinder → Waffenicons**. Der Button **Waffenicons-Ordner öffnen** im Binder
+@@ -18,9 +19,9 @@ NLBinder → Waffenicons**. Der Button **Waffenicons-Ordner öffnen** im Binder
+ 2. [Technisches Verhalten, Prüfungen und Grenzen](docs/review/PRUEFUNG-DE.md)
+ 3. [Dateien im Vergleich zum Original](docs/review/DATEIVERGLEICH.md)
+ 4. [Herkunft und Abhängigkeiten](docs/review/DEPENDENCIES.md)
+-5. [Programmänderungen als GitHub-Vergleich](https://github.com/Kobiro57/PerkysBinderChangelog/compare/build-dependencies-baseline...v0.1.1-r8)
++5. [Programmänderungen als GitHub-Vergleich](https://github.com/Kobiro57/PerkysBinderChangelog/compare/build-dependencies-baseline...v0.1.1-r9)
+    oder als [kompakter Quellcode-Patch](docs/review/first-party-changes.patch)
+-6. [Änderungen seit r7](https://github.com/Kobiro57/PerkysBinderChangelog/compare/v0.1.1-r7...v0.1.1-r8)
++6. [Änderungen seit r8](https://github.com/Kobiro57/PerkysBinderChangelog/compare/v0.1.1-r8...v0.1.1-r9)
+ 
+ Der vollständige bearbeitete Code liegt in `src/`, `include/`, `res/`,
+ `tests/`, `tools/` und `third_party/`. Die Übersicht verlinkt direkt zu den
+@@ -44,17 +45,17 @@ die [aktuelle Build-Anleitung](docs/BUILD-README.md) beschreibt das Bauen des Bi
+ 
+ ## Geprüfte ASI
+ 
+-- [Keybinder.asi herunterladen](dist/NLBinder-0.1.1-r8/Keybinder.asi)
+-- [Komplettes ZIP-Paket herunterladen](dist/NLBinder-v0.1.1-KOBiRO-r8.zip)
+-- [Installation und Bedienung](dist/NLBinder-0.1.1-r8/LIESMICH.md)
+-- [Build- und Prüfangaben](dist/NLBinder-0.1.1-r8/BUILD-INFO.txt)
+-- [Maschinenlesbarer Prüfnachweis](dist/NLBinder-0.1.1-r8/PRUEFBERICHT.json)
+-- [SHA-256 der ausgelieferten ASI](dist/NLBinder-0.1.1-r8/SHA256SUMS.txt)
++- [Keybinder.asi herunterladen](dist/NLBinder-0.1.1-r9/Keybinder.asi)
++- [Komplettes ZIP-Paket herunterladen](dist/NLBinder-v0.1.1-KOBiRO-r9.zip)
++- [Installation und Bedienung](dist/NLBinder-0.1.1-r9/LIESMICH.md)
++- [Build- und Prüfangaben](dist/NLBinder-0.1.1-r9/BUILD-INFO.txt)
++- [Maschinenlesbarer Prüfnachweis](dist/NLBinder-0.1.1-r9/PRUEFBERICHT.json)
++- [SHA-256 der ausgelieferten ASI](dist/NLBinder-0.1.1-r9/SHA256SUMS.txt)
+ 
+ Die Nachweise gehören zum jeweiligen Binärstand: automatisierte Gesamttests,
+ Win32-Release-Build, PE-/Ressourcenvergleich und Reconnect-Helfertest mit
+ harmlosen Testprozessen. Ein echter Ingame-Test mit dem konkreten Server und
+-Launcher steht aus. Die [vorherige r7-Fassung](dist/NLBinder-0.1.1-r7/BUILD-INFO.txt)
++Launcher steht aus. Die [vorherige r8-Fassung](dist/NLBinder-0.1.1-r8/BUILD-INFO.txt)
+ und ihre Prüfsumme bleiben zur Nachverfolgung erhalten.
+ 
+ ## Weitere Updates
+diff --git a/docs/NLBinder-0.1.1-r9-DE.md b/docs/NLBinder-0.1.1-r9-DE.md
+new file mode 100644
+index 0000000..009528c
+--- /dev/null
++++ b/docs/NLBinder-0.1.1-r9-DE.md
+@@ -0,0 +1,58 @@
++# NLBinder v.0.1.1 by KOBiRO – Überarbeitung 9
++
++Stand: 27. Oktober 2026. Unter **Mods → Interface** bleiben vier getrennt
++einstellbare Bereiche: **Geldanzeige, Waffenicon, Munition und Minimap**.
++Die Maussteuerung beim Verschieben verwendet die gemeinsame Eingabebehandlung
++der dauerhaften Online-Overlays. Esc beendet den Modus und speichert.
++
++## Installation
++
++1. GTA/SA-MP schließen und die bisherige Binder-ASI sichern.
++2. Die bisherige ASI am bisherigen Installationsort durch `Keybinder.asi`
++   ersetzen. Nur eine Binder-Fassung laden; der vorhandene ASI-Loader bleibt
++   erforderlich.
++3. GTA San Andreas 1.0 US mit SA-MP 0.3.DL-R1 starten und normal einloggen.
++
++Eigene Einstellungen und Waffenbilder bleiben im bisherigen NLBinder-Ordner
++unter **Dokumente → GTA San Andreas User Files → NLBinder**. Die mitgelieferte
++leere Waffenicon-Ordnerstruktur kann dort zusammengeführt werden. Der
++Interface-Editor benötigt keine weitere INI-Datei.
++
++## Interface einrichten
++
++Jeder der vier Bereiche bietet eine eigene Positions- und Farbauswahl.
++**Mit der Maus verschieben** startet den Verschiebemodus für das gewählte
++Element. Das Binder-Menü wird ausgeblendet, der Mauszeiger bleibt frei
++beweglich und ein Rahmen markiert den Griff zum Ziehen. **Esc speichert**
++den aktiven Preset-Stand und beendet das Verschieben. Position und Farbe
++lassen sich einzeln zurücksetzen; die bisherigen fünf Preset-Slots bleiben
++vorhanden.
++
++Gebietsname, Fahrzeugname, Wanted-Sterne, Uhrzeit, Atemluft, Rüstung und
++Leben haben keine Interface-Einstellungen mehr. Ihre früheren Interface-
++Anpassungen werden nicht weiter angewendet. Die normalen Spielanzeigen
++bleiben sichtbar und werden vom Spiel beziehungsweise Server gestaltet.
++
++Die Anpassung betrifft das lokale native GTA-HUD. Eigene Server-Textdraws,
++Datum und sonstige Serveranzeigen gehören nicht dazu. Die Minimap-Farbe
++ist eine Tönung, die Kartendetails erhält. Die vorhandene Waffenicon-Auswahl
++arbeitet weiterhin mit den Interface-Einstellungen zusammen.
++
++## Prüfung und frühere Funktionen
++
++Die Paketnachweise stehen in `BUILD-INFO.txt`, `SHA256SUMS.txt` und
++`PRUEFBERICHT.json`. Der Reconnect-Helfer ist in der ASI enthalten und wird
++mit harmlosen Testprozessen geprüft. Ein echter Ingame-Test auf dem
++konkreten Server steht aus.
++
++Jobs, Skilltrees, Fraktionen, getrennte Freunde-/Feinde-Overlays,
++Waffenicons, `/speed ID`, Statistik-/Jobskill-Synchronisation und der Schutz
++vor einem zweiten Motorstart nach einer Server-Addon-Meldung bleiben
++enthalten. **Waffenicons-Ordner öffnen** verwendet den tatsächlichen
++Windows-Dokumente-Pfad auch bei OneDrive-Umleitung.
++
++Quellcode, Änderungsübersicht und Prüfstand werden im
++[GitHub-Prüfrepository](https://github.com/Kobiro57/PerkysBinderChangelog)
++bereitgestellt. Frühere Stände und ursprüngliche Urheberhinweise bleiben
++erhalten. Persönliche Screenshots, Laufzeitkonfigurationen, Accountwerte und
++eigene PNGs gehören nicht zur Veröffentlichung.
+diff --git a/docs/review/CHANGELOG-DE.md b/docs/review/CHANGELOG-DE.md
+index e0fc179..5d95d6e 100644
+--- a/docs/review/CHANGELOG-DE.md
++++ b/docs/review/CHANGELOG-DE.md
+@@ -539,3 +539,42 @@ Die endgültigen automatisierten Ergebnisse und die ASI-Prüfsumme gehören zu
+ [r8](../../dist/NLBinder-0.1.1-r8/BUILD-INFO.txt). Die ursprünglichen
+ Urheberhinweise und frühere Prüfstände bleiben erhalten. Ein echter
+ Ingame-Test mit dem konkreten Server steht aus.
++
++
++## 15. Nachtrag r9 – 27. Oktober 2026
++
++### Interface auf vier Bereiche reduziert
++
++Im Interface-Editor bleiben Geldanzeige, Waffenicon, Munition und Minimap.
++Gebietsname, Fahrzeugname, Wanted-Sterne, Uhrzeit, Atemluft, Rüstung und Leben
++wurden aus der Bearbeitung entfernt. Auch früher gespeicherte Interface-
++Versätze und Farben dieser sieben Bereiche werden nicht mehr angewendet.
++Die normalen Spielanzeigen bleiben vorhanden. Die vier übrigen Bereiche
++behalten separate Positions- und Farboptionen sowie die Preset-Verwaltung.
++
++### Mauszeiger im Verschiebemodus freigegeben
++
++Der Interface-Modus blendete das Menü aus, während einzelne Maus-Hooks nur
++das sichtbare Menü als Eingabezuständigkeit erkannten. GTA konnte deshalb
++weiterhin den Mauszeiger zur Bildschirmmitte zurücksetzen. Interface und
++dauerhafte Online-Overlays verwenden jetzt dieselbe gemeinsame Prüfung für
++die Mauszuständigkeit. Sie berücksichtigt den aktiven Verschiebemodus auch
++bei ausgeblendetem Menü und schützt sowohl die Zeigerposition als auch die
++nativen Mauszustände und Mausereignisse. Esc speichert und beendet den Modus.
++
++Quellen: [InterfaceLayout.h](../../include/InterfaceLayout.h),
++[NativeHudEditor.cpp](../../src/NativeHudEditor.cpp),
++[InterfaceEditor.cpp](../../src/InterfaceEditor.cpp),
++[InterfaceEditorUI.cpp](../../src/InterfaceEditorUI.cpp),
++[ImGuiOverlay.cpp](../../src/ImGuiOverlay.cpp),
++[Main.cpp](../../src/Main.cpp),
++[SettingsManager.cpp](../../src/SettingsManager.cpp).
++Tests: [NativeHudEditorTests.cpp](../../tests/NativeHudEditorTests.cpp),
++[InterfaceEditorTests.cpp](../../tests/InterfaceEditorTests.cpp),
++[ImGuiOverlayTests.cpp](../../tests/ImGuiOverlayTests.cpp),
++[InterfaceLayoutSettingsTests.cpp](../../tests/InterfaceLayoutSettingsTests.cpp).
++
++Die endgültigen Nachweise gehören zum
++[r9-Paket](../../dist/NLBinder-0.1.1-r9/BUILD-INFO.txt). Frühere Prüfstände und
++ursprüngliche Urheberhinweise bleiben erhalten. Ein echter Ingame-Test auf
++dem konkreten Server steht aus.
+diff --git a/docs/review/PRUEFUNG-DE.md b/docs/review/PRUEFUNG-DE.md
+index cb38838..aa10124 100644
+--- a/docs/review/PRUEFUNG-DE.md
++++ b/docs/review/PRUEFUNG-DE.md
+@@ -1,6 +1,96 @@
+ # Hinweise zur Prüfung durch die Projektleitung
+ 
+-## Aktueller Stand r8 – 27. Oktober 2026
++## Aktueller Stand r9 – 27. Oktober 2026
++
++Der aktuelle Quellstand ist **NLBinder v.0.1.1 by KOBiRO, r9**. Die
++[Bedienung](../NLBinder-0.1.1-r9-DE.md) und der
++[r9-Nachtrag](CHANGELOG-DE.md#15-nachtrag-r9--27-oktober-2026) beschreiben
++die vier verbleibenden Interface-Bereiche und den korrigierten Mausmodus.
++Frühere Prüfstände bleiben nachfolgend ihren damaligen ASIs zugeordnet.
++
++### Verhalten und prüfbarer Umfang
++
++Unter **Mods → Interface** bleiben **Geldanzeige, Waffenicon, Munition und
++Minimap** mit eigenen Positions- und Farbauswahlen. Die sieben entfernten
++Bereiche sind nicht mehr im Editor auswählbar; ihre früher gespeicherten
++Interface-Anpassungen werden nicht weiter angewendet. Das entfernt keine
++normalen Spielanzeigen.
++
++Der Fehler beim Verschieben lag in der Trennung zwischen sichtbarem
++Binder-Menü und aktivem Verschiebemodus. Nach dem Ausblenden des Menüs war
++der Interface-Modus weiter aktiv, einzelne native Maus-Hooks prüften jedoch
++nur die Menüsichtbarkeit. Dadurch konnte GTA den Mauszeiger weiterhin zur
++Bildschirmmitte zurücksetzen. Die gemeinsame Mauszuständigkeit berücksichtigt
++nun auch die aktiven Verschiebemodi der dauerhaften Online-Overlays und des
++Interface-Editors. Mauszustände und Mausereignisse werden währenddessen vom
++Spiel abgeschirmt. Esc beendet den Modus und speichert. Die Maus wird wieder
++an das Spiel übergeben, sobald auch kein Binder-Menü oder anderer UI-Modus
++sie mehr benötigt.
++
++Positions- und Farbwerte gelten ausschließlich für die vier nativen GTA-
++HUD-Bereiche. Eigene Server-Textdraws und Datum gehören nicht dazu. Die
++Waffenicon-Auswahl und früheren Binder-Funktionen bleiben enthalten. Ein
++echter Ingame-Test auf dem konkreten Server steht aus.
++
++Die native Waffenicon-Zuordnung im allgemeinen Spieler-HUD hat eigene
++Ausschlussbereiche für die unveränderten Lebens-, Rüstungs- und Atembalken.
++Diese Bereiche reichen den ursprünglichen Zeichenaufruf durch; dadurch
++werden die entfernten Balken nicht versehentlich als Waffenicon behandelt.
++Wanted-, Fahrzeugnamen- und Gebietsnamen-Hooks sowie die Uhrklassifizierung
++gehören nicht mehr zur Interface-Anpassung.
++
++### r9-Prüfpfade
++
++| Bereich | Implementierung | Tests |
++| --- | --- | --- |
++| Vier Interface-Elemente | [InterfaceLayout.h](../../include/InterfaceLayout.h), [NativeHudEditor.cpp](../../src/NativeHudEditor.cpp), [InterfaceEditorUI.cpp](../../src/InterfaceEditorUI.cpp) | [NativeHudEditorTests.cpp](../../tests/NativeHudEditorTests.cpp) |
++| Gemeinsame Mauszuständigkeit | [ImGuiOverlay.cpp](../../src/ImGuiOverlay.cpp), [Main.cpp](../../src/Main.cpp) | [ImGuiOverlayTests.cpp](../../tests/ImGuiOverlayTests.cpp) |
++| Ziehen und Speichern | [InterfaceEditor.cpp](../../src/InterfaceEditor.cpp) | [InterfaceEditorTests.cpp](../../tests/InterfaceEditorTests.cpp) |
++| Persistenz und alte Einstellungen | [SettingsManager.cpp](../../src/SettingsManager.cpp) | [InterfaceLayoutSettingsTests.cpp](../../tests/InterfaceLayoutSettingsTests.cpp) |
++| ASI, Helfer und Paket | [verify_revision9_artifact.py](../../tools/verify_revision9_artifact.py), [package_revision9.ps1](../../tools/package_revision9.ps1) | PE32/x86, Ressource 300, Helfer-/Paket-SHA-256 und 43 Waffenordner |
++
++### Zugehörige finale Paketnachweise
++
++- [Keybinder.asi](../../dist/NLBinder-0.1.1-r9/Keybinder.asi)
++- [SHA-256](../../dist/NLBinder-0.1.1-r9/SHA256SUMS.txt)
++- [Build- und Prüfangaben](../../dist/NLBinder-0.1.1-r9/BUILD-INFO.txt)
++- [PE-/Import-/Ressourcenprüfung](../../dist/NLBinder-0.1.1-r9/PRUEFBERICHT.json)
++- [Nativer Helfertest](../../dist/NLBinder-0.1.1-r9/RECONNECT-TEST.json)
++
++### Ausgeführte Prüfungen für r9
++
++Gesamttests und Win32-Release-Build endeten mit Exitcode 0. Die
++InterfaceEditor-Suite meldet 322 erfolgreiche Prüfungen einschließlich
++wirklicher Mauspositionen, Maustasten-Eingaben und Esc-Speicherung im
++isolierten ImGui-Kontext. Der native Transformationsbereich meldet 54
++Prüfungen für die vier verbleibenden Elemente, Standard-Durchreichen,
++Farben, Positionsversätze und die Ausschlussbereiche der unveränderten
++Balken. Die Interface-Einstellungen melden 123 Prüfungen für die vier
++Kategorien und Presets, erhaltene Positionen/Farben, ignorierte entfernte
++Felder sowie Speichern/Laden.
++
++Drei neue ImGuiOverlay-Regressionen prüfen die gemeinsame Mauszuständigkeit:
++Verschieben bei intern ausgeblendetem Menü, den bisherigen Online-Ablauf mit
++Menürückkehr nach Esc und die getrennte QuickMap-Mausradbehandlung. Die
++Prüfungen verwenden dieselben Filter- und Zuständigkeitsfunktionen wie die
++nativen Zeiger-/DirectInput-Hooks. Sie umfassen Mauszustände, gepufferte
++Mausereignisse und die einmalige Freigabe nach dem letzten UI-Besitzer.
++Die vorherige Prüfung des unveränderten Online-Ablaufs wird beibehalten.
++Die Produktionsquellen Main.cpp und ImGuiOverlay.cpp bestanden zusätzlich
++die gezielte Syntaxprüfung. Die automatisierten Tests verwenden synthetische
++Eingaben und ersetzen keinen Test der tatsächlichen Darstellung im Spiel.
++
++Die geprüfte ASI umfasst 18.442.240 Bytes; SHA-256:
++`41a1e6d772f6c68b5541b4a7ea4ec1f997d5d97a55ffdbe446d0d89117734964`.
++PE32/x86, Windows-Imports und der bytegleiche eingebettete Helfer sind
++geprüft. Der native Helfertest umfasst 18 erfolgreiche Prüfungen mit
++harmlosen Testprozessen. Die separate ASI und die ASI im ZIP haben dieselbe
++Prüfsumme; ein unabhängiger Abgleich bestätigt alle Paketdateien sowie
++43 leere Waffenordner und keine persönlichen PNGs im ZIP.
++[Maschinenlesbare Ergebnisse](r9-validation.json) ergänzen die Paketnachweise.
++Ein echter Ingame-Test mit dem konkreten Server und Launcher steht aus.
++
++## Historischer Prüfstand r8 – 27. Oktober 2026
+ 
+ Der aktuelle Quellstand ist **NLBinder v.0.1.1 by KOBiRO, r8**. Die
+ [Bedienung](../NLBinder-0.1.1-r8-DE.md) und der
+diff --git a/docs/review/PUBLICATION.json b/docs/review/PUBLICATION.json
+index 0692cd3..c67d047 100644
+--- a/docs/review/PUBLICATION.json
++++ b/docs/review/PUBLICATION.json
+@@ -3,11 +3,11 @@
+   "baseline_import_commit": "2da75e6c54a098243bf00ab48d86c5e3ee3cd261",
+   "baseline_tag": "original-archive-92ce219",
+   "original_archive_commit_comment": "92ce21971bee2d166d830e23ad20950f1dc98921",
+-  "history_note": "Original archive and pinned-dependency imports remain intact. r8 is a subsequent Binder update; no previous history is rewritten.",
+-  "asi_sha256": "02401c76a69e40631698ac2e1a5ea5855f69fcbb3d9c0a9f7ee1909c28a30e3b",
++  "history_note": "Original archive and pinned-dependency imports remain intact. r9 is a subsequent Binder update; no previous history is rewritten.",
++  "asi_sha256": "41a1e6d772f6c68b5541b4a7ea4ec1f997d5d97a55ffdbe446d0d89117734964",
+   "dependencies_import_commit": "3c8e11a76bc8d94962da0ce447a8d1a8b7c3eb83",
+   "dependencies_tag": "build-dependencies-baseline",
+-  "release": "v0.1.1-r8",
+-  "previous_release": "v0.1.1-r7",
+-  "previous_published_commit": "1326a9af89dd8e4a764a0996e6d80bb28766b7a7"
++  "release": "v0.1.1-r9",
++  "previous_release": "v0.1.1-r8",
++  "previous_published_commit": "e4840bdb5be5f09a9041f6273200c7628b3a24c7"
+ }
+diff --git a/docs/review/README-GITHUB.md b/docs/review/README-GITHUB.md
+index c07fd5c..d27fd43 100644
+--- a/docs/review/README-GITHUB.md
++++ b/docs/review/README-GITHUB.md
+@@ -2,11 +2,12 @@
+ 
+ Vollständiger Prüfstand der Änderungen am **Perkys / NLBinder**, angepasst für
+ KOBiRO. Grundlage und ursprüngliche Urheberschaft bleiben beim Originalprojekt.
+-Der Stand lautet **NLBinder v.0.1.1 by KOBiRO, r8**. Neu ist **Mods →
+-Interface** neben Waffenicons: native HUD-Elemente erhalten getrennte
+-Positions- und Farbeinstellungen. Ein ausgewähltes Element wird mit der Maus
+-verschoben und mit Esc gespeichert. Frühere Binder-Anpassungen und die
+-ursprünglichen Oberflächenkomponenten bleiben enthalten.
++Der Stand lautet **NLBinder v.0.1.1 by KOBiRO, r9**. Unter **Mods →
++Interface** bleiben Geldanzeige, Waffenicon, Munition und Minimap mit
++getrennten Positions- und Farbeinstellungen. Der Verschiebemodus nutzt die
++gemeinsame Maussteuerung der dauerhaften Online-Overlays. Esc speichert.
++Frühere Binder-Anpassungen und die ursprünglichen Oberflächenkomponenten
++bleiben enthalten.
+ 
+ Eigene Waffenbilder liegen unter **Dokumente → GTA San Andreas User Files →
+ NLBinder → Waffenicons**. Der Button **Waffenicons-Ordner öffnen** im Binder
+@@ -18,9 +19,9 @@ NLBinder → Waffenicons**. Der Button **Waffenicons-Ordner öffnen** im Binder
+ 2. [Technisches Verhalten, Prüfungen und Grenzen](../../docs/review/PRUEFUNG-DE.md)
+ 3. [Dateien im Vergleich zum Original](../../docs/review/DATEIVERGLEICH.md)
+ 4. [Herkunft und Abhängigkeiten](../../docs/review/DEPENDENCIES.md)
+-5. [Programmänderungen als GitHub-Vergleich](https://github.com/Kobiro57/PerkysBinderChangelog/compare/build-dependencies-baseline...v0.1.1-r8)
++5. [Programmänderungen als GitHub-Vergleich](https://github.com/Kobiro57/PerkysBinderChangelog/compare/build-dependencies-baseline...v0.1.1-r9)
+    oder als [kompakter Quellcode-Patch](../../docs/review/first-party-changes.patch)
+-6. [Änderungen seit r7](https://github.com/Kobiro57/PerkysBinderChangelog/compare/v0.1.1-r7...v0.1.1-r8)
++6. [Änderungen seit r8](https://github.com/Kobiro57/PerkysBinderChangelog/compare/v0.1.1-r8...v0.1.1-r9)
+ 
+ Der vollständige bearbeitete Code liegt in `src/`, `include/`, `res/`,
+ `tests/`, `tools/` und `third_party/`. Die Übersicht verlinkt direkt zu den
+@@ -44,17 +45,17 @@ die [aktuelle Build-Anleitung](../../docs/BUILD-README.md) beschreibt das Bauen
+ 
+ ## Geprüfte ASI
+ 
+-- [Keybinder.asi herunterladen](../../dist/NLBinder-0.1.1-r8/Keybinder.asi)
+-- [Komplettes ZIP-Paket herunterladen](../../dist/NLBinder-v0.1.1-KOBiRO-r8.zip)
+-- [Installation und Bedienung](../../dist/NLBinder-0.1.1-r8/LIESMICH.md)
+-- [Build- und Prüfangaben](../../dist/NLBinder-0.1.1-r8/BUILD-INFO.txt)
+-- [Maschinenlesbarer Prüfnachweis](../../dist/NLBinder-0.1.1-r8/PRUEFBERICHT.json)
+-- [SHA-256 der ausgelieferten ASI](../../dist/NLBinder-0.1.1-r8/SHA256SUMS.txt)
++- [Keybinder.asi herunterladen](../../dist/NLBinder-0.1.1-r9/Keybinder.asi)
++- [Komplettes ZIP-Paket herunterladen](../../dist/NLBinder-v0.1.1-KOBiRO-r9.zip)
++- [Installation und Bedienung](../../dist/NLBinder-0.1.1-r9/LIESMICH.md)
++- [Build- und Prüfangaben](../../dist/NLBinder-0.1.1-r9/BUILD-INFO.txt)
++- [Maschinenlesbarer Prüfnachweis](../../dist/NLBinder-0.1.1-r9/PRUEFBERICHT.json)
++- [SHA-256 der ausgelieferten ASI](../../dist/NLBinder-0.1.1-r9/SHA256SUMS.txt)
+ 
+ Die Nachweise gehören zum jeweiligen Binärstand: automatisierte Gesamttests,
+ Win32-Release-Build, PE-/Ressourcenvergleich und Reconnect-Helfertest mit
+ harmlosen Testprozessen. Ein echter Ingame-Test mit dem konkreten Server und
+-Launcher steht aus. Die [vorherige r7-Fassung](../../dist/NLBinder-0.1.1-r7/BUILD-INFO.txt)
++Launcher steht aus. Die [vorherige r8-Fassung](../../dist/NLBinder-0.1.1-r8/BUILD-INFO.txt)
+ und ihre Prüfsumme bleiben zur Nachverfolgung erhalten.
+ 
+ ## Weitere Updates
+diff --git a/docs/review/r9-validation.json b/docs/review/r9-validation.json
+new file mode 100644
+index 0000000..b30673f
+--- /dev/null
++++ b/docs/review/r9-validation.json
+@@ -0,0 +1,48 @@
++{
++  "revision": "v0.1.1-r9",
++  "date": "2026-10-27",
++  "asi_bytes": 18442240,
++  "asi_sha256": "41a1e6d772f6c68b5541b4a7ea4ec1f997d5d97a55ffdbe446d0d89117734964",
++  "full_test_suite_exit_code": 0,
++  "release_build_exit_code": 0,
++  "focused_checks": {
++    "InterfaceEditor": 322,
++    "NativeHudEditor": 54,
++    "InterfaceLayoutSettings": 123,
++    "WeaponIconManager": 245,
++    "WeaponIconSettings": 29,
++    "StartupStatsSync": 252,
++    "StatsDialogRPCAdapter": 727,
++    "native_reconnect_helper": 18
++  },
++  "failures": 0,
++  "native_hud_elements": 4,
++  "retained_interface_categories": [
++    "money",
++    "weapon",
++    "ammo",
++    "radar"
++  ],
++  "removed_interface_settings_ignored_and_not_resaved": true,
++  "retained_interface_settings_preserved": true,
++  "shared_mouse_ownership_for_menu_and_auxiliary_modes": true,
++  "cursor_warp_policy_shared_with_native_hook": true,
++  "directinput_state_and_event_filters_checked": true,
++  "mouse_regression_cases": [
++    "TestHiddenAuxiliaryMoveOwnsCursorAndFiltersNativeMouse",
++    "TestOnlineStyleAuxiliaryMoveKeepsMenuOwnerUntilEsc",
++    "TestQuickMapWheelFilteringRemainsSeparateFromFullMouseCapture",
++    "Test_MouseDragAndEscapeSaveWhileMainMenuIsHidden"
++  ],
++  "drag_save_on_escape": true,
++  "native_vitals_excluded_from_weapon_fallback": true,
++  "server_textdraws_changed": false,
++  "weapon_template_directories": 43,
++  "pe32_x86_dll": true,
++  "embedded_helper_matches": true,
++  "archive_asi_matches": true,
++  "live_game_test_performed": false,
++  "archive_bytes": 10535045,
++  "archive_sha256": "6171ff1f8739ebffc387bb99aa0aa2182eebedd881991616d711201864269b6c",
++  "personal_pngs_in_archive": 0
++}
+diff --git a/include/ImGuiOverlay.h b/include/ImGuiOverlay.h
+index 6275389..df6c14a 100644
+--- a/include/ImGuiOverlay.h
++++ b/include/ImGuiOverlay.h
+@@ -51,6 +51,8 @@ public:
+     void Hide();
+     void Toggle();
+     bool IsVisible() const;
++    // Menu and auxiliary move modes share the same native mouse ownership.
++    bool OwnsMouseInput() const;
+     void Render();
+     void OnDeviceLost();
+     void OnDeviceReset();
+@@ -77,6 +79,9 @@ public:
+     float GetCurrentScale() const { return current_scale_; }
+ #ifdef KEYBINDER_TESTING
+     static float ComputeAutomaticScaleForTesting(float width, float height);
++    bool BlocksCursorWarpForTesting() const { return OwnsMouseInput(); }
++    void FilterMouseStateForTesting(DWORD size, void* state) const;
++    void FilterMouseEventsForTesting(DWORD size, void* events, DWORD* count) const;
+ #endif
+ 
+     MainWindowUI* GetMainWindowUI() const { return mainWindowUI_; }
+@@ -103,6 +108,9 @@ private:
+     bool IsQuickMapWheelCaptureActive() const;
+     bool IsKeyboardCaptureActive() const;
+     bool IsGameInputActive() const;
++    void SyncMouseOwnership();
++    void FilterMouseState(DWORD size, void* state) const;
++    void FilterMouseEvents(DWORD size, void* events, DWORD* count) const;
+     void RenderFrame(bool fromChatDrawHook);
+     bool InstallSetCursorPosHook();
+     void RemoveSetCursorPosHook();
+diff --git a/include/InterfaceLayout.h b/include/InterfaceLayout.h
+index da32b97..7efcd6f 100644
+--- a/include/InterfaceLayout.h
++++ b/include/InterfaceLayout.h
+@@ -8,8 +8,7 @@
+ namespace keybinder {
+ 
+ enum class HudElement : std::size_t {
+-    Health, Armour, Breath, Money, Clock, Weapon, Ammo, Wanted,
+-    VehicleName, ZoneName, Radar, Count
++    Money, Weapon, Ammo, Radar, Count
+ };
+ 
+ struct HudElementStyle {
+@@ -30,16 +29,9 @@ struct HudElementDefinition {
+ };
+ 
+ inline constexpr std::array<HudElementDefinition, kHudElementCount> kHudElements{{
+-    {HudElement::Health, "health", "Leben"},
+-    {HudElement::Armour, "armour", "Rüstung"},
+-    {HudElement::Breath, "breath", "Atemluft"},
+     {HudElement::Money, "money", "Geldanzeige"},
+-    {HudElement::Clock, "clock", "Uhrzeit"},
+     {HudElement::Weapon, "weapon", "Waffenicon"},
+     {HudElement::Ammo, "ammo", "Munition"},
+-    {HudElement::Wanted, "wanted", "Wanted-Sterne"},
+-    {HudElement::VehicleName, "vehicle_name", "Fahrzeugname"},
+-    {HudElement::ZoneName, "zone_name", "Gebietsname"},
+     {HudElement::Radar, "radar", "Minimap"},
+ }};
+ 
+diff --git a/include/NativeHudEditor.h b/include/NativeHudEditor.h
+index 83470a4..f6eed3c 100644
+--- a/include/NativeHudEditor.h
++++ b/include/NativeHudEditor.h
+@@ -21,6 +21,7 @@ public:
+     void TransformPoint(HudElement element, float& x, float& y, float width, float height) const;
+     std::uint32_t TransformColor(HudElement element, std::uint32_t argb, bool text = false) const;
+     static HudElement ClassifyPlayerInfoText(const char* text);
++    static HudElement ResolvePrimitiveElement(HudElement scoped, bool playerInfo, bool excluded, bool fontOutput);
+ 
+ private:
+     friend struct NativeHudHooks;
+diff --git a/src/ImGuiOverlay.cpp b/src/ImGuiOverlay.cpp
+index 0794d2a..1d88010 100644
+--- a/src/ImGuiOverlay.cpp
++++ b/src/ImGuiOverlay.cpp
+@@ -576,6 +576,7 @@ bool TryGetDirectInputDeviceType(void* device, DWORD& deviceType) {
+     deviceType = GET_DIDEVICE_TYPE(caps.dwDevType);
+     return true;
+ }
++#endif
+ 
+ void SuppressDirectInputMouseState(DWORD dataSize, void* data) {
+     if (data == nullptr || dataSize == 0) {
+@@ -653,7 +654,6 @@ void SuppressDirectInputMouseWheelEvents(DWORD objectDataSize, void* objectData,
+     }
+     *inOutCount = writeIndex;
+ }
+-#endif
+ 
+ }
+ 
+@@ -968,12 +968,7 @@ void ImGuiOverlay::Show() {
+ 
+     Logger::Info("[ImGuiOverlay] Showing overlay");
+     visible_ = true;
+-    keybinder::Logger::Debug("ImGuiOverlay::Show() - showing cursor, show_cursor=%p", dependencies_.show_cursor);
+-    if (dependencies_.show_cursor != nullptr) {
+-        dependencies_.show_cursor(true);
+-    }
+-    cursor_shown_ = true;
+-    SyncImGuiCursorVisibility(true);
++    SyncMouseOwnership();
+ }
+ 
+ void ImGuiOverlay::Hide() {
+@@ -987,17 +982,8 @@ void ImGuiOverlay::Hide() {
+ 
+     Logger::Info("[ImGuiOverlay] Hiding overlay");
+     visible_ = false;
+-    
+-    // Restore game controls BEFORE hiding cursor
+-    if (dependencies_.restore_game_mouse != nullptr) {
+-        dependencies_.restore_game_mouse();
+-    }
+-    
+-    if (cursor_shown_ && dependencies_.show_cursor != nullptr) {
+-        dependencies_.show_cursor(false);
+-    }
+-    cursor_shown_ = false;
+-    SyncImGuiCursorVisibility(false);
++    // Auxiliary move modes can continue to own the cursor after hiding the menu.
++    SyncMouseOwnership();
+ }
+ 
+ void ImGuiOverlay::Toggle() {
+@@ -1012,6 +998,40 @@ bool ImGuiOverlay::IsVisible() const {
+     return visible_;
+ }
+ 
++bool ImGuiOverlay::OwnsMouseInput() const {
++    return !shutting_down_ && !exit_started_ && (visible_ || (auxiliaryInteractionActiveCallback_ && auxiliaryInteractionActiveCallback_()));
++}
++
++void ImGuiOverlay::SyncMouseOwnership() {
++    const bool ownsMouse = OwnsMouseInput();
++    if (ownsMouse) {
++        if (!cursor_shown_ && dependencies_.show_cursor) dependencies_.show_cursor(true);
++        cursor_shown_ = true;
++        SyncImGuiCursorVisibility(true);
++    } else if (cursor_shown_) {
++        // Release camera control once when the last UI mouse owner is gone.
++        if (dependencies_.restore_game_mouse) dependencies_.restore_game_mouse();
++        if (dependencies_.show_cursor) dependencies_.show_cursor(false);
++        cursor_shown_ = false;
++        SyncImGuiCursorVisibility(false);
++    }
++}
++
++void ImGuiOverlay::FilterMouseState(DWORD size, void* state) const {
++    if (OwnsMouseInput()) SuppressDirectInputMouseState(size, state);
++    else if (IsQuickMapWheelCaptureActive()) SuppressDirectInputMouseWheelState(size, state);
++}
++
++void ImGuiOverlay::FilterMouseEvents(DWORD size, void* events, DWORD* count) const {
++    if (OwnsMouseInput()) SuppressDirectInputMouseEvents(size, events, count);
++    else if (IsQuickMapWheelCaptureActive()) SuppressDirectInputMouseWheelEvents(size, events, count);
++}
++
++#ifdef KEYBINDER_TESTING
++void ImGuiOverlay::FilterMouseStateForTesting(DWORD size, void* state) const { FilterMouseState(size, state); }
++void ImGuiOverlay::FilterMouseEventsForTesting(DWORD size, void* events, DWORD* count) const { FilterMouseEvents(size, events, count); }
++#endif
++
+ void ImGuiOverlay::SetHitmarkerRenderCallback(std::function<void()> callback) {
+     hitmarkerRenderCallback_ = std::move(callback);
+ }
+@@ -1045,7 +1065,7 @@ void ImGuiOverlay::SetQuickMapWheelHandlerCallback(std::function<void(float)> ca
+ }
+ 
+ bool ImGuiOverlay::IsQuickMapWheelCaptureActive() const {
+-    return !visible_ && quickMapWheelCaptureCallback_ != nullptr && quickMapWheelCaptureCallback_();
++    return !OwnsMouseInput() && quickMapWheelCaptureCallback_ != nullptr && quickMapWheelCaptureCallback_();
+ }
+ 
+ bool ImGuiOverlay::IsKeyboardCaptureActive() const {
+@@ -1092,7 +1112,7 @@ void ImGuiOverlay::RenderFrame(bool from_chat_draw_hook) {
+ 
+     ImGuiContext* ctx = ImGui::GetCurrentContext();
+     const bool auxiliaryInteractionActive = auxiliaryInteractionActiveCallback_ != nullptr && auxiliaryInteractionActiveCallback_();
+-    const bool interactionActive = visible_ || auxiliaryInteractionActive;
++    const bool interactionActive = OwnsMouseInput();
+     if (interactionActive && dependencies_.suppress_game_mouse != nullptr) {
+         dependencies_.suppress_game_mouse();
+     }
+@@ -1103,22 +1123,7 @@ void ImGuiOverlay::RenderFrame(bool from_chat_draw_hook) {
+             io_pre.MousePos.x, io_pre.MousePos.y, io_pre.MouseDrawCursor ? "true" : "false");
+     }
+ 
+-    if (interactionActive) {
+-        if (!cursor_shown_ && dependencies_.show_cursor != nullptr) {
+-            dependencies_.show_cursor(true);
+-        }
+-        cursor_shown_ = true;
+-        SyncImGuiCursorVisibility(true);
+-    } else if (cursor_shown_) {
+-        if (dependencies_.show_cursor != nullptr) {
+-            dependencies_.show_cursor(false);
+-        }
+-        cursor_shown_ = false;
+-        SyncImGuiCursorVisibility(false);
+-        if (dependencies_.restore_game_mouse != nullptr) {
+-            dependencies_.restore_game_mouse();
+-        }
+-    }
++    SyncMouseOwnership();
+     dependencies_.imgui_dx9_new_frame();
+     dependencies_.imgui_win32_new_frame();
+     ImGui::NewFrame();
+@@ -1344,7 +1349,7 @@ LRESULT ImGuiOverlay::WndProcHandler(HWND hwnd, UINT msg, WPARAM w_param, LPARAM
+     }
+ 
+     const bool auxiliaryInteractionActive = auxiliaryInteractionActiveCallback_ != nullptr && auxiliaryInteractionActiveCallback_();
+-    const bool interactionActive = visible_ || auxiliaryInteractionActive;
++    const bool interactionActive = OwnsMouseInput();
+ 
+     const bool focusLost = msg == WM_KILLFOCUS
+         || (msg == WM_ACTIVATEAPP && w_param == FALSE)
+@@ -1380,6 +1385,7 @@ LRESULT ImGuiOverlay::WndProcHandler(HWND hwnd, UINT msg, WPARAM w_param, LPARAM
+             if (auxiliaryInteractionCancelCallback_ != nullptr) {
+                 auxiliaryInteractionCancelCallback_();
+             }
++            SyncMouseOwnership();
+             return 0;
+         }
+         if (mainWindowUI_ == nullptr || !mainWindowUI_->IsCapturingKey()) {
+@@ -1576,7 +1582,7 @@ bool ImGuiOverlay::EnsureContext() {
+ 
+     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+     io.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange;
+-    io.MouseDrawCursor = visible_;
++    io.MouseDrawCursor = OwnsMouseInput();
+     io.ConfigWindowsMoveFromTitleBarOnly = true;
+     ImGui::StyleColorsDark();
+ 
+@@ -1757,8 +1763,8 @@ BOOL WINAPI ImGuiOverlay::HookedSetCursorPos(int x, int y) {
+         return ::SetCursorPos(x, y);
+     }
+ 
+-    if (active_instance_ != nullptr && active_instance_->visible_) {
+-        Logger::Debug("[CURSOR_DEBUG] Blocked SetCursorPos(%d, %d) - overlay visible", x, y);
++    if (active_instance_ != nullptr && active_instance_->OwnsMouseInput()) {
++        Logger::Debug("[CURSOR_DEBUG] Blocked SetCursorPos(%d, %d) - UI owns mouse", x, y);
+         return TRUE;
+     }
+ 
+@@ -1780,11 +1786,7 @@ HRESULT WINAPI ImGuiOverlay::HookedDirectInputGetDeviceState(void* device, DWORD
+         && !active_instance_->exit_started_
+         && TryGetDirectInputDeviceType(device, deviceType)) {
+         if (deviceType == DI8DEVTYPE_MOUSE) {
+-            if (active_instance_->visible_) {
+-                SuppressDirectInputMouseState(dataSize, data);
+-            } else if (active_instance_->IsQuickMapWheelCaptureActive()) {
+-                SuppressDirectInputMouseWheelState(dataSize, data);
+-            }
++            active_instance_->FilterMouseState(dataSize, data);
+         } else if (deviceType == DI8DEVTYPE_KEYBOARD && active_instance_->IsKeyboardCaptureActive()) {
+             if (data != nullptr && dataSize > 0) {
+                 std::memset(data, 0, dataSize);
+@@ -1807,11 +1809,7 @@ HRESULT WINAPI ImGuiOverlay::HookedDirectInputGetDeviceData(void* device, DWORD
+         && !active_instance_->exit_started_
+         && TryGetDirectInputDeviceType(device, deviceType)) {
+         if (deviceType == DI8DEVTYPE_MOUSE) {
+-            if (active_instance_->visible_) {
+-                SuppressDirectInputMouseEvents(objectDataSize, objectData, inOutCount);
+-            } else if (active_instance_->IsQuickMapWheelCaptureActive()) {
+-                SuppressDirectInputMouseWheelEvents(objectDataSize, objectData, inOutCount);
+-            }
++            active_instance_->FilterMouseEvents(objectDataSize, objectData, inOutCount);
+         } else if (deviceType == DI8DEVTYPE_KEYBOARD && active_instance_->IsKeyboardCaptureActive()) {
+             if (objectData != nullptr && objectDataSize != 0 && inOutCount != nullptr && *inOutCount != 0) {
+                 std::memset(objectData, 0, static_cast<std::size_t>(objectDataSize) * static_cast<std::size_t>(*inOutCount));
+@@ -2063,7 +2061,7 @@ bool ImGuiOverlay::ApplyDpiScale(float scale) {
+ 
+     ImGuiIO& io = ImGui::GetIO();
+ 
+-    if (visible_ && was_cursor_shown) {
++    if (OwnsMouseInput() && was_cursor_shown) {
+         io.MouseDrawCursor = true;
+         SyncImGuiCursorVisibility(true);
+         if (dependencies_.show_cursor != nullptr) {
+diff --git a/src/InterfaceEditor.cpp b/src/InterfaceEditor.cpp
+index 54e189e..cb40fec 100644
+--- a/src/InterfaceEditor.cpp
++++ b/src/InterfaceEditor.cpp
+@@ -228,13 +228,11 @@ void InterfaceEditor::RenderElementMoveMode(ImDrawList* drawList, float uiScale)
+ 
+     const std::size_t elementIndex = static_cast<std::size_t>(moving_element_);
+     const HudElementStyle& style = GetPreset(moving_preset_)->layout[elementIndex];
+-    // Fallback handles also allow moving elements which are currently invisible
+-    // (for example armour without a vest). Observed native bounds take priority.
++    // Fallback handles also allow moving elements which are currently invisible.
++    // Observed native bounds take priority.
+     constexpr std::array<std::array<float, 4>, kHudElementCount> defaultRects{{
+-        {{499, 77, 109, 10}}, {{546, 48, 62, 10}}, {{546, 62, 62, 10}},
+-        {{480, 89, 128, 24}}, {{548, 22, 60, 24}}, {{546, 20, 62, 62}},
+-        {{540, 64, 68, 20}}, {{490, 114, 118, 24}}, {{400, 344, 208, 32}},
+-        {{400, 344, 208, 32}}, {{40, 344, 94, 76}}
++        {{480, 89, 128, 24}}, {{546, 20, 62, 62}},
++        {{540, 64, 68, 20}}, {{40, 344, 94, 76}}
+     }};
+     const auto& fallback = defaultRects[elementIndex];
+     float left = viewport->Size.x * (fallback[0] / 640.0f + style.offset_x);
+diff --git a/src/InterfaceEditorUI.cpp b/src/InterfaceEditorUI.cpp
+index 5077f76..3912963 100644
+--- a/src/InterfaceEditorUI.cpp
++++ b/src/InterfaceEditorUI.cpp
+@@ -42,20 +42,10 @@ std::string GetPresetSlotLabel(const InterfacePreset& preset, int index) {
+     return slotLabel + " - " + preset.name;
+ }
+ 
+-void SyncLegacyVitalColors(InterfacePreset& preset, HudElement element) {
++void SyncLegacyMoneyColor(InterfacePreset& preset, HudElement element) {
+     const HudElementStyle& style = preset.layout[static_cast<std::size_t>(element)];
+     const InterfacePreset defaults;
+-    if (element == HudElement::Health) {
+-        preset.hp_color_r = style.custom_color ? style.color[0] : defaults.hp_color_r;
+-        preset.hp_color_g = style.custom_color ? style.color[1] : defaults.hp_color_g;
+-        preset.hp_color_b = style.custom_color ? style.color[2] : defaults.hp_color_b;
+-        preset.hp_color_a = style.custom_color ? style.color[3] : defaults.hp_color_a;
+-    } else if (element == HudElement::Armour) {
+-        preset.armor_color_r = style.custom_color ? style.color[0] : defaults.armor_color_r;
+-        preset.armor_color_g = style.custom_color ? style.color[1] : defaults.armor_color_g;
+-        preset.armor_color_b = style.custom_color ? style.color[2] : defaults.armor_color_b;
+-        preset.armor_color_a = style.custom_color ? style.color[3] : defaults.armor_color_a;
+-    } else if (element == HudElement::Money) {
++    if (element == HudElement::Money) {
+         preset.money_color_r = style.custom_color ? style.color[0] : defaults.money_color_r;
+         preset.money_color_g = style.custom_color ? style.color[1] : defaults.money_color_g;
+         preset.money_color_b = style.custom_color ? style.color[2] : defaults.money_color_b;
+@@ -213,7 +203,7 @@ void InterfaceEditorUI::Render() {
+             ImGui::TableNextColumn();
+             UIComponents::Separator("Farbe");
+             if (UIComponents::Toggle("Eigene Farbe", &style.custom_color)) {
+-                SyncLegacyVitalColors(currentPreset, definition.element);
++                SyncLegacyMoneyColor(currentPreset, definition.element);
+                 gtaPresetChanged = true;
+             }
+             if (style.custom_color) {
+@@ -221,7 +211,7 @@ void InterfaceEditorUI::Render() {
+                 if (UIComponents::ColorPicker("Farbe auswählen", &color)) {
+                     style.color = {{color.x, color.y, color.z, color.w}};
+                     style = SanitizeHudElementStyle(style);
+-                    SyncLegacyVitalColors(currentPreset, definition.element);
++                    SyncLegacyMoneyColor(currentPreset, definition.element);
+                     gtaPresetChanged = true;
+                 }
+             } else {
+@@ -229,7 +219,7 @@ void InterfaceEditorUI::Render() {
+             }
+             if (UIComponents::SecondaryButton("Originalfarbe wiederherstellen")) {
+                 style.custom_color = false;
+-                SyncLegacyVitalColors(currentPreset, definition.element);
++                SyncLegacyMoneyColor(currentPreset, definition.element);
+                 gtaPresetChanged = true;
+             }
+             ImGui::EndTable();
+diff --git a/src/Main.cpp b/src/Main.cpp
+index a0779a1..fb5ecd9 100644
+--- a/src/Main.cpp
++++ b/src/Main.cpp
+@@ -582,7 +582,8 @@ public:
+         mainWindowUI_.SetInterfaceMoveRequestedCallback([&]() {
+             onlineOverlayRenderer_.SetPersistentOverlayMoveMode(false);
+             quickMap_.Hide();
+-            overlay_.Hide();
++            // Keep the same owner as Online's persistent move mode. The
++            // auxiliary interaction already suppresses the main menu rendering.
+         });
+         mainWindowUI_.SetRssFeedManager(&rssFeedManager_);
+         mainWindowUI_.SetOnlineDataManager(&onlineDataManager_);
+@@ -971,7 +972,7 @@ public:
+             }
+             inputManager_.ApplyEarlySuppressedKeys();
+ 
+-            if (overlay_.IsVisible() || interfaceEditor_.IsElementMoveModeActive()) {
++            if (overlay_.OwnsMouseInput()) {
+                 // Suppress mouse-look before the game consumes per-frame input.
+                 // The later HUD/render passes are too late to reliably stop camera
+                 // movement, but we intentionally keep this suppression scoped to
+diff --git a/src/NativeHudEditor.cpp b/src/NativeHudEditor.cpp
+index d13d5e3..ebf8953 100644
+--- a/src/NativeHudEditor.cpp
++++ b/src/NativeHudEditor.cpp
+@@ -51,13 +51,17 @@ std::uint32_t NativeHudEditor::TransformColor(HudElement element, std::uint32_t
+     const unsigned alpha = Byte(static_cast<float>(a) * style.color[3]);
+     // Bar borders, map outlines and font drop shadows must remain legible.
+     if (!text && r == 0 && g == 0 && b == 0) return (alpha << 24) | (argb & 0xffffff);
+-    float strength = 255.0f;
+-    if (element == HudElement::Wanted) strength = static_cast<float>((std::max)({r, g, b}));
+     if (element == HudElement::Radar) {
+         // A map tint retains the map texture's detail and marker luminance.
+         return (alpha << 24) | (Byte(r * style.color[0]) << 16) | (Byte(g * style.color[1]) << 8) | Byte(b * style.color[2]);
+     }
+-    return (alpha << 24) | (Byte(strength * style.color[0]) << 16) | (Byte(strength * style.color[1]) << 8) | Byte(strength * style.color[2]);
++    return (alpha << 24) | (Byte(255.0f * style.color[0]) << 16) | (Byte(255.0f * style.color[1]) << 8) | Byte(255.0f * style.color[2]);
++}
++
++HudElement NativeHudEditor::ResolvePrimitiveElement(HudElement scoped, bool playerInfo, bool excluded, bool fontOutput) {
++    if (excluded || fontOutput) return HudElement::Count;
++    if (Valid(scoped)) return scoped;
++    return playerInfo ? HudElement::Weapon : HudElement::Count;
+ }
+ 
+ HudElement NativeHudEditor::ClassifyPlayerInfoText(const char* text) {
+@@ -66,7 +70,6 @@ HudElement NativeHudEditor::ClassifyPlayerInfoText(const char* text) {
+     // Only the native DrawPlayerInfo scope invokes this classifier. Similar
+     // server textdraws and chat strings are never classified or changed.
+     const std::size_t size = std::strlen(text);
+-    if (size == 5 && digit(text[0]) && digit(text[1]) && text[2] == ':' && digit(text[3]) && digit(text[4])) return HudElement::Clock;
+     std::size_t begin = text[0] == '-' ? 1 : 0;
+     if (begin < size && text[begin] == '$' && begin + 1 < size) {
+         for (std::size_t i = begin + 1; i < size; ++i) if (!digit(text[i])) return HudElement::Count;
+@@ -107,10 +110,11 @@ struct NativeHudHooks {
+     static std::vector<safetyhook::InlineHook*> hooks;
+     static thread_local HudElement element;
+     static thread_local bool player_info;
++    static thread_local unsigned excluded_depth;
+     static thread_local unsigned font_depth;
+     static thread_local unsigned submission_depth;
+     static thread_local bool font_rendering;
+-    static safetyhook::InlineHook *health, *armour, *breath, *ammo, *wanted, *vehicle, *zone, *radar, *player,
++    static safetyhook::InlineHook *health, *armour, *breath, *ammo, *radar, *player,
+         *print, *font_buffer, *primitive, *indexed;
+ 
+     struct Scope {
+@@ -134,34 +138,32 @@ struct NativeHudHooks {
+     static void Remove() {
+         for (auto it = hooks.rbegin(); it != hooks.rend(); ++it) delete *it;
+         hooks.clear();
+-        health = armour = breath = ammo = wanted = vehicle = zone = radar = player = nullptr;
++        health = armour = breath = ammo = radar = player = nullptr;
+         print = font_buffer = primitive = indexed = nullptr;
+         editor = nullptr;
+-        element = HudElement::Count; player_info = font_rendering = false;
++        element = HudElement::Count; player_info = font_rendering = false; excluded_depth = 0;
+     }
+     static HudElement PrimitiveElement() {
+-        if (font_rendering || font_depth || !editor) return HudElement::Count;
+-        if (Valid(element)) return element;
++        if (!editor) return HudElement::Count;
+         // DrawPlayerInfo's only unscoped native sprite is the weapon/fist.
+         // Health/armour/breath and ammo are nested scopes. No additional detour
+         // at DrawWeaponIcon is needed, so weapon texture switching can install
+         // and remove its hook independently without breaking this editor.
+-        return player_info ? HudElement::Weapon : HudElement::Count;
++        return NativeHudEditor::ResolvePrimitiveElement(element, player_info, excluded_depth != 0, font_rendering || font_depth != 0);
+     }
+-    static void __cdecl Health(int playerId, int x, int y) { Scope scope(HudElement::Health); health->ccall<void>(playerId,x,y); }
+-    static void __cdecl Armour(int playerId, int x, int y) { Scope scope(HudElement::Armour); armour->ccall<void>(playerId,x,y); }
+-    static void __cdecl Breath(int playerId, int x, int y) { Scope scope(HudElement::Breath); breath->ccall<void>(playerId,x,y); }
++    // These functions stay as exclusion guards only. Their native output is
++    // never transformed, even while DrawPlayerInfo enables weapon fallback.
++    static void __cdecl Health(int playerId, int x, int y) { Counter exclude(excluded_depth); health->ccall<void>(playerId,x,y); }
++    static void __cdecl Armour(int playerId, int x, int y) { Counter exclude(excluded_depth); armour->ccall<void>(playerId,x,y); }
++    static void __cdecl Breath(int playerId, int x, int y) { Counter exclude(excluded_depth); breath->ccall<void>(playerId,x,y); }
+     static void __cdecl Ammo(void* ped, int x, int y, float alpha) { Scope scope(HudElement::Ammo); ammo->ccall<void>(ped,x,y,alpha); }
+-    static void __cdecl Wanted() { Scope scope(HudElement::Wanted); wanted->ccall<void>(); }
+-    static void __cdecl Vehicle() { Scope scope(HudElement::VehicleName); vehicle->ccall<void>(); }
+-    static void __cdecl Zone() { Scope scope(HudElement::ZoneName); zone->ccall<void>(); }
+     static void __cdecl Radar() {
+         if (FrontEndMenuManager.m_bMenuActive || FrontEndMenuManager.m_bDrawRadarOrMap) { radar->ccall<void>(); return; }
+         Scope scope(HudElement::Radar); radar->ccall<void>();
+     }
+     static void __cdecl Player() {
+         const bool previous = player_info; player_info = true;
+-        if (editor) for (auto item : {HudElement::Weapon,HudElement::Money,HudElement::Clock}) editor->ResetBounds(item);
++        if (editor) for (auto item : {HudElement::Weapon,HudElement::Money}) editor->ResetBounds(item);
+         player->ccall<void>(); player_info = previous;
+     }
+     static void __cdecl FontBuffer() {
+@@ -170,7 +172,8 @@ struct NativeHudHooks {
+     }
+     static void Print(safetyhook::InlineHook* hook, float x, float y, const char* text) {
+         HudElement selected = element;
+-        if (!Valid(selected) && player_info) selected = NativeHudEditor::ClassifyPlayerInfoText(text);
++        if (!Valid(selected) && player_info && !excluded_depth) selected = NativeHudEditor::ClassifyPlayerInfoText(text);
++        if (excluded_depth) selected = HudElement::Count;
+         if (!editor || !Valid(selected) || font_depth) { hook->ccall<void>(x,y,text); return; }
+         Counter guard(font_depth);
+         editor->TransformPoint(selected,x,y,static_cast<float>(RsGlobal.maximumWidth),static_cast<float>(RsGlobal.maximumHeight));
+@@ -222,12 +225,12 @@ NativeHudEditor* NativeHudHooks::editor = nullptr;
+ std::vector<safetyhook::InlineHook*> NativeHudHooks::hooks;
+ thread_local HudElement NativeHudHooks::element = HudElement::Count;
+ thread_local bool NativeHudHooks::player_info = false;
++thread_local unsigned NativeHudHooks::excluded_depth = 0;
+ thread_local unsigned NativeHudHooks::font_depth = 0;
+ thread_local unsigned NativeHudHooks::submission_depth = 0;
+ thread_local bool NativeHudHooks::font_rendering = false;
+ safetyhook::InlineHook *NativeHudHooks::health = nullptr, *NativeHudHooks::armour = nullptr, *NativeHudHooks::breath = nullptr,
+-    *NativeHudHooks::ammo = nullptr, *NativeHudHooks::wanted = nullptr, *NativeHudHooks::vehicle = nullptr,
+-    *NativeHudHooks::zone = nullptr, *NativeHudHooks::radar = nullptr, *NativeHudHooks::player = nullptr,
++    *NativeHudHooks::ammo = nullptr, *NativeHudHooks::radar = nullptr, *NativeHudHooks::player = nullptr,
+     *NativeHudHooks::print = nullptr, *NativeHudHooks::font_buffer = nullptr,
+     *NativeHudHooks::primitive = nullptr, *NativeHudHooks::indexed = nullptr;
+ #endif
+@@ -248,9 +251,6 @@ bool NativeHudEditor::Initialize() {
+         NativeHudHooks::Install(NativeHudHooks::armour,reinterpret_cast<void*>(0x5890A0),reinterpret_cast<void*>(&NativeHudHooks::Armour)) &&
+         NativeHudHooks::Install(NativeHudHooks::breath,reinterpret_cast<void*>(0x589190),reinterpret_cast<void*>(&NativeHudHooks::Breath)) &&
+         NativeHudHooks::Install(NativeHudHooks::ammo,reinterpret_cast<void*>(0x5893B0),reinterpret_cast<void*>(&NativeHudHooks::Ammo)) &&
+-        NativeHudHooks::Install(NativeHudHooks::wanted,reinterpret_cast<void*>(0x58D9A0),reinterpret_cast<void*>(&NativeHudHooks::Wanted)) &&
+-        NativeHudHooks::Install(NativeHudHooks::vehicle,reinterpret_cast<void*>(0x58AEA0),reinterpret_cast<void*>(&NativeHudHooks::Vehicle)) &&
+-        NativeHudHooks::Install(NativeHudHooks::zone,reinterpret_cast<void*>(0x58AA50),reinterpret_cast<void*>(&NativeHudHooks::Zone)) &&
+         NativeHudHooks::Install(NativeHudHooks::radar,reinterpret_cast<void*>(0x58A330),reinterpret_cast<void*>(&NativeHudHooks::Radar)) &&
+         NativeHudHooks::Install(NativeHudHooks::player,reinterpret_cast<void*>(0x58EAF0),reinterpret_cast<void*>(&NativeHudHooks::Player));
+     if (!installed) {
+diff --git a/src/SettingsManager.cpp b/src/SettingsManager.cpp
+index 5f725e9..97c84bd 100644
+--- a/src/SettingsManager.cpp
++++ b/src/SettingsManager.cpp
+@@ -1474,28 +1474,13 @@ bool SettingsManager::LoadFromJson(const std::string& json_content) {
+                         for (std::size_t channel = 0; channel < style.color.size(); ++channel) {
+                             ParseHudFloatField(obj, prefix + channels[channel], style.color[channel]);
+                         }
+-                        // Existing saved colors remain available after the editor moves
+-                        // to its own tab. Untouched legacy defaults keep native colors.
+-                        if (!hasColorSetting) {
++                        // Money remains editable. Removed interface categories are
++                        // absent from the catalog, so their old keys are ignored.
++                        if (!hasColorSetting && definition.element == HudElement::Money) {
+                             const InterfacePreset defaults;
+-                            std::array<float, 4> legacy{}, original{};
+-                            bool hasLegacyColor = true;
+-                            switch (definition.element) {
+-                            case HudElement::Health:
+-                                legacy = {preset.hp_color_r, preset.hp_color_g, preset.hp_color_b, preset.hp_color_a};
+-                                original = {defaults.hp_color_r, defaults.hp_color_g, defaults.hp_color_b, defaults.hp_color_a};
+-                                break;
+-                            case HudElement::Armour:
+-                                legacy = {preset.armor_color_r, preset.armor_color_g, preset.armor_color_b, preset.armor_color_a};
+-                                original = {defaults.armor_color_r, defaults.armor_color_g, defaults.armor_color_b, defaults.armor_color_a};
+-                                break;
+-                            case HudElement::Money:
+-                                legacy = {preset.money_color_r, preset.money_color_g, preset.money_color_b, preset.money_color_a};
+-                                original = {defaults.money_color_r, defaults.money_color_g, defaults.money_color_b, defaults.money_color_a};
+-                                break;
+-                            default: hasLegacyColor = false; break;
+-                            }
+-                            if (hasLegacyColor && legacy != original) {
++                            const std::array<float, 4> legacy = {preset.money_color_r, preset.money_color_g, preset.money_color_b, preset.money_color_a};
++                            const std::array<float, 4> original = {defaults.money_color_r, defaults.money_color_g, defaults.money_color_b, defaults.money_color_a};
++                            if (legacy != original) {
+                                 style.color = legacy;
+                                 style.custom_color = true;
+                             }
+diff --git a/tests/ImGuiOverlayTests.cpp b/tests/ImGuiOverlayTests.cpp
+index 13f8267..cdf6125 100644
+--- a/tests/ImGuiOverlayTests.cpp
++++ b/tests/ImGuiOverlayTests.cpp
+@@ -11,6 +11,8 @@
+ #include <cmath>
+ #include <cstdio>
+ #include <cstring>
++#define DIRECTINPUT_VERSION 0x0800
++#include <dinput.h>
+ 
+ extern std::atomic<int> g_shutdown_phase;
+ 
+@@ -32,6 +34,7 @@ struct OverlayTestState {
+     int show_cursor_calls = 0;
+     int hide_cursor_calls = 0;
+     int suppress_game_mouse_calls = 0;
++    int restore_game_mouse_calls = 0;
+     bool cursor_visible = false;
+ };
+ 
+@@ -190,6 +193,10 @@ void FakeSuppressGameMouse() {
+     ++g_state.suppress_game_mouse_calls;
+ }
+ 
++void FakeRestoreGameMouse() {
++    ++g_state.restore_game_mouse_calls;
++}
++
+ keybinder::ImGuiOverlayDependencies MakeDependencies() {
+     return {
+         &FakeDiscoverDevice,
+@@ -210,6 +217,7 @@ keybinder::ImGuiOverlayDependencies MakeDependencies() {
+         &FakeCallWindowProc,
+         &FakeShowCursor,
+         &FakeSuppressGameMouse,
++        &FakeRestoreGameMouse,
+     };
+ }
+ 
+@@ -233,6 +241,7 @@ keybinder::ImGuiOverlayDependencies MakeSentinelDependencies() {
+         &FakeCallWindowProc,
+         &FakeShowCursor,
+         &FakeSuppressGameMouse,
++        &FakeRestoreGameMouse,
+     };
+ }
+ 
+@@ -905,11 +914,106 @@ bool TestRenderSkipsWorkAfterShutdownStarts() {
+     return true;
+ }
+ 
++bool TestHiddenAuxiliaryMoveOwnsCursorAndFiltersNativeMouse() {
++    ResetState();
++    keybinder::ImGuiOverlay overlay(MakeSentinelDependencies());
++    bool moving = false;
++    int commits = 0;
++    overlay.SetAuxiliaryInteractionActiveCallback([&]() { return moving; });
++    overlay.SetAuxiliaryInteractionCancelCallback([&]() { moving = false; ++commits; });
++    overlay.Show();
++    moving = true;
++    overlay.Hide();
++    if (!Expect(!overlay.IsVisible() && overlay.OwnsMouseInput(), "Hidden auxiliary move must retain native mouse ownership")) return false;
++    if (!Expect(overlay.BlocksCursorWarpForTesting(), "The same policy used by SetCursorPos must block the game's center warp")) return false;
++    if (!Expect(g_state.cursor_visible && ImGui::GetIO().MouseDrawCursor, "Hiding the main menu must not hide an auxiliary move cursor")) return false;
++    if (!Expect(g_state.hide_cursor_calls == 0 && g_state.restore_game_mouse_calls == 0, "Transfer to move mode must not restore game mouse between owners")) return false;
++    DIMOUSESTATE2 state{12, -9, 120, {0x80, 0x80, 0, 0, 0, 0, 0, 0}};
++    overlay.FilterMouseStateForTesting(sizeof(state), &state);
++    const DIMOUSESTATE2 neutral{};
++    if (!Expect(std::memcmp(&state, &neutral, sizeof(state)) == 0, "Auxiliary move must neutralize native relative motion, wheel and buttons")) return false;
++    DIDEVICEOBJECTDATA events[2]{};
++    events[0].dwOfs = DIMOFS_X; events[0].dwData = 20;
++    events[1].dwOfs = DIMOFS_BUTTON0; events[1].dwData = 0x80;
++    DWORD count = 2;
++    overlay.FilterMouseEventsForTesting(sizeof(events[0]), events, &count);
++    const DIDEVICEOBJECTDATA emptyEvents[2]{};
++    if (!Expect(count == 0 && std::memcmp(events, emptyEvents, sizeof(events)) == 0, "Auxiliary move must suppress buffered mouse events before gameplay sees them")) return false;
++    if (!Expect(overlay.WndProcHandler(FakeDiscoverWindow(), WM_MOUSEMOVE, 0, MAKELPARAM(120, 150)) == 1, "Hidden auxiliary move must capture window mouse input")) return false;
++    overlay.WndProcHandler(FakeDiscoverWindow(), WM_KEYUP, VK_ESCAPE, 0);
++    if (!Expect(commits == 1 && !moving && !overlay.OwnsMouseInput(), "Esc must commit the auxiliary move and release native mouse ownership")) return false;
++    if (!Expect(!overlay.BlocksCursorWarpForTesting(), "Game cursor warps must resume after the hidden move ends")) return false;
++    if (!Expect(g_state.hide_cursor_calls == 1 && g_state.restore_game_mouse_calls == 1 && !g_state.cursor_visible, "Esc must restore game mouse and hide the cursor exactly once")) return false;
++    overlay.WndProcHandler(FakeDiscoverWindow(), WM_KEYUP, VK_ESCAPE, 0);
++    if (!Expect(commits == 1 && g_state.restore_game_mouse_calls == 1, "A repeated Esc must not save or restore mouse twice")) return false;
++    state.lX = 19; state.lY = -4; state.rgbButtons[0] = 0x80;
++    overlay.FilterMouseStateForTesting(sizeof(state), &state);
++    if (!Expect(state.lX == 19 && state.lY == -4 && state.rgbButtons[0] == 0x80, "Normal gameplay mouse must pass through after move mode ends")) return false;
++    overlay.Shutdown();
++    return true;
++}
++
++bool TestOnlineStyleAuxiliaryMoveKeepsMenuOwnerUntilEsc() {
++    ResetState();
++    keybinder::ImGuiOverlay overlay(MakeDependencies());
++    bool moving = false;
++    int commits = 0;
++    overlay.SetAuxiliaryInteractionActiveCallback([&]() { return moving; });
++    overlay.SetAuxiliaryInteractionCancelCallback([&]() { moving = false; ++commits; });
++    if (!Expect(overlay.Initialize(), "Online-style move test should initialize")) return false;
++    // The fake backend does not report a viewport at Initialize. Settle the
++    // automatic DPI change while hidden, so this test measures ownership
++    // transitions rather than ApplyDpiScale reasserting the visible cursor.
++    ImGui::GetIO().DisplaySize = ImVec2(1920, 1080);
++    if (!Expect(overlay.ApplyDpiScale(keybinder::ImGuiOverlay::ComputeAutomaticScaleForTesting(1920, 1080)), "Online-style move test should establish its display scale")) return false;
++    overlay.Show();
++    moving = true;
++    overlay.Render();
++    if (!Expect(overlay.IsVisible() && overlay.OwnsMouseInput(), "Online-style move retains the menu's internal owner while its UI is suppressed")) return false;
++    if (!Expect(g_state.suppress_game_mouse_calls == 1 && g_state.show_cursor_calls == 1, "The existing move path must suppress gameplay mouse without cursor ownership churn")) return false;
++    overlay.WndProcHandler(FakeDiscoverWindow(), WM_KEYUP, VK_ESCAPE, 0);
++    if (!Expect(commits == 1 && !moving && overlay.IsVisible(), "Esc should leave the existing menu visible again after an Online-style move")) return false;
++    if (!Expect(overlay.OwnsMouseInput() && g_state.hide_cursor_calls == 0 && g_state.restore_game_mouse_calls == 0, "Ending a move must keep the menu's active cursor ownership")) return false;
++    overlay.Hide();
++    if (!Expect(!overlay.OwnsMouseInput() && g_state.hide_cursor_calls == 1 && g_state.restore_game_mouse_calls == 1, "Closing the returned menu must release cursor ownership once")) return false;
++    overlay.Shutdown();
++    return true;
++}
++
++bool TestQuickMapWheelFilteringRemainsSeparateFromFullMouseCapture() {
++    ResetState();
++    keybinder::ImGuiOverlay overlay(MakeDependencies());
++    overlay.SetQuickMapWheelCaptureCallback([]() { return true; });
++    if (!Expect(overlay.Initialize(), "QuickMap mouse filter test should initialize")) return false;
++    DIMOUSESTATE2 state{14, -3, 120, {0x80, 0, 0, 0, 0, 0, 0, 0}};
++    overlay.FilterMouseStateForTesting(sizeof(state), &state);
++    if (!Expect(state.lX == 14 && state.lY == -3 && state.lZ == 0 && state.rgbButtons[0] == 0x80, "QuickMap wheel capture must retain normal motion and buttons")) return false;
++    DIDEVICEOBJECTDATA events[3]{};
++    events[0].dwOfs = DIMOFS_X; events[0].dwData = 9;
++    events[1].dwOfs = DIMOFS_Z; events[1].dwData = 120;
++    events[2].dwOfs = DIMOFS_BUTTON0; events[2].dwData = 0x80;
++    DWORD count = 3;
++    overlay.FilterMouseEventsForTesting(sizeof(events[0]), events, &count);
++    if (!Expect(count == 2 && events[0].dwOfs == DIMOFS_X && events[1].dwOfs == DIMOFS_BUTTON0, "QuickMap buffered filter must remove only wheel events")) return false;
++    overlay.Shutdown();
++    return true;
++}
++
+ } // namespace
+ 
+ int RunImGuiOverlayTests() {
+     int failed = 0;
+ 
++    if (TestHiddenAuxiliaryMoveOwnsCursorAndFiltersNativeMouse()) {
++        std::printf("[PASS] TestHiddenAuxiliaryMoveOwnsCursorAndFiltersNativeMouse\n");
++    } else { ++failed; }
++    if (TestOnlineStyleAuxiliaryMoveKeepsMenuOwnerUntilEsc()) {
++        std::printf("[PASS] TestOnlineStyleAuxiliaryMoveKeepsMenuOwnerUntilEsc\n");
++    } else { ++failed; }
++    if (TestQuickMapWheelFilteringRemainsSeparateFromFullMouseCapture()) {
++        std::printf("[PASS] TestQuickMapWheelFilteringRemainsSeparateFromFullMouseCapture\n");
++    } else { ++failed; }
++
+     if (TestAutomaticScaleKeepsRelativeFootprintAcrossStandardResolutions()) {
+         std::printf("[PASS] TestAutomaticScaleKeepsRelativeFootprintAcrossStandardResolutions\n");
+     } else {
+diff --git a/tests/InterfaceEditorTests.cpp b/tests/InterfaceEditorTests.cpp
+index 87f106e..482611c 100644
+--- a/tests/InterfaceEditorTests.cpp
++++ b/tests/InterfaceEditorTests.cpp
+@@ -3,6 +3,7 @@
+ #include "../include/imgui-1.92.7/imgui.h"
+ 
+ #include <array>
++#include <cmath>
+ #include <cstdio>
+ #include <cstring>
+ #include <limits>
+@@ -434,22 +435,22 @@ bool Test_ElementMovePersistsOnlySelectedElementOnFinish() {
+     int saves = 0;
+     editor.SetOnRuntimePresetChanged([&]() { ++saves; });
+     editor.GetPreset(0)->name = "Fahrzeugprofil";
+-    auto& wanted = editor.GetPreset(0)->layout[static_cast<std::size_t>(keybinder::HudElement::Wanted)];
++    auto& wanted = editor.GetPreset(0)->layout[static_cast<std::size_t>(keybinder::HudElement::Weapon)];
+     wanted.custom_color = true;
+     wanted.color = {{0.3f, 0.4f, 0.5f, 0.8f}};
+-    IFACE_EXPECT_TRUE(editor.StartElementMove(keybinder::HudElement::Wanted));
++    IFACE_EXPECT_TRUE(editor.StartElementMove(keybinder::HudElement::Weapon));
+     IFACE_EXPECT_TRUE(editor.IsElementMoveModeActive());
+-    IFACE_EXPECT_EQ(editor.GetMovingElement(), keybinder::HudElement::Wanted);
++    IFACE_EXPECT_EQ(editor.GetMovingElement(), keybinder::HudElement::Weapon);
+     IFACE_EXPECT_TRUE(editor.MoveElementBy(-0.25f, 0.125f));
+     IFACE_EXPECT_EQ(saves, 0);
+-    IFACE_EXPECT_EQ(editor.GetPreset(0)->layout[static_cast<std::size_t>(keybinder::HudElement::Health)].offset_x, 0.0f);
++    IFACE_EXPECT_EQ(editor.GetPreset(0)->layout[static_cast<std::size_t>(keybinder::HudElement::Money)].offset_x, 0.0f);
+     editor.FinishElementMove();
+     IFACE_EXPECT_EQ(saves, 1);
+     IFACE_EXPECT_TRUE(!editor.IsElementMoveModeActive());
+     IFACE_EXPECT_EQ(editor.GetMovingElement(), keybinder::HudElement::Count);
+     const InterfacePreset& persisted = settings.Get().interface_editor_saved_presets[0];
+     IFACE_EXPECT_EQ(persisted.name, std::string("Fahrzeugprofil"));
+-    const auto& savedStyle = persisted.layout[static_cast<std::size_t>(keybinder::HudElement::Wanted)];
++    const auto& savedStyle = persisted.layout[static_cast<std::size_t>(keybinder::HudElement::Weapon)];
+     IFACE_EXPECT_EQ(savedStyle.offset_x, -0.25f);
+     IFACE_EXPECT_EQ(savedStyle.offset_y, 0.125f);
+     IFACE_EXPECT_TRUE(savedStyle.custom_color);
+@@ -468,20 +469,20 @@ bool Test_ElementMoveRejectsInvalidInputAndPreservesOtherPreset() {
+     IFACE_EXPECT_TRUE(!editor.StartElementMove(keybinder::HudElement::Count));
+     IFACE_EXPECT_TRUE(!editor.StartElementMove(static_cast<keybinder::HudElement>(999)));
+     IFACE_EXPECT_EQ(saves, 0);
+-    IFACE_EXPECT_TRUE(editor.StartElementMove(keybinder::HudElement::Health));
++    IFACE_EXPECT_TRUE(editor.StartElementMove(keybinder::HudElement::Money));
+     IFACE_EXPECT_TRUE(!editor.StartElementMove(keybinder::HudElement::Count));
+-    IFACE_EXPECT_EQ(editor.GetMovingElement(), keybinder::HudElement::Health);
++    IFACE_EXPECT_EQ(editor.GetMovingElement(), keybinder::HudElement::Money);
+     IFACE_EXPECT_TRUE(!editor.MoveElementBy(std::numeric_limits<float>::infinity(), 0.0f));
+     IFACE_EXPECT_TRUE(!editor.MoveElementBy(0.0f, std::numeric_limits<float>::quiet_NaN()));
+     IFACE_EXPECT_TRUE(editor.MoveElementBy(10.0f, -10.0f));
+-    auto& health = editor.GetPreset(0)->layout[static_cast<std::size_t>(keybinder::HudElement::Health)];
++    auto& health = editor.GetPreset(0)->layout[static_cast<std::size_t>(keybinder::HudElement::Money)];
+     IFACE_EXPECT_EQ(health.offset_x, 1.0f);
+     IFACE_EXPECT_EQ(health.offset_y, -1.0f);
+     editor.SetActivePreset(2);
+     IFACE_EXPECT_EQ(saves, 1);
+     IFACE_EXPECT_TRUE(!editor.IsElementMoveModeActive());
+     IFACE_EXPECT_EQ(editor.GetActivePreset(), 2);
+-    IFACE_EXPECT_EQ(editor.GetPreset(2)->layout[static_cast<std::size_t>(keybinder::HudElement::Health)].offset_x, 0.0f);
++    IFACE_EXPECT_EQ(editor.GetPreset(2)->layout[static_cast<std::size_t>(keybinder::HudElement::Money)].offset_x, 0.0f);
+     IFACE_EXPECT_EQ(health.offset_x, 1.0f);
+     return true;
+ }
+@@ -492,21 +493,21 @@ bool Test_StartingAnotherElementCommitsPreviousAndShutdownFinishes() {
+     editor.SetSettingsManager(&settings);
+     int saves = 0;
+     editor.SetOnRuntimePresetChanged([&]() { ++saves; });
+-    IFACE_EXPECT_TRUE(editor.StartElementMove(keybinder::HudElement::Clock));
++    IFACE_EXPECT_TRUE(editor.StartElementMove(keybinder::HudElement::Ammo));
+     IFACE_EXPECT_TRUE(editor.MoveElementBy(0.2f, 0.3f));
+-    IFACE_EXPECT_TRUE(editor.StartElementMove(keybinder::HudElement::Armour));
++    IFACE_EXPECT_TRUE(editor.StartElementMove(keybinder::HudElement::Radar));
+     IFACE_EXPECT_EQ(saves, 1);
+-    IFACE_EXPECT_EQ(settings.Get().interface_editor_saved_presets[0].layout[static_cast<std::size_t>(keybinder::HudElement::Clock)].offset_x, 0.2f);
+-    IFACE_EXPECT_EQ(editor.GetMovingElement(), keybinder::HudElement::Armour);
++    IFACE_EXPECT_EQ(settings.Get().interface_editor_saved_presets[0].layout[static_cast<std::size_t>(keybinder::HudElement::Ammo)].offset_x, 0.2f);
++    IFACE_EXPECT_EQ(editor.GetMovingElement(), keybinder::HudElement::Radar);
+     IFACE_EXPECT_TRUE(editor.MoveElementBy(-0.5f, 0.0f));
+     editor.Shutdown();
+     IFACE_EXPECT_EQ(saves, 2);
+     IFACE_EXPECT_TRUE(!editor.IsElementMoveModeActive());
+-    IFACE_EXPECT_EQ(settings.Get().interface_editor_saved_presets[0].layout[static_cast<std::size_t>(keybinder::HudElement::Armour)].offset_x, -0.5f);
++    IFACE_EXPECT_EQ(settings.Get().interface_editor_saved_presets[0].layout[static_cast<std::size_t>(keybinder::HudElement::Radar)].offset_x, -0.5f);
+     return true;
+ }
+ 
+-bool Test_EscapeSavesMoveWhileMainMenuIsHidden() {
++bool Test_MouseDragAndEscapeSaveWhileMainMenuIsHidden() {
+     struct ImGuiScope {
+         ImGuiContext* previous = ImGui::GetCurrentContext();
+         ImGuiScope() {
+@@ -532,28 +533,47 @@ bool Test_EscapeSavesMoveWhileMainMenuIsHidden() {
+     int saves = 0, boundsReads = 0;
+     editor.SetOnRuntimePresetChanged([&]() { ++saves; });
+     editor.SetElementBoundsProvider([&](keybinder::HudElement element, float& x, float& y, float& width, float& height) {
+-        if (element != keybinder::HudElement::Clock) return false;
++        if (element != keybinder::HudElement::Money) return false;
+         ++boundsReads;
+-        x = 1500.0f; y = 50.0f; width = 180.0f; height = 50.0f;
++        const auto& style = editor.GetPreset(0)->layout[static_cast<std::size_t>(element)];
++        x = 1500.0f + style.offset_x * 1920.0f;
++        y = 50.0f + style.offset_y * 1080.0f;
++        width = 180.0f; height = 50.0f;
+         return true;
+     });
+-    IFACE_EXPECT_TRUE(editor.StartElementMove(keybinder::HudElement::Clock));
+-    IFACE_EXPECT_TRUE(editor.MoveElementBy(-0.125f, 0.25f));
+-    ImGui::NewFrame();
+-    editor.RenderElementMoveMode(ImGui::GetForegroundDrawList(), 1.0f);
+-    ImGui::Render();
+-    IFACE_EXPECT_EQ(boundsReads, 1);
++    IFACE_EXPECT_TRUE(editor.StartElementMove(keybinder::HudElement::Money));
++    auto renderFrame = [&]() {
++        ImGui::NewFrame();
++        editor.RenderElementMoveMode(ImGui::GetForegroundDrawList(), 1.0f);
++        ImGui::Render();
++    };
++    // Let ImGui establish the hidden-menu move layer, hover its native-sized
++    // handle, press, drag 96x54 pixels, and release through real IO events.
++    ImGui::GetIO().AddMousePosEvent(1550.0f, 75.0f);
++    renderFrame();
++    renderFrame();
++    ImGui::GetIO().AddMouseButtonEvent(ImGuiMouseButton_Left, true);
++    renderFrame();
++    ImGui::GetIO().AddMousePosEvent(1646.0f, 129.0f);
++    renderFrame();
++    const auto& moved = editor.GetPreset(0)->layout[static_cast<std::size_t>(keybinder::HudElement::Money)];
++    IFACE_EXPECT_TRUE(std::fabs(moved.offset_x - 0.05f) < 0.00001f);
++    IFACE_EXPECT_TRUE(std::fabs(moved.offset_y - 0.05f) < 0.00001f);
++    IFACE_EXPECT_EQ(editor.GetPreset(0)->layout[static_cast<std::size_t>(keybinder::HudElement::Weapon)].offset_x, 0.0f);
++    ImGui::GetIO().AddMouseButtonEvent(ImGuiMouseButton_Left, false);
++    renderFrame();
++    IFACE_EXPECT_TRUE(boundsReads > 0);
+     IFACE_EXPECT_EQ(saves, 0);
+     IFACE_EXPECT_TRUE(editor.IsElementMoveModeActive());
+     ImGui::GetIO().AddKeyEvent(ImGuiKey_Escape, true);
+-    ImGui::NewFrame();
+-    editor.RenderElementMoveMode(ImGui::GetForegroundDrawList(), 1.0f);
+-    ImGui::Render();
++    renderFrame();
+     IFACE_EXPECT_EQ(saves, 1);
+     IFACE_EXPECT_TRUE(!editor.IsElementMoveModeActive());
+-    const auto& saved = settings.Get().interface_editor_saved_presets[0].layout[static_cast<std::size_t>(keybinder::HudElement::Clock)];
+-    IFACE_EXPECT_EQ(saved.offset_x, -0.125f);
+-    IFACE_EXPECT_EQ(saved.offset_y, 0.25f);
++    const auto& saved = settings.Get().interface_editor_saved_presets[0].layout[static_cast<std::size_t>(keybinder::HudElement::Money)];
++    IFACE_EXPECT_TRUE(std::fabs(saved.offset_x - 0.05f) < 0.00001f);
++    IFACE_EXPECT_TRUE(std::fabs(saved.offset_y - 0.05f) < 0.00001f);
++    editor.FinishElementMove();
++    IFACE_EXPECT_EQ(saves, 1);
+     return true;
+ }
+ 
+@@ -618,7 +638,7 @@ int RunInterfaceEditorTests() {
+     IFACE_RUN_TEST(Test_ElementMovePersistsOnlySelectedElementOnFinish);
+     IFACE_RUN_TEST(Test_ElementMoveRejectsInvalidInputAndPreservesOtherPreset);
+     IFACE_RUN_TEST(Test_StartingAnotherElementCommitsPreviousAndShutdownFinishes);
+-    IFACE_RUN_TEST(Test_EscapeSavesMoveWhileMainMenuIsHidden);
++    IFACE_RUN_TEST(Test_MouseDragAndEscapeSaveWhileMainMenuIsHidden);
+     std::printf("\n=== InterfaceEditor Results: %d passed, %d failed ===\n\n",
+                 g_state.passed, g_state.failed);
+ 
+diff --git a/tests/InterfaceLayoutSettingsTests.cpp b/tests/InterfaceLayoutSettingsTests.cpp
+index 23a6491..4aa8437 100644
+--- a/tests/InterfaceLayoutSettingsTests.cpp
++++ b/tests/InterfaceLayoutSettingsTests.cpp
+@@ -46,21 +46,48 @@ void LegacyColorsAndExplicitOriginal() {
+     keybinder::SettingsManager manager;
+     CHECK(manager.LoadFromJson(R"({"interface_editor_saved_presets":[{"hp_color_r":0.2,"hp_color_g":0.3,"armor_color_b":0.1,"money_color_a":0.5}]})"));
+     const auto& layout = manager.Get().interface_editor_saved_presets[0].layout;
+-    CHECK(layout[0].custom_color && layout[0].color[0] == 0.2f && layout[0].color[1] == 0.3f);
+-    CHECK(layout[1].custom_color && layout[1].color[2] == 0.1f);
+-    CHECK(layout[3].custom_color && layout[3].color[3] == 0.5f);
+-    CHECK(!layout[4].custom_color);
+-    CHECK(manager.LoadFromJson(R"({"interface_editor_saved_presets":[{"hp_color_r":0.2,"hud_health_custom_color":false,"hud_health_color_r":0.7}]})"));
++    CHECK(layout[0].custom_color && layout[0].color[3] == 0.5f);
++    CHECK(!layout[1].custom_color && !layout[2].custom_color && !layout[3].custom_color);
++    CHECK(manager.LoadFromJson(R"({"interface_editor_saved_presets":[{"money_color_a":0.5,"hud_money_custom_color":false,"hud_money_color_r":0.7}]})"));
+     CHECK(!manager.Get().interface_editor_saved_presets[0].layout[0].custom_color);
+     CHECK(manager.Get().interface_editor_saved_presets[0].layout[0].color[0] == 0.7f);
+ }
++void RemovedCategoriesDoNotSurviveOrAffectRetainedCategories() {
++    using namespace keybinder;
++    CHECK(kHudElementCount == 4 && kHudElements.size() == 4);
++    CHECK(std::string(kHudElements[0].key) == "money");
++    CHECK(std::string(kHudElements[1].key) == "weapon");
++    CHECK(std::string(kHudElements[2].key) == "ammo");
++    CHECK(std::string(kHudElements[3].key) == "radar");
++    SettingsManager manager;
++    CHECK(manager.LoadFromJson(R"({"interface_editor_saved_presets":[{
++        "hud_health_offset_x":0.9,"hud_health_custom_color":true,
++        "hud_armour_offset_x":0.9,"hud_armour_custom_color":true,
++        "hud_breath_offset_x":0.9,"hud_breath_custom_color":true,
++        "hud_clock_offset_x":0.9,"hud_clock_custom_color":true,
++        "hud_wanted_offset_x":0.9,"hud_wanted_custom_color":true,
++        "hud_vehicle_name_offset_x":0.9,"hud_vehicle_name_custom_color":true,
++        "hud_zone_name_offset_x":0.9,"hud_zone_name_custom_color":true,
++        "hud_money_offset_x":0.1,"hud_weapon_offset_y":0.2,
++        "hud_ammo_custom_color":true,"hud_ammo_color_b":0.3,"hud_radar_offset_y":0.4
++    }]})"));
++    const auto& layout = manager.Get().interface_editor_saved_presets[0].layout;
++    CHECK(layout[0].offset_x == 0.1f && !layout[0].custom_color);
++    CHECK(layout[1].offset_y == 0.2f && !layout[1].custom_color);
++    CHECK(layout[2].custom_color && layout[2].color[2] == 0.3f);
++    CHECK(layout[3].offset_y == 0.4f && !layout[3].custom_color);
++    const auto saved = manager.GetSettingsJson();
++    for (const char* key : {"health", "armour", "breath", "clock", "wanted", "vehicle_name", "zone_name"}) {
++        CHECK(saved.find(std::string("\"hud_") + key + "_") == std::string::npos);
++    }
++}
+ void InvalidRuntimeAndLoadedValues() {
+     keybinder::SettingsManager manager;
+-    CHECK(manager.LoadFromJson(R"({"interface_editor_saved_presets":[{"hud_health_offset_x":9,"hud_health_offset_y":-9,"hud_health_custom_color":true,"hud_health_color_r":-1,"hud_health_color_g":8,"hud_radar_offset_x":0.3}]})"));
++    CHECK(manager.LoadFromJson(R"({"interface_editor_saved_presets":[{"hud_money_offset_x":9,"hud_money_offset_y":-9,"hud_money_custom_color":true,"hud_money_color_r":-1,"hud_money_color_g":8,"hud_radar_offset_x":0.3}]})"));
+     const auto& layout = manager.Get().interface_editor_saved_presets[0].layout;
+     CHECK(layout[0].offset_x == 1.0f && layout[0].offset_y == -1.0f);
+     CHECK(layout[0].color[0] == 0.0f && layout[0].color[1] == 1.0f);
+-    CHECK(layout[10].offset_x == 0.3f && layout[10].offset_y == 0.0f);
++    CHECK(layout[3].offset_x == 0.3f && layout[3].offset_y == 0.0f);
+     auto& style = manager.GetMutable().interface_editor_saved_presets[0].layout[0];
+     style.offset_x = std::numeric_limits<float>::quiet_NaN();
+     style.offset_y = std::numeric_limits<float>::infinity();
+@@ -70,7 +97,7 @@ void InvalidRuntimeAndLoadedValues() {
+     const auto& result = restored.Get().interface_editor_saved_presets[0].layout[0];
+     CHECK(result.offset_x == 0.0f && result.offset_y == 0.0f);
+     CHECK((result.color == std::array<float,4>{1.0f,0.0f,1.0f,0.5f}));
+-    CHECK(manager.LoadFromJson(R"({"interface_editor_saved_presets":[{"hud_health_offset_x":null,"hud_health_offset_y":2.5e-5,"hud_health_color_r":"invalid","hud_health_color_g":0.6}]})"));
++    CHECK(manager.LoadFromJson(R"({"interface_editor_saved_presets":[{"hud_money_offset_x":null,"hud_money_offset_y":2.5e-5,"hud_money_color_r":"invalid","hud_money_color_g":0.6}]})"));
+     const auto& parsed = manager.Get().interface_editor_saved_presets[0].layout[0];
+     CHECK(parsed.offset_x == 0.0f && parsed.offset_y == 2.5e-5f);
+     CHECK(parsed.color[0] == 1.0f && parsed.color[1] == 0.6f);
+@@ -81,7 +108,7 @@ void InvalidRuntimeAndLoadedValues() {
+ }
+ int RunInterfaceLayoutSettingsTests() {
+     checks = failures = 0;
+-    DefaultsAndRoundTrip(); LegacyColorsAndExplicitOriginal(); InvalidRuntimeAndLoadedValues();
++    DefaultsAndRoundTrip(); LegacyColorsAndExplicitOriginal(); RemovedCategoriesDoNotSurviveOrAffectRetainedCategories(); InvalidRuntimeAndLoadedValues();
+     std::printf("InterfaceLayoutSettingsTests: %d checks, %d failures\n", checks, failures);
+     return failures;
+ }
+diff --git a/tests/NativeHudEditorTests.cpp b/tests/NativeHudEditorTests.cpp
+index 6dd3503..deae319 100644
+--- a/tests/NativeHudEditorTests.cpp
++++ b/tests/NativeHudEditorTests.cpp
+@@ -31,68 +31,73 @@ int RunNativeHudEditorTests() {
+         HUD_CHECK(editor.TransformColor(definition.element,0x7f123456)==0x7f123456);
+     }
+     HudLayout layout{};
+-    auto& health=layout[static_cast<std::size_t>(HudElement::Health)];
+-    health.offset_x=-0.1f; health.offset_y=0.25f;
+-    health.custom_color=true; health.color={{0.0f,1.0f,0.5f,0.5f}};
++    auto& money=layout[static_cast<std::size_t>(HudElement::Money)];
++    money.offset_x=-0.1f; money.offset_y=0.25f;
++    money.custom_color=true; money.color={{0.0f,1.0f,0.5f,0.5f}};
+     editor.SetLayout(layout);
+     float x=300,y=100;
+-    editor.TransformPoint(HudElement::Health,x,y,1920,1080);
++    editor.TransformPoint(HudElement::Money,x,y,1920,1080);
+     HUD_CHECK(Near(x,108) && Near(y,370));
+     x=300;y=100;
+-    editor.TransformPoint(HudElement::Health,x,y,1280,720);
++    editor.TransformPoint(HudElement::Money,x,y,1280,720);
+     HUD_CHECK(Near(x,172) && Near(y,280));
+     x=300;y=100;
+-    editor.TransformPoint(HudElement::Armour,x,y,1920,1080);
++    editor.TransformPoint(HudElement::Ammo,x,y,1920,1080);
+     HUD_CHECK(Near(x,300) && Near(y,100));
+-    HUD_CHECK(editor.TransformColor(HudElement::Health,0xc8b4191d)==0x6400ff80);
+-    HUD_CHECK(editor.TransformColor(HudElement::Health,0xc8000000)==0x64000000);
+-    HUD_CHECK(editor.TransformColor(HudElement::Armour,0xc8b4191d)==0xc8b4191d);
++    HUD_CHECK(editor.TransformColor(HudElement::Money,0xc8b4191d)==0x6400ff80);
++    HUD_CHECK(editor.TransformColor(HudElement::Money,0xc8000000)==0x64000000);
++    HUD_CHECK(editor.TransformColor(HudElement::Ammo,0xc8b4191d)==0xc8b4191d);
+     HUD_CHECK(editor.TransformColor(HudElement::Count,0x12345678)==0x12345678);
+-    auto& wanted=layout[static_cast<std::size_t>(HudElement::Wanted)];
+-    wanted.custom_color=true; wanted.color={{1,0,0,1}};
+     auto& radar=layout[static_cast<std::size_t>(HudElement::Radar)];
+     radar.custom_color=true; radar.color={{0.5f,1,0,1}};
+     editor.SetLayout(layout);
+-    HUD_CHECK(editor.TransformColor(HudElement::Wanted,0xffffd200,true)==0xffff0000);
+-    HUD_CHECK(editor.TransformColor(HudElement::Wanted,0xff404040,true)==0xff400000);
+     HUD_CHECK(editor.TransformColor(HudElement::Radar,0xc8a0b0c0)==0xc850b000);
+     HUD_CHECK(editor.TransformColor(HudElement::Radar,0xff000000)==0xff000000);
+-    HUD_CHECK(NativeHudEditor::ClassifyPlayerInfoText("14:38")==HudElement::Clock);
+-    HUD_CHECK(NativeHudEditor::ClassifyPlayerInfoText("00:00")==HudElement::Clock);
++    HUD_CHECK(NativeHudEditor::ClassifyPlayerInfoText("14:38")==HudElement::Count);
++    HUD_CHECK(NativeHudEditor::ClassifyPlayerInfoText("00:00")==HudElement::Count);
+     HUD_CHECK(NativeHudEditor::ClassifyPlayerInfoText("$00110520")==HudElement::Money);
+     HUD_CHECK(NativeHudEditor::ClassifyPlayerInfoText("-$0000050")==HudElement::Money);
+     for (auto text : {"", "1:38", "14:380", "INFO: 14:38", "$", "$12x", "12$", "15-200", "Market", "Welcome"})
+         HUD_CHECK(NativeHudEditor::ClassifyPlayerInfoText(text)==HudElement::Count);
+     HUD_CHECK(NativeHudEditor::ClassifyPlayerInfoText(nullptr)==HudElement::Count);
+     // Corrupt persisted floats cannot propagate NaN/Inf into GPU coordinates.
+-    health.offset_x=std::numeric_limits<float>::quiet_NaN(); health.offset_y=2;
+-    health.color={{std::numeric_limits<float>::infinity(),-1,2,std::numeric_limits<float>::quiet_NaN()}};
++    money.offset_x=std::numeric_limits<float>::quiet_NaN(); money.offset_y=2;
++    money.color={{std::numeric_limits<float>::infinity(),-1,2,std::numeric_limits<float>::quiet_NaN()}};
+     editor.SetLayout(layout);
+-    x=5;y=6;editor.TransformPoint(HudElement::Health,x,y,640,448);
++    x=5;y=6;editor.TransformPoint(HudElement::Money,x,y,640,448);
+     HUD_CHECK(Near(x,5) && Near(y,454));
+-    HUD_CHECK(editor.TransformColor(HudElement::Health,0xffffffff)==0xffff00ff);
+-    x=5;y=6;editor.TransformPoint(HudElement::Health,x,y,0,448);
++    HUD_CHECK(editor.TransformColor(HudElement::Money,0xffffffff)==0xffff00ff);
++    x=5;y=6;editor.TransformPoint(HudElement::Money,x,y,0,448);
+     HUD_CHECK(Near(x,5) && Near(y,6));
+     x=5;y=6;editor.TransformPoint(HudElement::Count,x,y,640,448);
+     HUD_CHECK(Near(x,5) && Near(y,6));
+     float bx=11,by=12,bw=13,bh=14;
+-    HUD_CHECK(!editor.GetElementBounds(HudElement::Health,bx,by,bw,bh));
++    HUD_CHECK(!editor.GetElementBounds(HudElement::Money,bx,by,bw,bh));
+     HUD_CHECK(Near(bx,11)&&Near(by,12)&&Near(bw,13)&&Near(bh,14));
+-    NativeHudHooks::Observe(editor,HudElement::Health,100,200);
+-    NativeHudHooks::Observe(editor,HudElement::Health,180,210);
+-    HUD_CHECK(editor.GetElementBounds(HudElement::Health,bx,by,bw,bh));
++    NativeHudHooks::Observe(editor,HudElement::Money,100,200);
++    NativeHudHooks::Observe(editor,HudElement::Money,180,210);
++    HUD_CHECK(editor.GetElementBounds(HudElement::Money,bx,by,bw,bh));
+     HUD_CHECK(Near(bx,100)&&Near(by,200)&&Near(bw,80)&&Near(bh,10));
+     editor.SetLayout(layout);
+-    HUD_CHECK(editor.GetElementBounds(HudElement::Health,bx,by,bw,bh));
+-    health.offset_x=0.3f;
++    HUD_CHECK(editor.GetElementBounds(HudElement::Money,bx,by,bw,bh));
++    money.offset_x=0.3f;
+     editor.SetLayout(layout);
+-    HUD_CHECK(!editor.GetElementBounds(HudElement::Health,bx,by,bw,bh));
++    HUD_CHECK(!editor.GetElementBounds(HudElement::Money,bx,by,bw,bh));
+     HUD_CHECK(editor.Initialize());
+     HUD_CHECK(editor.Initialize());
+     editor.Shutdown();editor.Shutdown();
+-    HUD_CHECK(!editor.GetElementBounds(HudElement::Health,bx,by,bw,bh));
++    HUD_CHECK(!editor.GetElementBounds(HudElement::Money,bx,by,bw,bh));
+     editor.SetLayout(HudLayout{});
+-    HUD_CHECK(editor.TransformColor(HudElement::Health,0xffffffff)==0xffffffff);
++    HUD_CHECK(editor.TransformColor(HudElement::Money,0xffffffff)==0xffffffff);
++    HUD_CHECK(kHudElementCount == 4);
++    HUD_CHECK(NativeHudEditor::ResolvePrimitiveElement(HudElement::Count,true,false,false)==HudElement::Weapon);
++    // Vital-bar exclusions must beat weapon fallback and any enclosing scope.
++    HUD_CHECK(NativeHudEditor::ResolvePrimitiveElement(HudElement::Count,true,true,false)==HudElement::Count);
++    HUD_CHECK(NativeHudEditor::ResolvePrimitiveElement(HudElement::Radar,true,true,false)==HudElement::Count);
++    HUD_CHECK(NativeHudEditor::ResolvePrimitiveElement(HudElement::Ammo,true,false,false)==HudElement::Ammo);
++    HUD_CHECK(NativeHudEditor::ResolvePrimitiveElement(HudElement::Radar,false,false,false)==HudElement::Radar);
++    HUD_CHECK(NativeHudEditor::ResolvePrimitiveElement(HudElement::Count,false,false,false)==HudElement::Count);
++    HUD_CHECK(NativeHudEditor::ResolvePrimitiveElement(HudElement::Ammo,true,false,true)==HudElement::Count);
+     std::printf("\n=== NativeHudEditor Results: %d passed, %d failed ===\n\n",passed,failed);
+     return failed;
+ }
+diff --git a/tools/package_revision9.ps1 b/tools/package_revision9.ps1
+new file mode 100644
+index 0000000..fccf40a
+--- /dev/null
++++ b/tools/package_revision9.ps1
+@@ -0,0 +1,126 @@
++$ErrorActionPreference = 'Stop'
++$projectRoot = Split-Path -Parent $PSScriptRoot
++$binary = Join-Path $projectRoot 'build\Release\Keybinder.asi'
++$reportPath = Join-Path $projectRoot 'build\revision9-artifact.json'
++$report = Get-Content -LiteralPath $reportPath -Raw | ConvertFrom-Json
++$binaryHash = (Get-FileHash -LiteralPath $binary -Algorithm SHA256).Hash.ToLowerInvariant()
++if ($report.revision -ne 'v0.1.1-r9' -or $binaryHash -ne $report.sha256 -or -not $report.embedded_helper_matches) {
++    throw 'Die ASI stimmt nicht mit dem finalen r9-Prüfbericht überein.'
++}
++$helperPath = Join-Path $projectRoot 'build\ReconnectHelper.exe'
++$helperHash = (Get-FileHash -LiteralPath $helperPath -Algorithm SHA256).Hash.ToLowerInvariant()
++if ($helperHash -ne $report.helper_sha256) { throw 'Der Reconnect-Helfer hat sich seit der Artefaktprüfung geändert.' }
++$workerPath = Join-Path $projectRoot 'build\reconnect-worker-tests\result.json'
++$workerResult = Get-Content -LiteralPath $workerPath -Raw | ConvertFrom-Json
++if ($workerResult.failures -ne 0 -or $workerResult.checks -lt 18) { throw 'Reconnect-Helfertest fehlgeschlagen oder unvollständig.' }
++if ((Get-Item -LiteralPath $workerPath).LastWriteTimeUtc -lt (Get-Item -LiteralPath $helperPath).LastWriteTimeUtc) {
++    throw 'Den nativen Helfertest nach dem letzten Helfer-Build erneut ausführen.'
++}
++$testLog = Get-Content -LiteralPath (Join-Path $projectRoot 'build\revision9-tests.log') -Raw
++if ($testLog -notmatch '(?m)^Test exit code: 0\s*$' -or $testLog -match '\[FAIL\]') { throw 'Gesamttests nicht erfolgreich.' }
++$buildLog = Get-Content -LiteralPath (Join-Path $projectRoot 'build\revision9-build.log') -Raw
++if ($buildLog -notmatch '(?m)^RELEASE_BUILD_EXIT_CODE=0\s*$' -or $buildLog -notmatch 'Keybinder\.vcxproj -> .*Keybinder\.asi' -or $buildLog -match ': (fatal )?error [A-Z]+\d+:') {
++    throw 'Erfolgreicher finaler Release-Build nicht bestätigt.'
++}
++
++$packageDirectory = Join-Path $projectRoot 'dist\NLBinder-0.1.1-r9'
++$archive = Join-Path $projectRoot 'dist\NLBinder-v0.1.1-KOBiRO-r9.zip'
++if ((Test-Path -LiteralPath $packageDirectory) -or (Test-Path -LiteralPath $archive)) {
++    throw 'r9-Paket existiert bereits; nicht automatisch überschreiben.'
++}
++New-Item -ItemType Directory -Path $packageDirectory | Out-Null
++Copy-Item -LiteralPath $binary -Destination (Join-Path $packageDirectory 'Keybinder.asi')
++Copy-Item -LiteralPath (Join-Path $projectRoot 'docs\NLBinder-0.1.1-r9-DE.md') -Destination (Join-Path $packageDirectory 'LIESMICH.md')
++Copy-Item -LiteralPath (Join-Path $projectRoot 'docs\jobs-support.md') -Destination (Join-Path $packageDirectory 'JOB-HINWEISE.md')
++Copy-Item -LiteralPath $reportPath -Destination (Join-Path $packageDirectory 'PRUEFBERICHT.json')
++Copy-Item -LiteralPath $workerPath -Destination (Join-Path $packageDirectory 'RECONNECT-TEST.json')
++
++# Ship only empty weapon folders and instructions, never personal PNG files.
++$catalogSource = Get-Content -LiteralPath (Join-Path $projectRoot 'include\WeaponIconCatalog.h') -Raw
++$weaponFolderNames = @([regex]::Matches($catalogSource, '\{\s*\d+,\s*"[^"]+",\s*"([^"]+)"\s*\}') | ForEach-Object { $_.Groups[1].Value })
++if ($weaponFolderNames.Count -ne 43 -or @($weaponFolderNames | Sort-Object -Unique).Count -ne 43) { throw 'Der Waffenordner-Katalog ist unvollständig oder doppelt.' }
++$templateRoot = Join-Path $packageDirectory 'NLBinder\Waffenicons'
++New-Item -ItemType Directory -Path $templateRoot | Out-Null
++foreach ($folderName in $weaponFolderNames) {
++    if ($folderName -notmatch '^[A-Za-z0-9 -]+$') { throw 'Ungültiger Waffenordner im Katalog.' }
++    New-Item -ItemType Directory -Path (Join-Path $templateRoot $folderName) | Out-Null
++}
++@'
++# Eigene Waffenicons
++
++Den Vorlagenordner NLBinder nach Dokumente/GTA San Andreas User Files kopieren
++und dort mit dem bestehenden NLBinder-Ordner zusammenführen. Vorhandene eigene
++Bilder beibehalten. Die Waffenbilder liegen unter:
++Dokumente/GTA San Andreas User Files/NLBinder/Waffenicons/<Waffe>/
++PNG-Dateien in den passenden Unterordner legen, z.B. Desert Eagle/mein-icon.png.
++Am einfachsten im Binder unter Mods / Waffenicons auf 'Waffenicons-Ordner öffnen'
++klicken: So wird auch ein verschobener Dokumente-Ordner, etwa unter OneDrive,
++korrekt geöffnet. Danach Waffenicons aktivieren und bei Bedarf neu einlesen.
++Mehrere PNGs pro Waffe sind möglich; ohne PNG bleibt das originale Waffenicon.
++Die Fist wird weiterhin unter Mods / Hud eingerichtet.
++'@ | Set-Content -LiteralPath (Join-Path $templateRoot 'LIESMICH.md') -Encoding utf8
++
++$buildInfo = @"
++NLBinder v.0.1.1 by KOBiRO – Überarbeitung 9
++Erstellt: $([System.TimeZoneInfo]::ConvertTimeBySystemTimeZoneId([DateTime]::UtcNow, 'W. Europe Standard Time').ToString('dd.MM.yyyy HH:mm:ss')) (Europe/Berlin)
++Datei: Keybinder.asi
++Format: Win32 Release, PE32/x86 DLL
++Größe: $($report.bytes) Bytes
++SHA256: $binaryHash
++Eingebetteter Reconnect-Helfer: Ressource 300, $($report.embedded_helper_bytes) Bytes
++Helfer-SHA256: $($report.helper_sha256)
++
++Verifikation:
++- Vollständige automatisierte Tests: Exitcode 0
++- Release-Build: Exitcode 0
++- ASI-Format, Windows-Imports und eingebetteter Helfer geprüft
++- Eingebetteter Reconnect-Helfer stimmt mit dem geprüften Helfer überein
++- Nativer Reconnect-Helfer: $($workerResult.checks) Prüfungen, 0 Fehler
++- Dafür ausschließlich harmlose Testprozesse verwendet
++- Kein echtes Spiel und kein installierter Launcher gestartet oder beendet
++- Kein Ingame-Test durchgeführt
++
++Neue Änderungen:
++- Interface auf Geldanzeige, Waffenicon, Munition und Minimap reduziert
++- Getrennte Positions- und Farboptionen für diese vier HUD-Elemente
++- Maussteuerung des Verschiebemodus mit den Online-Overlays vereinheitlicht
++- Kein Zurücksetzen des Mauszeigers zur Bildschirmmitte beim Verschieben
++- Speichern über Esc im bisherigen Overlay-Stil
++- Gespeicherte Presets und getrennte Wiederherstellung von Position und Farbe
++
++Die früheren Job-, Skilltree-, Fraktions-, Radar-, Tacho- und Reconnect-
++Anpassungen sind enthalten. Die ursprüngliche Oberfläche bleibt Grundlage.
++Der Reconnect-Helfer ist in der ASI enthalten.
++
++Grenzen: Die Synchronisation wartet auf eine echte Serverantwort. Mehrere
++Schadensereignisse zwischen Messungen erscheinen als gemessener Gesamtverlust.
++Ein Live-Test mit dem konkreten Server und Launcher steht weiterhin aus.
++Installation und weitere Hinweise stehen in LIESMICH.md.
++"@
++$buildInfo | Set-Content -LiteralPath (Join-Path $packageDirectory 'BUILD-INFO.txt') -Encoding utf8
++"$binaryHash  Keybinder.asi" | Set-Content -LiteralPath (Join-Path $packageDirectory 'SHA256SUMS.txt') -Encoding ascii
++Compress-Archive -LiteralPath $packageDirectory -DestinationPath $archive -CompressionLevel Optimal
++
++Add-Type -AssemblyName System.IO.Compression.FileSystem
++$templateZip = [System.IO.Compression.ZipFile]::Open($archive, [System.IO.Compression.ZipArchiveMode]::Update)
++try {
++    foreach ($folderName in $weaponFolderNames) {
++        $entryName = 'NLBinder-0.1.1-r9/NLBinder/Waffenicons/' + $folderName + '/'
++        if (-not $templateZip.GetEntry($entryName)) { $null = $templateZip.CreateEntry($entryName) }
++    }
++} finally { $templateZip.Dispose() }
++$zip = [System.IO.Compression.ZipFile]::OpenRead($archive)
++try {
++    $entry = $zip.Entries | Where-Object { $_.FullName -match '/Keybinder\.asi$' }
++    if (@($entry).Count -ne 1) { throw 'ASI fehlt im Archiv oder ist mehrfach enthalten.' }
++    $stream = $entry.Open()
++    $digest = [System.Security.Cryptography.SHA256]::Create()
++    try {
++        $zippedHash = [BitConverter]::ToString($digest.ComputeHash($stream)).Replace('-', '').ToLowerInvariant()
++        if ($zippedHash -ne $binaryHash) { throw 'ASI-Prüfsumme im Archiv stimmt nicht.' }
++    } finally { $stream.Dispose(); $digest.Dispose() }
++} finally { $zip.Dispose() }
++$stagedHash = (Get-FileHash -LiteralPath (Join-Path $packageDirectory 'Keybinder.asi') -Algorithm SHA256).Hash.ToLowerInvariant()
++if ($stagedHash -ne $binaryHash) { throw 'Kopierte ASI stimmt nicht überein.' }
++Get-Item -LiteralPath (Join-Path $packageDirectory 'Keybinder.asi'), $archive | Select-Object FullName,Length
++Write-Output "SHA256: $binaryHash"
+diff --git a/tools/verify_revision9_artifact.py b/tools/verify_revision9_artifact.py
+new file mode 100644
+index 0000000..b225a2e
+--- /dev/null
++++ b/tools/verify_revision9_artifact.py
+@@ -0,0 +1,115 @@
++"""Read-only r9 PE/artifact verification; never loads or executes binaries."""
++import hashlib
++import json
++from pathlib import Path
++import struct
++import sys
++
++
++def require(condition, message):
++    if not condition:
++        raise ValueError(message)
++
++
++class PE:
++    def __init__(self, path):
++        self.path = Path(path)
++        self.data = self.path.read_bytes()
++        require(self.data[:2] == b"MZ", "Missing DOS header")
++        start = self.u32(0x3C)
++        require(self.data[start:start + 4] == b"PE\0\0", "Missing PE signature")
++        self.machine = self.u16(start + 4)
++        count = self.u16(start + 6)
++        self.characteristics = self.u16(start + 22)
++        self.optional = start + 24
++        require(self.u16(self.optional) == 0x10B, "Expected PE32")
++        self.sections = []
++        table = self.optional + self.u16(start + 20)
++        for index in range(count):
++            row = table + index * 40
++            virtual_size, rva, size, raw = struct.unpack_from("<IIII", self.data, row + 8)
++            self.sections.append((rva, max(virtual_size, size), raw, size))
++
++    def u16(self, offset):
++        return struct.unpack_from("<H", self.data, offset)[0]
++
++    def u32(self, offset):
++        return struct.unpack_from("<I", self.data, offset)[0]
++
++    def offset(self, rva):
++        for start, span, raw, size in self.sections:
++            if start <= rva < start + span:
++                require(rva - start < size, "RVA has no raw file data")
++                return raw + rva - start
++        raise ValueError(f"Unmapped RVA: {rva:#x}")
++
++    def imports(self):
++        directory = self.u32(self.optional + 96 + 8)
++        if not directory:
++            return []
++        row = self.offset(directory)
++        result = []
++        while any(struct.unpack_from("<IIIII", self.data, row)):
++            name = self.offset(self.u32(row + 12))
++            end = self.data.index(0, name)
++            result.append(self.data[name:end].decode("ascii"))
++            row += 20
++        return sorted(result, key=str.lower)
++
++    def resource(self, type_id, resource_id):
++        base = self.offset(self.u32(self.optional + 96 + 16))
++
++        def entries(relative):
++            head = base + relative
++            total = self.u16(head + 12) + self.u16(head + 14)
++            return [struct.unpack_from("<II", self.data, head + 16 + i * 8) for i in range(total)]
++
++        directory = 0
++        for expected in (type_id, resource_id):
++            candidates = [value for name, value in entries(directory) if name == expected]
++            require(len(candidates) == 1, f"Resource ID {expected} missing or ambiguous")
++            require(candidates[0] & 0x80000000, "Expected resource directory")
++            directory = candidates[0] & 0x7FFFFFFF
++        languages = entries(directory)
++        require(len(languages) == 1, "Expected one embedded worker language")
++        leaf = languages[0][1]
++        require(not leaf & 0x80000000, "Expected resource data entry")
++        rva, size = struct.unpack_from("<II", self.data, base + leaf)
++        start = self.offset(rva)
++        return self.data[start:start + size]
++
++
++def main():
++    root = Path(__file__).resolve().parents[1]
++    asi = PE(sys.argv[1] if len(sys.argv) > 1 else root / "build/Release/Keybinder.asi")
++    helper = PE(root / "build/ReconnectHelper.exe")
++    require(asi.machine == helper.machine == 0x14C, "Expected both binaries to be x86")
++    require(asi.characteristics & 0x2000, "ASI must be a DLL")
++    require(not helper.characteristics & 0x2000, "Worker must be an executable")
++    require(asi.resource(10, 300) == helper.data, "Embedded helper differs from built helper")
++    imports = asi.imports()
++    require(not any(name.lower().startswith(("vcruntime", "msvcp", "ucrtbased")) for name in imports),
++            "Unexpected external C++ runtime dependency")
++    try:
++        display_path = asi.path.resolve().relative_to(root).as_posix()
++    except ValueError:
++        display_path = asi.path.name
++    result = {
++        "revision": "v0.1.1-r9",
++        "asi": display_path,
++        "bytes": len(asi.data),
++        "format": "PE32 x86 DLL",
++        "sha256": hashlib.sha256(asi.data).hexdigest(),
++        "imports": imports,
++        "embedded_helper_id": 300,
++        "embedded_helper_bytes": len(helper.data),
++        "helper_sha256": hashlib.sha256(helper.data).hexdigest(),
++        "embedded_helper_matches": True,
++    }
++    report = json.dumps(result, indent=2)
++    (root / "build/revision9-artifact.json").write_text(report + "\n", encoding="utf-8")
++    print(report)
++
++
++if __name__ == "__main__":
++    main()

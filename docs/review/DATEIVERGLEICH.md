@@ -2,7 +2,7 @@
 
 Originalarchiv: `a328e78eea63420e9bfe9c084883100177fe0fd9c2d62c4fcaef38c0a44801e9`; Commitkennung im ZIP: `92ce21971bee2d166d830e23ad20950f1dc98921`.
 
-Aktueller Vergleich: `v0.1.1-r8`, ASI-SHA-256 `02401c76a69e40631698ac2e1a5ea5855f69fcbb3d9c0a9f7ee1909c28a30e3b`.
+Aktueller Vergleich: `v0.1.1-r9`, ASI-SHA-256 `41a1e6d772f6c68b5541b4a7ea4ec1f997d5d97a55ffdbe446d0d89117734964`.
 
 Alle Dateien einschließlich wiederhergestellter Abhängigkeiten stehen in [SOURCE-COMPARISON.json](SOURCE-COMPARISON.json).
 Die Vorher-Prüfsummen stammen aus dem unveränderten gefilterten ZIP-Snapshot.
@@ -61,11 +61,20 @@ Diese Liste zeigt Inhaltsänderungen außerhalb der Vendor-Verzeichnisse.
 | added | [dist/NLBinder-0.1.1-r8/PRUEFBERICHT.json](../../dist/NLBinder-0.1.1-r8/PRUEFBERICHT.json) |
 | added | [dist/NLBinder-0.1.1-r8/RECONNECT-TEST.json](../../dist/NLBinder-0.1.1-r8/RECONNECT-TEST.json) |
 | added | [dist/NLBinder-0.1.1-r8/SHA256SUMS.txt](../../dist/NLBinder-0.1.1-r8/SHA256SUMS.txt) |
+| added | [dist/NLBinder-0.1.1-r9/BUILD-INFO.txt](../../dist/NLBinder-0.1.1-r9/BUILD-INFO.txt) |
+| added | [dist/NLBinder-0.1.1-r9/JOB-HINWEISE.md](../../dist/NLBinder-0.1.1-r9/JOB-HINWEISE.md) |
+| added | [dist/NLBinder-0.1.1-r9/Keybinder.asi](../../dist/NLBinder-0.1.1-r9/Keybinder.asi) |
+| added | [dist/NLBinder-0.1.1-r9/LIESMICH.md](../../dist/NLBinder-0.1.1-r9/LIESMICH.md) |
+| added | [dist/NLBinder-0.1.1-r9/NLBinder/Waffenicons/LIESMICH.md](../../dist/NLBinder-0.1.1-r9/NLBinder/Waffenicons/LIESMICH.md) |
+| added | [dist/NLBinder-0.1.1-r9/PRUEFBERICHT.json](../../dist/NLBinder-0.1.1-r9/PRUEFBERICHT.json) |
+| added | [dist/NLBinder-0.1.1-r9/RECONNECT-TEST.json](../../dist/NLBinder-0.1.1-r9/RECONNECT-TEST.json) |
+| added | [dist/NLBinder-0.1.1-r9/SHA256SUMS.txt](../../dist/NLBinder-0.1.1-r9/SHA256SUMS.txt) |
 | added | [dist/NLBinder-v0.1.1-KOBiRO-r4.zip](../../dist/NLBinder-v0.1.1-KOBiRO-r4.zip) |
 | added | [dist/NLBinder-v0.1.1-KOBiRO-r5.zip](../../dist/NLBinder-v0.1.1-KOBiRO-r5.zip) |
 | added | [dist/NLBinder-v0.1.1-KOBiRO-r6.zip](../../dist/NLBinder-v0.1.1-KOBiRO-r6.zip) |
 | added | [dist/NLBinder-v0.1.1-KOBiRO-r7.zip](../../dist/NLBinder-v0.1.1-KOBiRO-r7.zip) |
 | added | [dist/NLBinder-v0.1.1-KOBiRO-r8.zip](../../dist/NLBinder-v0.1.1-KOBiRO-r8.zip) |
+| added | [dist/NLBinder-v0.1.1-KOBiRO-r9.zip](../../dist/NLBinder-v0.1.1-KOBiRO-r9.zip) |
 | added | [docs/BUILD-README.md](../../docs/BUILD-README.md) |
 | added | [docs/NLBinder-0.1.1-DE.md](../../docs/NLBinder-0.1.1-DE.md) |
 | added | [docs/NLBinder-0.1.1-r2-DE.md](../../docs/NLBinder-0.1.1-r2-DE.md) |
@@ -75,6 +84,7 @@ Diese Liste zeigt Inhaltsänderungen außerhalb der Vendor-Verzeichnisse.
 | added | [docs/NLBinder-0.1.1-r6-DE.md](../../docs/NLBinder-0.1.1-r6-DE.md) |
 | added | [docs/NLBinder-0.1.1-r7-DE.md](../../docs/NLBinder-0.1.1-r7-DE.md) |
 | added | [docs/NLBinder-0.1.1-r8-DE.md](../../docs/NLBinder-0.1.1-r8-DE.md) |
+| added | [docs/NLBinder-0.1.1-r9-DE.md](../../docs/NLBinder-0.1.1-r9-DE.md) |
 | added | [docs/ORIGINAL-README.md](../../docs/ORIGINAL-README.md) |
 | added | [docs/build-dependencies.md](../../docs/build-dependencies.md) |
 | added | [docs/jobs-support.md](../../docs/jobs-support.md) |
@@ -89,9 +99,11 @@ Diese Liste zeigt Inhaltsänderungen außerhalb der Vendor-Verzeichnisse.
 | added | [docs/review/r6-validation.json](../../docs/review/r6-validation.json) |
 | added | [docs/review/r7-validation.json](../../docs/review/r7-validation.json) |
 | added | [docs/review/r8-validation.json](../../docs/review/r8-validation.json) |
+| added | [docs/review/r9-validation.json](../../docs/review/r9-validation.json) |
 | modified | [include/ActionExecutor.h](../../include/ActionExecutor.h) |
 | modified | [include/DamageRPCAdapter.h](../../include/DamageRPCAdapter.h) |
 | modified | [include/DeathMessageRPCAdapter.h](../../include/DeathMessageRPCAdapter.h) |
+| modified | [include/ImGuiOverlay.h](../../include/ImGuiOverlay.h) |
 | modified | [include/IncomingDamageDetector.h](../../include/IncomingDamageDetector.h) |
 | modified | [include/InterfaceEditor.h](../../include/InterfaceEditor.h) |
 | modified | [include/InterfaceEditorUI.h](../../include/InterfaceEditorUI.h) |
@@ -133,6 +145,7 @@ Diese Liste zeigt Inhaltsänderungen außerhalb der Vendor-Verzeichnisse.
 | modified | [src/ActionExecutor.cpp](../../src/ActionExecutor.cpp) |
 | modified | [src/DamageRPCAdapter.cpp](../../src/DamageRPCAdapter.cpp) |
 | modified | [src/DeathMessageRPCAdapter.cpp](../../src/DeathMessageRPCAdapter.cpp) |
+| modified | [src/ImGuiOverlay.cpp](../../src/ImGuiOverlay.cpp) |
 | modified | [src/InterfaceEditor.cpp](../../src/InterfaceEditor.cpp) |
 | modified | [src/InterfaceEditorUI.cpp](../../src/InterfaceEditorUI.cpp) |
 | modified | [src/JobChatAdapter.cpp](../../src/JobChatAdapter.cpp) |
@@ -164,6 +177,7 @@ Diese Liste zeigt Inhaltsänderungen außerhalb der Vendor-Verzeichnisse.
 | modified | [src/TextDrawAdapter.cpp](../../src/TextDrawAdapter.cpp) |
 | added | [src/WeaponIconManager.cpp](../../src/WeaponIconManager.cpp) |
 | added | [src/WeaponIconsUI.cpp](../../src/WeaponIconsUI.cpp) |
+| modified | [tests/ImGuiOverlayTests.cpp](../../tests/ImGuiOverlayTests.cpp) |
 | modified | [tests/InterfaceEditorTests.cpp](../../tests/InterfaceEditorTests.cpp) |
 | added | [tests/InterfaceLayoutSettingsTests.cpp](../../tests/InterfaceLayoutSettingsTests.cpp) |
 | modified | [tests/JobChatAdapterTests.cpp](../../tests/JobChatAdapterTests.cpp) |
@@ -202,6 +216,7 @@ Diese Liste zeigt Inhaltsänderungen außerhalb der Vendor-Verzeichnisse.
 | added | [tools/package_revision6.ps1](../../tools/package_revision6.ps1) |
 | added | [tools/package_revision7.ps1](../../tools/package_revision7.ps1) |
 | added | [tools/package_revision8.ps1](../../tools/package_revision8.ps1) |
+| added | [tools/package_revision9.ps1](../../tools/package_revision9.ps1) |
 | added | [tools/prepare_github_review.py](../../tools/prepare_github_review.py) |
 | modified | [tools/run_tests.bat](../../tools/run_tests.bat) |
 | added | [tools/setup_msvc.bat](../../tools/setup_msvc.bat) |
@@ -211,3 +226,4 @@ Diese Liste zeigt Inhaltsänderungen außerhalb der Vendor-Verzeichnisse.
 | added | [tools/verify_revision6_artifact.py](../../tools/verify_revision6_artifact.py) |
 | added | [tools/verify_revision7_artifact.py](../../tools/verify_revision7_artifact.py) |
 | added | [tools/verify_revision8_artifact.py](../../tools/verify_revision8_artifact.py) |
+| added | [tools/verify_revision9_artifact.py](../../tools/verify_revision9_artifact.py) |

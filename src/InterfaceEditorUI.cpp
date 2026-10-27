@@ -42,20 +42,10 @@ std::string GetPresetSlotLabel(const InterfacePreset& preset, int index) {
     return slotLabel + " - " + preset.name;
 }
 
-void SyncLegacyVitalColors(InterfacePreset& preset, HudElement element) {
+void SyncLegacyMoneyColor(InterfacePreset& preset, HudElement element) {
     const HudElementStyle& style = preset.layout[static_cast<std::size_t>(element)];
     const InterfacePreset defaults;
-    if (element == HudElement::Health) {
-        preset.hp_color_r = style.custom_color ? style.color[0] : defaults.hp_color_r;
-        preset.hp_color_g = style.custom_color ? style.color[1] : defaults.hp_color_g;
-        preset.hp_color_b = style.custom_color ? style.color[2] : defaults.hp_color_b;
-        preset.hp_color_a = style.custom_color ? style.color[3] : defaults.hp_color_a;
-    } else if (element == HudElement::Armour) {
-        preset.armor_color_r = style.custom_color ? style.color[0] : defaults.armor_color_r;
-        preset.armor_color_g = style.custom_color ? style.color[1] : defaults.armor_color_g;
-        preset.armor_color_b = style.custom_color ? style.color[2] : defaults.armor_color_b;
-        preset.armor_color_a = style.custom_color ? style.color[3] : defaults.armor_color_a;
-    } else if (element == HudElement::Money) {
+    if (element == HudElement::Money) {
         preset.money_color_r = style.custom_color ? style.color[0] : defaults.money_color_r;
         preset.money_color_g = style.custom_color ? style.color[1] : defaults.money_color_g;
         preset.money_color_b = style.custom_color ? style.color[2] : defaults.money_color_b;
@@ -213,7 +203,7 @@ void InterfaceEditorUI::Render() {
             ImGui::TableNextColumn();
             UIComponents::Separator("Farbe");
             if (UIComponents::Toggle("Eigene Farbe", &style.custom_color)) {
-                SyncLegacyVitalColors(currentPreset, definition.element);
+                SyncLegacyMoneyColor(currentPreset, definition.element);
                 gtaPresetChanged = true;
             }
             if (style.custom_color) {
@@ -221,7 +211,7 @@ void InterfaceEditorUI::Render() {
                 if (UIComponents::ColorPicker("Farbe auswählen", &color)) {
                     style.color = {{color.x, color.y, color.z, color.w}};
                     style = SanitizeHudElementStyle(style);
-                    SyncLegacyVitalColors(currentPreset, definition.element);
+                    SyncLegacyMoneyColor(currentPreset, definition.element);
                     gtaPresetChanged = true;
                 }
             } else {
@@ -229,7 +219,7 @@ void InterfaceEditorUI::Render() {
             }
             if (UIComponents::SecondaryButton("Originalfarbe wiederherstellen")) {
                 style.custom_color = false;
-                SyncLegacyVitalColors(currentPreset, definition.element);
+                SyncLegacyMoneyColor(currentPreset, definition.element);
                 gtaPresetChanged = true;
             }
             ImGui::EndTable();

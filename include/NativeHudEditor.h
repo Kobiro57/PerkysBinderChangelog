@@ -21,6 +21,7 @@ public:
     void TransformPoint(HudElement element, float& x, float& y, float width, float height) const;
     std::uint32_t TransformColor(HudElement element, std::uint32_t argb, bool text = false) const;
     static HudElement ClassifyPlayerInfoText(const char* text);
+    static HudElement ResolvePrimitiveElement(HudElement scoped, bool playerInfo, bool excluded, bool fontOutput);
 
 private:
     friend struct NativeHudHooks;

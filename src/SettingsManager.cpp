@@ -1474,28 +1474,13 @@ bool SettingsManager::LoadFromJson(const std::string& json_content) {
                         for (std::size_t channel = 0; channel < style.color.size(); ++channel) {
                             ParseHudFloatField(obj, prefix + channels[channel], style.color[channel]);
                         }
-                        // Existing saved colors remain available after the editor moves
-                        // to its own tab. Untouched legacy defaults keep native colors.
-                        if (!hasColorSetting) {
+                        // Money remains editable. Removed interface categories are
+                        // absent from the catalog, so their old keys are ignored.
+                        if (!hasColorSetting && definition.element == HudElement::Money) {
                             const InterfacePreset defaults;
-                            std::array<float, 4> legacy{}, original{};
-                            bool hasLegacyColor = true;
-                            switch (definition.element) {
-                            case HudElement::Health:
-                                legacy = {preset.hp_color_r, preset.hp_color_g, preset.hp_color_b, preset.hp_color_a};
-                                original = {defaults.hp_color_r, defaults.hp_color_g, defaults.hp_color_b, defaults.hp_color_a};
-                                break;
-                            case HudElement::Armour:
-                                legacy = {preset.armor_color_r, preset.armor_color_g, preset.armor_color_b, preset.armor_color_a};
-                                original = {defaults.armor_color_r, defaults.armor_color_g, defaults.armor_color_b, defaults.armor_color_a};
-                                break;
-                            case HudElement::Money:
-                                legacy = {preset.money_color_r, preset.money_color_g, preset.money_color_b, preset.money_color_a};
-                                original = {defaults.money_color_r, defaults.money_color_g, defaults.money_color_b, defaults.money_color_a};
-                                break;
-                            default: hasLegacyColor = false; break;
-                            }
-                            if (hasLegacyColor && legacy != original) {
+                            const std::array<float, 4> legacy = {preset.money_color_r, preset.money_color_g, preset.money_color_b, preset.money_color_a};
+                            const std::array<float, 4> original = {defaults.money_color_r, defaults.money_color_g, defaults.money_color_b, defaults.money_color_a};
+                            if (legacy != original) {
                                 style.color = legacy;
                                 style.custom_color = true;
                             }

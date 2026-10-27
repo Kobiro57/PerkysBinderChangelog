@@ -51,13 +51,17 @@ std::uint32_t NativeHudEditor::TransformColor(HudElement element, std::uint32_t 
     const unsigned alpha = Byte(static_cast<float>(a) * style.color[3]);
     // Bar borders, map outlines and font drop shadows must remain legible.
     if (!text && r == 0 && g == 0 && b == 0) return (alpha << 24) | (argb & 0xffffff);
-    float strength = 255.0f;
-    if (element == HudElement::Wanted) strength = static_cast<float>((std::max)({r, g, b}));
     if (element == HudElement::Radar) {
         // A map tint retains the map texture's detail and marker luminance.
         return (alpha << 24) | (Byte(r * style.color[0]) << 16) | (Byte(g * style.color[1]) << 8) | Byte(b * style.color[2]);
     }
-    return (alpha << 24) | (Byte(strength * style.color[0]) << 16) | (Byte(strength * style.color[1]) << 8) | Byte(strength * style.color[2]);
+    return (alpha << 24) | (Byte(255.0f * style.color[0]) << 16) | (Byte(255.0f * style.color[1]) << 8) | Byte(255.0f * style.color[2]);
+}
+
+HudElement NativeHudEditor::ResolvePrimitiveElement(HudElement scoped, bool playerInfo, bool excluded, bool fontOutput) {
+    if (excluded || fontOutput) return HudElement::Count;
+    if (Valid(scoped)) return scoped;
+    return playerInfo ? HudElement::Weapon : HudElement::Count;
 }
 
 HudElement NativeHudEditor::ClassifyPlayerInfoText(const char* text) {
@@ -66,7 +70,6 @@ HudElement NativeHudEditor::ClassifyPlayerInfoText(const char* text) {
     // Only the native DrawPlayerInfo scope invokes this classifier. Similar
     // server textdraws and chat strings are never classified or changed.
     const std::size_t size = std::strlen(text);
-    if (size == 5 && digit(text[0]) && digit(text[1]) && text[2] == ':' && digit(text[3]) && digit(text[4])) return HudElement::Clock;
     std::size_t begin = text[0] == '-' ? 1 : 0;
     if (begin < size && text[begin] == '$' && begin + 1 < size) {
         for (std::size_t i = begin + 1; i < size; ++i) if (!digit(text[i])) return HudElement::Count;
@@ -107,10 +110,11 @@ struct NativeHudHooks {
     static std::vector<safetyhook::InlineHook*> hooks;
     static thread_local HudElement element;
     static thread_local bool player_info;
+    static thread_local unsigned excluded_depth;
     static thread_local unsigned font_depth;
     static thread_local unsigned submission_depth;
     static thread_local bool font_rendering;
-    static safetyhook::InlineHook *health, *armour, *breath, *ammo, *wanted, *vehicle, *zone, *radar, *player,
+    static safetyhook::InlineHook *health, *armour, *breath, *ammo, *radar, *player,
         *print, *font_buffer, *primitive, *indexed;
 
     struct Scope {
@@ -134,34 +138,32 @@ struct NativeHudHooks {
     static void Remove() {
         for (auto it = hooks.rbegin(); it != hooks.rend(); ++it) delete *it;
         hooks.clear();
-        health = armour = breath = ammo = wanted = vehicle = zone = radar = player = nullptr;
+        health = armour = breath = ammo = radar = player = nullptr;
         print = font_buffer = primitive = indexed = nullptr;
         editor = nullptr;
-        element = HudElement::Count; player_info = font_rendering = false;
+        element = HudElement::Count; player_info = font_rendering = false; excluded_depth = 0;
     }
     static HudElement PrimitiveElement() {
-        if (font_rendering || font_depth || !editor) return HudElement::Count;
-        if (Valid(element)) return element;
+        if (!editor) return HudElement::Count;
         // DrawPlayerInfo's only unscoped native sprite is the weapon/fist.
         // Health/armour/breath and ammo are nested scopes. No additional detour
         // at DrawWeaponIcon is needed, so weapon texture switching can install
         // and remove its hook independently without breaking this editor.
-        return player_info ? HudElement::Weapon : HudElement::Count;
+        return NativeHudEditor::ResolvePrimitiveElement(element, player_info, excluded_depth != 0, font_rendering || font_depth != 0);
     }
-    static void __cdecl Health(int playerId, int x, int y) { Scope scope(HudElement::Health); health->ccall<void>(playerId,x,y); }
-    static void __cdecl Armour(int playerId, int x, int y) { Scope scope(HudElement::Armour); armour->ccall<void>(playerId,x,y); }
-    static void __cdecl Breath(int playerId, int x, int y) { Scope scope(HudElement::Breath); breath->ccall<void>(playerId,x,y); }
+    // These functions stay as exclusion guards only. Their native output is
+    // never transformed, even while DrawPlayerInfo enables weapon fallback.
+    static void __cdecl Health(int playerId, int x, int y) { Counter exclude(excluded_depth); health->ccall<void>(playerId,x,y); }
+    static void __cdecl Armour(int playerId, int x, int y) { Counter exclude(excluded_depth); armour->ccall<void>(playerId,x,y); }
+    static void __cdecl Breath(int playerId, int x, int y) { Counter exclude(excluded_depth); breath->ccall<void>(playerId,x,y); }
     static void __cdecl Ammo(void* ped, int x, int y, float alpha) { Scope scope(HudElement::Ammo); ammo->ccall<void>(ped,x,y,alpha); }
-    static void __cdecl Wanted() { Scope scope(HudElement::Wanted); wanted->ccall<void>(); }
-    static void __cdecl Vehicle() { Scope scope(HudElement::VehicleName); vehicle->ccall<void>(); }
-    static void __cdecl Zone() { Scope scope(HudElement::ZoneName); zone->ccall<void>(); }
     static void __cdecl Radar() {
         if (FrontEndMenuManager.m_bMenuActive || FrontEndMenuManager.m_bDrawRadarOrMap) { radar->ccall<void>(); return; }
         Scope scope(HudElement::Radar); radar->ccall<void>();
     }
     static void __cdecl Player() {
         const bool previous = player_info; player_info = true;
-        if (editor) for (auto item : {HudElement::Weapon,HudElement::Money,HudElement::Clock}) editor->ResetBounds(item);
+        if (editor) for (auto item : {HudElement::Weapon,HudElement::Money}) editor->ResetBounds(item);
         player->ccall<void>(); player_info = previous;
     }
     static void __cdecl FontBuffer() {
@@ -170,7 +172,8 @@ struct NativeHudHooks {
     }
     static void Print(safetyhook::InlineHook* hook, float x, float y, const char* text) {
         HudElement selected = element;
-        if (!Valid(selected) && player_info) selected = NativeHudEditor::ClassifyPlayerInfoText(text);
+        if (!Valid(selected) && player_info && !excluded_depth) selected = NativeHudEditor::ClassifyPlayerInfoText(text);
+        if (excluded_depth) selected = HudElement::Count;
         if (!editor || !Valid(selected) || font_depth) { hook->ccall<void>(x,y,text); return; }
         Counter guard(font_depth);
         editor->TransformPoint(selected,x,y,static_cast<float>(RsGlobal.maximumWidth),static_cast<float>(RsGlobal.maximumHeight));
@@ -222,12 +225,12 @@ NativeHudEditor* NativeHudHooks::editor = nullptr;
 std::vector<safetyhook::InlineHook*> NativeHudHooks::hooks;
 thread_local HudElement NativeHudHooks::element = HudElement::Count;
 thread_local bool NativeHudHooks::player_info = false;
+thread_local unsigned NativeHudHooks::excluded_depth = 0;
 thread_local unsigned NativeHudHooks::font_depth = 0;
 thread_local unsigned NativeHudHooks::submission_depth = 0;
 thread_local bool NativeHudHooks::font_rendering = false;
 safetyhook::InlineHook *NativeHudHooks::health = nullptr, *NativeHudHooks::armour = nullptr, *NativeHudHooks::breath = nullptr,
-    *NativeHudHooks::ammo = nullptr, *NativeHudHooks::wanted = nullptr, *NativeHudHooks::vehicle = nullptr,
-    *NativeHudHooks::zone = nullptr, *NativeHudHooks::radar = nullptr, *NativeHudHooks::player = nullptr,
+    *NativeHudHooks::ammo = nullptr, *NativeHudHooks::radar = nullptr, *NativeHudHooks::player = nullptr,
     *NativeHudHooks::print = nullptr, *NativeHudHooks::font_buffer = nullptr,
     *NativeHudHooks::primitive = nullptr, *NativeHudHooks::indexed = nullptr;
 #endif
@@ -248,9 +251,6 @@ bool NativeHudEditor::Initialize() {
         NativeHudHooks::Install(NativeHudHooks::armour,reinterpret_cast<void*>(0x5890A0),reinterpret_cast<void*>(&NativeHudHooks::Armour)) &&
         NativeHudHooks::Install(NativeHudHooks::breath,reinterpret_cast<void*>(0x589190),reinterpret_cast<void*>(&NativeHudHooks::Breath)) &&
         NativeHudHooks::Install(NativeHudHooks::ammo,reinterpret_cast<void*>(0x5893B0),reinterpret_cast<void*>(&NativeHudHooks::Ammo)) &&
-        NativeHudHooks::Install(NativeHudHooks::wanted,reinterpret_cast<void*>(0x58D9A0),reinterpret_cast<void*>(&NativeHudHooks::Wanted)) &&
-        NativeHudHooks::Install(NativeHudHooks::vehicle,reinterpret_cast<void*>(0x58AEA0),reinterpret_cast<void*>(&NativeHudHooks::Vehicle)) &&
-        NativeHudHooks::Install(NativeHudHooks::zone,reinterpret_cast<void*>(0x58AA50),reinterpret_cast<void*>(&NativeHudHooks::Zone)) &&
         NativeHudHooks::Install(NativeHudHooks::radar,reinterpret_cast<void*>(0x58A330),reinterpret_cast<void*>(&NativeHudHooks::Radar)) &&
         NativeHudHooks::Install(NativeHudHooks::player,reinterpret_cast<void*>(0x58EAF0),reinterpret_cast<void*>(&NativeHudHooks::Player));
     if (!installed) {

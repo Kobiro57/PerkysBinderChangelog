@@ -576,6 +576,7 @@ bool TryGetDirectInputDeviceType(void* device, DWORD& deviceType) {
     deviceType = GET_DIDEVICE_TYPE(caps.dwDevType);
     return true;
 }
+#endif
 
 void SuppressDirectInputMouseState(DWORD dataSize, void* data) {
     if (data == nullptr || dataSize == 0) {
@@ -653,7 +654,6 @@ void SuppressDirectInputMouseWheelEvents(DWORD objectDataSize, void* objectData,
     }
     *inOutCount = writeIndex;
 }
-#endif
 
 }
 
@@ -968,12 +968,7 @@ void ImGuiOverlay::Show() {
 
     Logger::Info("[ImGuiOverlay] Showing overlay");
     visible_ = true;
-    keybinder::Logger::Debug("ImGuiOverlay::Show() - showing cursor, show_cursor=%p", dependencies_.show_cursor);
-    if (dependencies_.show_cursor != nullptr) {
-        dependencies_.show_cursor(true);
-    }
-    cursor_shown_ = true;
-    SyncImGuiCursorVisibility(true);
+    SyncMouseOwnership();
 }
 
 void ImGuiOverlay::Hide() {
@@ -987,17 +982,8 @@ void ImGuiOverlay::Hide() {
 
     Logger::Info("[ImGuiOverlay] Hiding overlay");
     visible_ = false;
-    
-    // Restore game controls BEFORE hiding cursor
-    if (dependencies_.restore_game_mouse != nullptr) {
-        dependencies_.restore_game_mouse();
-    }
-    
-    if (cursor_shown_ && dependencies_.show_cursor != nullptr) {
-        dependencies_.show_cursor(false);
-    }
-    cursor_shown_ = false;
-    SyncImGuiCursorVisibility(false);
+    // Auxiliary move modes can continue to own the cursor after hiding the menu.
+    SyncMouseOwnership();
 }
 
 void ImGuiOverlay::Toggle() {
@@ -1011,6 +997,40 @@ void ImGuiOverlay::Toggle() {
 bool ImGuiOverlay::IsVisible() const {
     return visible_;
 }
+
+bool ImGuiOverlay::OwnsMouseInput() const {
+    return !shutting_down_ && !exit_started_ && (visible_ || (auxiliaryInteractionActiveCallback_ && auxiliaryInteractionActiveCallback_()));
+}
+
+void ImGuiOverlay::SyncMouseOwnership() {
+    const bool ownsMouse = OwnsMouseInput();
+    if (ownsMouse) {
+        if (!cursor_shown_ && dependencies_.show_cursor) dependencies_.show_cursor(true);
+        cursor_shown_ = true;
+        SyncImGuiCursorVisibility(true);
+    } else if (cursor_shown_) {
+        // Release camera control once when the last UI mouse owner is gone.
+        if (dependencies_.restore_game_mouse) dependencies_.restore_game_mouse();
+        if (dependencies_.show_cursor) dependencies_.show_cursor(false);
+        cursor_shown_ = false;
+        SyncImGuiCursorVisibility(false);
+    }
+}
+
+void ImGuiOverlay::FilterMouseState(DWORD size, void* state) const {
+    if (OwnsMouseInput()) SuppressDirectInputMouseState(size, state);
+    else if (IsQuickMapWheelCaptureActive()) SuppressDirectInputMouseWheelState(size, state);
+}
+
+void ImGuiOverlay::FilterMouseEvents(DWORD size, void* events, DWORD* count) const {
+    if (OwnsMouseInput()) SuppressDirectInputMouseEvents(size, events, count);
+    else if (IsQuickMapWheelCaptureActive()) SuppressDirectInputMouseWheelEvents(size, events, count);
+}
+
+#ifdef KEYBINDER_TESTING
+void ImGuiOverlay::FilterMouseStateForTesting(DWORD size, void* state) const { FilterMouseState(size, state); }
+void ImGuiOverlay::FilterMouseEventsForTesting(DWORD size, void* events, DWORD* count) const { FilterMouseEvents(size, events, count); }
+#endif
 
 void ImGuiOverlay::SetHitmarkerRenderCallback(std::function<void()> callback) {
     hitmarkerRenderCallback_ = std::move(callback);
@@ -1045,7 +1065,7 @@ void ImGuiOverlay::SetQuickMapWheelHandlerCallback(std::function<void(float)> ca
 }
 
 bool ImGuiOverlay::IsQuickMapWheelCaptureActive() const {
-    return !visible_ && quickMapWheelCaptureCallback_ != nullptr && quickMapWheelCaptureCallback_();
+    return !OwnsMouseInput() && quickMapWheelCaptureCallback_ != nullptr && quickMapWheelCaptureCallback_();
 }
 
 bool ImGuiOverlay::IsKeyboardCaptureActive() const {
@@ -1092,7 +1112,7 @@ void ImGuiOverlay::RenderFrame(bool from_chat_draw_hook) {
 
     ImGuiContext* ctx = ImGui::GetCurrentContext();
     const bool auxiliaryInteractionActive = auxiliaryInteractionActiveCallback_ != nullptr && auxiliaryInteractionActiveCallback_();
-    const bool interactionActive = visible_ || auxiliaryInteractionActive;
+    const bool interactionActive = OwnsMouseInput();
     if (interactionActive && dependencies_.suppress_game_mouse != nullptr) {
         dependencies_.suppress_game_mouse();
     }
@@ -1103,22 +1123,7 @@ void ImGuiOverlay::RenderFrame(bool from_chat_draw_hook) {
             io_pre.MousePos.x, io_pre.MousePos.y, io_pre.MouseDrawCursor ? "true" : "false");
     }
 
-    if (interactionActive) {
-        if (!cursor_shown_ && dependencies_.show_cursor != nullptr) {
-            dependencies_.show_cursor(true);
-        }
-        cursor_shown_ = true;
-        SyncImGuiCursorVisibility(true);
-    } else if (cursor_shown_) {
-        if (dependencies_.show_cursor != nullptr) {
-            dependencies_.show_cursor(false);
-        }
-        cursor_shown_ = false;
-        SyncImGuiCursorVisibility(false);
-        if (dependencies_.restore_game_mouse != nullptr) {
-            dependencies_.restore_game_mouse();
-        }
-    }
+    SyncMouseOwnership();
     dependencies_.imgui_dx9_new_frame();
     dependencies_.imgui_win32_new_frame();
     ImGui::NewFrame();
@@ -1344,7 +1349,7 @@ LRESULT ImGuiOverlay::WndProcHandler(HWND hwnd, UINT msg, WPARAM w_param, LPARAM
     }
 
     const bool auxiliaryInteractionActive = auxiliaryInteractionActiveCallback_ != nullptr && auxiliaryInteractionActiveCallback_();
-    const bool interactionActive = visible_ || auxiliaryInteractionActive;
+    const bool interactionActive = OwnsMouseInput();
 
     const bool focusLost = msg == WM_KILLFOCUS
         || (msg == WM_ACTIVATEAPP && w_param == FALSE)
@@ -1380,6 +1385,7 @@ LRESULT ImGuiOverlay::WndProcHandler(HWND hwnd, UINT msg, WPARAM w_param, LPARAM
             if (auxiliaryInteractionCancelCallback_ != nullptr) {
                 auxiliaryInteractionCancelCallback_();
             }
+            SyncMouseOwnership();
             return 0;
         }
         if (mainWindowUI_ == nullptr || !mainWindowUI_->IsCapturingKey()) {
@@ -1576,7 +1582,7 @@ bool ImGuiOverlay::EnsureContext() {
 
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
     io.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange;
-    io.MouseDrawCursor = visible_;
+    io.MouseDrawCursor = OwnsMouseInput();
     io.ConfigWindowsMoveFromTitleBarOnly = true;
     ImGui::StyleColorsDark();
 
@@ -1757,8 +1763,8 @@ BOOL WINAPI ImGuiOverlay::HookedSetCursorPos(int x, int y) {
         return ::SetCursorPos(x, y);
     }
 
-    if (active_instance_ != nullptr && active_instance_->visible_) {
-        Logger::Debug("[CURSOR_DEBUG] Blocked SetCursorPos(%d, %d) - overlay visible", x, y);
+    if (active_instance_ != nullptr && active_instance_->OwnsMouseInput()) {
+        Logger::Debug("[CURSOR_DEBUG] Blocked SetCursorPos(%d, %d) - UI owns mouse", x, y);
         return TRUE;
     }
 
@@ -1780,11 +1786,7 @@ HRESULT WINAPI ImGuiOverlay::HookedDirectInputGetDeviceState(void* device, DWORD
         && !active_instance_->exit_started_
         && TryGetDirectInputDeviceType(device, deviceType)) {
         if (deviceType == DI8DEVTYPE_MOUSE) {
-            if (active_instance_->visible_) {
-                SuppressDirectInputMouseState(dataSize, data);
-            } else if (active_instance_->IsQuickMapWheelCaptureActive()) {
-                SuppressDirectInputMouseWheelState(dataSize, data);
-            }
+            active_instance_->FilterMouseState(dataSize, data);
         } else if (deviceType == DI8DEVTYPE_KEYBOARD && active_instance_->IsKeyboardCaptureActive()) {
             if (data != nullptr && dataSize > 0) {
                 std::memset(data, 0, dataSize);
@@ -1807,11 +1809,7 @@ HRESULT WINAPI ImGuiOverlay::HookedDirectInputGetDeviceData(void* device, DWORD 
         && !active_instance_->exit_started_
         && TryGetDirectInputDeviceType(device, deviceType)) {
         if (deviceType == DI8DEVTYPE_MOUSE) {
-            if (active_instance_->visible_) {
-                SuppressDirectInputMouseEvents(objectDataSize, objectData, inOutCount);
-            } else if (active_instance_->IsQuickMapWheelCaptureActive()) {
-                SuppressDirectInputMouseWheelEvents(objectDataSize, objectData, inOutCount);
-            }
+            active_instance_->FilterMouseEvents(objectDataSize, objectData, inOutCount);
         } else if (deviceType == DI8DEVTYPE_KEYBOARD && active_instance_->IsKeyboardCaptureActive()) {
             if (objectData != nullptr && objectDataSize != 0 && inOutCount != nullptr && *inOutCount != 0) {
                 std::memset(objectData, 0, static_cast<std::size_t>(objectDataSize) * static_cast<std::size_t>(*inOutCount));
@@ -2063,7 +2061,7 @@ bool ImGuiOverlay::ApplyDpiScale(float scale) {
 
     ImGuiIO& io = ImGui::GetIO();
 
-    if (visible_ && was_cursor_shown) {
+    if (OwnsMouseInput() && was_cursor_shown) {
         io.MouseDrawCursor = true;
         SyncImGuiCursorVisibility(true);
         if (dependencies_.show_cursor != nullptr) {

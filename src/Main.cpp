@@ -582,7 +582,8 @@ public:
         mainWindowUI_.SetInterfaceMoveRequestedCallback([&]() {
             onlineOverlayRenderer_.SetPersistentOverlayMoveMode(false);
             quickMap_.Hide();
-            overlay_.Hide();
+            // Keep the same owner as Online's persistent move mode. The
+            // auxiliary interaction already suppresses the main menu rendering.
         });
         mainWindowUI_.SetRssFeedManager(&rssFeedManager_);
         mainWindowUI_.SetOnlineDataManager(&onlineDataManager_);
@@ -971,7 +972,7 @@ public:
             }
             inputManager_.ApplyEarlySuppressedKeys();
 
-            if (overlay_.IsVisible() || interfaceEditor_.IsElementMoveModeActive()) {
+            if (overlay_.OwnsMouseInput()) {
                 // Suppress mouse-look before the game consumes per-frame input.
                 // The later HUD/render passes are too late to reliably stop camera
                 // movement, but we intentionally keep this suppression scoped to

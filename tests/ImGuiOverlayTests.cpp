@@ -11,6 +11,8 @@
 #include <cmath>
 #include <cstdio>
 #include <cstring>
+#define DIRECTINPUT_VERSION 0x0800
+#include <dinput.h>
 
 extern std::atomic<int> g_shutdown_phase;
 
@@ -32,6 +34,7 @@ struct OverlayTestState {
     int show_cursor_calls = 0;
     int hide_cursor_calls = 0;
     int suppress_game_mouse_calls = 0;
+    int restore_game_mouse_calls = 0;
     bool cursor_visible = false;
 };
 
@@ -190,6 +193,10 @@ void FakeSuppressGameMouse() {
     ++g_state.suppress_game_mouse_calls;
 }
 
+void FakeRestoreGameMouse() {
+    ++g_state.restore_game_mouse_calls;
+}
+
 keybinder::ImGuiOverlayDependencies MakeDependencies() {
     return {
         &FakeDiscoverDevice,
@@ -210,6 +217,7 @@ keybinder::ImGuiOverlayDependencies MakeDependencies() {
         &FakeCallWindowProc,
         &FakeShowCursor,
         &FakeSuppressGameMouse,
+        &FakeRestoreGameMouse,
     };
 }
 
@@ -233,6 +241,7 @@ keybinder::ImGuiOverlayDependencies MakeSentinelDependencies() {
         &FakeCallWindowProc,
         &FakeShowCursor,
         &FakeSuppressGameMouse,
+        &FakeRestoreGameMouse,
     };
 }
 
@@ -905,10 +914,105 @@ bool TestRenderSkipsWorkAfterShutdownStarts() {
     return true;
 }
 
+bool TestHiddenAuxiliaryMoveOwnsCursorAndFiltersNativeMouse() {
+    ResetState();
+    keybinder::ImGuiOverlay overlay(MakeSentinelDependencies());
+    bool moving = false;
+    int commits = 0;
+    overlay.SetAuxiliaryInteractionActiveCallback([&]() { return moving; });
+    overlay.SetAuxiliaryInteractionCancelCallback([&]() { moving = false; ++commits; });
+    overlay.Show();
+    moving = true;
+    overlay.Hide();
+    if (!Expect(!overlay.IsVisible() && overlay.OwnsMouseInput(), "Hidden auxiliary move must retain native mouse ownership")) return false;
+    if (!Expect(overlay.BlocksCursorWarpForTesting(), "The same policy used by SetCursorPos must block the game's center warp")) return false;
+    if (!Expect(g_state.cursor_visible && ImGui::GetIO().MouseDrawCursor, "Hiding the main menu must not hide an auxiliary move cursor")) return false;
+    if (!Expect(g_state.hide_cursor_calls == 0 && g_state.restore_game_mouse_calls == 0, "Transfer to move mode must not restore game mouse between owners")) return false;
+    DIMOUSESTATE2 state{12, -9, 120, {0x80, 0x80, 0, 0, 0, 0, 0, 0}};
+    overlay.FilterMouseStateForTesting(sizeof(state), &state);
+    const DIMOUSESTATE2 neutral{};
+    if (!Expect(std::memcmp(&state, &neutral, sizeof(state)) == 0, "Auxiliary move must neutralize native relative motion, wheel and buttons")) return false;
+    DIDEVICEOBJECTDATA events[2]{};
+    events[0].dwOfs = DIMOFS_X; events[0].dwData = 20;
+    events[1].dwOfs = DIMOFS_BUTTON0; events[1].dwData = 0x80;
+    DWORD count = 2;
+    overlay.FilterMouseEventsForTesting(sizeof(events[0]), events, &count);
+    const DIDEVICEOBJECTDATA emptyEvents[2]{};
+    if (!Expect(count == 0 && std::memcmp(events, emptyEvents, sizeof(events)) == 0, "Auxiliary move must suppress buffered mouse events before gameplay sees them")) return false;
+    if (!Expect(overlay.WndProcHandler(FakeDiscoverWindow(), WM_MOUSEMOVE, 0, MAKELPARAM(120, 150)) == 1, "Hidden auxiliary move must capture window mouse input")) return false;
+    overlay.WndProcHandler(FakeDiscoverWindow(), WM_KEYUP, VK_ESCAPE, 0);
+    if (!Expect(commits == 1 && !moving && !overlay.OwnsMouseInput(), "Esc must commit the auxiliary move and release native mouse ownership")) return false;
+    if (!Expect(!overlay.BlocksCursorWarpForTesting(), "Game cursor warps must resume after the hidden move ends")) return false;
+    if (!Expect(g_state.hide_cursor_calls == 1 && g_state.restore_game_mouse_calls == 1 && !g_state.cursor_visible, "Esc must restore game mouse and hide the cursor exactly once")) return false;
+    overlay.WndProcHandler(FakeDiscoverWindow(), WM_KEYUP, VK_ESCAPE, 0);
+    if (!Expect(commits == 1 && g_state.restore_game_mouse_calls == 1, "A repeated Esc must not save or restore mouse twice")) return false;
+    state.lX = 19; state.lY = -4; state.rgbButtons[0] = 0x80;
+    overlay.FilterMouseStateForTesting(sizeof(state), &state);
+    if (!Expect(state.lX == 19 && state.lY == -4 && state.rgbButtons[0] == 0x80, "Normal gameplay mouse must pass through after move mode ends")) return false;
+    overlay.Shutdown();
+    return true;
+}
+
+bool TestOnlineStyleAuxiliaryMoveKeepsMenuOwnerUntilEsc() {
+    ResetState();
+    keybinder::ImGuiOverlay overlay(MakeDependencies());
+    bool moving = false;
+    int commits = 0;
+    overlay.SetAuxiliaryInteractionActiveCallback([&]() { return moving; });
+    overlay.SetAuxiliaryInteractionCancelCallback([&]() { moving = false; ++commits; });
+    if (!Expect(overlay.Initialize(), "Online-style move test should initialize")) return false;
+    // The fake backend does not report a viewport at Initialize. Settle the
+    // automatic DPI change while hidden, so this test measures ownership
+    // transitions rather than ApplyDpiScale reasserting the visible cursor.
+    ImGui::GetIO().DisplaySize = ImVec2(1920, 1080);
+    if (!Expect(overlay.ApplyDpiScale(keybinder::ImGuiOverlay::ComputeAutomaticScaleForTesting(1920, 1080)), "Online-style move test should establish its display scale")) return false;
+    overlay.Show();
+    moving = true;
+    overlay.Render();
+    if (!Expect(overlay.IsVisible() && overlay.OwnsMouseInput(), "Online-style move retains the menu's internal owner while its UI is suppressed")) return false;
+    if (!Expect(g_state.suppress_game_mouse_calls == 1 && g_state.show_cursor_calls == 1, "The existing move path must suppress gameplay mouse without cursor ownership churn")) return false;
+    overlay.WndProcHandler(FakeDiscoverWindow(), WM_KEYUP, VK_ESCAPE, 0);
+    if (!Expect(commits == 1 && !moving && overlay.IsVisible(), "Esc should leave the existing menu visible again after an Online-style move")) return false;
+    if (!Expect(overlay.OwnsMouseInput() && g_state.hide_cursor_calls == 0 && g_state.restore_game_mouse_calls == 0, "Ending a move must keep the menu's active cursor ownership")) return false;
+    overlay.Hide();
+    if (!Expect(!overlay.OwnsMouseInput() && g_state.hide_cursor_calls == 1 && g_state.restore_game_mouse_calls == 1, "Closing the returned menu must release cursor ownership once")) return false;
+    overlay.Shutdown();
+    return true;
+}
+
+bool TestQuickMapWheelFilteringRemainsSeparateFromFullMouseCapture() {
+    ResetState();
+    keybinder::ImGuiOverlay overlay(MakeDependencies());
+    overlay.SetQuickMapWheelCaptureCallback([]() { return true; });
+    if (!Expect(overlay.Initialize(), "QuickMap mouse filter test should initialize")) return false;
+    DIMOUSESTATE2 state{14, -3, 120, {0x80, 0, 0, 0, 0, 0, 0, 0}};
+    overlay.FilterMouseStateForTesting(sizeof(state), &state);
+    if (!Expect(state.lX == 14 && state.lY == -3 && state.lZ == 0 && state.rgbButtons[0] == 0x80, "QuickMap wheel capture must retain normal motion and buttons")) return false;
+    DIDEVICEOBJECTDATA events[3]{};
+    events[0].dwOfs = DIMOFS_X; events[0].dwData = 9;
+    events[1].dwOfs = DIMOFS_Z; events[1].dwData = 120;
+    events[2].dwOfs = DIMOFS_BUTTON0; events[2].dwData = 0x80;
+    DWORD count = 3;
+    overlay.FilterMouseEventsForTesting(sizeof(events[0]), events, &count);
+    if (!Expect(count == 2 && events[0].dwOfs == DIMOFS_X && events[1].dwOfs == DIMOFS_BUTTON0, "QuickMap buffered filter must remove only wheel events")) return false;
+    overlay.Shutdown();
+    return true;
+}
+
 } // namespace
 
 int RunImGuiOverlayTests() {
     int failed = 0;
+
+    if (TestHiddenAuxiliaryMoveOwnsCursorAndFiltersNativeMouse()) {
+        std::printf("[PASS] TestHiddenAuxiliaryMoveOwnsCursorAndFiltersNativeMouse\n");
+    } else { ++failed; }
+    if (TestOnlineStyleAuxiliaryMoveKeepsMenuOwnerUntilEsc()) {
+        std::printf("[PASS] TestOnlineStyleAuxiliaryMoveKeepsMenuOwnerUntilEsc\n");
+    } else { ++failed; }
+    if (TestQuickMapWheelFilteringRemainsSeparateFromFullMouseCapture()) {
+        std::printf("[PASS] TestQuickMapWheelFilteringRemainsSeparateFromFullMouseCapture\n");
+    } else { ++failed; }
 
     if (TestAutomaticScaleKeepsRelativeFootprintAcrossStandardResolutions()) {
         std::printf("[PASS] TestAutomaticScaleKeepsRelativeFootprintAcrossStandardResolutions\n");

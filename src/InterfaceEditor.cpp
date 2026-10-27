@@ -228,13 +228,11 @@ void InterfaceEditor::RenderElementMoveMode(ImDrawList* drawList, float uiScale)
 
     const std::size_t elementIndex = static_cast<std::size_t>(moving_element_);
     const HudElementStyle& style = GetPreset(moving_preset_)->layout[elementIndex];
-    // Fallback handles also allow moving elements which are currently invisible
-    // (for example armour without a vest). Observed native bounds take priority.
+    // Fallback handles also allow moving elements which are currently invisible.
+    // Observed native bounds take priority.
     constexpr std::array<std::array<float, 4>, kHudElementCount> defaultRects{{
-        {{499, 77, 109, 10}}, {{546, 48, 62, 10}}, {{546, 62, 62, 10}},
-        {{480, 89, 128, 24}}, {{548, 22, 60, 24}}, {{546, 20, 62, 62}},
-        {{540, 64, 68, 20}}, {{490, 114, 118, 24}}, {{400, 344, 208, 32}},
-        {{400, 344, 208, 32}}, {{40, 344, 94, 76}}
+        {{480, 89, 128, 24}}, {{546, 20, 62, 62}},
+        {{540, 64, 68, 20}}, {{40, 344, 94, 76}}
     }};
     const auto& fallback = defaultRects[elementIndex];
     float left = viewport->Size.x * (fallback[0] / 640.0f + style.offset_x);

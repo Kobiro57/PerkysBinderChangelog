@@ -1,6 +1,96 @@
 # Hinweise zur Prüfung durch die Projektleitung
 
-## Aktueller Stand r8 – 27. Oktober 2026
+## Aktueller Stand r9 – 27. Oktober 2026
+
+Der aktuelle Quellstand ist **NLBinder v.0.1.1 by KOBiRO, r9**. Die
+[Bedienung](../NLBinder-0.1.1-r9-DE.md) und der
+[r9-Nachtrag](CHANGELOG-DE.md#15-nachtrag-r9--27-oktober-2026) beschreiben
+die vier verbleibenden Interface-Bereiche und den korrigierten Mausmodus.
+Frühere Prüfstände bleiben nachfolgend ihren damaligen ASIs zugeordnet.
+
+### Verhalten und prüfbarer Umfang
+
+Unter **Mods → Interface** bleiben **Geldanzeige, Waffenicon, Munition und
+Minimap** mit eigenen Positions- und Farbauswahlen. Die sieben entfernten
+Bereiche sind nicht mehr im Editor auswählbar; ihre früher gespeicherten
+Interface-Anpassungen werden nicht weiter angewendet. Das entfernt keine
+normalen Spielanzeigen.
+
+Der Fehler beim Verschieben lag in der Trennung zwischen sichtbarem
+Binder-Menü und aktivem Verschiebemodus. Nach dem Ausblenden des Menüs war
+der Interface-Modus weiter aktiv, einzelne native Maus-Hooks prüften jedoch
+nur die Menüsichtbarkeit. Dadurch konnte GTA den Mauszeiger weiterhin zur
+Bildschirmmitte zurücksetzen. Die gemeinsame Mauszuständigkeit berücksichtigt
+nun auch die aktiven Verschiebemodi der dauerhaften Online-Overlays und des
+Interface-Editors. Mauszustände und Mausereignisse werden währenddessen vom
+Spiel abgeschirmt. Esc beendet den Modus und speichert. Die Maus wird wieder
+an das Spiel übergeben, sobald auch kein Binder-Menü oder anderer UI-Modus
+sie mehr benötigt.
+
+Positions- und Farbwerte gelten ausschließlich für die vier nativen GTA-
+HUD-Bereiche. Eigene Server-Textdraws und Datum gehören nicht dazu. Die
+Waffenicon-Auswahl und früheren Binder-Funktionen bleiben enthalten. Ein
+echter Ingame-Test auf dem konkreten Server steht aus.
+
+Die native Waffenicon-Zuordnung im allgemeinen Spieler-HUD hat eigene
+Ausschlussbereiche für die unveränderten Lebens-, Rüstungs- und Atembalken.
+Diese Bereiche reichen den ursprünglichen Zeichenaufruf durch; dadurch
+werden die entfernten Balken nicht versehentlich als Waffenicon behandelt.
+Wanted-, Fahrzeugnamen- und Gebietsnamen-Hooks sowie die Uhrklassifizierung
+gehören nicht mehr zur Interface-Anpassung.
+
+### r9-Prüfpfade
+
+| Bereich | Implementierung | Tests |
+| --- | --- | --- |
+| Vier Interface-Elemente | [InterfaceLayout.h](../../include/InterfaceLayout.h), [NativeHudEditor.cpp](../../src/NativeHudEditor.cpp), [InterfaceEditorUI.cpp](../../src/InterfaceEditorUI.cpp) | [NativeHudEditorTests.cpp](../../tests/NativeHudEditorTests.cpp) |
+| Gemeinsame Mauszuständigkeit | [ImGuiOverlay.cpp](../../src/ImGuiOverlay.cpp), [Main.cpp](../../src/Main.cpp) | [ImGuiOverlayTests.cpp](../../tests/ImGuiOverlayTests.cpp) |
+| Ziehen und Speichern | [InterfaceEditor.cpp](../../src/InterfaceEditor.cpp) | [InterfaceEditorTests.cpp](../../tests/InterfaceEditorTests.cpp) |
+| Persistenz und alte Einstellungen | [SettingsManager.cpp](../../src/SettingsManager.cpp) | [InterfaceLayoutSettingsTests.cpp](../../tests/InterfaceLayoutSettingsTests.cpp) |
+| ASI, Helfer und Paket | [verify_revision9_artifact.py](../../tools/verify_revision9_artifact.py), [package_revision9.ps1](../../tools/package_revision9.ps1) | PE32/x86, Ressource 300, Helfer-/Paket-SHA-256 und 43 Waffenordner |
+
+### Zugehörige finale Paketnachweise
+
+- [Keybinder.asi](../../dist/NLBinder-0.1.1-r9/Keybinder.asi)
+- [SHA-256](../../dist/NLBinder-0.1.1-r9/SHA256SUMS.txt)
+- [Build- und Prüfangaben](../../dist/NLBinder-0.1.1-r9/BUILD-INFO.txt)
+- [PE-/Import-/Ressourcenprüfung](../../dist/NLBinder-0.1.1-r9/PRUEFBERICHT.json)
+- [Nativer Helfertest](../../dist/NLBinder-0.1.1-r9/RECONNECT-TEST.json)
+
+### Ausgeführte Prüfungen für r9
+
+Gesamttests und Win32-Release-Build endeten mit Exitcode 0. Die
+InterfaceEditor-Suite meldet 322 erfolgreiche Prüfungen einschließlich
+wirklicher Mauspositionen, Maustasten-Eingaben und Esc-Speicherung im
+isolierten ImGui-Kontext. Der native Transformationsbereich meldet 54
+Prüfungen für die vier verbleibenden Elemente, Standard-Durchreichen,
+Farben, Positionsversätze und die Ausschlussbereiche der unveränderten
+Balken. Die Interface-Einstellungen melden 123 Prüfungen für die vier
+Kategorien und Presets, erhaltene Positionen/Farben, ignorierte entfernte
+Felder sowie Speichern/Laden.
+
+Drei neue ImGuiOverlay-Regressionen prüfen die gemeinsame Mauszuständigkeit:
+Verschieben bei intern ausgeblendetem Menü, den bisherigen Online-Ablauf mit
+Menürückkehr nach Esc und die getrennte QuickMap-Mausradbehandlung. Die
+Prüfungen verwenden dieselben Filter- und Zuständigkeitsfunktionen wie die
+nativen Zeiger-/DirectInput-Hooks. Sie umfassen Mauszustände, gepufferte
+Mausereignisse und die einmalige Freigabe nach dem letzten UI-Besitzer.
+Die vorherige Prüfung des unveränderten Online-Ablaufs wird beibehalten.
+Die Produktionsquellen Main.cpp und ImGuiOverlay.cpp bestanden zusätzlich
+die gezielte Syntaxprüfung. Die automatisierten Tests verwenden synthetische
+Eingaben und ersetzen keinen Test der tatsächlichen Darstellung im Spiel.
+
+Die geprüfte ASI umfasst 18.442.240 Bytes; SHA-256:
+`41a1e6d772f6c68b5541b4a7ea4ec1f997d5d97a55ffdbe446d0d89117734964`.
+PE32/x86, Windows-Imports und der bytegleiche eingebettete Helfer sind
+geprüft. Der native Helfertest umfasst 18 erfolgreiche Prüfungen mit
+harmlosen Testprozessen. Die separate ASI und die ASI im ZIP haben dieselbe
+Prüfsumme; ein unabhängiger Abgleich bestätigt alle Paketdateien sowie
+43 leere Waffenordner und keine persönlichen PNGs im ZIP.
+[Maschinenlesbare Ergebnisse](r9-validation.json) ergänzen die Paketnachweise.
+Ein echter Ingame-Test mit dem konkreten Server und Launcher steht aus.
+
+## Historischer Prüfstand r8 – 27. Oktober 2026
 
 Der aktuelle Quellstand ist **NLBinder v.0.1.1 by KOBiRO, r8**. Die
 [Bedienung](../NLBinder-0.1.1-r8-DE.md) und der

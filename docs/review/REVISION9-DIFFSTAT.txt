@@ -1,0 +1,23 @@
+README.md                              |  29 ++++----
+ docs/NLBinder-0.1.1-r9-DE.md           |  58 +++++++++++++++
+ docs/review/CHANGELOG-DE.md            |  39 ++++++++++
+ docs/review/PRUEFUNG-DE.md             |  92 +++++++++++++++++++++++-
+ docs/review/PUBLICATION.json           |  10 +--
+ docs/review/README-GITHUB.md           |  29 ++++----
+ docs/review/r9-validation.json         |  48 +++++++++++++
+ include/ImGuiOverlay.h                 |   8 +++
+ include/InterfaceLayout.h              |  10 +--
+ include/NativeHudEditor.h              |   1 +
+ src/ImGuiOverlay.cpp                   | 100 +++++++++++++-------------
+ src/InterfaceEditor.cpp                |  10 ++-
+ src/InterfaceEditorUI.cpp              |  20 ++----
+ src/Main.cpp                           |   5 +-
+ src/NativeHudEditor.cpp                |  46 ++++++------
+ src/SettingsManager.cpp                |  27 ++-----
+ tests/ImGuiOverlayTests.cpp            | 104 +++++++++++++++++++++++++++
+ tests/InterfaceEditorTests.cpp         |  80 +++++++++++++--------
+ tests/InterfaceLayoutSettingsTests.cpp |  45 +++++++++---
+ tests/NativeHudEditorTests.cpp         |  63 +++++++++--------
+ tools/package_revision9.ps1            | 126 +++++++++++++++++++++++++++++++++
+ tools/verify_revision9_artifact.py     | 115 ++++++++++++++++++++++++++++++
+ 22 files changed, 836 insertions(+), 229 deletions(-)

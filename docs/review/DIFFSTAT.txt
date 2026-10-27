@@ -2,7 +2,7 @@
  .gitignore                             |   13 +
  Keybinder.rc                           |    2 +
  Keybinder.vcxproj                      |   19 +-
- README.md                              |  186 ++---
+ README.md                              |  187 ++---
  docs/BUILD-README.md                   |  124 +++
  docs/NLBinder-0.1.1-DE.md              |   71 ++
  docs/NLBinder-0.1.1-r2-DE.md           |  128 +++
@@ -12,27 +12,30 @@
  docs/NLBinder-0.1.1-r6-DE.md           |   71 ++
  docs/NLBinder-0.1.1-r7-DE.md           |  113 +++
  docs/NLBinder-0.1.1-r8-DE.md           |   70 ++
+ docs/NLBinder-0.1.1-r9-DE.md           |   58 ++
  docs/ORIGINAL-README.md                |  121 +++
  docs/build-dependencies.md             |   24 +
  docs/jobs-support.md                   |   38 +
- docs/review/CHANGELOG-DE.md            |  541 +++++++++++++
+ docs/review/CHANGELOG-DE.md            |  580 ++++++++++++++
  docs/review/DEPENDENCIES.md            |   78 ++
- docs/review/PRUEFUNG-DE.md             |  526 ++++++++++++
+ docs/review/PRUEFUNG-DE.md             |  616 ++++++++++++++
  docs/review/PUBLICATION.json           |   13 +
  docs/review/PUBLISHING-DE.md           |   34 +
- docs/review/README-GITHUB.md           |   65 ++
+ docs/review/README-GITHUB.md           |   66 ++
  docs/review/r4-validation.json         |   21 +
  docs/review/r5-validation.json         |   20 +
  docs/review/r6-validation.json         |   29 +
  docs/review/r7-validation.json         |   32 +
  docs/review/r8-validation.json         |   37 +
+ docs/review/r9-validation.json         |   48 ++
  include/ActionExecutor.h               |    4 +
  include/DamageRPCAdapter.h             |    8 +-
  include/DeathMessageRPCAdapter.h       |    3 +
+ include/ImGuiOverlay.h                 |    8 +
  include/IncomingDamageDetector.h       |   89 ++-
  include/InterfaceEditor.h              |   18 +-
  include/InterfaceEditorUI.h            |    1 +
- include/InterfaceLayout.h              |   56 ++
+ include/InterfaceLayout.h              |   48 ++
  include/JobChatAdapter.h               |   10 +
  include/JobSkillsSnapshot.h            |  165 ++++
  include/JobTracker.h                   |    2 +
@@ -46,7 +49,7 @@
  include/MainWindowUI.h                 |   11 +
  include/MessageVariables.h             |   36 +
  include/MessageVariablesUI.h           |   47 ++
- include/NativeHudEditor.h              |   38 +
+ include/NativeHudEditor.h              |   39 +
  include/OnlineDataManager.h            |    2 +-
  include/OnlineOverlayController.h      |   46 ++
  include/OnlineOverlayRenderer.h        |    5 +
@@ -70,8 +73,9 @@
  src/ActionExecutor.cpp                 |   30 +-
  src/DamageRPCAdapter.cpp               |   31 +-
  src/DeathMessageRPCAdapter.cpp         |    7 +
- src/InterfaceEditor.cpp                |  303 ++++---
- src/InterfaceEditorUI.cpp              |  121 ++-
+ src/ImGuiOverlay.cpp                   |  100 ++-
+ src/InterfaceEditor.cpp                |  301 ++++---
+ src/InterfaceEditorUI.cpp              |  111 ++-
  src/JobChatAdapter.cpp                 |   38 +-
  src/JobSkillsSync.cpp                  |   91 +++
  src/JobTracker.cpp                     |   36 +
@@ -80,7 +84,7 @@
  src/KillTracker.cpp                    |   25 +-
  src/KillTrackerUI.cpp                  |  104 +--
  src/KillfeedAdapter.cpp                |   34 +-
- src/Main.cpp                           |   92 ++-
+ src/Main.cpp                           |   93 ++-
  src/MainWindowUI.cpp                   |  191 ++++-
  src/NativeHudEditor.cpp                |  274 +++++++
  src/OnlineDataManager.cpp              |    6 +-
@@ -90,7 +94,7 @@
  src/PersistentPaths.cpp                |   21 +
  src/ReconnectManager.cpp               |  295 +++++++
  src/SAMPBridge.cpp                     | 1160 +++++++++++++--------------
- src/SettingsManager.cpp                |  355 +++++++--
+ src/SettingsManager.cpp                |  340 ++++++--
  src/SpeedTicketBridge.cpp              |  128 +++
  src/SpeedTicketFlow.cpp                |  203 +++++
  src/SpeedometerManager.cpp             |  104 ++-
@@ -101,8 +105,9 @@
  src/TextDrawAdapter.cpp                |  168 ++--
  src/WeaponIconManager.cpp              |  269 +++++++
  src/WeaponIconsUI.cpp                  |  154 ++++
- tests/InterfaceEditorTests.cpp         |  137 ++++
- tests/InterfaceLayoutSettingsTests.cpp |   87 ++
+ tests/ImGuiOverlayTests.cpp            |  104 +++
+ tests/InterfaceEditorTests.cpp         |  157 ++++
+ tests/InterfaceLayoutSettingsTests.cpp |  114 +++
  tests/JobChatAdapterTests.cpp          |  103 +++
  tests/JobParserTests.cpp               |  105 +++
  tests/JobRegistryTests.cpp             |   67 +-
@@ -113,7 +118,7 @@
  tests/KeybindTests.cpp                 |   31 +-
  tests/KillMessageTestTests.cpp         |   59 ++
  tests/LocationVariableTests.cpp        |  112 +++
- tests/NativeHudEditorTests.cpp         |   98 +++
+ tests/NativeHudEditorTests.cpp         |  103 +++
  tests/OnlineDataManagerTests.cpp       |    7 +-
  tests/OnlineOverlayRendererTests.cpp   |  351 +++++++-
  tests/OnlineSettingsTests.cpp          |  137 ++++
@@ -139,6 +144,7 @@
  tools/package_revision6.ps1            |   93 +++
  tools/package_revision7.ps1            |  126 +++
  tools/package_revision8.ps1            |  126 +++
+ tools/package_revision9.ps1            |  126 +++
  tools/prepare_github_review.py         |  135 ++++
  tools/run_tests.bat                    |   43 +-
  tools/setup_msvc.bat                   |   16 +
@@ -148,4 +154,5 @@
  tools/verify_revision6_artifact.py     |  115 +++
  tools/verify_revision7_artifact.py     |  115 +++
  tools/verify_revision8_artifact.py     |  115 +++
- 150 files changed, 14667 insertions(+), 1406 deletions(-)
+ tools/verify_revision9_artifact.py     |  115 +++
+ 157 files changed, 15325 insertions(+), 1457 deletions(-)

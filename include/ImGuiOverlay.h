@@ -51,6 +51,8 @@ public:
     void Hide();
     void Toggle();
     bool IsVisible() const;
+    // Menu and auxiliary move modes share the same native mouse ownership.
+    bool OwnsMouseInput() const;
     void Render();
     void OnDeviceLost();
     void OnDeviceReset();
@@ -77,6 +79,9 @@ public:
     float GetCurrentScale() const { return current_scale_; }
 #ifdef KEYBINDER_TESTING
     static float ComputeAutomaticScaleForTesting(float width, float height);
+    bool BlocksCursorWarpForTesting() const { return OwnsMouseInput(); }
+    void FilterMouseStateForTesting(DWORD size, void* state) const;
+    void FilterMouseEventsForTesting(DWORD size, void* events, DWORD* count) const;
 #endif
 
     MainWindowUI* GetMainWindowUI() const { return mainWindowUI_; }
@@ -103,6 +108,9 @@ private:
     bool IsQuickMapWheelCaptureActive() const;
     bool IsKeyboardCaptureActive() const;
     bool IsGameInputActive() const;
+    void SyncMouseOwnership();
+    void FilterMouseState(DWORD size, void* state) const;
+    void FilterMouseEvents(DWORD size, void* events, DWORD* count) const;
     void RenderFrame(bool fromChatDrawHook);
     bool InstallSetCursorPosHook();
     void RemoveSetCursorPosHook();

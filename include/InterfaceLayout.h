@@ -8,8 +8,7 @@
 namespace keybinder {
 
 enum class HudElement : std::size_t {
-    Health, Armour, Breath, Money, Clock, Weapon, Ammo, Wanted,
-    VehicleName, ZoneName, Radar, Count
+    Money, Weapon, Ammo, Radar, Count
 };
 
 struct HudElementStyle {
@@ -30,16 +29,9 @@ struct HudElementDefinition {
 };
 
 inline constexpr std::array<HudElementDefinition, kHudElementCount> kHudElements{{
-    {HudElement::Health, "health", "Leben"},
-    {HudElement::Armour, "armour", "Rüstung"},
-    {HudElement::Breath, "breath", "Atemluft"},
     {HudElement::Money, "money", "Geldanzeige"},
-    {HudElement::Clock, "clock", "Uhrzeit"},
     {HudElement::Weapon, "weapon", "Waffenicon"},
     {HudElement::Ammo, "ammo", "Munition"},
-    {HudElement::Wanted, "wanted", "Wanted-Sterne"},
-    {HudElement::VehicleName, "vehicle_name", "Fahrzeugname"},
-    {HudElement::ZoneName, "zone_name", "Gebietsname"},
     {HudElement::Radar, "radar", "Minimap"},
 }};
 

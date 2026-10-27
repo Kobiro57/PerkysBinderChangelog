@@ -3,6 +3,7 @@
 #include "../include/imgui-1.92.7/imgui.h"
 
 #include <array>
+#include <cmath>
 #include <cstdio>
 #include <cstring>
 #include <limits>
@@ -434,22 +435,22 @@ bool Test_ElementMovePersistsOnlySelectedElementOnFinish() {
     int saves = 0;
     editor.SetOnRuntimePresetChanged([&]() { ++saves; });
     editor.GetPreset(0)->name = "Fahrzeugprofil";
-    auto& wanted = editor.GetPreset(0)->layout[static_cast<std::size_t>(keybinder::HudElement::Wanted)];
+    auto& wanted = editor.GetPreset(0)->layout[static_cast<std::size_t>(keybinder::HudElement::Weapon)];
     wanted.custom_color = true;
     wanted.color = {{0.3f, 0.4f, 0.5f, 0.8f}};
-    IFACE_EXPECT_TRUE(editor.StartElementMove(keybinder::HudElement::Wanted));
+    IFACE_EXPECT_TRUE(editor.StartElementMove(keybinder::HudElement::Weapon));
     IFACE_EXPECT_TRUE(editor.IsElementMoveModeActive());
-    IFACE_EXPECT_EQ(editor.GetMovingElement(), keybinder::HudElement::Wanted);
+    IFACE_EXPECT_EQ(editor.GetMovingElement(), keybinder::HudElement::Weapon);
     IFACE_EXPECT_TRUE(editor.MoveElementBy(-0.25f, 0.125f));
     IFACE_EXPECT_EQ(saves, 0);
-    IFACE_EXPECT_EQ(editor.GetPreset(0)->layout[static_cast<std::size_t>(keybinder::HudElement::Health)].offset_x, 0.0f);
+    IFACE_EXPECT_EQ(editor.GetPreset(0)->layout[static_cast<std::size_t>(keybinder::HudElement::Money)].offset_x, 0.0f);
     editor.FinishElementMove();
     IFACE_EXPECT_EQ(saves, 1);
     IFACE_EXPECT_TRUE(!editor.IsElementMoveModeActive());
     IFACE_EXPECT_EQ(editor.GetMovingElement(), keybinder::HudElement::Count);
     const InterfacePreset& persisted = settings.Get().interface_editor_saved_presets[0];
     IFACE_EXPECT_EQ(persisted.name, std::string("Fahrzeugprofil"));
-    const auto& savedStyle = persisted.layout[static_cast<std::size_t>(keybinder::HudElement::Wanted)];
+    const auto& savedStyle = persisted.layout[static_cast<std::size_t>(keybinder::HudElement::Weapon)];
     IFACE_EXPECT_EQ(savedStyle.offset_x, -0.25f);
     IFACE_EXPECT_EQ(savedStyle.offset_y, 0.125f);
     IFACE_EXPECT_TRUE(savedStyle.custom_color);
@@ -468,20 +469,20 @@ bool Test_ElementMoveRejectsInvalidInputAndPreservesOtherPreset() {
     IFACE_EXPECT_TRUE(!editor.StartElementMove(keybinder::HudElement::Count));
     IFACE_EXPECT_TRUE(!editor.StartElementMove(static_cast<keybinder::HudElement>(999)));
     IFACE_EXPECT_EQ(saves, 0);
-    IFACE_EXPECT_TRUE(editor.StartElementMove(keybinder::HudElement::Health));
+    IFACE_EXPECT_TRUE(editor.StartElementMove(keybinder::HudElement::Money));
     IFACE_EXPECT_TRUE(!editor.StartElementMove(keybinder::HudElement::Count));
-    IFACE_EXPECT_EQ(editor.GetMovingElement(), keybinder::HudElement::Health);
+    IFACE_EXPECT_EQ(editor.GetMovingElement(), keybinder::HudElement::Money);
     IFACE_EXPECT_TRUE(!editor.MoveElementBy(std::numeric_limits<float>::infinity(), 0.0f));
     IFACE_EXPECT_TRUE(!editor.MoveElementBy(0.0f, std::numeric_limits<float>::quiet_NaN()));
     IFACE_EXPECT_TRUE(editor.MoveElementBy(10.0f, -10.0f));
-    auto& health = editor.GetPreset(0)->layout[static_cast<std::size_t>(keybinder::HudElement::Health)];
+    auto& health = editor.GetPreset(0)->layout[static_cast<std::size_t>(keybinder::HudElement::Money)];
     IFACE_EXPECT_EQ(health.offset_x, 1.0f);
     IFACE_EXPECT_EQ(health.offset_y, -1.0f);
     editor.SetActivePreset(2);
     IFACE_EXPECT_EQ(saves, 1);
     IFACE_EXPECT_TRUE(!editor.IsElementMoveModeActive());
     IFACE_EXPECT_EQ(editor.GetActivePreset(), 2);
-    IFACE_EXPECT_EQ(editor.GetPreset(2)->layout[static_cast<std::size_t>(keybinder::HudElement::Health)].offset_x, 0.0f);
+    IFACE_EXPECT_EQ(editor.GetPreset(2)->layout[static_cast<std::size_t>(keybinder::HudElement::Money)].offset_x, 0.0f);
     IFACE_EXPECT_EQ(health.offset_x, 1.0f);
     return true;
 }
@@ -492,21 +493,21 @@ bool Test_StartingAnotherElementCommitsPreviousAndShutdownFinishes() {
     editor.SetSettingsManager(&settings);
     int saves = 0;
     editor.SetOnRuntimePresetChanged([&]() { ++saves; });
-    IFACE_EXPECT_TRUE(editor.StartElementMove(keybinder::HudElement::Clock));
+    IFACE_EXPECT_TRUE(editor.StartElementMove(keybinder::HudElement::Ammo));
     IFACE_EXPECT_TRUE(editor.MoveElementBy(0.2f, 0.3f));
-    IFACE_EXPECT_TRUE(editor.StartElementMove(keybinder::HudElement::Armour));
+    IFACE_EXPECT_TRUE(editor.StartElementMove(keybinder::HudElement::Radar));
     IFACE_EXPECT_EQ(saves, 1);
-    IFACE_EXPECT_EQ(settings.Get().interface_editor_saved_presets[0].layout[static_cast<std::size_t>(keybinder::HudElement::Clock)].offset_x, 0.2f);
-    IFACE_EXPECT_EQ(editor.GetMovingElement(), keybinder::HudElement::Armour);
+    IFACE_EXPECT_EQ(settings.Get().interface_editor_saved_presets[0].layout[static_cast<std::size_t>(keybinder::HudElement::Ammo)].offset_x, 0.2f);
+    IFACE_EXPECT_EQ(editor.GetMovingElement(), keybinder::HudElement::Radar);
     IFACE_EXPECT_TRUE(editor.MoveElementBy(-0.5f, 0.0f));
     editor.Shutdown();
     IFACE_EXPECT_EQ(saves, 2);
     IFACE_EXPECT_TRUE(!editor.IsElementMoveModeActive());
-    IFACE_EXPECT_EQ(settings.Get().interface_editor_saved_presets[0].layout[static_cast<std::size_t>(keybinder::HudElement::Armour)].offset_x, -0.5f);
+    IFACE_EXPECT_EQ(settings.Get().interface_editor_saved_presets[0].layout[static_cast<std::size_t>(keybinder::HudElement::Radar)].offset_x, -0.5f);
     return true;
 }
 
-bool Test_EscapeSavesMoveWhileMainMenuIsHidden() {
+bool Test_MouseDragAndEscapeSaveWhileMainMenuIsHidden() {
     struct ImGuiScope {
         ImGuiContext* previous = ImGui::GetCurrentContext();
         ImGuiScope() {
@@ -532,28 +533,47 @@ bool Test_EscapeSavesMoveWhileMainMenuIsHidden() {
     int saves = 0, boundsReads = 0;
     editor.SetOnRuntimePresetChanged([&]() { ++saves; });
     editor.SetElementBoundsProvider([&](keybinder::HudElement element, float& x, float& y, float& width, float& height) {
-        if (element != keybinder::HudElement::Clock) return false;
+        if (element != keybinder::HudElement::Money) return false;
         ++boundsReads;
-        x = 1500.0f; y = 50.0f; width = 180.0f; height = 50.0f;
+        const auto& style = editor.GetPreset(0)->layout[static_cast<std::size_t>(element)];
+        x = 1500.0f + style.offset_x * 1920.0f;
+        y = 50.0f + style.offset_y * 1080.0f;
+        width = 180.0f; height = 50.0f;
         return true;
     });
-    IFACE_EXPECT_TRUE(editor.StartElementMove(keybinder::HudElement::Clock));
-    IFACE_EXPECT_TRUE(editor.MoveElementBy(-0.125f, 0.25f));
-    ImGui::NewFrame();
-    editor.RenderElementMoveMode(ImGui::GetForegroundDrawList(), 1.0f);
-    ImGui::Render();
-    IFACE_EXPECT_EQ(boundsReads, 1);
+    IFACE_EXPECT_TRUE(editor.StartElementMove(keybinder::HudElement::Money));
+    auto renderFrame = [&]() {
+        ImGui::NewFrame();
+        editor.RenderElementMoveMode(ImGui::GetForegroundDrawList(), 1.0f);
+        ImGui::Render();
+    };
+    // Let ImGui establish the hidden-menu move layer, hover its native-sized
+    // handle, press, drag 96x54 pixels, and release through real IO events.
+    ImGui::GetIO().AddMousePosEvent(1550.0f, 75.0f);
+    renderFrame();
+    renderFrame();
+    ImGui::GetIO().AddMouseButtonEvent(ImGuiMouseButton_Left, true);
+    renderFrame();
+    ImGui::GetIO().AddMousePosEvent(1646.0f, 129.0f);
+    renderFrame();
+    const auto& moved = editor.GetPreset(0)->layout[static_cast<std::size_t>(keybinder::HudElement::Money)];
+    IFACE_EXPECT_TRUE(std::fabs(moved.offset_x - 0.05f) < 0.00001f);
+    IFACE_EXPECT_TRUE(std::fabs(moved.offset_y - 0.05f) < 0.00001f);
+    IFACE_EXPECT_EQ(editor.GetPreset(0)->layout[static_cast<std::size_t>(keybinder::HudElement::Weapon)].offset_x, 0.0f);
+    ImGui::GetIO().AddMouseButtonEvent(ImGuiMouseButton_Left, false);
+    renderFrame();
+    IFACE_EXPECT_TRUE(boundsReads > 0);
     IFACE_EXPECT_EQ(saves, 0);
     IFACE_EXPECT_TRUE(editor.IsElementMoveModeActive());
     ImGui::GetIO().AddKeyEvent(ImGuiKey_Escape, true);
-    ImGui::NewFrame();
-    editor.RenderElementMoveMode(ImGui::GetForegroundDrawList(), 1.0f);
-    ImGui::Render();
+    renderFrame();
     IFACE_EXPECT_EQ(saves, 1);
     IFACE_EXPECT_TRUE(!editor.IsElementMoveModeActive());
-    const auto& saved = settings.Get().interface_editor_saved_presets[0].layout[static_cast<std::size_t>(keybinder::HudElement::Clock)];
-    IFACE_EXPECT_EQ(saved.offset_x, -0.125f);
-    IFACE_EXPECT_EQ(saved.offset_y, 0.25f);
+    const auto& saved = settings.Get().interface_editor_saved_presets[0].layout[static_cast<std::size_t>(keybinder::HudElement::Money)];
+    IFACE_EXPECT_TRUE(std::fabs(saved.offset_x - 0.05f) < 0.00001f);
+    IFACE_EXPECT_TRUE(std::fabs(saved.offset_y - 0.05f) < 0.00001f);
+    editor.FinishElementMove();
+    IFACE_EXPECT_EQ(saves, 1);
     return true;
 }
 
@@ -618,7 +638,7 @@ int RunInterfaceEditorTests() {
     IFACE_RUN_TEST(Test_ElementMovePersistsOnlySelectedElementOnFinish);
     IFACE_RUN_TEST(Test_ElementMoveRejectsInvalidInputAndPreservesOtherPreset);
     IFACE_RUN_TEST(Test_StartingAnotherElementCommitsPreviousAndShutdownFinishes);
-    IFACE_RUN_TEST(Test_EscapeSavesMoveWhileMainMenuIsHidden);
+    IFACE_RUN_TEST(Test_MouseDragAndEscapeSaveWhileMainMenuIsHidden);
     std::printf("\n=== InterfaceEditor Results: %d passed, %d failed ===\n\n",
                 g_state.passed, g_state.failed);
 

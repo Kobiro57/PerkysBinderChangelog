@@ -1,0 +1,48 @@
+{
+  "revision": "v0.1.1-r9",
+  "date": "2026-10-27",
+  "asi_bytes": 18442240,
+  "asi_sha256": "41a1e6d772f6c68b5541b4a7ea4ec1f997d5d97a55ffdbe446d0d89117734964",
+  "full_test_suite_exit_code": 0,
+  "release_build_exit_code": 0,
+  "focused_checks": {
+    "InterfaceEditor": 322,
+    "NativeHudEditor": 54,
+    "InterfaceLayoutSettings": 123,
+    "WeaponIconManager": 245,
+    "WeaponIconSettings": 29,
+    "StartupStatsSync": 252,
+    "StatsDialogRPCAdapter": 727,
+    "native_reconnect_helper": 18
+  },
+  "failures": 0,
+  "native_hud_elements": 4,
+  "retained_interface_categories": [
+    "money",
+    "weapon",
+    "ammo",
+    "radar"
+  ],
+  "removed_interface_settings_ignored_and_not_resaved": true,
+  "retained_interface_settings_preserved": true,
+  "shared_mouse_ownership_for_menu_and_auxiliary_modes": true,
+  "cursor_warp_policy_shared_with_native_hook": true,
+  "directinput_state_and_event_filters_checked": true,
+  "mouse_regression_cases": [
+    "TestHiddenAuxiliaryMoveOwnsCursorAndFiltersNativeMouse",
+    "TestOnlineStyleAuxiliaryMoveKeepsMenuOwnerUntilEsc",
+    "TestQuickMapWheelFilteringRemainsSeparateFromFullMouseCapture",
+    "Test_MouseDragAndEscapeSaveWhileMainMenuIsHidden"
+  ],
+  "drag_save_on_escape": true,
+  "native_vitals_excluded_from_weapon_fallback": true,
+  "server_textdraws_changed": false,
+  "weapon_template_directories": 43,
+  "pe32_x86_dll": true,
+  "embedded_helper_matches": true,
+  "archive_asi_matches": true,
+  "live_game_test_performed": false,
+  "archive_bytes": 10535045,
+  "archive_sha256": "6171ff1f8739ebffc387bb99aa0aa2182eebedd881991616d711201864269b6c",
+  "personal_pngs_in_archive": 0
+}
