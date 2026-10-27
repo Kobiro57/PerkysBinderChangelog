@@ -1,0 +1,28 @@
+Keybinder.vcxproj                      |   1 +
+ README.md                              |  28 +--
+ docs/NLBinder-0.1.1-r8-DE.md           |  70 ++++++++
+ docs/review/CHANGELOG-DE.md            |  51 ++++++
+ docs/review/PRUEFUNG-DE.md             | 100 ++++++++++-
+ docs/review/PUBLICATION.json           |  10 +-
+ docs/review/README-GITHUB.md           |  28 +--
+ docs/review/r8-validation.json         |  37 ++++
+ include/InterfaceEditor.h              |  18 +-
+ include/InterfaceEditorUI.h            |   1 +
+ include/InterfaceLayout.h              |  56 ++++++
+ include/MainWindowUI.h                 |   2 +
+ include/NativeHudEditor.h              |  38 +++++
+ src/InterfaceEditor.cpp                | 303 +++++++++++++++------------------
+ src/InterfaceEditorUI.cpp              | 121 +++++++++----
+ src/Main.cpp                           |  34 +++-
+ src/MainWindowUI.cpp                   |  12 +-
+ src/NativeHudEditor.cpp                | 274 +++++++++++++++++++++++++++++
+ src/SettingsManager.cpp                |  72 +++++++-
+ tests/InterfaceEditorTests.cpp         | 137 +++++++++++++++
+ tests/InterfaceLayoutSettingsTests.cpp |  87 ++++++++++
+ tests/KeybindTests.cpp                 |   4 +
+ tests/NativeHudEditorTests.cpp         |  98 +++++++++++
+ tests/SourceContractTests.cpp          |   3 +-
+ tools/package_revision8.ps1            | 126 ++++++++++++++
+ tools/run_tests.bat                    |   3 +
+ tools/verify_revision8_artifact.py     | 115 +++++++++++++
+ 27 files changed, 1582 insertions(+), 247 deletions(-)

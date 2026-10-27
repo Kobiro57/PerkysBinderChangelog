@@ -1,5 +1,7 @@
 #pragma once
 
+#include "InterfaceLayout.h"
+
 #include <array>
 #include <functional>
 #include <string>
@@ -13,6 +15,7 @@ class SettingsManager;
 
 struct InterfacePreset {
     std::string name;
+    HudLayout layout{};
     bool show_master_hud = true;
     bool show_radar = true;
     bool show_area_name = true;
@@ -59,6 +62,15 @@ public:
     void RestoreOriginalValues();
     void ReadSampLiveState();
     void RenderVitalStatsNumbers(ImDrawList* drawList, bool overlayVisible, float uiScale);
+    // Bounds provider returns x, y, width, height in viewport pixels, including
+    // the current layout displacement.
+    void SetElementBoundsProvider(std::function<bool(HudElement, float&, float&, float&, float&)> provider);
+    bool StartElementMove(HudElement element);
+    bool MoveElementBy(float normalizedDeltaX, float normalizedDeltaY);
+    void FinishElementMove();
+    bool IsElementMoveModeActive() const;
+    HudElement GetMovingElement() const;
+    void RenderElementMoveMode(ImDrawList* drawList, float uiScale);
 
     void SetActivePreset(int index);
     int GetActivePreset() const;
@@ -96,9 +108,6 @@ private:
     bool original_show_clock_ = true;
     bool original_show_vital_stats_ = true;
     bool original_show_3d_markers_ = true;
-    std::array<unsigned char, 4> original_health_palette_{{ 0, 0, 0, 0 }};
-    std::array<unsigned char, 4> original_armor_palette_{{ 0, 0, 0, 0 }};
-    std::array<unsigned char, 4> original_money_palette_{{ 0, 0, 0, 0 }};
     SettingsManager* settings_manager_ = nullptr;
     ::SAMPBridge* samp_bridge_ = nullptr;
     std::function<void()> runtime_preset_changed_callback_;
@@ -106,6 +115,9 @@ private:
     bool hp_number_dragging_ = false;
     bool armor_number_move_mode_ = false;
     bool armor_number_dragging_ = false;
+    HudElement moving_element_ = HudElement::Count;
+    int moving_preset_ = -1;
+    std::function<bool(HudElement, float&, float&, float&, float&)> element_bounds_provider_;
 };
 
 } // namespace keybinder

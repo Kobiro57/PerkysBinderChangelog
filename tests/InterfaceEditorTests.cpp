@@ -1,8 +1,11 @@
 #include "../include/InterfaceEditor.h"
+#include "../include/SettingsManager.h"
+#include "../include/imgui-1.92.7/imgui.h"
 
 #include <array>
 #include <cstdio>
 #include <cstring>
+#include <limits>
 #include <string>
 
 class CSprite2d;
@@ -424,6 +427,136 @@ bool Test_RestoreOriginalValuesRestoresCapturedStateAndResetsCapture() {
     return true;
 }
 
+bool Test_ElementMovePersistsOnlySelectedElementOnFinish() {
+    keybinder::SettingsManager settings;
+    InterfaceEditor editor;
+    editor.SetSettingsManager(&settings);
+    int saves = 0;
+    editor.SetOnRuntimePresetChanged([&]() { ++saves; });
+    editor.GetPreset(0)->name = "Fahrzeugprofil";
+    auto& wanted = editor.GetPreset(0)->layout[static_cast<std::size_t>(keybinder::HudElement::Wanted)];
+    wanted.custom_color = true;
+    wanted.color = {{0.3f, 0.4f, 0.5f, 0.8f}};
+    IFACE_EXPECT_TRUE(editor.StartElementMove(keybinder::HudElement::Wanted));
+    IFACE_EXPECT_TRUE(editor.IsElementMoveModeActive());
+    IFACE_EXPECT_EQ(editor.GetMovingElement(), keybinder::HudElement::Wanted);
+    IFACE_EXPECT_TRUE(editor.MoveElementBy(-0.25f, 0.125f));
+    IFACE_EXPECT_EQ(saves, 0);
+    IFACE_EXPECT_EQ(editor.GetPreset(0)->layout[static_cast<std::size_t>(keybinder::HudElement::Health)].offset_x, 0.0f);
+    editor.FinishElementMove();
+    IFACE_EXPECT_EQ(saves, 1);
+    IFACE_EXPECT_TRUE(!editor.IsElementMoveModeActive());
+    IFACE_EXPECT_EQ(editor.GetMovingElement(), keybinder::HudElement::Count);
+    const InterfacePreset& persisted = settings.Get().interface_editor_saved_presets[0];
+    IFACE_EXPECT_EQ(persisted.name, std::string("Fahrzeugprofil"));
+    const auto& savedStyle = persisted.layout[static_cast<std::size_t>(keybinder::HudElement::Wanted)];
+    IFACE_EXPECT_EQ(savedStyle.offset_x, -0.25f);
+    IFACE_EXPECT_EQ(savedStyle.offset_y, 0.125f);
+    IFACE_EXPECT_TRUE(savedStyle.custom_color);
+    IFACE_EXPECT_EQ(savedStyle.color[0], 0.3f);
+    IFACE_EXPECT_EQ(savedStyle.color[3], 0.8f);
+    editor.FinishElementMove();
+    IFACE_EXPECT_EQ(saves, 1);
+    IFACE_EXPECT_TRUE(!editor.MoveElementBy(0.1f, 0.1f));
+    return true;
+}
+
+bool Test_ElementMoveRejectsInvalidInputAndPreservesOtherPreset() {
+    InterfaceEditor editor;
+    int saves = 0;
+    editor.SetOnRuntimePresetChanged([&]() { ++saves; });
+    IFACE_EXPECT_TRUE(!editor.StartElementMove(keybinder::HudElement::Count));
+    IFACE_EXPECT_TRUE(!editor.StartElementMove(static_cast<keybinder::HudElement>(999)));
+    IFACE_EXPECT_EQ(saves, 0);
+    IFACE_EXPECT_TRUE(editor.StartElementMove(keybinder::HudElement::Health));
+    IFACE_EXPECT_TRUE(!editor.StartElementMove(keybinder::HudElement::Count));
+    IFACE_EXPECT_EQ(editor.GetMovingElement(), keybinder::HudElement::Health);
+    IFACE_EXPECT_TRUE(!editor.MoveElementBy(std::numeric_limits<float>::infinity(), 0.0f));
+    IFACE_EXPECT_TRUE(!editor.MoveElementBy(0.0f, std::numeric_limits<float>::quiet_NaN()));
+    IFACE_EXPECT_TRUE(editor.MoveElementBy(10.0f, -10.0f));
+    auto& health = editor.GetPreset(0)->layout[static_cast<std::size_t>(keybinder::HudElement::Health)];
+    IFACE_EXPECT_EQ(health.offset_x, 1.0f);
+    IFACE_EXPECT_EQ(health.offset_y, -1.0f);
+    editor.SetActivePreset(2);
+    IFACE_EXPECT_EQ(saves, 1);
+    IFACE_EXPECT_TRUE(!editor.IsElementMoveModeActive());
+    IFACE_EXPECT_EQ(editor.GetActivePreset(), 2);
+    IFACE_EXPECT_EQ(editor.GetPreset(2)->layout[static_cast<std::size_t>(keybinder::HudElement::Health)].offset_x, 0.0f);
+    IFACE_EXPECT_EQ(health.offset_x, 1.0f);
+    return true;
+}
+
+bool Test_StartingAnotherElementCommitsPreviousAndShutdownFinishes() {
+    keybinder::SettingsManager settings;
+    InterfaceEditor editor;
+    editor.SetSettingsManager(&settings);
+    int saves = 0;
+    editor.SetOnRuntimePresetChanged([&]() { ++saves; });
+    IFACE_EXPECT_TRUE(editor.StartElementMove(keybinder::HudElement::Clock));
+    IFACE_EXPECT_TRUE(editor.MoveElementBy(0.2f, 0.3f));
+    IFACE_EXPECT_TRUE(editor.StartElementMove(keybinder::HudElement::Armour));
+    IFACE_EXPECT_EQ(saves, 1);
+    IFACE_EXPECT_EQ(settings.Get().interface_editor_saved_presets[0].layout[static_cast<std::size_t>(keybinder::HudElement::Clock)].offset_x, 0.2f);
+    IFACE_EXPECT_EQ(editor.GetMovingElement(), keybinder::HudElement::Armour);
+    IFACE_EXPECT_TRUE(editor.MoveElementBy(-0.5f, 0.0f));
+    editor.Shutdown();
+    IFACE_EXPECT_EQ(saves, 2);
+    IFACE_EXPECT_TRUE(!editor.IsElementMoveModeActive());
+    IFACE_EXPECT_EQ(settings.Get().interface_editor_saved_presets[0].layout[static_cast<std::size_t>(keybinder::HudElement::Armour)].offset_x, -0.5f);
+    return true;
+}
+
+bool Test_EscapeSavesMoveWhileMainMenuIsHidden() {
+    struct ImGuiScope {
+        ImGuiContext* previous = ImGui::GetCurrentContext();
+        ImGuiScope() {
+            ImGui::CreateContext();
+            ImGuiIO& io = ImGui::GetIO();
+            io.IniFilename = nullptr;
+            io.LogFilename = nullptr;
+            io.DisplaySize = ImVec2(1920, 1080);
+            io.DeltaTime = 1.0f / 60.0f;
+            io.Fonts->AddFontDefault();
+            unsigned char* pixels = nullptr;
+            int width = 0, height = 0;
+            io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);
+        }
+        ~ImGuiScope() {
+            ImGui::DestroyContext();
+            ImGui::SetCurrentContext(previous);
+        }
+    } imgui;
+    keybinder::SettingsManager settings;
+    InterfaceEditor editor;
+    editor.SetSettingsManager(&settings);
+    int saves = 0, boundsReads = 0;
+    editor.SetOnRuntimePresetChanged([&]() { ++saves; });
+    editor.SetElementBoundsProvider([&](keybinder::HudElement element, float& x, float& y, float& width, float& height) {
+        if (element != keybinder::HudElement::Clock) return false;
+        ++boundsReads;
+        x = 1500.0f; y = 50.0f; width = 180.0f; height = 50.0f;
+        return true;
+    });
+    IFACE_EXPECT_TRUE(editor.StartElementMove(keybinder::HudElement::Clock));
+    IFACE_EXPECT_TRUE(editor.MoveElementBy(-0.125f, 0.25f));
+    ImGui::NewFrame();
+    editor.RenderElementMoveMode(ImGui::GetForegroundDrawList(), 1.0f);
+    ImGui::Render();
+    IFACE_EXPECT_EQ(boundsReads, 1);
+    IFACE_EXPECT_EQ(saves, 0);
+    IFACE_EXPECT_TRUE(editor.IsElementMoveModeActive());
+    ImGui::GetIO().AddKeyEvent(ImGuiKey_Escape, true);
+    ImGui::NewFrame();
+    editor.RenderElementMoveMode(ImGui::GetForegroundDrawList(), 1.0f);
+    ImGui::Render();
+    IFACE_EXPECT_EQ(saves, 1);
+    IFACE_EXPECT_TRUE(!editor.IsElementMoveModeActive());
+    const auto& saved = settings.Get().interface_editor_saved_presets[0].layout[static_cast<std::size_t>(keybinder::HudElement::Clock)];
+    IFACE_EXPECT_EQ(saved.offset_x, -0.125f);
+    IFACE_EXPECT_EQ(saved.offset_y, 0.25f);
+    return true;
+}
+
 } // namespace
 
 namespace sampapi {
@@ -482,6 +615,10 @@ int RunInterfaceEditorTests() {
     IFACE_RUN_TEST(Test_PresetSelectionEditingAndIndexValidation);
     IFACE_RUN_TEST(Test_ApplyCurrentPresetAppliesFlagsAndCapturesOriginalsOnce);
     IFACE_RUN_TEST(Test_RestoreOriginalValuesRestoresCapturedStateAndResetsCapture);
+    IFACE_RUN_TEST(Test_ElementMovePersistsOnlySelectedElementOnFinish);
+    IFACE_RUN_TEST(Test_ElementMoveRejectsInvalidInputAndPreservesOtherPreset);
+    IFACE_RUN_TEST(Test_StartingAnotherElementCommitsPreviousAndShutdownFinishes);
+    IFACE_RUN_TEST(Test_EscapeSavesMoveWhileMainMenuIsHidden);
     std::printf("\n=== InterfaceEditor Results: %d passed, %d failed ===\n\n",
                 g_state.passed, g_state.failed);
 

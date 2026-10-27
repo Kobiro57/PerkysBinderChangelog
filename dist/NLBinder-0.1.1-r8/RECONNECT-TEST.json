@@ -1,0 +1,5 @@
+{
+  "checks": 18,
+  "failures": 0,
+  "scope": "Harmless fixture processes only; no game or installed launcher executed"
+}

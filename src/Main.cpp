@@ -26,6 +26,7 @@
 #include "../include/ImGuiOverlay.h"
 #include "../include/InputManager.h"
 #include "../include/InterfaceEditor.h"
+#include "../include/NativeHudEditor.h"
 #include "../include/KeybindManager.h"
 #include "../include/Logger.h"
 #include "../include/MainWindowUI.h"
@@ -374,6 +375,7 @@ public:
             keybinder::Logger::Error("Failed to save config on emergency shutdown");
         }
 
+        nativeHudEditor_.Shutdown();
         interfaceEditor_.Shutdown();
         interfaceEditor_.RestoreOriginalValues();
         onlineOverlayRenderer_.Shutdown();
@@ -467,7 +469,13 @@ public:
         interfaceEditor_.SetSettingsManager(&settingsManager_);
         interfaceEditor_.SetSAMPBridge(&bridge_);
         interfaceEditor_.SetOnRuntimePresetChanged([&]() {
+            if (const auto* preset = interfaceEditor_.GetPreset(interfaceEditor_.GetActivePreset())) {
+                nativeHudEditor_.SetLayout(preset->layout);
+            }
             keybindManager_.Save(&settingsManager_);
+        });
+        interfaceEditor_.SetElementBoundsProvider([&](keybinder::HudElement element, float& x, float& y, float& width, float& height) {
+            return nativeHudEditor_.GetElementBounds(element, x, y, width, height);
         });
         quickMap_.Initialize(&settingsManager_, &textureManager_, &bridge_);
         quickMap_.SetInputGateCallback([&]() {
@@ -547,7 +555,7 @@ public:
         inputManager_.SetSAMPBridge(&bridge_);
         inputManager_.SetImGuiOverlay(&overlay_);
         inputManager_.SetQuickMapVisibleCallback([&]() {
-            return quickMap_.IsVisible();
+            return quickMap_.IsVisible() || interfaceEditor_.IsElementMoveModeActive();
         });
         overlay_.SetEarlyKeybindHandler([&](int key, bool keyDown) {
             return inputManager_.HandleEarlyKeyEvent(key, keyDown);
@@ -561,7 +569,8 @@ public:
         mainWindowUI_.SetSAMPBridge(&bridge_);
         bridge_.SetEngineInputBlockedCallback([&]() {
             return overlay_.IsVisible() || quickMap_.IsVisible()
-                || onlineOverlayRenderer_.IsPersistentOverlayMoveModeActive();
+                || onlineOverlayRenderer_.IsPersistentOverlayMoveModeActive()
+                || interfaceEditor_.IsElementMoveModeActive();
         });
         mainWindowUI_.SetHitmarker(&hitmarker_);
         mainWindowUI_.SetHitsoundPlayer(&hitsoundPlayer_);
@@ -570,6 +579,11 @@ public:
         mainWindowUI_.SetHudSpriteManager(&hudSpriteManager_);
         mainWindowUI_.SetWeaponIconManager(&weaponIconManager_);
         mainWindowUI_.SetInterfaceEditor(&interfaceEditor_);
+        mainWindowUI_.SetInterfaceMoveRequestedCallback([&]() {
+            onlineOverlayRenderer_.SetPersistentOverlayMoveMode(false);
+            quickMap_.Hide();
+            overlay_.Hide();
+        });
         mainWindowUI_.SetRssFeedManager(&rssFeedManager_);
         mainWindowUI_.SetOnlineDataManager(&onlineDataManager_);
         mainWindowUI_.SetOnlineOverlayController(&onlineOverlayController_);
@@ -618,6 +632,7 @@ public:
         });
         overlay_.SetVitalStatsRenderCallback([&]() {
             interfaceEditor_.RenderVitalStatsNumbers(ImGui::GetForegroundDrawList(), overlay_.IsVisible(), overlay_.GetCurrentScale());
+            interfaceEditor_.RenderElementMoveMode(ImGui::GetForegroundDrawList(), overlay_.GetCurrentScale());
         });
         overlay_.SetSpeedometerRenderCallback([&]() {
             const keybinder::Settings& settings = settingsManager_.Get();
@@ -646,10 +661,12 @@ public:
             keybindManager_.Save(&settingsManager_);
         });
         overlay_.SetAuxiliaryInteractionActiveCallback([&]() {
-            return onlineOverlayRenderer_.IsPersistentOverlayMoveModeActive();
+            return onlineOverlayRenderer_.IsPersistentOverlayMoveModeActive()
+                || interfaceEditor_.IsElementMoveModeActive();
         });
         overlay_.SetAuxiliaryInteractionCancelCallback([&]() {
             onlineOverlayRenderer_.SetPersistentOverlayMoveMode(false);
+            interfaceEditor_.FinishElementMove();
         });
 
         onlineEventDetector_.Initialize(&settingsManager_);
@@ -828,6 +845,9 @@ public:
             squareMap_.Initialize();
             hudSpriteManager_.Initialize();
             weaponIconManager_.Initialize();
+            if (!nativeHudEditor_.Initialize()) {
+                keybinder::Logger::Error("Interface hooks failed: %s", nativeHudEditor_.GetLastError().c_str());
+            }
             if (!interfaceEditor_.Initialize()) {
                 keybinder::Logger::Error("InterfaceEditor hooks failed to initialize; custom zone text may not work");
             }
@@ -860,6 +880,9 @@ public:
             inputManager_.Initialize();
             inputManager_.Update();
             interfaceEditor_.ApplyCurrentPreset();
+            if (const auto* preset = interfaceEditor_.GetPreset(interfaceEditor_.GetActivePreset())) {
+                nativeHudEditor_.SetLayout(preset->layout);
+            }
 
             static bool overlayWasVisible = false;
             static bool quickMapWasVisible = false;
@@ -948,7 +971,7 @@ public:
             }
             inputManager_.ApplyEarlySuppressedKeys();
 
-            if (overlay_.IsVisible()) {
+            if (overlay_.IsVisible() || interfaceEditor_.IsElementMoveModeActive()) {
                 // Suppress mouse-look before the game consumes per-frame input.
                 // The later HUD/render passes are too late to reliably stop camera
                 // movement, but we intentionally keep this suppression scoped to
@@ -998,6 +1021,7 @@ public:
             quickMap_.Shutdown();
             speedometerManager_.Shutdown();
             textDrawAdapter_.Shutdown();
+            nativeHudEditor_.Shutdown();
             interfaceEditor_.Shutdown();
             interfaceEditor_.RestoreOriginalValues();
             keybinder::Logger::Info("Phase 2: Shutting down SAMPBridge");
@@ -1054,6 +1078,7 @@ private:
     static keybinder::HudSpriteManager hudSpriteManager_;
     static keybinder::WeaponIconManager weaponIconManager_;
     static keybinder::InterfaceEditor interfaceEditor_;
+    static keybinder::NativeHudEditor nativeHudEditor_;
     static keybinder::TextureManager textureManager_;
     static keybinder::QuickMap quickMap_;
     static keybinder::OnlineOverlayRenderer onlineOverlayRenderer_;
@@ -1083,6 +1108,7 @@ keybinder::SquareMap Keybinder::squareMap_{};
 keybinder::HudSpriteManager Keybinder::hudSpriteManager_{};
 keybinder::WeaponIconManager Keybinder::weaponIconManager_{};
 keybinder::InterfaceEditor Keybinder::interfaceEditor_{};
+keybinder::NativeHudEditor Keybinder::nativeHudEditor_{};
 keybinder::TextureManager Keybinder::textureManager_{};
 keybinder::QuickMap Keybinder::quickMap_{};
 keybinder::OnlineOverlayRenderer Keybinder::onlineOverlayRenderer_{};

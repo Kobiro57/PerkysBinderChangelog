@@ -42,15 +42,25 @@ std::string GetPresetSlotLabel(const InterfacePreset& preset, int index) {
     return slotLabel + " - " + preset.name;
 }
 
-ImVec4 LoadColor(float r, float g, float b, float a) {
-    return ImVec4(r, g, b, a);
-}
-
-void StoreColor(InterfacePreset& preset, const ImVec4& color, float InterfacePreset::*r, float InterfacePreset::*g, float InterfacePreset::*b, float InterfacePreset::*a) {
-    preset.*r = color.x;
-    preset.*g = color.y;
-    preset.*b = color.z;
-    preset.*a = color.w;
+void SyncLegacyVitalColors(InterfacePreset& preset, HudElement element) {
+    const HudElementStyle& style = preset.layout[static_cast<std::size_t>(element)];
+    const InterfacePreset defaults;
+    if (element == HudElement::Health) {
+        preset.hp_color_r = style.custom_color ? style.color[0] : defaults.hp_color_r;
+        preset.hp_color_g = style.custom_color ? style.color[1] : defaults.hp_color_g;
+        preset.hp_color_b = style.custom_color ? style.color[2] : defaults.hp_color_b;
+        preset.hp_color_a = style.custom_color ? style.color[3] : defaults.hp_color_a;
+    } else if (element == HudElement::Armour) {
+        preset.armor_color_r = style.custom_color ? style.color[0] : defaults.armor_color_r;
+        preset.armor_color_g = style.custom_color ? style.color[1] : defaults.armor_color_g;
+        preset.armor_color_b = style.custom_color ? style.color[2] : defaults.armor_color_b;
+        preset.armor_color_a = style.custom_color ? style.color[3] : defaults.armor_color_a;
+    } else if (element == HudElement::Money) {
+        preset.money_color_r = style.custom_color ? style.color[0] : defaults.money_color_r;
+        preset.money_color_g = style.custom_color ? style.color[1] : defaults.money_color_g;
+        preset.money_color_b = style.custom_color ? style.color[2] : defaults.money_color_b;
+        preset.money_color_a = style.custom_color ? style.color[3] : defaults.money_color_a;
+    }
 }
 
 } // namespace
@@ -66,7 +76,7 @@ void InterfaceEditorUI::SetInterfaceEditor(InterfaceEditor* editor) {
 }
 
 void InterfaceEditorUI::SyncInterfaceEditorFromSettings() {
-    if (settingsManager_ == nullptr || interfaceEditor_ == nullptr) {
+    if (settingsManager_ == nullptr || interfaceEditor_ == nullptr || interfaceEditor_->IsElementMoveModeActive()) {
         return;
     }
 
@@ -102,14 +112,22 @@ void InterfaceEditorUI::Render() {
         return;
     }
 
+    if (interfaceEditor_->IsElementMoveModeActive()) {
+        UIComponents::BeginCard("interface_move_active");
+        UIComponents::CardHeader("Interface wird verschoben", "Mit der Maus verschieben, Esc speichert die Position.");
+        if (UIComponents::PrimaryButton("Position speichern")) interfaceEditor_->FinishElementMove();
+        UIComponents::EndCard();
+        return;
+    }
     Settings& settings = settingsManager_->GetMutable();
     EnsureSavedPresetSlots(settings);
     SyncInterfaceEditorFromSettings();
 
     bool gtaPresetChanged = false;
+    HudElement requestedMove = HudElement::Count;
 
     UIComponents::BeginCard("interface_editor_presets", 0.0f);
-    UIComponents::CardHeader("Preset-Verwaltung", "Slots speichern Farben und Zonentext");
+    UIComponents::CardHeader("Preset-Verwaltung", "Positionen und Farben für jedes GTA-HUD-Element");
 
     int selectedSlot = ClampPresetIndex(settings.interface_editor_active_preset_index);
     std::array<std::string, InterfaceEditor::PRESET_SLOT_COUNT> slotLabels;
@@ -162,32 +180,63 @@ void InterfaceEditorUI::Render() {
 
     ImGui::Dummy(ImVec2(0.0f, Theme().GetSpacing(ThemeSpacingRole::CardGap)));
 
-    UIComponents::Separator("HUD-Farben");
+    UIComponents::SectionHeader("Interface anpassen", "Jedes Element einzeln verschieben oder färben. Esc speichert im Verschiebemodus.");
+    ImGui::PushStyleColor(ImGuiCol_Text, Theme().GetColor(ThemeColorRole::TextMuted));
+    ImGui::TextWrapped("Die Einstellungen gelten für das GTA-HUD. Servereigene Textanzeigen und Menüs werden vom Server gestaltet.");
+    ImGui::PopStyleColor();
     ImGui::Dummy(ImVec2(0.0f, Theme().GetSpacing(ThemeSpacingRole::CardGap)));
 
-    if (ImGui::BeginTable("interface_editor_color_table", 3, ImGuiTableFlags_SizingStretchSame)) {
-        ImGui::TableNextColumn();
-        ImVec4 hpColor = LoadColor(currentPreset.hp_color_r, currentPreset.hp_color_g, currentPreset.hp_color_b, currentPreset.hp_color_a);
-        if (UIComponents::ColorPicker("HP", &hpColor)) {
-            StoreColor(currentPreset, hpColor, &InterfacePreset::hp_color_r, &InterfacePreset::hp_color_g, &InterfacePreset::hp_color_b, &InterfacePreset::hp_color_a);
-            gtaPresetChanged = true;
+    for (const HudElementDefinition& definition : kHudElements) {
+        const std::size_t index = static_cast<std::size_t>(definition.element);
+        HudElementStyle& style = currentPreset.layout[index];
+        ImGui::PushID(definition.key);
+        UIComponents::BeginCard("interface_element");
+        UIComponents::CardHeader(definition.label);
+        if (ImGui::BeginTable("interface_element_controls", 2, ImGuiTableFlags_SizingStretchSame)) {
+            ImGui::TableNextColumn();
+            UIComponents::Separator("Position");
+            if (UIComponents::PrimaryButton("Mit der Maus verschieben")) requestedMove = definition.element;
+            float horizontal = style.offset_x * 100.0f;
+            float vertical = style.offset_y * 100.0f;
+            bool positionChanged = UIComponents::InputFloat("Horizontal (%)", &horizontal);
+            positionChanged = UIComponents::InputFloat("Vertikal (%)", &vertical) || positionChanged;
+            if (positionChanged) {
+                style.offset_x = horizontal / 100.0f;
+                style.offset_y = vertical / 100.0f;
+                style = SanitizeHudElementStyle(style);
+                gtaPresetChanged = true;
+            }
+            if (UIComponents::SecondaryButton("Position zurücksetzen")) {
+                style.offset_x = style.offset_y = 0.0f;
+                gtaPresetChanged = true;
+            }
+            ImGui::TableNextColumn();
+            UIComponents::Separator("Farbe");
+            if (UIComponents::Toggle("Eigene Farbe", &style.custom_color)) {
+                SyncLegacyVitalColors(currentPreset, definition.element);
+                gtaPresetChanged = true;
+            }
+            if (style.custom_color) {
+                ImVec4 color(style.color[0], style.color[1], style.color[2], style.color[3]);
+                if (UIComponents::ColorPicker("Farbe auswählen", &color)) {
+                    style.color = {{color.x, color.y, color.z, color.w}};
+                    style = SanitizeHudElementStyle(style);
+                    SyncLegacyVitalColors(currentPreset, definition.element);
+                    gtaPresetChanged = true;
+                }
+            } else {
+                UIComponents::InfoRow("Farbe", "Originalfarbe");
+            }
+            if (UIComponents::SecondaryButton("Originalfarbe wiederherstellen")) {
+                style.custom_color = false;
+                SyncLegacyVitalColors(currentPreset, definition.element);
+                gtaPresetChanged = true;
+            }
+            ImGui::EndTable();
         }
-
-        ImGui::TableNextColumn();
-        ImVec4 armorColor = LoadColor(currentPreset.armor_color_r, currentPreset.armor_color_g, currentPreset.armor_color_b, currentPreset.armor_color_a);
-        if (UIComponents::ColorPicker("Armor", &armorColor)) {
-            StoreColor(currentPreset, armorColor, &InterfacePreset::armor_color_r, &InterfacePreset::armor_color_g, &InterfacePreset::armor_color_b, &InterfacePreset::armor_color_a);
-            gtaPresetChanged = true;
-        }
-
-        ImGui::TableNextColumn();
-        ImVec4 moneyColor = LoadColor(currentPreset.money_color_r, currentPreset.money_color_g, currentPreset.money_color_b, currentPreset.money_color_a);
-        if (UIComponents::ColorPicker("Geld", &moneyColor)) {
-            StoreColor(currentPreset, moneyColor, &InterfacePreset::money_color_r, &InterfacePreset::money_color_g, &InterfacePreset::money_color_b, &InterfacePreset::money_color_a);
-            gtaPresetChanged = true;
-        }
-
-        ImGui::EndTable();
+        UIComponents::EndCard();
+        ImGui::PopID();
+        ImGui::Dummy(ImVec2(0.0f, Theme().GetSpacing(ThemeSpacingRole::CardGap)));
     }
 
     if (gtaPresetChanged) {
@@ -197,6 +246,10 @@ void InterfaceEditorUI::Render() {
         if (OnSettingsChanged) {
             OnSettingsChanged();
         }
+    }
+    if (requestedMove != HudElement::Count) {
+        SyncInterfaceEditorFromSettings();
+        if (interfaceEditor_->StartElementMove(requestedMove) && OnRequestMoveMode) OnRequestMoveMode();
     }
 }
 

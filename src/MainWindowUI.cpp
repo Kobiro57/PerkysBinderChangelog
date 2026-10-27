@@ -636,6 +636,10 @@ void MainWindowUI::SetInterfaceEditor(InterfaceEditor* editor) {
     interfaceEditorUI_.SetInterfaceEditor(editor);
 }
 
+void MainWindowUI::SetInterfaceMoveRequestedCallback(std::function<void()> callback) {
+    interfaceEditorUI_.OnRequestMoveMode = std::move(callback);
+}
+
 void MainWindowUI::SyncUiOpenSettingsBuffers() {
     if (settingsManager_ == nullptr) {
         CopyStringToBuffer({}, uiOpenCommandPrimaryBuffer_.data(), uiOpenCommandPrimaryBuffer_.size());
@@ -1109,13 +1113,14 @@ void MainWindowUI::RenderModsView() {
         case ModsSubtab::WeaponIcons:
             weaponIconsUI_.Render();
             break;
+        case ModsSubtab::Interface:
+            interfaceEditorUI_.Render();
+            break;
     }
 }
 
 void MainWindowUI::RenderHudModsTab() {
     squareMapUI_.Render();
-    ImGui::Spacing();
-    interfaceEditorUI_.Render();
     ImGui::Spacing();
     UIComponents::BeginCard("hud-sprite-library", 0.0f);
     RenderHudSpriteLibraryTabs();
@@ -1160,6 +1165,9 @@ void MainWindowUI::RenderModsTabs() {
     }
     if (UIComponents::SubTabItem("Waffenicons", currentModsSubtab_ == ModsSubtab::WeaponIcons)) {
         currentModsSubtab_ = ModsSubtab::WeaponIcons;
+    }
+    if (UIComponents::SubTabItem("Interface", currentModsSubtab_ == ModsSubtab::Interface)) {
+        currentModsSubtab_ = ModsSubtab::Interface;
     }
 
     UIComponents::EndSubTabs();

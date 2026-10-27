@@ -67,6 +67,7 @@ enum class ModsSubtab {
     Hitsound = 1,
     Hud = 2,
     WeaponIcons = 3,
+    Interface = 4,
 };
 
 enum class HudSpriteLibrarySubtab {
@@ -97,6 +98,7 @@ public:
     void SetWeaponIconManager(WeaponIconManager* manager);
     void SetHitsoundPlayer(HitsoundPlayer* player);
     void SetInterfaceEditor(InterfaceEditor* editor);
+    void SetInterfaceMoveRequestedCallback(std::function<void()> callback);
     void SetTextureManager(TextureManager* manager);
     void SetDeviceGetter(std::function<IDirect3DDevice9*()> getter);
     

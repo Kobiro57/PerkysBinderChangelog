@@ -16,6 +16,7 @@
 #include "../include/Logger.h"
 #include "../include/SpeedometerManager.h"
 #include "../include/WeaponIconCatalog.h"
+#include "../include/InterfaceLayout.h"
 
 namespace keybinder {
 
@@ -439,6 +440,24 @@ bool ParseFloatField(const std::string& object, const char* key, float& outValue
 
     const size_t numEnd = object.find_first_not_of("0123456789.-", numStart);
     outValue = static_cast<float>(std::atof(object.substr(numStart, numEnd - numStart).c_str()));
+    return true;
+}
+
+// HUD offsets can be very small after dragging. Accept JSON exponents without
+// scanning ahead into a later field when this field is null or malformed.
+bool ParseHudFloatField(const std::string& object, const std::string& key, float& outValue) {
+    const auto keyPos = object.find(key);
+    if (keyPos == std::string::npos) return false;
+    const auto colon = object.find(':', keyPos + key.size());
+    if (colon == std::string::npos) return false;
+    const auto start = object.find_first_not_of(" \t\r\n", colon + 1);
+    if (start == std::string::npos || (object[start] != '-' && (object[start] < '0' || object[start] > '9'))) return false;
+    char* end = nullptr;
+    const float value = std::strtof(object.c_str() + start, &end);
+    if (end == object.c_str() + start || !std::isfinite(value)) return false;
+    const auto next = object.find_first_not_of(" \t\r\n", static_cast<std::size_t>(end - object.c_str()));
+    if (next != std::string::npos && object[next] != ',' && object[next] != '}') return false;
+    outValue = value;
     return true;
 }
 
@@ -1445,6 +1464,44 @@ bool SettingsManager::LoadFromJson(const std::string& json_content) {
                         if (!hasArmorNumberPosY) preset.armor_number_pos_y = preset.vital_stats_numbers_pos_y;
                     }
                     NormalizeVitalStatsNumbersPosition(preset);
+                    for (const auto& definition : kHudElements) {
+                        auto& style = preset.layout[static_cast<std::size_t>(definition.element)];
+                        const std::string prefix = "\"hud_" + std::string(definition.key);
+                        ParseHudFloatField(obj, prefix + "_offset_x\"", style.offset_x);
+                        ParseHudFloatField(obj, prefix + "_offset_y\"", style.offset_y);
+                        const bool hasColorSetting = ParseBoolField(obj, (prefix + "_custom_color\"").c_str(), style.custom_color);
+                        const char* channels[] = {"_color_r\"", "_color_g\"", "_color_b\"", "_color_a\""};
+                        for (std::size_t channel = 0; channel < style.color.size(); ++channel) {
+                            ParseHudFloatField(obj, prefix + channels[channel], style.color[channel]);
+                        }
+                        // Existing saved colors remain available after the editor moves
+                        // to its own tab. Untouched legacy defaults keep native colors.
+                        if (!hasColorSetting) {
+                            const InterfacePreset defaults;
+                            std::array<float, 4> legacy{}, original{};
+                            bool hasLegacyColor = true;
+                            switch (definition.element) {
+                            case HudElement::Health:
+                                legacy = {preset.hp_color_r, preset.hp_color_g, preset.hp_color_b, preset.hp_color_a};
+                                original = {defaults.hp_color_r, defaults.hp_color_g, defaults.hp_color_b, defaults.hp_color_a};
+                                break;
+                            case HudElement::Armour:
+                                legacy = {preset.armor_color_r, preset.armor_color_g, preset.armor_color_b, preset.armor_color_a};
+                                original = {defaults.armor_color_r, defaults.armor_color_g, defaults.armor_color_b, defaults.armor_color_a};
+                                break;
+                            case HudElement::Money:
+                                legacy = {preset.money_color_r, preset.money_color_g, preset.money_color_b, preset.money_color_a};
+                                original = {defaults.money_color_r, defaults.money_color_g, defaults.money_color_b, defaults.money_color_a};
+                                break;
+                            default: hasLegacyColor = false; break;
+                            }
+                            if (hasLegacyColor && legacy != original) {
+                                style.color = legacy;
+                                style.custom_color = true;
+                            }
+                        }
+                        style = SanitizeHudElementStyle(style);
+                    }
                     settings_.interface_editor_saved_presets.push_back(preset);
 
                     pos = objEnd + 1;
@@ -2347,8 +2404,19 @@ std::string SettingsManager::GetSettingsJson() const {
             << ", \"armor_number_pos_x\": " << preset.armor_number_pos_x
             << ", \"armor_number_pos_y\": " << preset.armor_number_pos_y
             << ", \"hp_number_scale\": " << preset.hp_number_scale
-            << ", \"armor_number_scale\": " << preset.armor_number_scale
-            << "}";
+            << ", \"armor_number_scale\": " << preset.armor_number_scale;
+        for (const auto& definition : kHudElements) {
+            const auto style = SanitizeHudElementStyle(preset.layout[static_cast<std::size_t>(definition.element)]);
+            const std::string prefix = "hud_" + std::string(definition.key);
+            oss << ", \"" << prefix << "_offset_x\": " << style.offset_x
+                << ", \"" << prefix << "_offset_y\": " << style.offset_y
+                << ", \"" << prefix << "_custom_color\": " << (style.custom_color ? "true" : "false");
+            const char* channels[] = {"_color_r", "_color_g", "_color_b", "_color_a"};
+            for (std::size_t channel = 0; channel < style.color.size(); ++channel) {
+                oss << ", \"" << prefix << channels[channel] << "\": " << style.color[channel];
+            }
+        }
+        oss << "}";
         interfacePresetsFirst = false;
     }
     if (!settings_.interface_editor_saved_presets.empty()) oss << "\n    ";

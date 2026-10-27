@@ -1,8 +1,104 @@
 # Hinweise zur Prüfung durch die Projektleitung
 
-## Aktueller Stand r7 – 25. Oktober 2026
+## Aktueller Stand r8 – 27. Oktober 2026
 
-Der aktuelle Quellstand ist **NLBinder v.0.1.1 by KOBiRO, r7**.
+Der aktuelle Quellstand ist **NLBinder v.0.1.1 by KOBiRO, r8**. Die
+[Bedienung](../NLBinder-0.1.1-r8-DE.md) und der
+[r8-Nachtrag](CHANGELOG-DE.md#14-nachtrag-r8--27-oktober-2026) beschreiben die
+neue Interface-Kategorie. Ältere Nachweise bleiben nachfolgend ihren damaligen
+ASI-Dateien zugeordnet.
+
+### Verhalten und prüfbarer Umfang
+
+Elf native HUD-Bereiche haben eigene auflösungsunabhängige Positionsversätze
+und optionale Farben: Leben, Rüstung, Atemluft, Geld, Uhrzeit, Waffenicon,
+Munition, Wanted-Sterne, Fahrzeugname, Gebietsname und Minimap. Der eigene
+Farbmodus ist getrennt vom Positionsversatz. Der normale Zeichenpfad wird
+beibehalten. Ohne Anpassung reicht der Binder die native Darstellung durch.
+
+Der Verschiebemodus entspricht dem bestehenden Overlay-Ablauf: ein Element
+wählen, mit der Maus ziehen und mit Esc speichern. Die Konfiguration wird im
+aktiven Preset gespeichert. Farben und Positionen lassen sich getrennt
+zurücksetzen. Die bisherigen drei HUD-Farben werden beim Laden alter
+Einstellungen übernommen. Der Chat und andere Elemente dürfen nicht durch
+eine dauerhafte Änderung der gemeinsamen HUD-Palette umgefärbt werden.
+
+Der Umfang ist das lokale GTA-Interface. Eigene Server-Textdraws und ein vom
+Server gezeichnetes Datum werden nicht als native Uhr oder native HUD-
+Elemente ausgegeben. Ein echter Ingame-Test steht aus.
+
+### r8-Prüfpfade
+
+| Bereich | Implementierung | Tests |
+| --- | --- | --- |
+| Elementmodell und native Zeichnung | [InterfaceLayout.h](../../include/InterfaceLayout.h), [NativeHudEditor.cpp](../../src/NativeHudEditor.cpp) | [NativeHudEditorTests.cpp](../../tests/NativeHudEditorTests.cpp) |
+| Verschieben und Speichern | [InterfaceEditor.cpp](../../src/InterfaceEditor.cpp), [InterfaceEditorUI.cpp](../../src/InterfaceEditorUI.cpp), [Main.cpp](../../src/Main.cpp) | [InterfaceEditorTests.cpp](../../tests/InterfaceEditorTests.cpp) |
+| Eigenständige Mods-Kategorie | [MainWindowUI.cpp](../../src/MainWindowUI.cpp) | Navigation und UI-Bestand im Gesamttest |
+| Persistenz und Migration | [SettingsManager.cpp](../../src/SettingsManager.cpp) | [InterfaceLayoutSettingsTests.cpp](../../tests/InterfaceLayoutSettingsTests.cpp) |
+| ASI, Helfer und Paket | [verify_revision8_artifact.py](../../tools/verify_revision8_artifact.py), [package_revision8.ps1](../../tools/package_revision8.ps1) | PE32/x86, Ressource 300, Helfer-/Paket-SHA-256 und 43 Waffenordner |
+
+### Zugehörige finale Paketnachweise
+
+- [Keybinder.asi](../../dist/NLBinder-0.1.1-r8/Keybinder.asi)
+- [SHA-256](../../dist/NLBinder-0.1.1-r8/SHA256SUMS.txt)
+- [Build- und Prüfangaben](../../dist/NLBinder-0.1.1-r8/BUILD-INFO.txt)
+- [PE-/Import-/Ressourcenprüfung](../../dist/NLBinder-0.1.1-r8/PRUEFBERICHT.json)
+- [Nativer Helfertest](../../dist/NLBinder-0.1.1-r8/RECONNECT-TEST.json)
+
+### Ausgeführte Prüfungen für r8
+
+Gesamttests und Win32-Release-Build endeten mit Exitcode 0. Die
+InterfaceEditor-Suite meldet 319 erfolgreiche Prüfungen für Presets,
+unabhängige Elementpositionen, Start/Ende des Verschiebens und Speichern. Der
+native Transformationsbereich meldet 62 erfolgreiche Prüfungen: Standard-
+Durchreichen, getrennte Versätze bei verschiedenen Auflösungen, Farben,
+Wanted-Helligkeit, Radar-Tönung, Textklassifizierung, ungültige Werte sowie
+das Verwerfen veralteter Griffrahmen nach einem Positionswechsel.
+
+Die Interface-Einstellungen melden 248 erfolgreiche Prüfungen für alle
+Elemente und Presets, Speichern/Laden, Migration der bisherigen drei Farben,
+ausdrücklich gewählte Originalfarben und ungültige Zahlen. Kleine Versätze
+bleiben auch bei wissenschaftlicher Zahlenschreibweise erhalten. Die
+bestehenden Waffenicon-Suiten melden 245 und 29 Prüfungen; die Statistik-
+Synchronisation 252 und der Dialog-RPC-Adapter 727, jeweils 0 Fehler.
+
+Die geprüfte ASI umfasst 18.443.776 Bytes; SHA-256:
+`02401c76a69e40631698ac2e1a5ea5855f69fcbb3d9c0a9f7ee1909c28a30e3b`.
+PE32/x86, Windows-Imports und der bytegleiche eingebettete Helfer sind
+geprüft. Der native Helfertest umfasst 18 erfolgreiche Prüfungen mit
+harmlosen Testprozessen. Die separate ASI und die ASI im ZIP haben dieselbe
+Prüfsumme; das ZIP enthält 43 leere Waffenordner und keine persönlichen PNGs.
+[Maschinenlesbare Ergebnisse](r8-validation.json) ergänzen die Paketnachweise.
+Ein echter Ingame-Test mit dem konkreten Server und Launcher steht aus.
+
+### Anbindung an den nativen Zeichenpfad
+
+Die CHud-Adressen und Aufrufsignaturen wurden mit dem mitgelieferten
+plugin-sdk und den Primärquellen
+[GTA-Reversed: Hud.cpp](https://github.com/gta-reversed/gta-reversed/blob/master/source/game_sa/Hud.cpp)
+und [Font.cpp](https://github.com/gta-reversed/gta-reversed/blob/master/source/game_sa/Font.cpp)
+abgeglichen. Textposition und Textfarbe werden beim jeweiligen PrintString-
+Aufruf in den Font-Puffer übernommen. Der vorherige Font-Farbzustand wird
+direkt danach wiederhergestellt. Die spätere Font-Puffer-Ausgabe wird nicht
+nochmals als Sprite verschoben.
+
+Sprites und Minimap verwenden Kopien der übergebenen 2D-Vertices. Die
+Anbindung ermittelt die tatsächlich aktiven RenderWare-Gerätefunktionen
+zur Laufzeit. Der Radar-Zeichenbereich umfasst Karte, Ring, Höhenanzeige und
+Blips; die Pausenmenü-Karte bleibt außerhalb dieses Bereichs. Die Minimap-
+Farbe ist eine Tönung, die Kartendetails und schwarze Umrisse erhält. Die
+Wanted-Farbe behält Helligkeitsunterschiede zwischen ausgefüllten und leeren
+Sternen bei. Ein weiterer Hook auf DrawWeaponIcon ist dafür nicht nötig;
+die vorhandene Waffenicon-Auswahl bleibt eigenständig.
+
+Die automatisierten Prüfungen des nativen Editors verwenden das gemeinsame
+Transformations- und Farbmodell mit synthetischen Eingaben. Sie ersetzen
+keinen Test der tatsächlichen Darstellung im laufenden GTA-Prozess.
+
+
+## Historischer Prüfstand r7 – 25. Oktober 2026
+
+Der damalige Quellstand war **NLBinder v.0.1.1 by KOBiRO, r7**.
 [Bedienung und Installation](../NLBinder-0.1.1-r7-DE.md) sowie der
 [r7-Nachtrag](CHANGELOG-DE.md#13-nachtrag-r7--25-oktober-2026) beschreiben
 Waffenicons, Wanted-Dialogfolge und die ergänzten Startabgleiche. Die früheren

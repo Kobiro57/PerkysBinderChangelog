@@ -2,9 +2,9 @@
   "original_archive": "NLBinder-master.zip",
   "original_sha256": "a328e78eea63420e9bfe9c084883100177fe0fd9c2d62c4fcaef38c0a44801e9",
   "original_archive_commit_comment": "92ce21971bee2d166d830e23ad20950f1dc98921",
-  "release_asi_sha256": "abdcca5a0f89ea6e2391834199eef83f267dfee4ac05e28cff7a946b3db9341d",
+  "release_asi_sha256": "02401c76a69e40631698ac2e1a5ea5855f69fcbb3d9c0a9f7ee1909c28a30e3b",
   "baseline_files": 2006,
-  "current_files": 5687,
+  "current_files": 5707,
   "changes": [
     {
       "path": ".gitattributes",
@@ -36,7 +36,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": "9ce784480d2be6bf031f91ae852de817748a194285ad98e3c53d0af54b612973",
-      "after_sha256": "9099a5f87192118cd4a0c15754b16463f1701f677ceee523c087a07fc5eecd83"
+      "after_sha256": "81fcb32567f0f94f10eed18b54b6e81acf9a1b63dbb4d0342981b5977e3fb300"
     },
     {
       "path": "README.md",
@@ -44,7 +44,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": "65b8ae3822ae33054ece73689612fc8afb758e59282f3ee1185ee5fce62e269d",
-      "after_sha256": "f47f3d0753598d54f450b4fcc79e0664c3690c96ec7f14685178d6c1987d1729"
+      "after_sha256": "32bcfca3ef2067f60a79aeed34ca1ce5bb11fff1246692c70aecd153d7f54534"
     },
     {
       "path": "dist/NLBinder-0.1.1-r3/BUILD-INFO.txt",
@@ -335,6 +335,70 @@
       "after_sha256": "2dc01de02f2aac760fcec2b61fce91d5f12bc8fbca47c2558afe2fb49a36fcbb"
     },
     {
+      "path": "dist/NLBinder-0.1.1-r8/BUILD-INFO.txt",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "645ff5cd42a1da30735865952e8152a0ac92852f3d8532b571b7dae94607ac8f"
+    },
+    {
+      "path": "dist/NLBinder-0.1.1-r8/JOB-HINWEISE.md",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "3f10215fe2080301060baadcbfdedcd4754cc31c0b33386c00e7405ec4fc2755"
+    },
+    {
+      "path": "dist/NLBinder-0.1.1-r8/Keybinder.asi",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "02401c76a69e40631698ac2e1a5ea5855f69fcbb3d9c0a9f7ee1909c28a30e3b"
+    },
+    {
+      "path": "dist/NLBinder-0.1.1-r8/LIESMICH.md",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "9bad5d94790e018c5c6e4cd32324aa7c9cf6940984b735153147535bdf71d873"
+    },
+    {
+      "path": "dist/NLBinder-0.1.1-r8/NLBinder/Waffenicons/LIESMICH.md",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "839adf849f48623a1a302d1f819bd94b84c6e1f3371289a337eb6754c67d227b"
+    },
+    {
+      "path": "dist/NLBinder-0.1.1-r8/PRUEFBERICHT.json",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "f2a6e854539354f81d901a90dca58883b7f57fe24eb349ccbaee4ad89d84fb8c"
+    },
+    {
+      "path": "dist/NLBinder-0.1.1-r8/RECONNECT-TEST.json",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "7a531ceb0ffeebb06d1ff39131297569194c05915cc2aff9b51396a002b285b3"
+    },
+    {
+      "path": "dist/NLBinder-0.1.1-r8/SHA256SUMS.txt",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "3dd600527c9e50e53c68295001f13667befbf30a921a45fa183d09a26d935e05"
+    },
+    {
       "path": "dist/NLBinder-v0.1.1-KOBiRO-r4.zip",
       "status": "added",
       "dependency": false,
@@ -365,6 +429,14 @@
       "line_endings_only": false,
       "before_sha256": null,
       "after_sha256": "6a7a163e39ebd8da74bf2fb96ab9e884fc52851a54b011d3f070e9787c43a8e8"
+    },
+    {
+      "path": "dist/NLBinder-v0.1.1-KOBiRO-r8.zip",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "912e8de8be0317e191f75feaf178746664182291b95a6806f7b9c0c7b1c09852"
     },
     {
       "path": "docs/BUILD-README.md",
@@ -431,6 +503,14 @@
       "after_sha256": "ddcf77fa4424cc2d72240f984afee5d97236ee9a17bf96de7450a1c3ba1d7649"
     },
     {
+      "path": "docs/NLBinder-0.1.1-r8-DE.md",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "9bad5d94790e018c5c6e4cd32324aa7c9cf6940984b735153147535bdf71d873"
+    },
+    {
       "path": "docs/ORIGINAL-README.md",
       "status": "added",
       "dependency": false,
@@ -460,7 +540,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": null,
-      "after_sha256": "9fc95a6f0fc9371fdd76bf8a65ad5f85c928896b563a7a78a42cca3f74820267"
+      "after_sha256": "9a37f157d31eb47514fa0bee7a5e24da72eaf4f0d722b1ca6d9b64559dbf8046"
     },
     {
       "path": "docs/review/DEPENDENCIES.md",
@@ -476,7 +556,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": null,
-      "after_sha256": "bea3fc7a724d53afb195f6bfcb7ab4c90d589f430a3048ae97a55050ce947d11"
+      "after_sha256": "970787009ac2f86dca207f7cf37e29a21eb46d8f0f7febf131707015e7ec4219"
     },
     {
       "path": "docs/review/PUBLICATION.json",
@@ -484,7 +564,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": null,
-      "after_sha256": "4d997635b8c180031e0eac85688f69d3d38950bd51985245ecf67cc79c7a8e74"
+      "after_sha256": "0abb333313a2fc4bbfe53cd01d4a2cdf4bb71d97e837e28386d1eb1a670abab1"
     },
     {
       "path": "docs/review/PUBLISHING-DE.md",
@@ -500,7 +580,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": null,
-      "after_sha256": "2c3e4b82bb8d8550d76adfebe32e4ae6bf82c0c507d3da42dc952f55c5e79d27"
+      "after_sha256": "97bbf60c541bfdd4921f6d5b9960731af4e632623f02616ea82130a98c0fd845"
     },
     {
       "path": "docs/review/r4-validation.json",
@@ -535,6 +615,14 @@
       "after_sha256": "a98921f0ddd3b9d37a6175506a4a3fe5e4264d3fa5b5b4cfc0353a4522173f86"
     },
     {
+      "path": "docs/review/r8-validation.json",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "e3cb80a486c0b22eaf0d6e8c1797e3a64311617a8796130d6f472aed493e8f13"
+    },
+    {
       "path": "include/ActionExecutor.h",
       "status": "modified",
       "dependency": false,
@@ -565,6 +653,30 @@
       "line_endings_only": false,
       "before_sha256": "e1488225e40ef14434bb7af0149a794848097a44cb31c3bf13eefb4fcc830f26",
       "after_sha256": "2cd191b17e72c222846eaea4f0a45a12ca5e0d9c3b2b91948cc34e6ff4f7b561"
+    },
+    {
+      "path": "include/InterfaceEditor.h",
+      "status": "modified",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": "dc927f97975f9b6ebf8c598163447add9f97d4006f05fbc54362f025f232a330",
+      "after_sha256": "907b9f81658d012aab98b9aeef5fe93ab59e519fe4e429016fff52c8400614b2"
+    },
+    {
+      "path": "include/InterfaceEditorUI.h",
+      "status": "modified",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": "d60c1fa20bf0c7fae6b6bac9f71a12630fd7869ced140b8d03d3642dca85fc6d",
+      "after_sha256": "40f31cdb34ab3c18bc9f3647f7d9280eb23d35e48a0dc160397658b427dc6e77"
+    },
+    {
+      "path": "include/InterfaceLayout.h",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "4e7700a662b64ebf2780272f5de2460d8f9ae8becbde3b5964c83d647b1baf4f"
     },
     {
       "path": "include/JobChatAdapter.h",
@@ -652,7 +764,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": "e3cfea8aa6fc91354137845c6aecb16abfeb7b858f0afa21dd2021d42693aaa0",
-      "after_sha256": "6210e3a22132efb0ecb0816cb8d612e5e26bddf9e0790f29113042af3071d739"
+      "after_sha256": "739a1f7f71002d7523587c8e7924ccd6066b6af62bfe072689ffb7f366d02e58"
     },
     {
       "path": "include/MessageVariables.h",
@@ -669,6 +781,14 @@
       "line_endings_only": false,
       "before_sha256": null,
       "after_sha256": "eda90890149e7f76517653352732ee6e84374fe2c3c2d396dd7404ad50a45c55"
+    },
+    {
+      "path": "include/NativeHudEditor.h",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "00f91ab812b067df60417b2dc4b61cf531e48526d2b08717465c95fa9b62d3f2"
     },
     {
       "path": "include/OnlineDataManager.h",
@@ -29703,6 +29823,22 @@
       "after_sha256": "100e6ac2d8f0ae546365445e620403c5b2f75cb46658948a0b3182e71e05b5c7"
     },
     {
+      "path": "src/InterfaceEditor.cpp",
+      "status": "modified",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": "eb6e86692269c6ba37b160b3f43ff936f1d6eaaf63596585cbc46e7e004c65b7",
+      "after_sha256": "1ebaf03f8a691fa6616f1e441ff27758ae84f31017f89784da4ca23cfefd5050"
+    },
+    {
+      "path": "src/InterfaceEditorUI.cpp",
+      "status": "modified",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": "07c6054d1e34901fee766dd5d5a1a9f210a7d9bc72a4ef68f719b72ba14d2194",
+      "after_sha256": "bcc1410ae8d8c989131d1492288fe30fe33de0247346da850dd39ce4f279c6dd"
+    },
+    {
       "path": "src/JobChatAdapter.cpp",
       "status": "modified",
       "dependency": false,
@@ -29772,7 +29908,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": "eb9f28895fa6b3b435282a6285e06fff924a252ab88bfe81ad90658a0a222781",
-      "after_sha256": "0b3fa8cd5aadcd71452d696d5dfd5d5805bc9980ce7db3dc832f3e9d60ad64dd"
+      "after_sha256": "a6eaddd4c823123e20bc16246bfef750bdcd2886811740c19e81b5ceb438fb4b"
     },
     {
       "path": "src/MainWindowUI.cpp",
@@ -29780,7 +29916,15 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": "382276bfc63910a601b4b870386bd1b4b9499ef5234aa72332d7cd2662a50dd4",
-      "after_sha256": "b7226f9505cc5a98315cd0af171d73fc945dbe564b57b78278000edaaa95e522"
+      "after_sha256": "e9e2be11b15c7b08725feedb41c9329aa492f82070183dbd02cff1fad1d16d74"
+    },
+    {
+      "path": "src/NativeHudEditor.cpp",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "51128509e47525849ca38e6b223d38ccf4f20566672e946c87057d2890d3c530"
     },
     {
       "path": "src/OnlineDataManager.cpp",
@@ -29844,7 +29988,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": "7f15ae05799cfc7923a97bdf940ac293d9053dcafc4717f345fcf43b9f6b3c10",
-      "after_sha256": "7c4ae83d2aa4b5f94de553d6627e4ee893da617ec964fe8f61e5c01fdddcb888"
+      "after_sha256": "9d6a5ad4177081d8c13a44a5727da40d3ee13812b5dd6b5e3746995ec606c091"
     },
     {
       "path": "src/SpeedTicketBridge.cpp",
@@ -29927,6 +30071,22 @@
       "after_sha256": "f26c6a82977f1a5726e0126dbfca6c94aa2a0db8fc05a66b97380ff2f07effed"
     },
     {
+      "path": "tests/InterfaceEditorTests.cpp",
+      "status": "modified",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": "f6c5ecfaf9a0313dec2604ecac9654c187755e592ba6906aa6d9f1910a871226",
+      "after_sha256": "aa11c98fe87b438f5bce8ae58e3da8451ca5f04cb7067268dfec337d166cbfc0"
+    },
+    {
+      "path": "tests/InterfaceLayoutSettingsTests.cpp",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "5bed33be54bd84ef1bc475d576ee588964f69fd4dcf8eb72fb88a28be81dca6c"
+    },
+    {
       "path": "tests/JobChatAdapterTests.cpp",
       "status": "modified",
       "dependency": false,
@@ -29988,7 +30148,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": "1fac4a1d9c947b62b3910b9b0cee32c0a604560edf7a048e03dca7f7a461d3f3",
-      "after_sha256": "037ba92084ff575b3ca6363d6fb47488c6f9514e33513a10bb621d01fa124b9d"
+      "after_sha256": "2d1c5771ca9d014a999f105e815bc864278f4500426303fec07b46c4bea6d721"
     },
     {
       "path": "tests/KillMessageTestTests.cpp",
@@ -30005,6 +30165,14 @@
       "line_endings_only": false,
       "before_sha256": null,
       "after_sha256": "4ba94161774dc4b67e572c387ab2bf9918c270e980e8b871d4c88afdbd57938c"
+    },
+    {
+      "path": "tests/NativeHudEditorTests.cpp",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "f57b0ce67b485178fc24184d927807103c91cbec36a56b40a4821acbdf8959b8"
     },
     {
       "path": "tests/OnlineDataManagerTests.cpp",
@@ -30076,7 +30244,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": "fdaaacd6965fbb9707e19909f5a5945a8dd6e36073f84b8d045f1e370c8f41ff",
-      "after_sha256": "991d4c11787cc16cac639faea7d67c07fadb81dc481efa2335b55f39b356bcfb"
+      "after_sha256": "dffc389a064c99cc7e11f05cf25fe585a2a837f1b9a96595de6f2fac7468b7ea"
     },
     {
       "path": "tests/SpeedTicketFlowTests.cpp",
@@ -30207,6 +30375,14 @@
       "after_sha256": "61a97c4f25b591bdcce71ef6a614b23ccecbf3b51e3f7802e4e160d4348b9053"
     },
     {
+      "path": "tools/package_revision8.ps1",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "0968f767a23e72f1f9d64c1f2701f6237c9587acc23708eeefca83c24a58fb0c"
+    },
+    {
       "path": "tools/prepare_github_review.py",
       "status": "added",
       "dependency": false,
@@ -30220,7 +30396,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": "e8c7a0a6dde01e6ef6d857c59ffe1fec9278f15863e1f5a690b65d87ad002e69",
-      "after_sha256": "27a3e13ffb79fe6d26341c5dcf927c2352f30d156406506fa6d6ffdb5c68a392"
+      "after_sha256": "2926606320ce54f9c89a4b4118855fc3b77a433e6c655cf8238b8ade269f7a85"
     },
     {
       "path": "tools/setup_msvc.bat",
@@ -30269,6 +30445,14 @@
       "line_endings_only": false,
       "before_sha256": null,
       "after_sha256": "48b7adfb32b2499ef2ecb73690e8e007191f202dfbf46f049410eea5beabc075"
+    },
+    {
+      "path": "tools/verify_revision8_artifact.py",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "e7b6f1e5d440fc1360712cd11621a20774bf2c3cbe34134f743ff29ee8d87a11"
     }
   ],
   "comparison_excludes_generated": [
@@ -30278,14 +30462,16 @@
     "docs/review/REVISION5-DIFFSTAT.txt",
     "docs/review/REVISION6-DIFFSTAT.txt",
     "docs/review/REVISION7-DIFFSTAT.txt",
+    "docs/review/REVISION8-DIFFSTAT.txt",
     "docs/review/SOURCE-COMPARISON.json",
     "docs/review/first-party-changes.patch",
     "docs/review/revision4-changes.patch",
     "docs/review/revision5-changes.patch",
     "docs/review/revision6-changes.patch",
-    "docs/review/revision7-changes.patch"
+    "docs/review/revision7-changes.patch",
+    "docs/review/revision8-changes.patch"
   ],
-  "release": "v0.1.1-r7",
+  "release": "v0.1.1-r8",
   "before_bytes": "Unmodified filtered original ZIP snapshot",
   "after_bytes": "Exact staged Git blobs after Git text/EOL normalization"
 }

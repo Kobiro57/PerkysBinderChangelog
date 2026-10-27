@@ -1,0 +1,2431 @@
+diff --git a/Keybinder.vcxproj b/Keybinder.vcxproj
+index 298383c..5078fbb 100644
+--- a/Keybinder.vcxproj
++++ b/Keybinder.vcxproj
+@@ -204,6 +204,7 @@
+     <ClCompile Include="src\SpeedTicketFlow.cpp" />
+     <ClCompile Include="src\SpeedTicketBridge.cpp" />
+     <ClCompile Include="src\WeaponIconManager.cpp" />
++    <ClCompile Include="src\NativeHudEditor.cpp" />
+     <ClCompile Include="src\WeaponIconsUI.cpp" />
+     <ClCompile Include="src\StatsDialogRPCAdapter.cpp" />
+     <ClCompile Include="src\ActionExecutor.cpp" />
+diff --git a/README.md b/README.md
+index 47c96e9..b7258f6 100644
+--- a/README.md
++++ b/README.md
+@@ -2,11 +2,11 @@
+ 
+ Vollständiger Prüfstand der Änderungen am **Perkys / NLBinder**, angepasst für
+ KOBiRO. Grundlage und ursprüngliche Urheberschaft bleiben beim Originalprojekt.
+-Der Stand lautet **NLBinder v.0.1.1 by KOBiRO, r7**. Neu sind eigene
+-Waffenicons mit 43 Waffenordnern, der vollständige `/speed ID`-Dialogablauf,
+-die Übernahme vorhandener Job-Skillpunkte nach der Statistik und die
+-Berücksichtigung bestätigter serverseitiger Motorstarts. Frühere Binder-
+-Anpassungen und die ursprüngliche Oberfläche bleiben enthalten.
++Der Stand lautet **NLBinder v.0.1.1 by KOBiRO, r8**. Neu ist **Mods →
++Interface** neben Waffenicons: native HUD-Elemente erhalten getrennte
++Positions- und Farbeinstellungen. Ein ausgewähltes Element wird mit der Maus
++verschoben und mit Esc gespeichert. Frühere Binder-Anpassungen und die
++ursprünglichen Oberflächenkomponenten bleiben enthalten.
+ 
+ Eigene Waffenbilder liegen unter **Dokumente → GTA San Andreas User Files →
+ NLBinder → Waffenicons**. Der Button **Waffenicons-Ordner öffnen** im Binder
+@@ -18,9 +18,9 @@ NLBinder → Waffenicons**. Der Button **Waffenicons-Ordner öffnen** im Binder
+ 2. [Technisches Verhalten, Prüfungen und Grenzen](docs/review/PRUEFUNG-DE.md)
+ 3. [Dateien im Vergleich zum Original](docs/review/DATEIVERGLEICH.md)
+ 4. [Herkunft und Abhängigkeiten](docs/review/DEPENDENCIES.md)
+-5. [Programmänderungen als GitHub-Vergleich](https://github.com/Kobiro57/PerkysBinderChangelog/compare/build-dependencies-baseline...v0.1.1-r7)
++5. [Programmänderungen als GitHub-Vergleich](https://github.com/Kobiro57/PerkysBinderChangelog/compare/build-dependencies-baseline...v0.1.1-r8)
+    oder als [kompakter Quellcode-Patch](docs/review/first-party-changes.patch)
+-6. [Änderungen seit r6](https://github.com/Kobiro57/PerkysBinderChangelog/compare/v0.1.1-r6...v0.1.1-r7)
++6. [Änderungen seit r7](https://github.com/Kobiro57/PerkysBinderChangelog/compare/v0.1.1-r7...v0.1.1-r8)
+ 
+ Der vollständige bearbeitete Code liegt in `src/`, `include/`, `res/`,
+ `tests/`, `tools/` und `third_party/`. Die Übersicht verlinkt direkt zu den
+@@ -44,17 +44,17 @@ die [aktuelle Build-Anleitung](docs/BUILD-README.md) beschreibt das Bauen des Bi
+ 
+ ## Geprüfte ASI
+ 
+-- [Keybinder.asi herunterladen](dist/NLBinder-0.1.1-r7/Keybinder.asi)
+-- [Komplettes ZIP-Paket herunterladen](dist/NLBinder-v0.1.1-KOBiRO-r7.zip)
+-- [Installation und Bedienung](dist/NLBinder-0.1.1-r7/LIESMICH.md)
+-- [Build- und Prüfangaben](dist/NLBinder-0.1.1-r7/BUILD-INFO.txt)
+-- [Maschinenlesbarer Prüfnachweis](dist/NLBinder-0.1.1-r7/PRUEFBERICHT.json)
+-- [SHA-256 der ausgelieferten ASI](dist/NLBinder-0.1.1-r7/SHA256SUMS.txt)
++- [Keybinder.asi herunterladen](dist/NLBinder-0.1.1-r8/Keybinder.asi)
++- [Komplettes ZIP-Paket herunterladen](dist/NLBinder-v0.1.1-KOBiRO-r8.zip)
++- [Installation und Bedienung](dist/NLBinder-0.1.1-r8/LIESMICH.md)
++- [Build- und Prüfangaben](dist/NLBinder-0.1.1-r8/BUILD-INFO.txt)
++- [Maschinenlesbarer Prüfnachweis](dist/NLBinder-0.1.1-r8/PRUEFBERICHT.json)
++- [SHA-256 der ausgelieferten ASI](dist/NLBinder-0.1.1-r8/SHA256SUMS.txt)
+ 
+ Die Nachweise gehören zum jeweiligen Binärstand: automatisierte Gesamttests,
+ Win32-Release-Build, PE-/Ressourcenvergleich und Reconnect-Helfertest mit
+ harmlosen Testprozessen. Ein echter Ingame-Test mit dem konkreten Server und
+-Launcher steht aus. Die [vorherige r6-Fassung](dist/NLBinder-0.1.1-r6/BUILD-INFO.txt)
++Launcher steht aus. Die [vorherige r7-Fassung](dist/NLBinder-0.1.1-r7/BUILD-INFO.txt)
+ und ihre Prüfsumme bleiben zur Nachverfolgung erhalten.
+ 
+ ## Weitere Updates
+diff --git a/docs/NLBinder-0.1.1-r8-DE.md b/docs/NLBinder-0.1.1-r8-DE.md
+new file mode 100644
+index 0000000..e00b912
+--- /dev/null
++++ b/docs/NLBinder-0.1.1-r8-DE.md
+@@ -0,0 +1,70 @@
++# NLBinder v.0.1.1 by KOBiRO – Überarbeitung 8
++
++Stand: 27. Oktober 2026. Unter **Mods → Interface**, direkt neben
++**Waffenicons**, werden Position und Farbe der einzelnen GTA-HUD-Elemente
++getrennt eingerichtet. Die bisherigen Binder-Komponenten und Presets bleiben
++Grundlage der Oberfläche.
++
++## Installation
++
++1. GTA/SA-MP schließen und die bisherige Binder-ASI sichern.
++2. Die bisherige ASI am bisherigen Installationsort durch `Keybinder.asi`
++   ersetzen. Nur eine Binder-Fassung laden; der vorhandene ASI-Loader bleibt
++   erforderlich.
++3. GTA San Andreas 1.0 US mit SA-MP 0.3.DL-R1 starten und normal einloggen.
++
++Die mitgelieferte Waffenicon-Ordnerstruktur kann wie bisher mit
++**Dokumente → GTA San Andreas User Files → NLBinder** zusammengeführt werden.
++Eigene Bilder und Einstellungen beibehalten. Der Interface-Editor benötigt
++keine zusätzliche INI-Datei.
++
++Prüfsumme und Buildnachweise gehören zur gelieferten ASI und stehen in
++`BUILD-INFO.txt`, `SHA256SUMS.txt` und `PRUEFBERICHT.json`. Ein echter
++Ingame-Test auf dem konkreten Server steht aus.
++
++## Einzelne HUD-Elemente bearbeiten
++
++Unter **Mods → Interface** gibt es getrennte Einstellungen für:
++
++- Leben und Rüstung
++- Atemluft
++- Geldanzeige und Uhrzeit
++- Waffenicon und Munition
++- Wanted-Sterne
++- Fahrzeugname und Gebietsname
++- Minimap
++
++Jedes Element behält seine ursprüngliche Position und Farbe, solange keine
++entsprechende Änderung eingestellt ist. Positionsänderungen werden relativ
++zur Bildschirmgröße gespeichert. Eigene Farben werden für das ausgewählte
++Element aktiviert; andere HUD-Elemente und der Chat verwenden weiterhin ihre
++eigenen Farben.
++
++**Verschieben** startet den Mausmodus für das gewählte Element. Das Binder-
++Menü wird ausgeblendet; der angezeigte Rahmen dient als Griff zum Ziehen.
++**Esc** beendet das Verschieben und speichert die Position. So muss das
++Element nicht über X-/Y-Werte eingerichtet werden. Position und Farbe lassen
++sich getrennt zurücksetzen. Die Preset-Slots speichern die Einstellungen.
++
++Es werden die lokalen GTA-HUD-Elemente angepasst. Vom Server gesendete eigene
++Textanzeigen, etwa dessen Datum, Ziele oder sonstige Textdraws, sind eigene
++Serverelemente und gehören nicht zum nativen GTA-Interface. Die vom Benutzer
++gezeigte InterfaceEditor-INI dient als Funktionsvorlage; sie wird nicht
++installiert oder unverändert übernommen.
++
++## Vorhandene Funktionen
++
++Waffenicons, `/speed ID`, Statistik- und Jobskill-Synchronisation sowie der
++Schutz vor einem zweiten Motorstart nach einer bestätigten Server-Addon-
++Meldung bleiben enthalten. Eigene Waffenbilder liegen weiterhin unter
++**Dokumente → GTA San Andreas User Files → NLBinder → Waffenicons**.
++**Waffenicons-Ordner öffnen** verwendet den tatsächlichen Windows-Pfad,
++einschließlich einer möglichen OneDrive-Umleitung.
++
++## Quellen und Prüfung
++
++Die Änderungen und die zum ausgelieferten Binärstand gehörenden Nachweise
++werden im [GitHub-Prüfrepository](https://github.com/Kobiro57/PerkysBinderChangelog)
++bereitgestellt. Frühere Stände bleiben erhalten. Persönliche Screenshots,
++Accountwerte, Laufzeitkonfigurationen und eigene PNG-Sammlungen gehören nicht
++zur Veröffentlichung.
+diff --git a/docs/review/CHANGELOG-DE.md b/docs/review/CHANGELOG-DE.md
+index 0aa51ab..e0fc179 100644
+--- a/docs/review/CHANGELOG-DE.md
++++ b/docs/review/CHANGELOG-DE.md
+@@ -488,3 +488,54 @@ Quelle und Tests: [SAMPBridge.cpp](../../src/SAMPBridge.cpp),
+ Die endgültigen automatisierten Ergebnisse, ASI-Prüfsumme und Paketgleichheit
+ gehören zu den r7-Paketnachweisen. Frühere Hashwerte bleiben ausschließlich den
+ älteren ASIs zugeordnet; ein echter Ingame-Test auf dem Server steht aus.
++
++
++## 14. Nachtrag r8 – 27. Oktober 2026
++
++### Eigene Interface-Kategorie und getrennte HUD-Einstellungen
++
++Unter Mods wurde **Interface** direkt neben Waffenicons ergänzt. Die
++vorhandene Preset-Verwaltung ist dort eingeordnet. Leben, Rüstung, Atemluft,
++Geld, Uhrzeit, Waffenicon, Munition, Wanted-Sterne, Fahrzeugname, Gebietsname
++und Minimap erhalten jeweils eigene Positions- und Farboptionen. Ohne
++aktivierte eigene Farbe bleibt die jeweilige native Farbe erhalten. Die
++Position wird als auflösungsunabhängiger Versatz vom nativen GTA-Standort
++gespeichert. Position und Farbe lassen sich getrennt zurücksetzen.
++
++Der Binder verwendet weiterhin seine bisherigen Karten, Schalter und
++Farbauswahl. Die mitgelieferte historische InterfaceEditor-INI ist nur eine
++Funktionsvorlage; deren feste Koordinaten und Speicheränderungen werden
++nicht pauschal installiert.
++
++### Mit der Maus verschieben und mit Esc speichern
++
++Die Verschieben-Funktion wird für ein bestimmtes Element gestartet. Das
++Menü wird ausgeblendet und ein Griffrahmen mit Hinweis eingeblendet. Die
++Maus verschiebt das ausgewählte Element; Esc beendet den Modus und speichert
++den aktiven Preset-Stand. Andere Elemente behalten ihre eigenen Positionen
++und Farben. Die Eingaben im Verschiebemodus werden vom Spiel abgeschirmt,
++wie beim bestehenden Overlay-Verschieben.
++
++### Native Zeichnung und bestehende Mods
++
++Die Änderungen betreffen das lokale native GTA-HUD. Der Original-Zeichenpfad
++bleibt Grundlage; die vorhandene Waffenicon-Auswahl arbeitet weiterhin mit
++dem Interface-Editor zusammen. Farben werden für den jeweiligen Zeichen-
++bereich angewendet, ohne die gemeinsame HUD-Farbpalette dauerhaft für
++andere Elemente zu verändern. Eigene Server-Textdraws, Datum und sonstige
++Serveranzeigen gehören nicht zu diesem nativen GTA-Editor.
++
++Quellen: [InterfaceLayout.h](../../include/InterfaceLayout.h),
++[NativeHudEditor.cpp](../../src/NativeHudEditor.cpp),
++[InterfaceEditor.cpp](../../src/InterfaceEditor.cpp),
++[InterfaceEditorUI.cpp](../../src/InterfaceEditorUI.cpp),
++[SettingsManager.cpp](../../src/SettingsManager.cpp),
++[MainWindowUI.cpp](../../src/MainWindowUI.cpp).
++Tests: [NativeHudEditorTests.cpp](../../tests/NativeHudEditorTests.cpp),
++[InterfaceEditorTests.cpp](../../tests/InterfaceEditorTests.cpp),
++[InterfaceLayoutSettingsTests.cpp](../../tests/InterfaceLayoutSettingsTests.cpp).
++
++Die endgültigen automatisierten Ergebnisse und die ASI-Prüfsumme gehören zu
++[r8](../../dist/NLBinder-0.1.1-r8/BUILD-INFO.txt). Die ursprünglichen
++Urheberhinweise und frühere Prüfstände bleiben erhalten. Ein echter
++Ingame-Test mit dem konkreten Server steht aus.
+diff --git a/docs/review/PRUEFUNG-DE.md b/docs/review/PRUEFUNG-DE.md
+index d7d14fd..cb38838 100644
+--- a/docs/review/PRUEFUNG-DE.md
++++ b/docs/review/PRUEFUNG-DE.md
+@@ -1,8 +1,104 @@
+ # Hinweise zur Prüfung durch die Projektleitung
+ 
+-## Aktueller Stand r7 – 25. Oktober 2026
++## Aktueller Stand r8 – 27. Oktober 2026
+ 
+-Der aktuelle Quellstand ist **NLBinder v.0.1.1 by KOBiRO, r7**.
++Der aktuelle Quellstand ist **NLBinder v.0.1.1 by KOBiRO, r8**. Die
++[Bedienung](../NLBinder-0.1.1-r8-DE.md) und der
++[r8-Nachtrag](CHANGELOG-DE.md#14-nachtrag-r8--27-oktober-2026) beschreiben die
++neue Interface-Kategorie. Ältere Nachweise bleiben nachfolgend ihren damaligen
++ASI-Dateien zugeordnet.
++
++### Verhalten und prüfbarer Umfang
++
++Elf native HUD-Bereiche haben eigene auflösungsunabhängige Positionsversätze
++und optionale Farben: Leben, Rüstung, Atemluft, Geld, Uhrzeit, Waffenicon,
++Munition, Wanted-Sterne, Fahrzeugname, Gebietsname und Minimap. Der eigene
++Farbmodus ist getrennt vom Positionsversatz. Der normale Zeichenpfad wird
++beibehalten. Ohne Anpassung reicht der Binder die native Darstellung durch.
++
++Der Verschiebemodus entspricht dem bestehenden Overlay-Ablauf: ein Element
++wählen, mit der Maus ziehen und mit Esc speichern. Die Konfiguration wird im
++aktiven Preset gespeichert. Farben und Positionen lassen sich getrennt
++zurücksetzen. Die bisherigen drei HUD-Farben werden beim Laden alter
++Einstellungen übernommen. Der Chat und andere Elemente dürfen nicht durch
++eine dauerhafte Änderung der gemeinsamen HUD-Palette umgefärbt werden.
++
++Der Umfang ist das lokale GTA-Interface. Eigene Server-Textdraws und ein vom
++Server gezeichnetes Datum werden nicht als native Uhr oder native HUD-
++Elemente ausgegeben. Ein echter Ingame-Test steht aus.
++
++### r8-Prüfpfade
++
++| Bereich | Implementierung | Tests |
++| --- | --- | --- |
++| Elementmodell und native Zeichnung | [InterfaceLayout.h](../../include/InterfaceLayout.h), [NativeHudEditor.cpp](../../src/NativeHudEditor.cpp) | [NativeHudEditorTests.cpp](../../tests/NativeHudEditorTests.cpp) |
++| Verschieben und Speichern | [InterfaceEditor.cpp](../../src/InterfaceEditor.cpp), [InterfaceEditorUI.cpp](../../src/InterfaceEditorUI.cpp), [Main.cpp](../../src/Main.cpp) | [InterfaceEditorTests.cpp](../../tests/InterfaceEditorTests.cpp) |
++| Eigenständige Mods-Kategorie | [MainWindowUI.cpp](../../src/MainWindowUI.cpp) | Navigation und UI-Bestand im Gesamttest |
++| Persistenz und Migration | [SettingsManager.cpp](../../src/SettingsManager.cpp) | [InterfaceLayoutSettingsTests.cpp](../../tests/InterfaceLayoutSettingsTests.cpp) |
++| ASI, Helfer und Paket | [verify_revision8_artifact.py](../../tools/verify_revision8_artifact.py), [package_revision8.ps1](../../tools/package_revision8.ps1) | PE32/x86, Ressource 300, Helfer-/Paket-SHA-256 und 43 Waffenordner |
++
++### Zugehörige finale Paketnachweise
++
++- [Keybinder.asi](../../dist/NLBinder-0.1.1-r8/Keybinder.asi)
++- [SHA-256](../../dist/NLBinder-0.1.1-r8/SHA256SUMS.txt)
++- [Build- und Prüfangaben](../../dist/NLBinder-0.1.1-r8/BUILD-INFO.txt)
++- [PE-/Import-/Ressourcenprüfung](../../dist/NLBinder-0.1.1-r8/PRUEFBERICHT.json)
++- [Nativer Helfertest](../../dist/NLBinder-0.1.1-r8/RECONNECT-TEST.json)
++
++### Ausgeführte Prüfungen für r8
++
++Gesamttests und Win32-Release-Build endeten mit Exitcode 0. Die
++InterfaceEditor-Suite meldet 319 erfolgreiche Prüfungen für Presets,
++unabhängige Elementpositionen, Start/Ende des Verschiebens und Speichern. Der
++native Transformationsbereich meldet 62 erfolgreiche Prüfungen: Standard-
++Durchreichen, getrennte Versätze bei verschiedenen Auflösungen, Farben,
++Wanted-Helligkeit, Radar-Tönung, Textklassifizierung, ungültige Werte sowie
++das Verwerfen veralteter Griffrahmen nach einem Positionswechsel.
++
++Die Interface-Einstellungen melden 248 erfolgreiche Prüfungen für alle
++Elemente und Presets, Speichern/Laden, Migration der bisherigen drei Farben,
++ausdrücklich gewählte Originalfarben und ungültige Zahlen. Kleine Versätze
++bleiben auch bei wissenschaftlicher Zahlenschreibweise erhalten. Die
++bestehenden Waffenicon-Suiten melden 245 und 29 Prüfungen; die Statistik-
++Synchronisation 252 und der Dialog-RPC-Adapter 727, jeweils 0 Fehler.
++
++Die geprüfte ASI umfasst 18.443.776 Bytes; SHA-256:
++`02401c76a69e40631698ac2e1a5ea5855f69fcbb3d9c0a9f7ee1909c28a30e3b`.
++PE32/x86, Windows-Imports und der bytegleiche eingebettete Helfer sind
++geprüft. Der native Helfertest umfasst 18 erfolgreiche Prüfungen mit
++harmlosen Testprozessen. Die separate ASI und die ASI im ZIP haben dieselbe
++Prüfsumme; das ZIP enthält 43 leere Waffenordner und keine persönlichen PNGs.
++[Maschinenlesbare Ergebnisse](r8-validation.json) ergänzen die Paketnachweise.
++Ein echter Ingame-Test mit dem konkreten Server und Launcher steht aus.
++
++### Anbindung an den nativen Zeichenpfad
++
++Die CHud-Adressen und Aufrufsignaturen wurden mit dem mitgelieferten
++plugin-sdk und den Primärquellen
++[GTA-Reversed: Hud.cpp](https://github.com/gta-reversed/gta-reversed/blob/master/source/game_sa/Hud.cpp)
++und [Font.cpp](https://github.com/gta-reversed/gta-reversed/blob/master/source/game_sa/Font.cpp)
++abgeglichen. Textposition und Textfarbe werden beim jeweiligen PrintString-
++Aufruf in den Font-Puffer übernommen. Der vorherige Font-Farbzustand wird
++direkt danach wiederhergestellt. Die spätere Font-Puffer-Ausgabe wird nicht
++nochmals als Sprite verschoben.
++
++Sprites und Minimap verwenden Kopien der übergebenen 2D-Vertices. Die
++Anbindung ermittelt die tatsächlich aktiven RenderWare-Gerätefunktionen
++zur Laufzeit. Der Radar-Zeichenbereich umfasst Karte, Ring, Höhenanzeige und
++Blips; die Pausenmenü-Karte bleibt außerhalb dieses Bereichs. Die Minimap-
++Farbe ist eine Tönung, die Kartendetails und schwarze Umrisse erhält. Die
++Wanted-Farbe behält Helligkeitsunterschiede zwischen ausgefüllten und leeren
++Sternen bei. Ein weiterer Hook auf DrawWeaponIcon ist dafür nicht nötig;
++die vorhandene Waffenicon-Auswahl bleibt eigenständig.
++
++Die automatisierten Prüfungen des nativen Editors verwenden das gemeinsame
++Transformations- und Farbmodell mit synthetischen Eingaben. Sie ersetzen
++keinen Test der tatsächlichen Darstellung im laufenden GTA-Prozess.
++
++
++## Historischer Prüfstand r7 – 25. Oktober 2026
++
++Der damalige Quellstand war **NLBinder v.0.1.1 by KOBiRO, r7**.
+ [Bedienung und Installation](../NLBinder-0.1.1-r7-DE.md) sowie der
+ [r7-Nachtrag](CHANGELOG-DE.md#13-nachtrag-r7--25-oktober-2026) beschreiben
+ Waffenicons, Wanted-Dialogfolge und die ergänzten Startabgleiche. Die früheren
+diff --git a/docs/review/PUBLICATION.json b/docs/review/PUBLICATION.json
+index 25d6eb8..0692cd3 100644
+--- a/docs/review/PUBLICATION.json
++++ b/docs/review/PUBLICATION.json
+@@ -3,11 +3,11 @@
+   "baseline_import_commit": "2da75e6c54a098243bf00ab48d86c5e3ee3cd261",
+   "baseline_tag": "original-archive-92ce219",
+   "original_archive_commit_comment": "92ce21971bee2d166d830e23ad20950f1dc98921",
+-  "history_note": "Original archive and pinned-dependency imports remain intact. r7 is a subsequent Binder update; no previous history is rewritten.",
+-  "asi_sha256": "abdcca5a0f89ea6e2391834199eef83f267dfee4ac05e28cff7a946b3db9341d",
++  "history_note": "Original archive and pinned-dependency imports remain intact. r8 is a subsequent Binder update; no previous history is rewritten.",
++  "asi_sha256": "02401c76a69e40631698ac2e1a5ea5855f69fcbb3d9c0a9f7ee1909c28a30e3b",
+   "dependencies_import_commit": "3c8e11a76bc8d94962da0ce447a8d1a8b7c3eb83",
+   "dependencies_tag": "build-dependencies-baseline",
+-  "release": "v0.1.1-r7",
+-  "previous_release": "v0.1.1-r6",
+-  "previous_published_commit": "1f4f0991875e3aebd52694b49e3d9b5a0dbe5cde"
++  "release": "v0.1.1-r8",
++  "previous_release": "v0.1.1-r7",
++  "previous_published_commit": "1326a9af89dd8e4a764a0996e6d80bb28766b7a7"
+ }
+diff --git a/docs/review/README-GITHUB.md b/docs/review/README-GITHUB.md
+index db20702..c07fd5c 100644
+--- a/docs/review/README-GITHUB.md
++++ b/docs/review/README-GITHUB.md
+@@ -2,11 +2,11 @@
+ 
+ Vollständiger Prüfstand der Änderungen am **Perkys / NLBinder**, angepasst für
+ KOBiRO. Grundlage und ursprüngliche Urheberschaft bleiben beim Originalprojekt.
+-Der Stand lautet **NLBinder v.0.1.1 by KOBiRO, r7**. Neu sind eigene
+-Waffenicons mit 43 Waffenordnern, der vollständige `/speed ID`-Dialogablauf,
+-die Übernahme vorhandener Job-Skillpunkte nach der Statistik und die
+-Berücksichtigung bestätigter serverseitiger Motorstarts. Frühere Binder-
+-Anpassungen und die ursprüngliche Oberfläche bleiben enthalten.
++Der Stand lautet **NLBinder v.0.1.1 by KOBiRO, r8**. Neu ist **Mods →
++Interface** neben Waffenicons: native HUD-Elemente erhalten getrennte
++Positions- und Farbeinstellungen. Ein ausgewähltes Element wird mit der Maus
++verschoben und mit Esc gespeichert. Frühere Binder-Anpassungen und die
++ursprünglichen Oberflächenkomponenten bleiben enthalten.
+ 
+ Eigene Waffenbilder liegen unter **Dokumente → GTA San Andreas User Files →
+ NLBinder → Waffenicons**. Der Button **Waffenicons-Ordner öffnen** im Binder
+@@ -18,9 +18,9 @@ NLBinder → Waffenicons**. Der Button **Waffenicons-Ordner öffnen** im Binder
+ 2. [Technisches Verhalten, Prüfungen und Grenzen](../../docs/review/PRUEFUNG-DE.md)
+ 3. [Dateien im Vergleich zum Original](../../docs/review/DATEIVERGLEICH.md)
+ 4. [Herkunft und Abhängigkeiten](../../docs/review/DEPENDENCIES.md)
+-5. [Programmänderungen als GitHub-Vergleich](https://github.com/Kobiro57/PerkysBinderChangelog/compare/build-dependencies-baseline...v0.1.1-r7)
++5. [Programmänderungen als GitHub-Vergleich](https://github.com/Kobiro57/PerkysBinderChangelog/compare/build-dependencies-baseline...v0.1.1-r8)
+    oder als [kompakter Quellcode-Patch](../../docs/review/first-party-changes.patch)
+-6. [Änderungen seit r6](https://github.com/Kobiro57/PerkysBinderChangelog/compare/v0.1.1-r6...v0.1.1-r7)
++6. [Änderungen seit r7](https://github.com/Kobiro57/PerkysBinderChangelog/compare/v0.1.1-r7...v0.1.1-r8)
+ 
+ Der vollständige bearbeitete Code liegt in `src/`, `include/`, `res/`,
+ `tests/`, `tools/` und `third_party/`. Die Übersicht verlinkt direkt zu den
+@@ -44,17 +44,17 @@ die [aktuelle Build-Anleitung](../../docs/BUILD-README.md) beschreibt das Bauen
+ 
+ ## Geprüfte ASI
+ 
+-- [Keybinder.asi herunterladen](../../dist/NLBinder-0.1.1-r7/Keybinder.asi)
+-- [Komplettes ZIP-Paket herunterladen](../../dist/NLBinder-v0.1.1-KOBiRO-r7.zip)
+-- [Installation und Bedienung](../../dist/NLBinder-0.1.1-r7/LIESMICH.md)
+-- [Build- und Prüfangaben](../../dist/NLBinder-0.1.1-r7/BUILD-INFO.txt)
+-- [Maschinenlesbarer Prüfnachweis](../../dist/NLBinder-0.1.1-r7/PRUEFBERICHT.json)
+-- [SHA-256 der ausgelieferten ASI](../../dist/NLBinder-0.1.1-r7/SHA256SUMS.txt)
++- [Keybinder.asi herunterladen](../../dist/NLBinder-0.1.1-r8/Keybinder.asi)
++- [Komplettes ZIP-Paket herunterladen](../../dist/NLBinder-v0.1.1-KOBiRO-r8.zip)
++- [Installation und Bedienung](../../dist/NLBinder-0.1.1-r8/LIESMICH.md)
++- [Build- und Prüfangaben](../../dist/NLBinder-0.1.1-r8/BUILD-INFO.txt)
++- [Maschinenlesbarer Prüfnachweis](../../dist/NLBinder-0.1.1-r8/PRUEFBERICHT.json)
++- [SHA-256 der ausgelieferten ASI](../../dist/NLBinder-0.1.1-r8/SHA256SUMS.txt)
+ 
+ Die Nachweise gehören zum jeweiligen Binärstand: automatisierte Gesamttests,
+ Win32-Release-Build, PE-/Ressourcenvergleich und Reconnect-Helfertest mit
+ harmlosen Testprozessen. Ein echter Ingame-Test mit dem konkreten Server und
+-Launcher steht aus. Die [vorherige r6-Fassung](../../dist/NLBinder-0.1.1-r6/BUILD-INFO.txt)
++Launcher steht aus. Die [vorherige r7-Fassung](../../dist/NLBinder-0.1.1-r7/BUILD-INFO.txt)
+ und ihre Prüfsumme bleiben zur Nachverfolgung erhalten.
+ 
+ ## Weitere Updates
+diff --git a/docs/review/r8-validation.json b/docs/review/r8-validation.json
+new file mode 100644
+index 0000000..a9b068c
+--- /dev/null
++++ b/docs/review/r8-validation.json
+@@ -0,0 +1,37 @@
++{
++  "revision": "v0.1.1-r8",
++  "date": "2026-10-27",
++  "asi_bytes": 18443776,
++  "asi_sha256": "02401c76a69e40631698ac2e1a5ea5855f69fcbb3d9c0a9f7ee1909c28a30e3b",
++  "full_test_suite_exit_code": 0,
++  "release_build_exit_code": 0,
++  "focused_checks": {
++    "InterfaceEditor": 319,
++    "NativeHudEditor": 62,
++    "InterfaceLayoutSettings": 248,
++    "WeaponIconManager": 245,
++    "WeaponIconSettings": 29,
++    "StartupStatsSync": 252,
++    "StatsDialogRPCAdapter": 727,
++    "native_reconnect_helper": 18
++  },
++  "failures": 0,
++  "native_hud_elements": 11,
++  "per_element_position_and_optional_color": true,
++  "resolution_independent_position_offsets": true,
++  "drag_save_on_escape": true,
++  "legacy_three_hud_colors_migrated": true,
++  "explicit_native_color_overrides_legacy_color": true,
++  "finite_numbers_and_scientific_notation_settings_checked": true,
++  "native_bounds_cache_invalidation_checked": true,
++  "separate_weapon_icon_hook_preserved": true,
++  "server_textdraws_changed": false,
++  "weapon_template_directories": 43,
++  "pe32_x86_dll": true,
++  "embedded_helper_matches": true,
++  "archive_asi_matches": true,
++  "live_game_test_performed": false,
++  "archive_bytes": 10537959,
++  "archive_sha256": "912e8de8be0317e191f75feaf178746664182291b95a6806f7b9c0c7b1c09852",
++  "personal_pngs_in_archive": 0
++}
+diff --git a/include/InterfaceEditor.h b/include/InterfaceEditor.h
+index e862f19..cfac77a 100644
+--- a/include/InterfaceEditor.h
++++ b/include/InterfaceEditor.h
+@@ -1,5 +1,7 @@
+ #pragma once
+ 
++#include "InterfaceLayout.h"
++
+ #include <array>
+ #include <functional>
+ #include <string>
+@@ -13,6 +15,7 @@ class SettingsManager;
+ 
+ struct InterfacePreset {
+     std::string name;
++    HudLayout layout{};
+     bool show_master_hud = true;
+     bool show_radar = true;
+     bool show_area_name = true;
+@@ -59,6 +62,15 @@ public:
+     void RestoreOriginalValues();
+     void ReadSampLiveState();
+     void RenderVitalStatsNumbers(ImDrawList* drawList, bool overlayVisible, float uiScale);
++    // Bounds provider returns x, y, width, height in viewport pixels, including
++    // the current layout displacement.
++    void SetElementBoundsProvider(std::function<bool(HudElement, float&, float&, float&, float&)> provider);
++    bool StartElementMove(HudElement element);
++    bool MoveElementBy(float normalizedDeltaX, float normalizedDeltaY);
++    void FinishElementMove();
++    bool IsElementMoveModeActive() const;
++    HudElement GetMovingElement() const;
++    void RenderElementMoveMode(ImDrawList* drawList, float uiScale);
+ 
+     void SetActivePreset(int index);
+     int GetActivePreset() const;
+@@ -96,9 +108,6 @@ private:
+     bool original_show_clock_ = true;
+     bool original_show_vital_stats_ = true;
+     bool original_show_3d_markers_ = true;
+-    std::array<unsigned char, 4> original_health_palette_{{ 0, 0, 0, 0 }};
+-    std::array<unsigned char, 4> original_armor_palette_{{ 0, 0, 0, 0 }};
+-    std::array<unsigned char, 4> original_money_palette_{{ 0, 0, 0, 0 }};
+     SettingsManager* settings_manager_ = nullptr;
+     ::SAMPBridge* samp_bridge_ = nullptr;
+     std::function<void()> runtime_preset_changed_callback_;
+@@ -106,6 +115,9 @@ private:
+     bool hp_number_dragging_ = false;
+     bool armor_number_move_mode_ = false;
+     bool armor_number_dragging_ = false;
++    HudElement moving_element_ = HudElement::Count;
++    int moving_preset_ = -1;
++    std::function<bool(HudElement, float&, float&, float&, float&)> element_bounds_provider_;
+ };
+ 
+ } // namespace keybinder
+diff --git a/include/InterfaceEditorUI.h b/include/InterfaceEditorUI.h
+index 384d130..1ae17e9 100644
+--- a/include/InterfaceEditorUI.h
++++ b/include/InterfaceEditorUI.h
+@@ -14,6 +14,7 @@ public:
+     void SetSettingsManager(SettingsManager* manager);
+     void SetInterfaceEditor(InterfaceEditor* editor);
+     std::function<void()> OnSettingsChanged;
++    std::function<void()> OnRequestMoveMode;
+ 
+ private:
+     void SyncInterfaceEditorFromSettings();
+diff --git a/include/InterfaceLayout.h b/include/InterfaceLayout.h
+new file mode 100644
+index 0000000..da32b97
+--- /dev/null
++++ b/include/InterfaceLayout.h
+@@ -0,0 +1,56 @@
++#pragma once
++
++#include <algorithm>
++#include <array>
++#include <cmath>
++#include <cstddef>
++
++namespace keybinder {
++
++enum class HudElement : std::size_t {
++    Health, Armour, Breath, Money, Clock, Weapon, Ammo, Wanted,
++    VehicleName, ZoneName, Radar, Count
++};
++
++struct HudElementStyle {
++    // Resolution-independent displacement from the native GTA position.
++    float offset_x = 0.0f;
++    float offset_y = 0.0f;
++    bool custom_color = false;
++    std::array<float, 4> color{{1.0f, 1.0f, 1.0f, 1.0f}};
++};
++
++constexpr std::size_t kHudElementCount = static_cast<std::size_t>(HudElement::Count);
++using HudLayout = std::array<HudElementStyle, kHudElementCount>;
++
++struct HudElementDefinition {
++    HudElement element;
++    const char* key;
++    const char* label;
++};
++
++inline constexpr std::array<HudElementDefinition, kHudElementCount> kHudElements{{
++    {HudElement::Health, "health", "Leben"},
++    {HudElement::Armour, "armour", "Rüstung"},
++    {HudElement::Breath, "breath", "Atemluft"},
++    {HudElement::Money, "money", "Geldanzeige"},
++    {HudElement::Clock, "clock", "Uhrzeit"},
++    {HudElement::Weapon, "weapon", "Waffenicon"},
++    {HudElement::Ammo, "ammo", "Munition"},
++    {HudElement::Wanted, "wanted", "Wanted-Sterne"},
++    {HudElement::VehicleName, "vehicle_name", "Fahrzeugname"},
++    {HudElement::ZoneName, "zone_name", "Gebietsname"},
++    {HudElement::Radar, "radar", "Minimap"},
++}};
++
++inline HudElementStyle SanitizeHudElementStyle(HudElementStyle style) {
++    auto finiteClamp = [](float value, float low, float high, float fallback) {
++        return std::isfinite(value) ? (std::max)(low, (std::min)(value, high)) : fallback;
++    };
++    style.offset_x = finiteClamp(style.offset_x, -1.0f, 1.0f, 0.0f);
++    style.offset_y = finiteClamp(style.offset_y, -1.0f, 1.0f, 0.0f);
++    for (float& channel : style.color) channel = finiteClamp(channel, 0.0f, 1.0f, 1.0f);
++    return style;
++}
++
++} // namespace keybinder
+diff --git a/include/MainWindowUI.h b/include/MainWindowUI.h
+index 9b2e606..3c46049 100644
+--- a/include/MainWindowUI.h
++++ b/include/MainWindowUI.h
+@@ -67,6 +67,7 @@ enum class ModsSubtab {
+     Hitsound = 1,
+     Hud = 2,
+     WeaponIcons = 3,
++    Interface = 4,
+ };
+ 
+ enum class HudSpriteLibrarySubtab {
+@@ -97,6 +98,7 @@ public:
+     void SetWeaponIconManager(WeaponIconManager* manager);
+     void SetHitsoundPlayer(HitsoundPlayer* player);
+     void SetInterfaceEditor(InterfaceEditor* editor);
++    void SetInterfaceMoveRequestedCallback(std::function<void()> callback);
+     void SetTextureManager(TextureManager* manager);
+     void SetDeviceGetter(std::function<IDirect3DDevice9*()> getter);
+     
+diff --git a/include/NativeHudEditor.h b/include/NativeHudEditor.h
+new file mode 100644
+index 0000000..83470a4
+--- /dev/null
++++ b/include/NativeHudEditor.h
+@@ -0,0 +1,38 @@
++#pragma once
++
++#include "InterfaceLayout.h"
++#include <array>
++#include <cstdint>
++#include <string>
++
++namespace keybinder {
++
++// Transforms the game's own HUD draw calls. No parallel HUD, gameplay values,
++// server textdraws, chat or global HUD palette entries are changed.
++class NativeHudEditor {
++public:
++    bool Initialize();
++    void Shutdown();
++    void SetLayout(const HudLayout& layout);
++    const std::string& GetLastError() const { return last_error_; }
++    bool GetElementBounds(HudElement element, float& x, float& y, float& width, float& height) const;
++
++    // Shared by native callbacks and focused tests, using ARGB vertex colors.
++    void TransformPoint(HudElement element, float& x, float& y, float width, float height) const;
++    std::uint32_t TransformColor(HudElement element, std::uint32_t argb, bool text = false) const;
++    static HudElement ClassifyPlayerInfoText(const char* text);
++
++private:
++    friend struct NativeHudHooks;
++    struct Bounds { bool valid = false; float left = 0, top = 0, right = 0, bottom = 0; };
++    void ResetBounds(HudElement element);
++    void RecordPoint(HudElement element, float x, float y);
++    HudLayout layout_{};
++    std::array<Bounds, kHudElementCount> bounds_{};
++    std::string last_error_;
++    bool initialized_ = false;
++    int viewport_width_ = 0;
++    int viewport_height_ = 0;
++};
++
++} // namespace keybinder
+diff --git a/src/InterfaceEditor.cpp b/src/InterfaceEditor.cpp
+index 482d275..54e189e 100644
+--- a/src/InterfaceEditor.cpp
++++ b/src/InterfaceEditor.cpp
+@@ -1,17 +1,12 @@
+ #include "../include/InterfaceEditor.h"
+ #include "../include/SAMPBridge.h"
+ #include "../include/SettingsManager.h"
++#include "../include/ThemeManager.h"
+ #include "../include/imgui-1.92.7/imgui.h"
+ 
+ #ifndef KEYBINDER_TESTING
+ #include "plugin.h"
+-#include "common.h"
+-#include "safetyhook.hpp"
+-
+-#include "../include/Logger.h"
+-
+ #include "../include/plugin-sdk/plugin_sa/game_sa/CHud.h"
+-#include "../include/plugin-sdk/plugin_sa/game_sa/CHudColours.h"
+ #endif
+ 
+ #include <algorithm>
+@@ -38,60 +33,6 @@ namespace keybinder {
+ 
+ namespace {
+ 
+-#ifndef KEYBINDER_TESTING
+-constexpr unsigned char kHealthPaletteSlot = HUD_COLOUR_RED;
+-constexpr unsigned char kArmorPaletteSlot = HUD_COLOUR_GREY;
+-constexpr unsigned char kMoneyPaletteSlot = HUD_COLOUR_GREEN;
+-InterfaceEditor* g_active_interface_editor = nullptr;
+-safetyhook::InlineHook* g_draw_hud_hook = nullptr;
+-bool g_logged_draw_hook_execution = false;
+-
+-unsigned char ClampToByte(float value) {
+-    const float clamped = (std::max)(0.0f, (std::min)(value, 1.0f));
+-    return static_cast<unsigned char>(std::lround(clamped * 255.0f));
+-}
+-
+-void __cdecl HookedHudDraw() {
+-    InterfaceEditor* editor = g_active_interface_editor;
+-    if (editor == nullptr || g_draw_hud_hook == nullptr) {
+-        return;
+-    }
+-
+-    const InterfacePreset* preset = editor->GetPreset(editor->GetActivePreset());
+-    if (preset == nullptr) {
+-        g_draw_hud_hook->ccall<void>();
+-        return;
+-    }
+-
+-    g_draw_hud_hook->ccall<void>();
+-    if (!g_logged_draw_hook_execution) {
+-        keybinder::Logger::Debug("[InterfaceEditor] HUD draw hook executed");
+-        g_logged_draw_hook_execution = true;
+-    }
+-}
+-
+-bool InstallHook(safetyhook::InlineHook*& hook, void* target, void* destination) {
+-    if (hook != nullptr) {
+-        return true;
+-    }
+-
+-    auto createdHook = safetyhook::InlineHook::create(target, destination);
+-    if (!createdHook) {
+-        return false;
+-    }
+-
+-    hook = new safetyhook::InlineHook(std::move(*createdHook));
+-    return true;
+-}
+-
+-void RemoveHook(safetyhook::InlineHook*& hook) {
+-    if (hook != nullptr) {
+-        delete hook;
+-        hook = nullptr;
+-    }
+-}
+-#endif
+-
+ unsigned char ClampColorComponent(float value) {
+     const float clamped = (std::max)(0.0f, (std::min)(value, 1.0f));
+     return static_cast<unsigned char>(std::lround(clamped * 255.0f));
+@@ -101,10 +42,6 @@ int ClampPresetIndex(int index) {
+     return (std::max)(0, (std::min)(index, InterfaceEditor::PRESET_SLOT_COUNT - 1));
+ }
+ 
+-float ClampNormalizedPosition(float value) {
+-    return (std::max)(0.0f, (std::min)(value, 1.0f));
+-}
+-
+ float ClampSignedNormalizedOffset(float value) {
+     return (std::max)(-1.0f, (std::min)(value, 1.0f));
+ }
+@@ -179,50 +116,17 @@ bool TryReadPlayerVitalStats(const ::SAMPBridge* bridge, int& healthValue, int&
+ } // namespace
+ 
+ bool InterfaceEditor::Initialize() {
+-#ifndef KEYBINDER_TESTING
+-    g_active_interface_editor = this;
+-    if (!InstallHook(g_draw_hud_hook, reinterpret_cast<void*>(0x58FAE0), reinterpret_cast<void*>(&HookedHudDraw))) {
+-        keybinder::Logger::Error("[InterfaceEditor] Failed to install CHud::Draw hook");
+-        return false;
+-    }
+-    keybinder::Logger::Debug("[InterfaceEditor] Installed CHud::Draw hook");
+-    g_logged_draw_hook_execution = false;
+-#endif
+-
++    // NativeHudEditor owns all native draw hooks. This class owns presets and
++    // the move interaction, so no second hook of CHud::Draw is necessary.
+     return true;
+ }
+ 
+ void InterfaceEditor::Shutdown() {
+-#ifndef KEYBINDER_TESTING
+-    RemoveHook(g_draw_hud_hook);
+-    if (g_active_interface_editor == this) {
+-        g_active_interface_editor = nullptr;
+-    }
+-#endif
++    FinishElementMove();
+ }
+ 
+ void InterfaceEditor::ApplyCurrentPreset() {
+     if (!original_values_captured_) {
+-#ifndef KEYBINDER_TESTING
+-        original_show_area_name_ = !CHud::bScriptDontDisplayAreaName;
+-        const CRGBA originalHealth = HudColour.GetRGBA(kHealthPaletteSlot);
+-        original_health_palette_[0] = originalHealth.r;
+-        original_health_palette_[1] = originalHealth.g;
+-        original_health_palette_[2] = originalHealth.b;
+-        original_health_palette_[3] = originalHealth.a;
+-
+-        const CRGBA originalArmor = HudColour.GetRGBA(kArmorPaletteSlot);
+-        original_armor_palette_[0] = originalArmor.r;
+-        original_armor_palette_[1] = originalArmor.g;
+-        original_armor_palette_[2] = originalArmor.b;
+-        original_armor_palette_[3] = originalArmor.a;
+-
+-        const CRGBA originalMoney = HudColour.GetRGBA(kMoneyPaletteSlot);
+-        original_money_palette_[0] = originalMoney.r;
+-        original_money_palette_[1] = originalMoney.g;
+-        original_money_palette_[2] = originalMoney.b;
+-        original_money_palette_[3] = originalMoney.a;
+-#else
+         original_show_master_hud_ = CHud::m_Wants_To_Draw_Hud;
+         original_show_radar_ = !CHud::bScriptDontDisplayRadar;
+         original_show_area_name_ = !CHud::bScriptDontDisplayAreaName;
+@@ -230,34 +134,14 @@ void InterfaceEditor::ApplyCurrentPreset() {
+         original_show_clock_ = CHud::bDrawClock;
+         original_show_vital_stats_ = CHud::bDrawingVitalStats;
+         original_show_3d_markers_ = CHud::m_bDraw3dMarkers;
+-#endif
+         original_values_captured_ = true;
+     }
+ 
+-    InterfacePreset* preset = GetPreset(GetActivePreset());
+-    if (preset == nullptr) {
+-        return;
+-    }
++    const InterfacePreset* preset = GetPreset(GetActivePreset());
++    if (preset == nullptr) return;
+ 
+-#ifndef KEYBINDER_TESTING
+-    HudColour.SetRGBAValue(
+-        kHealthPaletteSlot,
+-        ClampToByte(preset->hp_color_r),
+-        ClampToByte(preset->hp_color_g),
+-        ClampToByte(preset->hp_color_b),
+-        ClampToByte(preset->hp_color_a));
+-    HudColour.SetRGBAValue(
+-        kArmorPaletteSlot,
+-        ClampToByte(preset->armor_color_r),
+-        ClampToByte(preset->armor_color_g),
+-        ClampToByte(preset->armor_color_b),
+-        ClampToByte(preset->armor_color_a));
+-    HudColour.SetRGBAValue(
+-        kMoneyPaletteSlot,
+-        ClampToByte(preset->money_color_r),
+-        ClampToByte(preset->money_color_g),
+-        ClampToByte(preset->money_color_b),
+-        ClampToByte(preset->money_color_a));
++    // Colors are applied only inside the corresponding native draw call.
++    // Keeping the shared GTA palette unchanged avoids recoloring other HUD text.
+     CHud::m_Wants_To_Draw_Hud = preset->show_master_hud;
+     CHud::bScriptDontDisplayRadar = !preset->show_radar;
+     CHud::bScriptDontDisplayAreaName = !preset->show_area_name;
+@@ -265,49 +149,10 @@ void InterfaceEditor::ApplyCurrentPreset() {
+     CHud::bDrawClock = preset->show_clock;
+     CHud::bDrawingVitalStats = preset->show_vital_stats;
+     CHud::m_bDraw3dMarkers = preset->show_3d_markers;
+-#else
+-    CHud::m_Wants_To_Draw_Hud = preset->show_master_hud;
+-    CHud::bScriptDontDisplayRadar = !preset->show_radar;
+-    CHud::bScriptDontDisplayAreaName = !preset->show_area_name;
+-    CHud::bScriptDontDisplayVehicleName = !preset->show_vehicle_name;
+-    CHud::bDrawClock = preset->show_clock;
+-    CHud::bDrawingVitalStats = preset->show_vital_stats;
+-    CHud::m_bDraw3dMarkers = preset->show_3d_markers;
+-#endif
+ }
+ 
+ void InterfaceEditor::RestoreOriginalValues() {
+-    if (!original_values_captured_) {
+-        return;
+-    }
+-
+-#ifndef KEYBINDER_TESTING
+-    HudColour.SetRGBAValue(
+-        kHealthPaletteSlot,
+-        original_health_palette_[0],
+-        original_health_palette_[1],
+-        original_health_palette_[2],
+-        original_health_palette_[3]);
+-    HudColour.SetRGBAValue(
+-        kArmorPaletteSlot,
+-        original_armor_palette_[0],
+-        original_armor_palette_[1],
+-        original_armor_palette_[2],
+-        original_armor_palette_[3]);
+-    HudColour.SetRGBAValue(
+-        kMoneyPaletteSlot,
+-        original_money_palette_[0],
+-        original_money_palette_[1],
+-        original_money_palette_[2],
+-        original_money_palette_[3]);
+-    CHud::m_Wants_To_Draw_Hud = original_show_master_hud_;
+-    CHud::bScriptDontDisplayRadar = !original_show_radar_;
+-    CHud::bScriptDontDisplayAreaName = !original_show_area_name_;
+-    CHud::bScriptDontDisplayVehicleName = !original_show_vehicle_name_;
+-    CHud::bDrawClock = original_show_clock_;
+-    CHud::bDrawingVitalStats = original_show_vital_stats_;
+-    CHud::m_bDraw3dMarkers = original_show_3d_markers_;
+-#else
++    if (!original_values_captured_) return;
+     CHud::m_Wants_To_Draw_Hud = original_show_master_hud_;
+     CHud::bScriptDontDisplayRadar = !original_show_radar_;
+     CHud::bScriptDontDisplayAreaName = !original_show_area_name_;
+@@ -315,7 +160,6 @@ void InterfaceEditor::RestoreOriginalValues() {
+     CHud::bDrawClock = original_show_clock_;
+     CHud::bDrawingVitalStats = original_show_vital_stats_;
+     CHud::m_bDraw3dMarkers = original_show_3d_markers_;
+-#endif
+     original_values_captured_ = false;
+ }
+ 
+@@ -324,6 +168,131 @@ void InterfaceEditor::ReadSampLiveState() {
+     // values directly from CChat / CScoreboard in the UI layer when available.
+ }
+ 
++void InterfaceEditor::SetElementBoundsProvider(std::function<bool(HudElement, float&, float&, float&, float&)> provider) {
++    element_bounds_provider_ = std::move(provider);
++}
++
++bool InterfaceEditor::StartElementMove(HudElement element) {
++    if (static_cast<std::size_t>(element) >= kHudElementCount) return false;
++    if (IsElementMoveModeActive()) FinishElementMove();
++    moving_element_ = element;
++    moving_preset_ = active_preset_;
++    hp_number_move_mode_ = armor_number_move_mode_ = false;
++    hp_number_dragging_ = armor_number_dragging_ = false;
++    InterfacePreset* preset = GetPreset(moving_preset_);
++    preset->layout[static_cast<std::size_t>(element)] = SanitizeHudElementStyle(preset->layout[static_cast<std::size_t>(element)]);
++    return true;
++}
++
++bool InterfaceEditor::MoveElementBy(float normalizedDeltaX, float normalizedDeltaY) {
++    if (!IsElementMoveModeActive() || !std::isfinite(normalizedDeltaX) || !std::isfinite(normalizedDeltaY)) return false;
++    InterfacePreset* preset = GetPreset(moving_preset_);
++    HudElementStyle& style = preset->layout[static_cast<std::size_t>(moving_element_)];
++    style.offset_x += normalizedDeltaX;
++    style.offset_y += normalizedDeltaY;
++    style = SanitizeHudElementStyle(style);
++    return true;
++}
++
++void InterfaceEditor::FinishElementMove() {
++    if (!IsElementMoveModeActive()) return;
++    const int completedSlot = moving_preset_;
++    moving_element_ = HudElement::Count;
++    moving_preset_ = -1;
++    if (settings_manager_ != nullptr) {
++        Settings& settings = settings_manager_->GetMutable();
++        if (settings.interface_editor_saved_presets.size() < PRESET_SLOT_COUNT) {
++            settings.interface_editor_saved_presets.resize(PRESET_SLOT_COUNT);
++        }
++        settings.interface_editor_saved_presets[static_cast<std::size_t>(completedSlot)] = *GetPreset(completedSlot);
++    }
++    if (runtime_preset_changed_callback_) runtime_preset_changed_callback_();
++}
++
++bool InterfaceEditor::IsElementMoveModeActive() const {
++    return moving_preset_ >= 0 && moving_preset_ < PRESET_SLOT_COUNT && static_cast<std::size_t>(moving_element_) < kHudElementCount;
++}
++
++HudElement InterfaceEditor::GetMovingElement() const {
++    return IsElementMoveModeActive() ? moving_element_ : HudElement::Count;
++}
++
++void InterfaceEditor::RenderElementMoveMode(ImDrawList* drawList, float uiScale) {
++    if (!IsElementMoveModeActive()) return;
++    if (ImGui::IsKeyPressed(ImGuiKey_Escape, false)) {
++        FinishElementMove();
++        return;
++    }
++    ImGuiViewport* viewport = ImGui::GetMainViewport();
++    if (drawList == nullptr || viewport == nullptr || viewport->Size.x <= 0.0f || viewport->Size.y <= 0.0f) return;
++
++    const std::size_t elementIndex = static_cast<std::size_t>(moving_element_);
++    const HudElementStyle& style = GetPreset(moving_preset_)->layout[elementIndex];
++    // Fallback handles also allow moving elements which are currently invisible
++    // (for example armour without a vest). Observed native bounds take priority.
++    constexpr std::array<std::array<float, 4>, kHudElementCount> defaultRects{{
++        {{499, 77, 109, 10}}, {{546, 48, 62, 10}}, {{546, 62, 62, 10}},
++        {{480, 89, 128, 24}}, {{548, 22, 60, 24}}, {{546, 20, 62, 62}},
++        {{540, 64, 68, 20}}, {{490, 114, 118, 24}}, {{400, 344, 208, 32}},
++        {{400, 344, 208, 32}}, {{40, 344, 94, 76}}
++    }};
++    const auto& fallback = defaultRects[elementIndex];
++    float left = viewport->Size.x * (fallback[0] / 640.0f + style.offset_x);
++    float top = viewport->Size.y * (fallback[1] / 448.0f + style.offset_y);
++    float right = left + viewport->Size.x * fallback[2] / 640.0f;
++    float bottom = top + viewport->Size.y * fallback[3] / 448.0f;
++    if (element_bounds_provider_) {
++        float observedLeft = 0.0f, observedTop = 0.0f, observedWidth = 0.0f, observedHeight = 0.0f;
++        if (element_bounds_provider_(moving_element_, observedLeft, observedTop, observedWidth, observedHeight)
++            && std::isfinite(observedLeft) && std::isfinite(observedTop) && std::isfinite(observedWidth) && std::isfinite(observedHeight)
++            && observedWidth > 0.0f && observedHeight > 0.0f) {
++            left = observedLeft;
++            top = observedTop;
++            right = observedLeft + observedWidth;
++            bottom = observedTop + observedHeight;
++        }
++    }
++
++    const float scale = (std::max)(0.5f, uiScale);
++    const float pad = 6.0f * scale;
++    const ImVec2 handleMin(viewport->Pos.x + left - pad, viewport->Pos.y + top - pad);
++    const ImVec2 handleSize((std::max)(32.0f * scale, right - left + 2 * pad), (std::max)(28.0f * scale, bottom - top + 2 * pad));
++    ImGui::SetNextWindowPos(viewport->Pos);
++    ImGui::SetNextWindowSize(viewport->Size);
++    ImGui::SetNextWindowBgAlpha(0.0f);
++    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
++    const ImGuiWindowFlags flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove |
++        ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoNav |
++        ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse;
++    if (ImGui::Begin("##NativeInterfaceMoveLayer", nullptr, flags)) {
++        ImGui::SetCursorScreenPos(handleMin);
++        ImGui::InvisibleButton("##NativeInterfaceDragHandle", handleSize);
++        if (ImGui::IsItemHovered() || ImGui::IsItemActive()) ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeAll);
++        if (ImGui::IsItemActive() && ImGui::IsMouseDragging(ImGuiMouseButton_Left)) {
++            const ImVec2 delta = ImGui::GetIO().MouseDelta;
++            const float width = right - left, height = bottom - top;
++            const float nextLeft = (std::max)(0.0f, (std::min)(left + delta.x, (std::max)(0.0f, viewport->Size.x - width)));
++            const float nextTop = (std::max)(0.0f, (std::min)(top + delta.y, (std::max)(0.0f, viewport->Size.y - height)));
++            MoveElementBy((nextLeft - left) / viewport->Size.x, (nextTop - top) / viewport->Size.y);
++        }
++    }
++    ImGui::End();
++    ImGui::PopStyleVar();
++
++    const auto& theme = ThemeManager::Instance();
++    const ImU32 accent = ImGui::GetColorU32(theme.GetColor(ThemeColorRole::Accent));
++    drawList->AddRect(handleMin, ImVec2(handleMin.x + handleSize.x, handleMin.y + handleSize.y), accent, 5.0f * scale, 0, 2.0f * scale);
++    const std::string hint = std::string(kHudElements[elementIndex].label) + ": mit der Maus verschieben | Esc speichert";
++    const ImVec2 hintSize = ImGui::CalcTextSize(hint.c_str());
++    const ImVec2 hintMin(viewport->Pos.x + (viewport->Size.x - hintSize.x) * 0.5f - 10.0f * scale, viewport->Pos.y + 18.0f * scale);
++    const ImVec2 hintMax(hintMin.x + hintSize.x + 20.0f * scale, hintMin.y + hintSize.y + 16.0f * scale);
++    ImVec4 background = theme.GetColor(ThemeColorRole::Surface);
++    background.w = 0.93f;
++    drawList->AddRectFilled(hintMin, hintMax, ImGui::GetColorU32(background), 6.0f * scale);
++    drawList->AddRect(hintMin, hintMax, accent, 6.0f * scale);
++    drawList->AddText(ImVec2(hintMin.x + 10.0f * scale, hintMin.y + 8.0f * scale), ImGui::GetColorU32(theme.GetColor(ThemeColorRole::TextPrimary)), hint.c_str());
++}
++
+ void InterfaceEditor::RenderVitalStatsNumbers(ImDrawList* drawList, bool overlayVisible, float uiScale) {
+     if (drawList == nullptr) {
+         return;
+@@ -518,7 +487,9 @@ void InterfaceEditor::RenderVitalStatsNumbers(ImDrawList* drawList, bool overlay
+ }
+ 
+ void InterfaceEditor::SetActivePreset(int index) {
+-    active_preset_ = ClampPresetIndex(index);
++    const int nextPreset = ClampPresetIndex(index);
++    if (nextPreset != active_preset_) FinishElementMove();
++    active_preset_ = nextPreset;
+ }
+ 
+ int InterfaceEditor::GetActivePreset() const {
+diff --git a/src/InterfaceEditorUI.cpp b/src/InterfaceEditorUI.cpp
+index 59bb63a..5077f76 100644
+--- a/src/InterfaceEditorUI.cpp
++++ b/src/InterfaceEditorUI.cpp
+@@ -42,15 +42,25 @@ std::string GetPresetSlotLabel(const InterfacePreset& preset, int index) {
+     return slotLabel + " - " + preset.name;
+ }
+ 
+-ImVec4 LoadColor(float r, float g, float b, float a) {
+-    return ImVec4(r, g, b, a);
+-}
+-
+-void StoreColor(InterfacePreset& preset, const ImVec4& color, float InterfacePreset::*r, float InterfacePreset::*g, float InterfacePreset::*b, float InterfacePreset::*a) {
+-    preset.*r = color.x;
+-    preset.*g = color.y;
+-    preset.*b = color.z;
+-    preset.*a = color.w;
++void SyncLegacyVitalColors(InterfacePreset& preset, HudElement element) {
++    const HudElementStyle& style = preset.layout[static_cast<std::size_t>(element)];
++    const InterfacePreset defaults;
++    if (element == HudElement::Health) {
++        preset.hp_color_r = style.custom_color ? style.color[0] : defaults.hp_color_r;
++        preset.hp_color_g = style.custom_color ? style.color[1] : defaults.hp_color_g;
++        preset.hp_color_b = style.custom_color ? style.color[2] : defaults.hp_color_b;
++        preset.hp_color_a = style.custom_color ? style.color[3] : defaults.hp_color_a;
++    } else if (element == HudElement::Armour) {
++        preset.armor_color_r = style.custom_color ? style.color[0] : defaults.armor_color_r;
++        preset.armor_color_g = style.custom_color ? style.color[1] : defaults.armor_color_g;
++        preset.armor_color_b = style.custom_color ? style.color[2] : defaults.armor_color_b;
++        preset.armor_color_a = style.custom_color ? style.color[3] : defaults.armor_color_a;
++    } else if (element == HudElement::Money) {
++        preset.money_color_r = style.custom_color ? style.color[0] : defaults.money_color_r;
++        preset.money_color_g = style.custom_color ? style.color[1] : defaults.money_color_g;
++        preset.money_color_b = style.custom_color ? style.color[2] : defaults.money_color_b;
++        preset.money_color_a = style.custom_color ? style.color[3] : defaults.money_color_a;
++    }
+ }
+ 
+ } // namespace
+@@ -66,7 +76,7 @@ void InterfaceEditorUI::SetInterfaceEditor(InterfaceEditor* editor) {
+ }
+ 
+ void InterfaceEditorUI::SyncInterfaceEditorFromSettings() {
+-    if (settingsManager_ == nullptr || interfaceEditor_ == nullptr) {
++    if (settingsManager_ == nullptr || interfaceEditor_ == nullptr || interfaceEditor_->IsElementMoveModeActive()) {
+         return;
+     }
+ 
+@@ -102,14 +112,22 @@ void InterfaceEditorUI::Render() {
+         return;
+     }
+ 
++    if (interfaceEditor_->IsElementMoveModeActive()) {
++        UIComponents::BeginCard("interface_move_active");
++        UIComponents::CardHeader("Interface wird verschoben", "Mit der Maus verschieben, Esc speichert die Position.");
++        if (UIComponents::PrimaryButton("Position speichern")) interfaceEditor_->FinishElementMove();
++        UIComponents::EndCard();
++        return;
++    }
+     Settings& settings = settingsManager_->GetMutable();
+     EnsureSavedPresetSlots(settings);
+     SyncInterfaceEditorFromSettings();
+ 
+     bool gtaPresetChanged = false;
++    HudElement requestedMove = HudElement::Count;
+ 
+     UIComponents::BeginCard("interface_editor_presets", 0.0f);
+-    UIComponents::CardHeader("Preset-Verwaltung", "Slots speichern Farben und Zonentext");
++    UIComponents::CardHeader("Preset-Verwaltung", "Positionen und Farben für jedes GTA-HUD-Element");
+ 
+     int selectedSlot = ClampPresetIndex(settings.interface_editor_active_preset_index);
+     std::array<std::string, InterfaceEditor::PRESET_SLOT_COUNT> slotLabels;
+@@ -162,32 +180,63 @@ void InterfaceEditorUI::Render() {
+ 
+     ImGui::Dummy(ImVec2(0.0f, Theme().GetSpacing(ThemeSpacingRole::CardGap)));
+ 
+-    UIComponents::Separator("HUD-Farben");
++    UIComponents::SectionHeader("Interface anpassen", "Jedes Element einzeln verschieben oder färben. Esc speichert im Verschiebemodus.");
++    ImGui::PushStyleColor(ImGuiCol_Text, Theme().GetColor(ThemeColorRole::TextMuted));
++    ImGui::TextWrapped("Die Einstellungen gelten für das GTA-HUD. Servereigene Textanzeigen und Menüs werden vom Server gestaltet.");
++    ImGui::PopStyleColor();
+     ImGui::Dummy(ImVec2(0.0f, Theme().GetSpacing(ThemeSpacingRole::CardGap)));
+ 
+-    if (ImGui::BeginTable("interface_editor_color_table", 3, ImGuiTableFlags_SizingStretchSame)) {
+-        ImGui::TableNextColumn();
+-        ImVec4 hpColor = LoadColor(currentPreset.hp_color_r, currentPreset.hp_color_g, currentPreset.hp_color_b, currentPreset.hp_color_a);
+-        if (UIComponents::ColorPicker("HP", &hpColor)) {
+-            StoreColor(currentPreset, hpColor, &InterfacePreset::hp_color_r, &InterfacePreset::hp_color_g, &InterfacePreset::hp_color_b, &InterfacePreset::hp_color_a);
+-            gtaPresetChanged = true;
++    for (const HudElementDefinition& definition : kHudElements) {
++        const std::size_t index = static_cast<std::size_t>(definition.element);
++        HudElementStyle& style = currentPreset.layout[index];
++        ImGui::PushID(definition.key);
++        UIComponents::BeginCard("interface_element");
++        UIComponents::CardHeader(definition.label);
++        if (ImGui::BeginTable("interface_element_controls", 2, ImGuiTableFlags_SizingStretchSame)) {
++            ImGui::TableNextColumn();
++            UIComponents::Separator("Position");
++            if (UIComponents::PrimaryButton("Mit der Maus verschieben")) requestedMove = definition.element;
++            float horizontal = style.offset_x * 100.0f;
++            float vertical = style.offset_y * 100.0f;
++            bool positionChanged = UIComponents::InputFloat("Horizontal (%)", &horizontal);
++            positionChanged = UIComponents::InputFloat("Vertikal (%)", &vertical) || positionChanged;
++            if (positionChanged) {
++                style.offset_x = horizontal / 100.0f;
++                style.offset_y = vertical / 100.0f;
++                style = SanitizeHudElementStyle(style);
++                gtaPresetChanged = true;
++            }
++            if (UIComponents::SecondaryButton("Position zurücksetzen")) {
++                style.offset_x = style.offset_y = 0.0f;
++                gtaPresetChanged = true;
++            }
++            ImGui::TableNextColumn();
++            UIComponents::Separator("Farbe");
++            if (UIComponents::Toggle("Eigene Farbe", &style.custom_color)) {
++                SyncLegacyVitalColors(currentPreset, definition.element);
++                gtaPresetChanged = true;
++            }
++            if (style.custom_color) {
++                ImVec4 color(style.color[0], style.color[1], style.color[2], style.color[3]);
++                if (UIComponents::ColorPicker("Farbe auswählen", &color)) {
++                    style.color = {{color.x, color.y, color.z, color.w}};
++                    style = SanitizeHudElementStyle(style);
++                    SyncLegacyVitalColors(currentPreset, definition.element);
++                    gtaPresetChanged = true;
++                }
++            } else {
++                UIComponents::InfoRow("Farbe", "Originalfarbe");
++            }
++            if (UIComponents::SecondaryButton("Originalfarbe wiederherstellen")) {
++                style.custom_color = false;
++                SyncLegacyVitalColors(currentPreset, definition.element);
++                gtaPresetChanged = true;
++            }
++            ImGui::EndTable();
+         }
+-
+-        ImGui::TableNextColumn();
+-        ImVec4 armorColor = LoadColor(currentPreset.armor_color_r, currentPreset.armor_color_g, currentPreset.armor_color_b, currentPreset.armor_color_a);
+-        if (UIComponents::ColorPicker("Armor", &armorColor)) {
+-            StoreColor(currentPreset, armorColor, &InterfacePreset::armor_color_r, &InterfacePreset::armor_color_g, &InterfacePreset::armor_color_b, &InterfacePreset::armor_color_a);
+-            gtaPresetChanged = true;
+-        }
+-
+-        ImGui::TableNextColumn();
+-        ImVec4 moneyColor = LoadColor(currentPreset.money_color_r, currentPreset.money_color_g, currentPreset.money_color_b, currentPreset.money_color_a);
+-        if (UIComponents::ColorPicker("Geld", &moneyColor)) {
+-            StoreColor(currentPreset, moneyColor, &InterfacePreset::money_color_r, &InterfacePreset::money_color_g, &InterfacePreset::money_color_b, &InterfacePreset::money_color_a);
+-            gtaPresetChanged = true;
+-        }
+-
+-        ImGui::EndTable();
++        UIComponents::EndCard();
++        ImGui::PopID();
++        ImGui::Dummy(ImVec2(0.0f, Theme().GetSpacing(ThemeSpacingRole::CardGap)));
+     }
+ 
+     if (gtaPresetChanged) {
+@@ -198,6 +247,10 @@ void InterfaceEditorUI::Render() {
+             OnSettingsChanged();
+         }
+     }
++    if (requestedMove != HudElement::Count) {
++        SyncInterfaceEditorFromSettings();
++        if (interfaceEditor_->StartElementMove(requestedMove) && OnRequestMoveMode) OnRequestMoveMode();
++    }
+ }
+ 
+ } // namespace keybinder
+diff --git a/src/Main.cpp b/src/Main.cpp
+index c42a4c9..a0779a1 100644
+--- a/src/Main.cpp
++++ b/src/Main.cpp
+@@ -26,6 +26,7 @@
+ #include "../include/ImGuiOverlay.h"
+ #include "../include/InputManager.h"
+ #include "../include/InterfaceEditor.h"
++#include "../include/NativeHudEditor.h"
+ #include "../include/KeybindManager.h"
+ #include "../include/Logger.h"
+ #include "../include/MainWindowUI.h"
+@@ -374,6 +375,7 @@ public:
+             keybinder::Logger::Error("Failed to save config on emergency shutdown");
+         }
+ 
++        nativeHudEditor_.Shutdown();
+         interfaceEditor_.Shutdown();
+         interfaceEditor_.RestoreOriginalValues();
+         onlineOverlayRenderer_.Shutdown();
+@@ -467,8 +469,14 @@ public:
+         interfaceEditor_.SetSettingsManager(&settingsManager_);
+         interfaceEditor_.SetSAMPBridge(&bridge_);
+         interfaceEditor_.SetOnRuntimePresetChanged([&]() {
++            if (const auto* preset = interfaceEditor_.GetPreset(interfaceEditor_.GetActivePreset())) {
++                nativeHudEditor_.SetLayout(preset->layout);
++            }
+             keybindManager_.Save(&settingsManager_);
+         });
++        interfaceEditor_.SetElementBoundsProvider([&](keybinder::HudElement element, float& x, float& y, float& width, float& height) {
++            return nativeHudEditor_.GetElementBounds(element, x, y, width, height);
++        });
+         quickMap_.Initialize(&settingsManager_, &textureManager_, &bridge_);
+         quickMap_.SetInputGateCallback([&]() {
+             return overlay_.IsVisible();
+@@ -547,7 +555,7 @@ public:
+         inputManager_.SetSAMPBridge(&bridge_);
+         inputManager_.SetImGuiOverlay(&overlay_);
+         inputManager_.SetQuickMapVisibleCallback([&]() {
+-            return quickMap_.IsVisible();
++            return quickMap_.IsVisible() || interfaceEditor_.IsElementMoveModeActive();
+         });
+         overlay_.SetEarlyKeybindHandler([&](int key, bool keyDown) {
+             return inputManager_.HandleEarlyKeyEvent(key, keyDown);
+@@ -561,7 +569,8 @@ public:
+         mainWindowUI_.SetSAMPBridge(&bridge_);
+         bridge_.SetEngineInputBlockedCallback([&]() {
+             return overlay_.IsVisible() || quickMap_.IsVisible()
+-                || onlineOverlayRenderer_.IsPersistentOverlayMoveModeActive();
++                || onlineOverlayRenderer_.IsPersistentOverlayMoveModeActive()
++                || interfaceEditor_.IsElementMoveModeActive();
+         });
+         mainWindowUI_.SetHitmarker(&hitmarker_);
+         mainWindowUI_.SetHitsoundPlayer(&hitsoundPlayer_);
+@@ -570,6 +579,11 @@ public:
+         mainWindowUI_.SetHudSpriteManager(&hudSpriteManager_);
+         mainWindowUI_.SetWeaponIconManager(&weaponIconManager_);
+         mainWindowUI_.SetInterfaceEditor(&interfaceEditor_);
++        mainWindowUI_.SetInterfaceMoveRequestedCallback([&]() {
++            onlineOverlayRenderer_.SetPersistentOverlayMoveMode(false);
++            quickMap_.Hide();
++            overlay_.Hide();
++        });
+         mainWindowUI_.SetRssFeedManager(&rssFeedManager_);
+         mainWindowUI_.SetOnlineDataManager(&onlineDataManager_);
+         mainWindowUI_.SetOnlineOverlayController(&onlineOverlayController_);
+@@ -618,6 +632,7 @@ public:
+         });
+         overlay_.SetVitalStatsRenderCallback([&]() {
+             interfaceEditor_.RenderVitalStatsNumbers(ImGui::GetForegroundDrawList(), overlay_.IsVisible(), overlay_.GetCurrentScale());
++            interfaceEditor_.RenderElementMoveMode(ImGui::GetForegroundDrawList(), overlay_.GetCurrentScale());
+         });
+         overlay_.SetSpeedometerRenderCallback([&]() {
+             const keybinder::Settings& settings = settingsManager_.Get();
+@@ -646,10 +661,12 @@ public:
+             keybindManager_.Save(&settingsManager_);
+         });
+         overlay_.SetAuxiliaryInteractionActiveCallback([&]() {
+-            return onlineOverlayRenderer_.IsPersistentOverlayMoveModeActive();
++            return onlineOverlayRenderer_.IsPersistentOverlayMoveModeActive()
++                || interfaceEditor_.IsElementMoveModeActive();
+         });
+         overlay_.SetAuxiliaryInteractionCancelCallback([&]() {
+             onlineOverlayRenderer_.SetPersistentOverlayMoveMode(false);
++            interfaceEditor_.FinishElementMove();
+         });
+ 
+         onlineEventDetector_.Initialize(&settingsManager_);
+@@ -828,6 +845,9 @@ public:
+             squareMap_.Initialize();
+             hudSpriteManager_.Initialize();
+             weaponIconManager_.Initialize();
++            if (!nativeHudEditor_.Initialize()) {
++                keybinder::Logger::Error("Interface hooks failed: %s", nativeHudEditor_.GetLastError().c_str());
++            }
+             if (!interfaceEditor_.Initialize()) {
+                 keybinder::Logger::Error("InterfaceEditor hooks failed to initialize; custom zone text may not work");
+             }
+@@ -860,6 +880,9 @@ public:
+             inputManager_.Initialize();
+             inputManager_.Update();
+             interfaceEditor_.ApplyCurrentPreset();
++            if (const auto* preset = interfaceEditor_.GetPreset(interfaceEditor_.GetActivePreset())) {
++                nativeHudEditor_.SetLayout(preset->layout);
++            }
+ 
+             static bool overlayWasVisible = false;
+             static bool quickMapWasVisible = false;
+@@ -948,7 +971,7 @@ public:
+             }
+             inputManager_.ApplyEarlySuppressedKeys();
+ 
+-            if (overlay_.IsVisible()) {
++            if (overlay_.IsVisible() || interfaceEditor_.IsElementMoveModeActive()) {
+                 // Suppress mouse-look before the game consumes per-frame input.
+                 // The later HUD/render passes are too late to reliably stop camera
+                 // movement, but we intentionally keep this suppression scoped to
+@@ -998,6 +1021,7 @@ public:
+             quickMap_.Shutdown();
+             speedometerManager_.Shutdown();
+             textDrawAdapter_.Shutdown();
++            nativeHudEditor_.Shutdown();
+             interfaceEditor_.Shutdown();
+             interfaceEditor_.RestoreOriginalValues();
+             keybinder::Logger::Info("Phase 2: Shutting down SAMPBridge");
+@@ -1054,6 +1078,7 @@ private:
+     static keybinder::HudSpriteManager hudSpriteManager_;
+     static keybinder::WeaponIconManager weaponIconManager_;
+     static keybinder::InterfaceEditor interfaceEditor_;
++    static keybinder::NativeHudEditor nativeHudEditor_;
+     static keybinder::TextureManager textureManager_;
+     static keybinder::QuickMap quickMap_;
+     static keybinder::OnlineOverlayRenderer onlineOverlayRenderer_;
+@@ -1083,6 +1108,7 @@ keybinder::SquareMap Keybinder::squareMap_{};
+ keybinder::HudSpriteManager Keybinder::hudSpriteManager_{};
+ keybinder::WeaponIconManager Keybinder::weaponIconManager_{};
+ keybinder::InterfaceEditor Keybinder::interfaceEditor_{};
++keybinder::NativeHudEditor Keybinder::nativeHudEditor_{};
+ keybinder::TextureManager Keybinder::textureManager_{};
+ keybinder::QuickMap Keybinder::quickMap_{};
+ keybinder::OnlineOverlayRenderer Keybinder::onlineOverlayRenderer_{};
+diff --git a/src/MainWindowUI.cpp b/src/MainWindowUI.cpp
+index 0556c17..f9d9223 100644
+--- a/src/MainWindowUI.cpp
++++ b/src/MainWindowUI.cpp
+@@ -636,6 +636,10 @@ void MainWindowUI::SetInterfaceEditor(InterfaceEditor* editor) {
+     interfaceEditorUI_.SetInterfaceEditor(editor);
+ }
+ 
++void MainWindowUI::SetInterfaceMoveRequestedCallback(std::function<void()> callback) {
++    interfaceEditorUI_.OnRequestMoveMode = std::move(callback);
++}
++
+ void MainWindowUI::SyncUiOpenSettingsBuffers() {
+     if (settingsManager_ == nullptr) {
+         CopyStringToBuffer({}, uiOpenCommandPrimaryBuffer_.data(), uiOpenCommandPrimaryBuffer_.size());
+@@ -1109,14 +1113,15 @@ void MainWindowUI::RenderModsView() {
+         case ModsSubtab::WeaponIcons:
+             weaponIconsUI_.Render();
+             break;
++        case ModsSubtab::Interface:
++            interfaceEditorUI_.Render();
++            break;
+     }
+ }
+ 
+ void MainWindowUI::RenderHudModsTab() {
+     squareMapUI_.Render();
+     ImGui::Spacing();
+-    interfaceEditorUI_.Render();
+-    ImGui::Spacing();
+     UIComponents::BeginCard("hud-sprite-library", 0.0f);
+     RenderHudSpriteLibraryTabs();
+     ImGui::Spacing();
+@@ -1161,6 +1166,9 @@ void MainWindowUI::RenderModsTabs() {
+     if (UIComponents::SubTabItem("Waffenicons", currentModsSubtab_ == ModsSubtab::WeaponIcons)) {
+         currentModsSubtab_ = ModsSubtab::WeaponIcons;
+     }
++    if (UIComponents::SubTabItem("Interface", currentModsSubtab_ == ModsSubtab::Interface)) {
++        currentModsSubtab_ = ModsSubtab::Interface;
++    }
+ 
+     UIComponents::EndSubTabs();
+ }
+diff --git a/src/NativeHudEditor.cpp b/src/NativeHudEditor.cpp
+new file mode 100644
+index 0000000..d13d5e3
+--- /dev/null
++++ b/src/NativeHudEditor.cpp
+@@ -0,0 +1,274 @@
++#include "../include/NativeHudEditor.h"
++
++#include <algorithm>
++#include <cmath>
++#include <cstring>
++
++#ifndef KEYBINDER_TESTING
++#include "../include/plugin-sdk/shared/RenderWare.h"
++#include "../include/plugin-sdk/plugin_sa/game_sa/CFont.h"
++#include "../include/plugin-sdk/plugin_sa/game_sa/CMenuManager.h"
++#include "../include/plugin-sdk/safetyhook/safetyhook.hpp"
++#include <vector>
++#endif
++
++namespace keybinder {
++namespace {
++bool Valid(HudElement element) { return static_cast<std::size_t>(element) < kHudElementCount; }
++unsigned Byte(float value) { return static_cast<unsigned>(std::lround((std::max)(0.0f, (std::min)(value, 255.0f)))); }
++}
++
++void NativeHudEditor::SetLayout(const HudLayout& layout) {
++    // An invisible element can retain the bounds from its last native draw.
++    // Invalidate those bounds after movement or a resolution change so its
++    // drag handle uses the new position instead of a stale rectangle.
++#ifndef KEYBINDER_TESTING
++    if (viewport_width_ != RsGlobal.maximumWidth || viewport_height_ != RsGlobal.maximumHeight) {
++        for (auto& bounds : bounds_) bounds = {};
++        viewport_width_ = RsGlobal.maximumWidth;
++        viewport_height_ = RsGlobal.maximumHeight;
++    }
++#endif
++    for (std::size_t i = 0; i < layout_.size(); ++i) {
++        const auto next = SanitizeHudElementStyle(layout[i]);
++        if (next.offset_x != layout_[i].offset_x || next.offset_y != layout_[i].offset_y) bounds_[i] = {};
++        layout_[i] = next;
++    }
++}
++
++void NativeHudEditor::TransformPoint(HudElement element, float& x, float& y, float width, float height) const {
++    if (!Valid(element) || !std::isfinite(width) || !std::isfinite(height) || width <= 0 || height <= 0) return;
++    const auto& style = layout_[static_cast<std::size_t>(element)];
++    x += style.offset_x * width;
++    y += style.offset_y * height;
++}
++
++std::uint32_t NativeHudEditor::TransformColor(HudElement element, std::uint32_t argb, bool text) const {
++    if (!Valid(element)) return argb;
++    const auto& style = layout_[static_cast<std::size_t>(element)];
++    if (!style.custom_color) return argb;
++    const unsigned a = argb >> 24, r = (argb >> 16) & 255, g = (argb >> 8) & 255, b = argb & 255;
++    const unsigned alpha = Byte(static_cast<float>(a) * style.color[3]);
++    // Bar borders, map outlines and font drop shadows must remain legible.
++    if (!text && r == 0 && g == 0 && b == 0) return (alpha << 24) | (argb & 0xffffff);
++    float strength = 255.0f;
++    if (element == HudElement::Wanted) strength = static_cast<float>((std::max)({r, g, b}));
++    if (element == HudElement::Radar) {
++        // A map tint retains the map texture's detail and marker luminance.
++        return (alpha << 24) | (Byte(r * style.color[0]) << 16) | (Byte(g * style.color[1]) << 8) | Byte(b * style.color[2]);
++    }
++    return (alpha << 24) | (Byte(strength * style.color[0]) << 16) | (Byte(strength * style.color[1]) << 8) | Byte(strength * style.color[2]);
++}
++
++HudElement NativeHudEditor::ClassifyPlayerInfoText(const char* text) {
++    if (!text) return HudElement::Count;
++    const auto digit = [](char c) { return c >= '0' && c <= '9'; };
++    // Only the native DrawPlayerInfo scope invokes this classifier. Similar
++    // server textdraws and chat strings are never classified or changed.
++    const std::size_t size = std::strlen(text);
++    if (size == 5 && digit(text[0]) && digit(text[1]) && text[2] == ':' && digit(text[3]) && digit(text[4])) return HudElement::Clock;
++    std::size_t begin = text[0] == '-' ? 1 : 0;
++    if (begin < size && text[begin] == '$' && begin + 1 < size) {
++        for (std::size_t i = begin + 1; i < size; ++i) if (!digit(text[i])) return HudElement::Count;
++        return HudElement::Money;
++    }
++    return HudElement::Count;
++}
++
++void NativeHudEditor::ResetBounds(HudElement element) {
++    if (Valid(element)) bounds_[static_cast<std::size_t>(element)] = {};
++}
++
++void NativeHudEditor::RecordPoint(HudElement element, float x, float y) {
++    if (!Valid(element) || !std::isfinite(x) || !std::isfinite(y)) return;
++    auto& bounds = bounds_[static_cast<std::size_t>(element)];
++    if (!bounds.valid) { bounds = {true, x, y, x, y}; return; }
++    bounds.left = (std::min)(bounds.left, x); bounds.right = (std::max)(bounds.right, x);
++    bounds.top = (std::min)(bounds.top, y); bounds.bottom = (std::max)(bounds.bottom, y);
++}
++
++bool NativeHudEditor::GetElementBounds(HudElement element, float& x, float& y, float& width, float& height) const {
++    if (!Valid(element)) return false;
++    const auto& bounds = bounds_[static_cast<std::size_t>(element)];
++    if (!bounds.valid || bounds.right <= bounds.left || bounds.bottom <= bounds.top) return false;
++    x = bounds.left; y = bounds.top; width = bounds.right - bounds.left; height = bounds.bottom - bounds.top;
++    return true;
++}
++
++#ifndef KEYBINDER_TESTING
++// Signatures/addresses below are supplied by the bundled plugin-sdk CHud.cpp
++// and CFont.cpp, verified against the primary gta-reversed Hud.cpp/Font.cpp:
++// https://github.com/gta-reversed/gta-reversed/blob/master/source/game_sa/Hud.cpp
++// https://github.com/gta-reversed/gta-reversed/blob/master/source/game_sa/Font.cpp
++// RW submissions use the device's real callbacks, including direct macro calls;
++// detouring only an exported wrapper would miss the game's native submissions.
++struct NativeHudHooks {
++    static NativeHudEditor* editor;
++    static std::vector<safetyhook::InlineHook*> hooks;
++    static thread_local HudElement element;
++    static thread_local bool player_info;
++    static thread_local unsigned font_depth;
++    static thread_local unsigned submission_depth;
++    static thread_local bool font_rendering;
++    static safetyhook::InlineHook *health, *armour, *breath, *ammo, *wanted, *vehicle, *zone, *radar, *player,
++        *print, *font_buffer, *primitive, *indexed;
++
++    struct Scope {
++        HudElement previous;
++        explicit Scope(HudElement next) : previous(element) {
++            element = next;
++            if (editor) editor->ResetBounds(next);
++        }
++        ~Scope() { element = previous; }
++    };
++    struct Counter { unsigned& value; explicit Counter(unsigned& v) : value(v) { ++value; } ~Counter() { --value; } };
++
++    static bool Install(safetyhook::InlineHook*& destination, void* target, void* callback) {
++        if (!target) return false;
++        auto hook = safetyhook::InlineHook::create(target, callback);
++        if (!hook) return false;
++        destination = new safetyhook::InlineHook(std::move(*hook));
++        hooks.push_back(destination);
++        return true;
++    }
++    static void Remove() {
++        for (auto it = hooks.rbegin(); it != hooks.rend(); ++it) delete *it;
++        hooks.clear();
++        health = armour = breath = ammo = wanted = vehicle = zone = radar = player = nullptr;
++        print = font_buffer = primitive = indexed = nullptr;
++        editor = nullptr;
++        element = HudElement::Count; player_info = font_rendering = false;
++    }
++    static HudElement PrimitiveElement() {
++        if (font_rendering || font_depth || !editor) return HudElement::Count;
++        if (Valid(element)) return element;
++        // DrawPlayerInfo's only unscoped native sprite is the weapon/fist.
++        // Health/armour/breath and ammo are nested scopes. No additional detour
++        // at DrawWeaponIcon is needed, so weapon texture switching can install
++        // and remove its hook independently without breaking this editor.
++        return player_info ? HudElement::Weapon : HudElement::Count;
++    }
++    static void __cdecl Health(int playerId, int x, int y) { Scope scope(HudElement::Health); health->ccall<void>(playerId,x,y); }
++    static void __cdecl Armour(int playerId, int x, int y) { Scope scope(HudElement::Armour); armour->ccall<void>(playerId,x,y); }
++    static void __cdecl Breath(int playerId, int x, int y) { Scope scope(HudElement::Breath); breath->ccall<void>(playerId,x,y); }
++    static void __cdecl Ammo(void* ped, int x, int y, float alpha) { Scope scope(HudElement::Ammo); ammo->ccall<void>(ped,x,y,alpha); }
++    static void __cdecl Wanted() { Scope scope(HudElement::Wanted); wanted->ccall<void>(); }
++    static void __cdecl Vehicle() { Scope scope(HudElement::VehicleName); vehicle->ccall<void>(); }
++    static void __cdecl Zone() { Scope scope(HudElement::ZoneName); zone->ccall<void>(); }
++    static void __cdecl Radar() {
++        if (FrontEndMenuManager.m_bMenuActive || FrontEndMenuManager.m_bDrawRadarOrMap) { radar->ccall<void>(); return; }
++        Scope scope(HudElement::Radar); radar->ccall<void>();
++    }
++    static void __cdecl Player() {
++        const bool previous = player_info; player_info = true;
++        if (editor) for (auto item : {HudElement::Weapon,HudElement::Money,HudElement::Clock}) editor->ResetBounds(item);
++        player->ccall<void>(); player_info = previous;
++    }
++    static void __cdecl FontBuffer() {
++        const bool previous = font_rendering; font_rendering = true;
++        font_buffer->ccall<void>(); font_rendering = previous;
++    }
++    static void Print(safetyhook::InlineHook* hook, float x, float y, const char* text) {
++        HudElement selected = element;
++        if (!Valid(selected) && player_info) selected = NativeHudEditor::ClassifyPlayerInfoText(text);
++        if (!editor || !Valid(selected) || font_depth) { hook->ccall<void>(x,y,text); return; }
++        Counter guard(font_depth);
++        editor->TransformPoint(selected,x,y,static_cast<float>(RsGlobal.maximumWidth),static_cast<float>(RsGlobal.maximumHeight));
++        // PrintString snapshots current color into its own font buffer. Restore
++        // immediately afterwards; chat and subsequent native draws retain it.
++        CRGBA saved = *CFont::m_Color;
++        const auto original = (static_cast<unsigned>(saved.a)<<24)|(static_cast<unsigned>(saved.r)<<16)|(static_cast<unsigned>(saved.g)<<8)|saved.b;
++        const auto changed = editor->TransformColor(selected,original,true);
++        CFont::m_Color->r = (changed>>16)&255; CFont::m_Color->g = (changed>>8)&255;
++        CFont::m_Color->b = changed&255; CFont::m_Color->a = changed>>24;
++        if (text && text[0]) {
++            const float width = CFont::GetStringWidth(text,true,false);
++            const float height = (std::max)(8.0f,CFont::m_Scale->y*18.0f);
++            const float left = x - (CFont::m_bFontRightAlign ? width : CFont::m_bFontCentreAlign ? width*0.5f : 0.0f);
++            editor->RecordPoint(selected,left,y); editor->RecordPoint(selected,left+width,y+height);
++        }
++        hook->ccall<void>(x,y,text);
++        *CFont::m_Color = saved;
++    }
++    static void __cdecl PrintString(float x,float y,const char* text) { Print(print,x,y,text); }
++
++    static RwIm2DVertex* Prepare(RwIm2DVertex* vertices, int count) {
++        const HudElement selected = PrimitiveElement();
++        if (!Valid(selected) || submission_depth || !vertices || count <= 0 || count > 65536) return vertices;
++        // Retain the game's vertex array. Radar mask, map, ring and blips are
++        // transformed together in the CHud::DrawRadar scope. The pause-menu
++        // map is outside that scope and remains untouched.
++        static thread_local std::vector<RwIm2DVertex> transformed;
++        try { transformed.assign(vertices,vertices+count); }
++        catch (const std::bad_alloc&) { return vertices; }
++        for (auto& vertex : transformed) {
++            editor->TransformPoint(selected,vertex.x,vertex.y,static_cast<float>(RsGlobal.maximumWidth),static_cast<float>(RsGlobal.maximumHeight));
++            editor->RecordPoint(selected,vertex.x,vertex.y);
++            vertex.emissiveColor = editor->TransformColor(selected,vertex.emissiveColor);
++        }
++        return transformed.data();
++    }
++    static RwBool __cdecl Primitive(RwPrimitiveType type,RwIm2DVertex* vertices,RwInt32 count) {
++        auto* transformed = Prepare(vertices,count); Counter guard(submission_depth);
++        return primitive->ccall<RwBool>(type,transformed,count);
++    }
++    static RwBool __cdecl Indexed(RwPrimitiveType type,RwIm2DVertex* vertices,RwInt32 count,RwImVertexIndex* indices,RwInt32 index_count) {
++        auto* transformed = Prepare(vertices,count); Counter guard(submission_depth);
++        return indexed->ccall<RwBool>(type,transformed,count,indices,index_count);
++    }
++};
++
++NativeHudEditor* NativeHudHooks::editor = nullptr;
++std::vector<safetyhook::InlineHook*> NativeHudHooks::hooks;
++thread_local HudElement NativeHudHooks::element = HudElement::Count;
++thread_local bool NativeHudHooks::player_info = false;
++thread_local unsigned NativeHudHooks::font_depth = 0;
++thread_local unsigned NativeHudHooks::submission_depth = 0;
++thread_local bool NativeHudHooks::font_rendering = false;
++safetyhook::InlineHook *NativeHudHooks::health = nullptr, *NativeHudHooks::armour = nullptr, *NativeHudHooks::breath = nullptr,
++    *NativeHudHooks::ammo = nullptr, *NativeHudHooks::wanted = nullptr, *NativeHudHooks::vehicle = nullptr,
++    *NativeHudHooks::zone = nullptr, *NativeHudHooks::radar = nullptr, *NativeHudHooks::player = nullptr,
++    *NativeHudHooks::print = nullptr, *NativeHudHooks::font_buffer = nullptr,
++    *NativeHudHooks::primitive = nullptr, *NativeHudHooks::indexed = nullptr;
++#endif
++
++bool NativeHudEditor::Initialize() {
++    if (initialized_) return true;
++    last_error_.clear();
++#ifndef KEYBINDER_TESTING
++    if (NativeHudHooks::editor && NativeHudHooks::editor != this) { last_error_ = "Ein Interface-Editor ist bereits aktiv."; return false; }
++    if (!RwEngineInstance) { last_error_ = "Die HUD-Grafik ist noch nicht bereit."; return false; }
++    NativeHudHooks::editor = this;
++    const bool installed =
++        NativeHudHooks::Install(NativeHudHooks::primitive,reinterpret_cast<void*>(RWSRCGLOBAL(dOpenDevice).fpIm2DRenderPrimitive),reinterpret_cast<void*>(&NativeHudHooks::Primitive)) &&
++        NativeHudHooks::Install(NativeHudHooks::indexed,reinterpret_cast<void*>(RWSRCGLOBAL(dOpenDevice).fpIm2DRenderIndexedPrimitive),reinterpret_cast<void*>(&NativeHudHooks::Indexed)) &&
++        NativeHudHooks::Install(NativeHudHooks::font_buffer,reinterpret_cast<void*>(0x719840),reinterpret_cast<void*>(&NativeHudHooks::FontBuffer)) &&
++        NativeHudHooks::Install(NativeHudHooks::print,reinterpret_cast<void*>(0x71A700),reinterpret_cast<void*>(&NativeHudHooks::PrintString)) &&
++        NativeHudHooks::Install(NativeHudHooks::health,reinterpret_cast<void*>(0x589270),reinterpret_cast<void*>(&NativeHudHooks::Health)) &&
++        NativeHudHooks::Install(NativeHudHooks::armour,reinterpret_cast<void*>(0x5890A0),reinterpret_cast<void*>(&NativeHudHooks::Armour)) &&
++        NativeHudHooks::Install(NativeHudHooks::breath,reinterpret_cast<void*>(0x589190),reinterpret_cast<void*>(&NativeHudHooks::Breath)) &&
++        NativeHudHooks::Install(NativeHudHooks::ammo,reinterpret_cast<void*>(0x5893B0),reinterpret_cast<void*>(&NativeHudHooks::Ammo)) &&
++        NativeHudHooks::Install(NativeHudHooks::wanted,reinterpret_cast<void*>(0x58D9A0),reinterpret_cast<void*>(&NativeHudHooks::Wanted)) &&
++        NativeHudHooks::Install(NativeHudHooks::vehicle,reinterpret_cast<void*>(0x58AEA0),reinterpret_cast<void*>(&NativeHudHooks::Vehicle)) &&
++        NativeHudHooks::Install(NativeHudHooks::zone,reinterpret_cast<void*>(0x58AA50),reinterpret_cast<void*>(&NativeHudHooks::Zone)) &&
++        NativeHudHooks::Install(NativeHudHooks::radar,reinterpret_cast<void*>(0x58A330),reinterpret_cast<void*>(&NativeHudHooks::Radar)) &&
++        NativeHudHooks::Install(NativeHudHooks::player,reinterpret_cast<void*>(0x58EAF0),reinterpret_cast<void*>(&NativeHudHooks::Player));
++    if (!installed) {
++        NativeHudHooks::Remove();
++        last_error_ = "Die native HUD-Anbindung konnte nicht vollständig eingerichtet werden.";
++        return false;
++    }
++#endif
++    initialized_ = true;
++    return true;
++}
++
++void NativeHudEditor::Shutdown() {
++#ifndef KEYBINDER_TESTING
++    if (NativeHudHooks::editor == this) NativeHudHooks::Remove();
++#endif
++    initialized_ = false;
++    for (auto& bounds : bounds_) bounds = {};
++}
++
++} // namespace keybinder
+diff --git a/src/SettingsManager.cpp b/src/SettingsManager.cpp
+index 5855d12..5f725e9 100644
+--- a/src/SettingsManager.cpp
++++ b/src/SettingsManager.cpp
+@@ -16,6 +16,7 @@
+ #include "../include/Logger.h"
+ #include "../include/SpeedometerManager.h"
+ #include "../include/WeaponIconCatalog.h"
++#include "../include/InterfaceLayout.h"
+ 
+ namespace keybinder {
+ 
+@@ -442,6 +443,24 @@ bool ParseFloatField(const std::string& object, const char* key, float& outValue
+     return true;
+ }
+ 
++// HUD offsets can be very small after dragging. Accept JSON exponents without
++// scanning ahead into a later field when this field is null or malformed.
++bool ParseHudFloatField(const std::string& object, const std::string& key, float& outValue) {
++    const auto keyPos = object.find(key);
++    if (keyPos == std::string::npos) return false;
++    const auto colon = object.find(':', keyPos + key.size());
++    if (colon == std::string::npos) return false;
++    const auto start = object.find_first_not_of(" \t\r\n", colon + 1);
++    if (start == std::string::npos || (object[start] != '-' && (object[start] < '0' || object[start] > '9'))) return false;
++    char* end = nullptr;
++    const float value = std::strtof(object.c_str() + start, &end);
++    if (end == object.c_str() + start || !std::isfinite(value)) return false;
++    const auto next = object.find_first_not_of(" \t\r\n", static_cast<std::size_t>(end - object.c_str()));
++    if (next != std::string::npos && object[next] != ',' && object[next] != '}') return false;
++    outValue = value;
++    return true;
++}
++
+ bool ParseStringField(const std::string& object, const char* key, std::string& outValue) {
+     const size_t keyPos = object.find(key);
+     if (keyPos == std::string::npos) {
+@@ -1445,6 +1464,44 @@ bool SettingsManager::LoadFromJson(const std::string& json_content) {
+                         if (!hasArmorNumberPosY) preset.armor_number_pos_y = preset.vital_stats_numbers_pos_y;
+                     }
+                     NormalizeVitalStatsNumbersPosition(preset);
++                    for (const auto& definition : kHudElements) {
++                        auto& style = preset.layout[static_cast<std::size_t>(definition.element)];
++                        const std::string prefix = "\"hud_" + std::string(definition.key);
++                        ParseHudFloatField(obj, prefix + "_offset_x\"", style.offset_x);
++                        ParseHudFloatField(obj, prefix + "_offset_y\"", style.offset_y);
++                        const bool hasColorSetting = ParseBoolField(obj, (prefix + "_custom_color\"").c_str(), style.custom_color);
++                        const char* channels[] = {"_color_r\"", "_color_g\"", "_color_b\"", "_color_a\""};
++                        for (std::size_t channel = 0; channel < style.color.size(); ++channel) {
++                            ParseHudFloatField(obj, prefix + channels[channel], style.color[channel]);
++                        }
++                        // Existing saved colors remain available after the editor moves
++                        // to its own tab. Untouched legacy defaults keep native colors.
++                        if (!hasColorSetting) {
++                            const InterfacePreset defaults;
++                            std::array<float, 4> legacy{}, original{};
++                            bool hasLegacyColor = true;
++                            switch (definition.element) {
++                            case HudElement::Health:
++                                legacy = {preset.hp_color_r, preset.hp_color_g, preset.hp_color_b, preset.hp_color_a};
++                                original = {defaults.hp_color_r, defaults.hp_color_g, defaults.hp_color_b, defaults.hp_color_a};
++                                break;
++                            case HudElement::Armour:
++                                legacy = {preset.armor_color_r, preset.armor_color_g, preset.armor_color_b, preset.armor_color_a};
++                                original = {defaults.armor_color_r, defaults.armor_color_g, defaults.armor_color_b, defaults.armor_color_a};
++                                break;
++                            case HudElement::Money:
++                                legacy = {preset.money_color_r, preset.money_color_g, preset.money_color_b, preset.money_color_a};
++                                original = {defaults.money_color_r, defaults.money_color_g, defaults.money_color_b, defaults.money_color_a};
++                                break;
++                            default: hasLegacyColor = false; break;
++                            }
++                            if (hasLegacyColor && legacy != original) {
++                                style.color = legacy;
++                                style.custom_color = true;
++                            }
++                        }
++                        style = SanitizeHudElementStyle(style);
++                    }
+                     settings_.interface_editor_saved_presets.push_back(preset);
+ 
+                     pos = objEnd + 1;
+@@ -2347,8 +2404,19 @@ std::string SettingsManager::GetSettingsJson() const {
+             << ", \"armor_number_pos_x\": " << preset.armor_number_pos_x
+             << ", \"armor_number_pos_y\": " << preset.armor_number_pos_y
+             << ", \"hp_number_scale\": " << preset.hp_number_scale
+-            << ", \"armor_number_scale\": " << preset.armor_number_scale
+-            << "}";
++            << ", \"armor_number_scale\": " << preset.armor_number_scale;
++        for (const auto& definition : kHudElements) {
++            const auto style = SanitizeHudElementStyle(preset.layout[static_cast<std::size_t>(definition.element)]);
++            const std::string prefix = "hud_" + std::string(definition.key);
++            oss << ", \"" << prefix << "_offset_x\": " << style.offset_x
++                << ", \"" << prefix << "_offset_y\": " << style.offset_y
++                << ", \"" << prefix << "_custom_color\": " << (style.custom_color ? "true" : "false");
++            const char* channels[] = {"_color_r", "_color_g", "_color_b", "_color_a"};
++            for (std::size_t channel = 0; channel < style.color.size(); ++channel) {
++                oss << ", \"" << prefix << channels[channel] << "\": " << style.color[channel];
++            }
++        }
++        oss << "}";
+         interfacePresetsFirst = false;
+     }
+     if (!settings_.interface_editor_saved_presets.empty()) oss << "\n    ";
+diff --git a/tests/InterfaceEditorTests.cpp b/tests/InterfaceEditorTests.cpp
+index 435bb84..87f106e 100644
+--- a/tests/InterfaceEditorTests.cpp
++++ b/tests/InterfaceEditorTests.cpp
+@@ -1,8 +1,11 @@
+ #include "../include/InterfaceEditor.h"
++#include "../include/SettingsManager.h"
++#include "../include/imgui-1.92.7/imgui.h"
+ 
+ #include <array>
+ #include <cstdio>
+ #include <cstring>
++#include <limits>
+ #include <string>
+ 
+ class CSprite2d;
+@@ -424,6 +427,136 @@ bool Test_RestoreOriginalValuesRestoresCapturedStateAndResetsCapture() {
+     return true;
+ }
+ 
++bool Test_ElementMovePersistsOnlySelectedElementOnFinish() {
++    keybinder::SettingsManager settings;
++    InterfaceEditor editor;
++    editor.SetSettingsManager(&settings);
++    int saves = 0;
++    editor.SetOnRuntimePresetChanged([&]() { ++saves; });
++    editor.GetPreset(0)->name = "Fahrzeugprofil";
++    auto& wanted = editor.GetPreset(0)->layout[static_cast<std::size_t>(keybinder::HudElement::Wanted)];
++    wanted.custom_color = true;
++    wanted.color = {{0.3f, 0.4f, 0.5f, 0.8f}};
++    IFACE_EXPECT_TRUE(editor.StartElementMove(keybinder::HudElement::Wanted));
++    IFACE_EXPECT_TRUE(editor.IsElementMoveModeActive());
++    IFACE_EXPECT_EQ(editor.GetMovingElement(), keybinder::HudElement::Wanted);
++    IFACE_EXPECT_TRUE(editor.MoveElementBy(-0.25f, 0.125f));
++    IFACE_EXPECT_EQ(saves, 0);
++    IFACE_EXPECT_EQ(editor.GetPreset(0)->layout[static_cast<std::size_t>(keybinder::HudElement::Health)].offset_x, 0.0f);
++    editor.FinishElementMove();
++    IFACE_EXPECT_EQ(saves, 1);
++    IFACE_EXPECT_TRUE(!editor.IsElementMoveModeActive());
++    IFACE_EXPECT_EQ(editor.GetMovingElement(), keybinder::HudElement::Count);
++    const InterfacePreset& persisted = settings.Get().interface_editor_saved_presets[0];
++    IFACE_EXPECT_EQ(persisted.name, std::string("Fahrzeugprofil"));
++    const auto& savedStyle = persisted.layout[static_cast<std::size_t>(keybinder::HudElement::Wanted)];
++    IFACE_EXPECT_EQ(savedStyle.offset_x, -0.25f);
++    IFACE_EXPECT_EQ(savedStyle.offset_y, 0.125f);
++    IFACE_EXPECT_TRUE(savedStyle.custom_color);
++    IFACE_EXPECT_EQ(savedStyle.color[0], 0.3f);
++    IFACE_EXPECT_EQ(savedStyle.color[3], 0.8f);
++    editor.FinishElementMove();
++    IFACE_EXPECT_EQ(saves, 1);
++    IFACE_EXPECT_TRUE(!editor.MoveElementBy(0.1f, 0.1f));
++    return true;
++}
++
++bool Test_ElementMoveRejectsInvalidInputAndPreservesOtherPreset() {
++    InterfaceEditor editor;
++    int saves = 0;
++    editor.SetOnRuntimePresetChanged([&]() { ++saves; });
++    IFACE_EXPECT_TRUE(!editor.StartElementMove(keybinder::HudElement::Count));
++    IFACE_EXPECT_TRUE(!editor.StartElementMove(static_cast<keybinder::HudElement>(999)));
++    IFACE_EXPECT_EQ(saves, 0);
++    IFACE_EXPECT_TRUE(editor.StartElementMove(keybinder::HudElement::Health));
++    IFACE_EXPECT_TRUE(!editor.StartElementMove(keybinder::HudElement::Count));
++    IFACE_EXPECT_EQ(editor.GetMovingElement(), keybinder::HudElement::Health);
++    IFACE_EXPECT_TRUE(!editor.MoveElementBy(std::numeric_limits<float>::infinity(), 0.0f));
++    IFACE_EXPECT_TRUE(!editor.MoveElementBy(0.0f, std::numeric_limits<float>::quiet_NaN()));
++    IFACE_EXPECT_TRUE(editor.MoveElementBy(10.0f, -10.0f));
++    auto& health = editor.GetPreset(0)->layout[static_cast<std::size_t>(keybinder::HudElement::Health)];
++    IFACE_EXPECT_EQ(health.offset_x, 1.0f);
++    IFACE_EXPECT_EQ(health.offset_y, -1.0f);
++    editor.SetActivePreset(2);
++    IFACE_EXPECT_EQ(saves, 1);
++    IFACE_EXPECT_TRUE(!editor.IsElementMoveModeActive());
++    IFACE_EXPECT_EQ(editor.GetActivePreset(), 2);
++    IFACE_EXPECT_EQ(editor.GetPreset(2)->layout[static_cast<std::size_t>(keybinder::HudElement::Health)].offset_x, 0.0f);
++    IFACE_EXPECT_EQ(health.offset_x, 1.0f);
++    return true;
++}
++
++bool Test_StartingAnotherElementCommitsPreviousAndShutdownFinishes() {
++    keybinder::SettingsManager settings;
++    InterfaceEditor editor;
++    editor.SetSettingsManager(&settings);
++    int saves = 0;
++    editor.SetOnRuntimePresetChanged([&]() { ++saves; });
++    IFACE_EXPECT_TRUE(editor.StartElementMove(keybinder::HudElement::Clock));
++    IFACE_EXPECT_TRUE(editor.MoveElementBy(0.2f, 0.3f));
++    IFACE_EXPECT_TRUE(editor.StartElementMove(keybinder::HudElement::Armour));
++    IFACE_EXPECT_EQ(saves, 1);
++    IFACE_EXPECT_EQ(settings.Get().interface_editor_saved_presets[0].layout[static_cast<std::size_t>(keybinder::HudElement::Clock)].offset_x, 0.2f);
++    IFACE_EXPECT_EQ(editor.GetMovingElement(), keybinder::HudElement::Armour);
++    IFACE_EXPECT_TRUE(editor.MoveElementBy(-0.5f, 0.0f));
++    editor.Shutdown();
++    IFACE_EXPECT_EQ(saves, 2);
++    IFACE_EXPECT_TRUE(!editor.IsElementMoveModeActive());
++    IFACE_EXPECT_EQ(settings.Get().interface_editor_saved_presets[0].layout[static_cast<std::size_t>(keybinder::HudElement::Armour)].offset_x, -0.5f);
++    return true;
++}
++
++bool Test_EscapeSavesMoveWhileMainMenuIsHidden() {
++    struct ImGuiScope {
++        ImGuiContext* previous = ImGui::GetCurrentContext();
++        ImGuiScope() {
++            ImGui::CreateContext();
++            ImGuiIO& io = ImGui::GetIO();
++            io.IniFilename = nullptr;
++            io.LogFilename = nullptr;
++            io.DisplaySize = ImVec2(1920, 1080);
++            io.DeltaTime = 1.0f / 60.0f;
++            io.Fonts->AddFontDefault();
++            unsigned char* pixels = nullptr;
++            int width = 0, height = 0;
++            io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);
++        }
++        ~ImGuiScope() {
++            ImGui::DestroyContext();
++            ImGui::SetCurrentContext(previous);
++        }
++    } imgui;
++    keybinder::SettingsManager settings;
++    InterfaceEditor editor;
++    editor.SetSettingsManager(&settings);
++    int saves = 0, boundsReads = 0;
++    editor.SetOnRuntimePresetChanged([&]() { ++saves; });
++    editor.SetElementBoundsProvider([&](keybinder::HudElement element, float& x, float& y, float& width, float& height) {
++        if (element != keybinder::HudElement::Clock) return false;
++        ++boundsReads;
++        x = 1500.0f; y = 50.0f; width = 180.0f; height = 50.0f;
++        return true;
++    });
++    IFACE_EXPECT_TRUE(editor.StartElementMove(keybinder::HudElement::Clock));
++    IFACE_EXPECT_TRUE(editor.MoveElementBy(-0.125f, 0.25f));
++    ImGui::NewFrame();
++    editor.RenderElementMoveMode(ImGui::GetForegroundDrawList(), 1.0f);
++    ImGui::Render();
++    IFACE_EXPECT_EQ(boundsReads, 1);
++    IFACE_EXPECT_EQ(saves, 0);
++    IFACE_EXPECT_TRUE(editor.IsElementMoveModeActive());
++    ImGui::GetIO().AddKeyEvent(ImGuiKey_Escape, true);
++    ImGui::NewFrame();
++    editor.RenderElementMoveMode(ImGui::GetForegroundDrawList(), 1.0f);
++    ImGui::Render();
++    IFACE_EXPECT_EQ(saves, 1);
++    IFACE_EXPECT_TRUE(!editor.IsElementMoveModeActive());
++    const auto& saved = settings.Get().interface_editor_saved_presets[0].layout[static_cast<std::size_t>(keybinder::HudElement::Clock)];
++    IFACE_EXPECT_EQ(saved.offset_x, -0.125f);
++    IFACE_EXPECT_EQ(saved.offset_y, 0.25f);
++    return true;
++}
++
+ } // namespace
+ 
+ namespace sampapi {
+@@ -482,6 +615,10 @@ int RunInterfaceEditorTests() {
+     IFACE_RUN_TEST(Test_PresetSelectionEditingAndIndexValidation);
+     IFACE_RUN_TEST(Test_ApplyCurrentPresetAppliesFlagsAndCapturesOriginalsOnce);
+     IFACE_RUN_TEST(Test_RestoreOriginalValuesRestoresCapturedStateAndResetsCapture);
++    IFACE_RUN_TEST(Test_ElementMovePersistsOnlySelectedElementOnFinish);
++    IFACE_RUN_TEST(Test_ElementMoveRejectsInvalidInputAndPreservesOtherPreset);
++    IFACE_RUN_TEST(Test_StartingAnotherElementCommitsPreviousAndShutdownFinishes);
++    IFACE_RUN_TEST(Test_EscapeSavesMoveWhileMainMenuIsHidden);
+     std::printf("\n=== InterfaceEditor Results: %d passed, %d failed ===\n\n",
+                 g_state.passed, g_state.failed);
+ 
+diff --git a/tests/InterfaceLayoutSettingsTests.cpp b/tests/InterfaceLayoutSettingsTests.cpp
+new file mode 100644
+index 0000000..23a6491
+--- /dev/null
++++ b/tests/InterfaceLayoutSettingsTests.cpp
+@@ -0,0 +1,87 @@
++#include "../include/SettingsManager.h"
++#include "../include/InterfaceLayout.h"
++#include <cmath>
++#include <cstdio>
++#include <limits>
++#include <string>
++
++namespace {
++int checks = 0, failures = 0;
++#define CHECK(condition) do { ++checks; if (!(condition)) { ++failures; std::printf("[FAIL] InterfaceLayoutSettings line %d: %s\n", __LINE__, #condition); } } while (0)
++void DefaultsAndRoundTrip() {
++    keybinder::SettingsManager source;
++    CHECK(source.LoadFromJson("{}"));
++    for (const auto& preset : source.Get().interface_editor_saved_presets) {
++        for (const auto& style : preset.layout) {
++            CHECK(style.offset_x == 0.0f && style.offset_y == 0.0f && !style.custom_color);
++        }
++    }
++    auto& presets = source.GetMutable().interface_editor_saved_presets;
++    for (std::size_t slot = 0; slot < presets.size(); ++slot) {
++        presets[slot].name = "Interface " + std::to_string(slot);
++        for (std::size_t element = 0; element < keybinder::kHudElementCount; ++element) {
++            auto& style = presets[slot].layout[element];
++            style.offset_x = static_cast<float>(element) / 20.0f;
++            style.offset_y = -static_cast<float>(slot) / 10.0f;
++            style.custom_color = (element % 2) != 0;
++            style.color = {0.1f, static_cast<float>(slot) / 10.0f, 0.3f, 0.4f};
++        }
++    }
++    keybinder::SettingsManager restored;
++    CHECK(restored.LoadFromJson(source.GetSettingsJson()));
++    CHECK(restored.Get().interface_editor_saved_presets.size() == presets.size());
++    for (std::size_t slot = 0; slot < presets.size(); ++slot) {
++        const auto& actual = restored.Get().interface_editor_saved_presets[slot];
++        CHECK(actual.name == presets[slot].name);
++        for (std::size_t element = 0; element < keybinder::kHudElementCount; ++element) {
++            const auto& expected = presets[slot].layout[element];
++            const auto& style = actual.layout[element];
++            CHECK(std::fabs(style.offset_x - expected.offset_x) < 0.00001f);
++            CHECK(std::fabs(style.offset_y - expected.offset_y) < 0.00001f);
++            CHECK(style.custom_color == expected.custom_color && style.color == expected.color);
++        }
++    }
++}
++void LegacyColorsAndExplicitOriginal() {
++    keybinder::SettingsManager manager;
++    CHECK(manager.LoadFromJson(R"({"interface_editor_saved_presets":[{"hp_color_r":0.2,"hp_color_g":0.3,"armor_color_b":0.1,"money_color_a":0.5}]})"));
++    const auto& layout = manager.Get().interface_editor_saved_presets[0].layout;
++    CHECK(layout[0].custom_color && layout[0].color[0] == 0.2f && layout[0].color[1] == 0.3f);
++    CHECK(layout[1].custom_color && layout[1].color[2] == 0.1f);
++    CHECK(layout[3].custom_color && layout[3].color[3] == 0.5f);
++    CHECK(!layout[4].custom_color);
++    CHECK(manager.LoadFromJson(R"({"interface_editor_saved_presets":[{"hp_color_r":0.2,"hud_health_custom_color":false,"hud_health_color_r":0.7}]})"));
++    CHECK(!manager.Get().interface_editor_saved_presets[0].layout[0].custom_color);
++    CHECK(manager.Get().interface_editor_saved_presets[0].layout[0].color[0] == 0.7f);
++}
++void InvalidRuntimeAndLoadedValues() {
++    keybinder::SettingsManager manager;
++    CHECK(manager.LoadFromJson(R"({"interface_editor_saved_presets":[{"hud_health_offset_x":9,"hud_health_offset_y":-9,"hud_health_custom_color":true,"hud_health_color_r":-1,"hud_health_color_g":8,"hud_radar_offset_x":0.3}]})"));
++    const auto& layout = manager.Get().interface_editor_saved_presets[0].layout;
++    CHECK(layout[0].offset_x == 1.0f && layout[0].offset_y == -1.0f);
++    CHECK(layout[0].color[0] == 0.0f && layout[0].color[1] == 1.0f);
++    CHECK(layout[10].offset_x == 0.3f && layout[10].offset_y == 0.0f);
++    auto& style = manager.GetMutable().interface_editor_saved_presets[0].layout[0];
++    style.offset_x = std::numeric_limits<float>::quiet_NaN();
++    style.offset_y = std::numeric_limits<float>::infinity();
++    style.color = {std::numeric_limits<float>::quiet_NaN(), -1.0f, 3.0f, 0.5f};
++    keybinder::SettingsManager restored;
++    CHECK(restored.LoadFromJson(manager.GetSettingsJson()));
++    const auto& result = restored.Get().interface_editor_saved_presets[0].layout[0];
++    CHECK(result.offset_x == 0.0f && result.offset_y == 0.0f);
++    CHECK((result.color == std::array<float,4>{1.0f,0.0f,1.0f,0.5f}));
++    CHECK(manager.LoadFromJson(R"({"interface_editor_saved_presets":[{"hud_health_offset_x":null,"hud_health_offset_y":2.5e-5,"hud_health_color_r":"invalid","hud_health_color_g":0.6}]})"));
++    const auto& parsed = manager.Get().interface_editor_saved_presets[0].layout[0];
++    CHECK(parsed.offset_x == 0.0f && parsed.offset_y == 2.5e-5f);
++    CHECK(parsed.color[0] == 1.0f && parsed.color[1] == 0.6f);
++    keybinder::SettingsManager tinyRoundTrip;
++    CHECK(tinyRoundTrip.LoadFromJson(manager.GetSettingsJson()));
++    CHECK(tinyRoundTrip.Get().interface_editor_saved_presets[0].layout[0].offset_y == 2.5e-5f);
++}
++}
++int RunInterfaceLayoutSettingsTests() {
++    checks = failures = 0;
++    DefaultsAndRoundTrip(); LegacyColorsAndExplicitOriginal(); InvalidRuntimeAndLoadedValues();
++    std::printf("InterfaceLayoutSettingsTests: %d checks, %d failures\n", checks, failures);
++    return failures;
++}
+diff --git a/tests/KeybindTests.cpp b/tests/KeybindTests.cpp
+index 6eb0c48..16e6180 100644
+--- a/tests/KeybindTests.cpp
++++ b/tests/KeybindTests.cpp
+@@ -14,6 +14,8 @@ int RunStatsDialogRPCAdapterTests();
+ int RunSpeedTicketFlowTests();
+ int RunWeaponIconManagerTests();
+ int RunWeaponIconSettingsTests();
++int RunNativeHudEditorTests();
++int RunInterfaceLayoutSettingsTests();
+ int RunJobSkillsSnapshotTests();
+ int RunJobSkillsImportTests();
+ int RunSpeedometerFocusedTests();
+@@ -100,6 +102,8 @@ int main() {
+         + run_suite("Running SpeedTicketFlowTests...", RunSpeedTicketFlowTests)
+         + run_suite("Running WeaponIconManagerTests...", RunWeaponIconManagerTests)
+         + run_suite("Running WeaponIconSettingsTests...", RunWeaponIconSettingsTests)
++        + run_suite("Running NativeHudEditorTests...", RunNativeHudEditorTests)
++        + run_suite("Running InterfaceLayoutSettingsTests...", RunInterfaceLayoutSettingsTests)
+         + run_suite("Running JobSkillsSnapshotTests...", RunJobSkillsSnapshotTests)
+         + run_suite("Running JobSkillsImportTests...", RunJobSkillsImportTests);
+     if (r4_failures != 0) return r4_failures;
+diff --git a/tests/NativeHudEditorTests.cpp b/tests/NativeHudEditorTests.cpp
+new file mode 100644
+index 0000000..6dd3503
+--- /dev/null
++++ b/tests/NativeHudEditorTests.cpp
+@@ -0,0 +1,98 @@
++#include "../include/NativeHudEditor.h"
++#include <cmath>
++#include <cstdio>
++#include <limits>
++
++namespace keybinder {
++// Feed observations through the same private accumulator used by the native
++// callbacks, without reading game memory or loading the game.
++struct NativeHudHooks {
++    static void Observe(NativeHudEditor& editor, HudElement element, float x, float y) {
++        editor.RecordPoint(element, x, y);
++    }
++};
++}
++
++namespace {
++int passed = 0, failed = 0;
++#define HUD_CHECK(test) do { if (test) ++passed; else { ++failed; std::printf("[FAIL] NativeHud: %s (line %d)\n",#test,__LINE__); } } while(0)
++bool Near(float a,float b) { return std::fabs(a-b)<0.001f; }
++}
++
++int RunNativeHudEditorTests() {
++    std::printf("\n=== NativeHudEditor Tests ===\n\n");
++    passed = failed = 0;
++    using namespace keybinder;
++    NativeHudEditor editor;
++    for (const auto& definition : kHudElements) {
++        float x=123.5f,y=45.25f;
++        editor.TransformPoint(definition.element,x,y,2560,1440);
++        HUD_CHECK(Near(x,123.5f) && Near(y,45.25f));
++        HUD_CHECK(editor.TransformColor(definition.element,0x7f123456)==0x7f123456);
++    }
++    HudLayout layout{};
++    auto& health=layout[static_cast<std::size_t>(HudElement::Health)];
++    health.offset_x=-0.1f; health.offset_y=0.25f;
++    health.custom_color=true; health.color={{0.0f,1.0f,0.5f,0.5f}};
++    editor.SetLayout(layout);
++    float x=300,y=100;
++    editor.TransformPoint(HudElement::Health,x,y,1920,1080);
++    HUD_CHECK(Near(x,108) && Near(y,370));
++    x=300;y=100;
++    editor.TransformPoint(HudElement::Health,x,y,1280,720);
++    HUD_CHECK(Near(x,172) && Near(y,280));
++    x=300;y=100;
++    editor.TransformPoint(HudElement::Armour,x,y,1920,1080);
++    HUD_CHECK(Near(x,300) && Near(y,100));
++    HUD_CHECK(editor.TransformColor(HudElement::Health,0xc8b4191d)==0x6400ff80);
++    HUD_CHECK(editor.TransformColor(HudElement::Health,0xc8000000)==0x64000000);
++    HUD_CHECK(editor.TransformColor(HudElement::Armour,0xc8b4191d)==0xc8b4191d);
++    HUD_CHECK(editor.TransformColor(HudElement::Count,0x12345678)==0x12345678);
++    auto& wanted=layout[static_cast<std::size_t>(HudElement::Wanted)];
++    wanted.custom_color=true; wanted.color={{1,0,0,1}};
++    auto& radar=layout[static_cast<std::size_t>(HudElement::Radar)];
++    radar.custom_color=true; radar.color={{0.5f,1,0,1}};
++    editor.SetLayout(layout);
++    HUD_CHECK(editor.TransformColor(HudElement::Wanted,0xffffd200,true)==0xffff0000);
++    HUD_CHECK(editor.TransformColor(HudElement::Wanted,0xff404040,true)==0xff400000);
++    HUD_CHECK(editor.TransformColor(HudElement::Radar,0xc8a0b0c0)==0xc850b000);
++    HUD_CHECK(editor.TransformColor(HudElement::Radar,0xff000000)==0xff000000);
++    HUD_CHECK(NativeHudEditor::ClassifyPlayerInfoText("14:38")==HudElement::Clock);
++    HUD_CHECK(NativeHudEditor::ClassifyPlayerInfoText("00:00")==HudElement::Clock);
++    HUD_CHECK(NativeHudEditor::ClassifyPlayerInfoText("$00110520")==HudElement::Money);
++    HUD_CHECK(NativeHudEditor::ClassifyPlayerInfoText("-$0000050")==HudElement::Money);
++    for (auto text : {"", "1:38", "14:380", "INFO: 14:38", "$", "$12x", "12$", "15-200", "Market", "Welcome"})
++        HUD_CHECK(NativeHudEditor::ClassifyPlayerInfoText(text)==HudElement::Count);
++    HUD_CHECK(NativeHudEditor::ClassifyPlayerInfoText(nullptr)==HudElement::Count);
++    // Corrupt persisted floats cannot propagate NaN/Inf into GPU coordinates.
++    health.offset_x=std::numeric_limits<float>::quiet_NaN(); health.offset_y=2;
++    health.color={{std::numeric_limits<float>::infinity(),-1,2,std::numeric_limits<float>::quiet_NaN()}};
++    editor.SetLayout(layout);
++    x=5;y=6;editor.TransformPoint(HudElement::Health,x,y,640,448);
++    HUD_CHECK(Near(x,5) && Near(y,454));
++    HUD_CHECK(editor.TransformColor(HudElement::Health,0xffffffff)==0xffff00ff);
++    x=5;y=6;editor.TransformPoint(HudElement::Health,x,y,0,448);
++    HUD_CHECK(Near(x,5) && Near(y,6));
++    x=5;y=6;editor.TransformPoint(HudElement::Count,x,y,640,448);
++    HUD_CHECK(Near(x,5) && Near(y,6));
++    float bx=11,by=12,bw=13,bh=14;
++    HUD_CHECK(!editor.GetElementBounds(HudElement::Health,bx,by,bw,bh));
++    HUD_CHECK(Near(bx,11)&&Near(by,12)&&Near(bw,13)&&Near(bh,14));
++    NativeHudHooks::Observe(editor,HudElement::Health,100,200);
++    NativeHudHooks::Observe(editor,HudElement::Health,180,210);
++    HUD_CHECK(editor.GetElementBounds(HudElement::Health,bx,by,bw,bh));
++    HUD_CHECK(Near(bx,100)&&Near(by,200)&&Near(bw,80)&&Near(bh,10));
++    editor.SetLayout(layout);
++    HUD_CHECK(editor.GetElementBounds(HudElement::Health,bx,by,bw,bh));
++    health.offset_x=0.3f;
++    editor.SetLayout(layout);
++    HUD_CHECK(!editor.GetElementBounds(HudElement::Health,bx,by,bw,bh));
++    HUD_CHECK(editor.Initialize());
++    HUD_CHECK(editor.Initialize());
++    editor.Shutdown();editor.Shutdown();
++    HUD_CHECK(!editor.GetElementBounds(HudElement::Health,bx,by,bw,bh));
++    editor.SetLayout(HudLayout{});
++    HUD_CHECK(editor.TransformColor(HudElement::Health,0xffffffff)==0xffffffff);
++    std::printf("\n=== NativeHudEditor Results: %d passed, %d failed ===\n\n",passed,failed);
++    return failed;
++}
+diff --git a/tests/SourceContractTests.cpp b/tests/SourceContractTests.cpp
+index 1179734..b513576 100644
+--- a/tests/SourceContractTests.cpp
++++ b/tests/SourceContractTests.cpp
+@@ -223,7 +223,8 @@ bool TestHudModsSubtabSourceContract() {
+     ASSERT_TRUE(source.find("SubTabItem(\"Crosshair\"") != std::string::npos);
+     ASSERT_TRUE(source.find("SubTabItem(\"Fist\"") != std::string::npos);
+     ASSERT_TRUE(source.find("SubTabItem(\"Squaremap\"") == std::string::npos);
+-    ASSERT_TRUE(source.find("SubTabItem(\"Interface\"") == std::string::npos);
++    ASSERT_TRUE(source.find("SubTabItem(\"Interface\"") != std::string::npos);
++    ASSERT_TRUE(source.find("SubTabItem(\"Interface\"") > source.find("SubTabItem(\"Waffenicons\""));
+     ASSERT_TRUE(source.find("interfaceEditorUI_.Render()") != std::string::npos);
+     ASSERT_TRUE(source.find("HD Blips") == std::string::npos);
+     ASSERT_TRUE(source.find("QuickMap Radar-PNGs") != std::string::npos);
+diff --git a/tools/package_revision8.ps1 b/tools/package_revision8.ps1
+new file mode 100644
+index 0000000..e8a1f16
+--- /dev/null
++++ b/tools/package_revision8.ps1
+@@ -0,0 +1,126 @@
++$ErrorActionPreference = 'Stop'
++$projectRoot = Split-Path -Parent $PSScriptRoot
++$binary = Join-Path $projectRoot 'build\Release\Keybinder.asi'
++$reportPath = Join-Path $projectRoot 'build\revision8-artifact.json'
++$report = Get-Content -LiteralPath $reportPath -Raw | ConvertFrom-Json
++$binaryHash = (Get-FileHash -LiteralPath $binary -Algorithm SHA256).Hash.ToLowerInvariant()
++if ($report.revision -ne 'v0.1.1-r8' -or $binaryHash -ne $report.sha256 -or -not $report.embedded_helper_matches) {
++    throw 'Die ASI stimmt nicht mit dem finalen r8-Prüfbericht überein.'
++}
++$helperPath = Join-Path $projectRoot 'build\ReconnectHelper.exe'
++$helperHash = (Get-FileHash -LiteralPath $helperPath -Algorithm SHA256).Hash.ToLowerInvariant()
++if ($helperHash -ne $report.helper_sha256) { throw 'Der Reconnect-Helfer hat sich seit der Artefaktprüfung geändert.' }
++$workerPath = Join-Path $projectRoot 'build\reconnect-worker-tests\result.json'
++$workerResult = Get-Content -LiteralPath $workerPath -Raw | ConvertFrom-Json
++if ($workerResult.failures -ne 0 -or $workerResult.checks -lt 18) { throw 'Reconnect-Helfertest fehlgeschlagen oder unvollständig.' }
++if ((Get-Item -LiteralPath $workerPath).LastWriteTimeUtc -lt (Get-Item -LiteralPath $helperPath).LastWriteTimeUtc) {
++    throw 'Den nativen Helfertest nach dem letzten Helfer-Build erneut ausführen.'
++}
++$testLog = Get-Content -LiteralPath (Join-Path $projectRoot 'build\revision8-tests.log') -Raw
++if ($testLog -notmatch '(?m)^Test exit code: 0\s*$' -or $testLog -match '\[FAIL\]') { throw 'Gesamttests nicht erfolgreich.' }
++$buildLog = Get-Content -LiteralPath (Join-Path $projectRoot 'build\revision8-build.log') -Raw
++if ($buildLog -notmatch '(?m)^RELEASE_BUILD_EXIT_CODE=0\s*$' -or $buildLog -notmatch 'Keybinder\.vcxproj -> .*Keybinder\.asi' -or $buildLog -match ': (fatal )?error [A-Z]+\d+:') {
++    throw 'Erfolgreicher finaler Release-Build nicht bestätigt.'
++}
++
++$packageDirectory = Join-Path $projectRoot 'dist\NLBinder-0.1.1-r8'
++$archive = Join-Path $projectRoot 'dist\NLBinder-v0.1.1-KOBiRO-r8.zip'
++if ((Test-Path -LiteralPath $packageDirectory) -or (Test-Path -LiteralPath $archive)) {
++    throw 'r8-Paket existiert bereits; nicht automatisch überschreiben.'
++}
++New-Item -ItemType Directory -Path $packageDirectory | Out-Null
++Copy-Item -LiteralPath $binary -Destination (Join-Path $packageDirectory 'Keybinder.asi')
++Copy-Item -LiteralPath (Join-Path $projectRoot 'docs\NLBinder-0.1.1-r8-DE.md') -Destination (Join-Path $packageDirectory 'LIESMICH.md')
++Copy-Item -LiteralPath (Join-Path $projectRoot 'docs\jobs-support.md') -Destination (Join-Path $packageDirectory 'JOB-HINWEISE.md')
++Copy-Item -LiteralPath $reportPath -Destination (Join-Path $packageDirectory 'PRUEFBERICHT.json')
++Copy-Item -LiteralPath $workerPath -Destination (Join-Path $packageDirectory 'RECONNECT-TEST.json')
++
++# Ship only empty weapon folders and instructions, never personal PNG files.
++$catalogSource = Get-Content -LiteralPath (Join-Path $projectRoot 'include\WeaponIconCatalog.h') -Raw
++$weaponFolderNames = @([regex]::Matches($catalogSource, '\{\s*\d+,\s*"[^"]+",\s*"([^"]+)"\s*\}') | ForEach-Object { $_.Groups[1].Value })
++if ($weaponFolderNames.Count -ne 43 -or @($weaponFolderNames | Sort-Object -Unique).Count -ne 43) { throw 'Der Waffenordner-Katalog ist unvollständig oder doppelt.' }
++$templateRoot = Join-Path $packageDirectory 'NLBinder\Waffenicons'
++New-Item -ItemType Directory -Path $templateRoot | Out-Null
++foreach ($folderName in $weaponFolderNames) {
++    if ($folderName -notmatch '^[A-Za-z0-9 -]+$') { throw 'Ungültiger Waffenordner im Katalog.' }
++    New-Item -ItemType Directory -Path (Join-Path $templateRoot $folderName) | Out-Null
++}
++@'
++# Eigene Waffenicons
++
++Den Vorlagenordner NLBinder nach Dokumente/GTA San Andreas User Files kopieren
++und dort mit dem bestehenden NLBinder-Ordner zusammenführen. Vorhandene eigene
++Bilder beibehalten. Die Waffenbilder liegen unter:
++Dokumente/GTA San Andreas User Files/NLBinder/Waffenicons/<Waffe>/
++PNG-Dateien in den passenden Unterordner legen, z.B. Desert Eagle/mein-icon.png.
++Am einfachsten im Binder unter Mods / Waffenicons auf 'Waffenicons-Ordner öffnen'
++klicken: So wird auch ein verschobener Dokumente-Ordner, etwa unter OneDrive,
++korrekt geöffnet. Danach Waffenicons aktivieren und bei Bedarf neu einlesen.
++Mehrere PNGs pro Waffe sind möglich; ohne PNG bleibt das originale Waffenicon.
++Die Fist wird weiterhin unter Mods / Hud eingerichtet.
++'@ | Set-Content -LiteralPath (Join-Path $templateRoot 'LIESMICH.md') -Encoding utf8
++
++$buildInfo = @"
++NLBinder v.0.1.1 by KOBiRO – Überarbeitung 8
++Erstellt: $([System.TimeZoneInfo]::ConvertTimeBySystemTimeZoneId([DateTime]::UtcNow, 'W. Europe Standard Time').ToString('dd.MM.yyyy HH:mm:ss')) (Europe/Berlin)
++Datei: Keybinder.asi
++Format: Win32 Release, PE32/x86 DLL
++Größe: $($report.bytes) Bytes
++SHA256: $binaryHash
++Eingebetteter Reconnect-Helfer: Ressource 300, $($report.embedded_helper_bytes) Bytes
++Helfer-SHA256: $($report.helper_sha256)
++
++Verifikation:
++- Vollständige automatisierte Tests: Exitcode 0
++- Release-Build: Exitcode 0
++- ASI-Format, Windows-Imports und eingebetteter Helfer geprüft
++- Eingebetteter Reconnect-Helfer stimmt mit dem geprüften Helfer überein
++- Nativer Reconnect-Helfer: $($workerResult.checks) Prüfungen, 0 Fehler
++- Dafür ausschließlich harmlose Testprozesse verwendet
++- Kein echtes Spiel und kein installierter Launcher gestartet oder beendet
++- Kein Ingame-Test durchgeführt
++
++Neue Änderungen:
++- Eigene Kategorie Mods / Interface neben Waffenicons
++- Einzelne Positions- und Farboptionen für native HUD-Elemente
++- Leben, Rüstung, Atemluft, Geld, Uhrzeit, Waffenicon, Munition und Wanted-Sterne
++- Fahrzeugname, Gebietsname und Minimap
++- Verschieben per Maus mit Speichern über Esc im bisherigen Overlay-Stil
++- Gespeicherte Presets und getrennte Wiederherstellung von Position und Farbe
++
++Die früheren Job-, Skilltree-, Fraktions-, Radar-, Tacho- und Reconnect-
++Anpassungen sind enthalten. Die ursprüngliche Oberfläche bleibt Grundlage.
++Der Reconnect-Helfer ist in der ASI enthalten.
++
++Grenzen: Die Synchronisation wartet auf eine echte Serverantwort. Mehrere
++Schadensereignisse zwischen Messungen erscheinen als gemessener Gesamtverlust.
++Ein Live-Test mit dem konkreten Server und Launcher steht weiterhin aus.
++Installation und weitere Hinweise stehen in LIESMICH.md.
++"@
++$buildInfo | Set-Content -LiteralPath (Join-Path $packageDirectory 'BUILD-INFO.txt') -Encoding utf8
++"$binaryHash  Keybinder.asi" | Set-Content -LiteralPath (Join-Path $packageDirectory 'SHA256SUMS.txt') -Encoding ascii
++Compress-Archive -LiteralPath $packageDirectory -DestinationPath $archive -CompressionLevel Optimal
++
++Add-Type -AssemblyName System.IO.Compression.FileSystem
++$templateZip = [System.IO.Compression.ZipFile]::Open($archive, [System.IO.Compression.ZipArchiveMode]::Update)
++try {
++    foreach ($folderName in $weaponFolderNames) {
++        $entryName = 'NLBinder-0.1.1-r8/NLBinder/Waffenicons/' + $folderName + '/'
++        if (-not $templateZip.GetEntry($entryName)) { $null = $templateZip.CreateEntry($entryName) }
++    }
++} finally { $templateZip.Dispose() }
++$zip = [System.IO.Compression.ZipFile]::OpenRead($archive)
++try {
++    $entry = $zip.Entries | Where-Object { $_.FullName -match '/Keybinder\.asi$' }
++    if (@($entry).Count -ne 1) { throw 'ASI fehlt im Archiv oder ist mehrfach enthalten.' }
++    $stream = $entry.Open()
++    $digest = [System.Security.Cryptography.SHA256]::Create()
++    try {
++        $zippedHash = [BitConverter]::ToString($digest.ComputeHash($stream)).Replace('-', '').ToLowerInvariant()
++        if ($zippedHash -ne $binaryHash) { throw 'ASI-Prüfsumme im Archiv stimmt nicht.' }
++    } finally { $stream.Dispose(); $digest.Dispose() }
++} finally { $zip.Dispose() }
++$stagedHash = (Get-FileHash -LiteralPath (Join-Path $packageDirectory 'Keybinder.asi') -Algorithm SHA256).Hash.ToLowerInvariant()
++if ($stagedHash -ne $binaryHash) { throw 'Kopierte ASI stimmt nicht überein.' }
++Get-Item -LiteralPath (Join-Path $packageDirectory 'Keybinder.asi'), $archive | Select-Object FullName,Length
++Write-Output "SHA256: $binaryHash"
+diff --git a/tools/run_tests.bat b/tools/run_tests.bat
+index 81f94b8..83982e5 100644
+--- a/tools/run_tests.bat
++++ b/tools/run_tests.bat
+@@ -79,6 +79,8 @@ set "KEYBINDER_TEST_RSP=%~dp0..\build\KeybinderTests.rsp"
+     echo "%~dp0..\tests\StatsDialogRPCAdapterTests.cpp"
+     echo "%~dp0..\tests\SpeedTicketFlowTests.cpp"
+     echo "%~dp0..\tests\WeaponIconManagerTests.cpp"
++    echo "%~dp0..\tests\NativeHudEditorTests.cpp"
++    echo "%~dp0..\tests\InterfaceLayoutSettingsTests.cpp"
+     echo "%~dp0..\tests\WeaponIconSettingsTests.cpp"
+     echo "%~dp0..\tests\JobSkillsSnapshotTests.cpp"
+     echo "%~dp0..\tests\JobSkillsImportTests.cpp"
+@@ -95,6 +97,7 @@ set "KEYBINDER_TEST_RSP=%~dp0..\build\KeybinderTests.rsp"
+     echo "%~dp0..\\src\\SpeedTicketFlow.cpp"
+     echo "%~dp0..\\src\\SpeedTicketBridge.cpp"
+     echo "%~dp0..\\src\\WeaponIconManager.cpp"
++    echo "%~dp0..\src\NativeHudEditor.cpp"
+     echo "%~dp0..\\src\\WeaponIconsUI.cpp"
+     echo "%~dp0..\\src\\StatsDialogRPCAdapter.cpp"
+     echo "%~dp0..\\src\\InputManager.cpp"
+diff --git a/tools/verify_revision8_artifact.py b/tools/verify_revision8_artifact.py
+new file mode 100644
+index 0000000..97af1a9
+--- /dev/null
++++ b/tools/verify_revision8_artifact.py
+@@ -0,0 +1,115 @@
++"""Read-only r8 PE/artifact verification; never loads or executes binaries."""
++import hashlib
++import json
++from pathlib import Path
++import struct
++import sys
++
++
++def require(condition, message):
++    if not condition:
++        raise ValueError(message)
++
++
++class PE:
++    def __init__(self, path):
++        self.path = Path(path)
++        self.data = self.path.read_bytes()
++        require(self.data[:2] == b"MZ", "Missing DOS header")
++        start = self.u32(0x3C)
++        require(self.data[start:start + 4] == b"PE\0\0", "Missing PE signature")
++        self.machine = self.u16(start + 4)
++        count = self.u16(start + 6)
++        self.characteristics = self.u16(start + 22)
++        self.optional = start + 24
++        require(self.u16(self.optional) == 0x10B, "Expected PE32")
++        self.sections = []
++        table = self.optional + self.u16(start + 20)
++        for index in range(count):
++            row = table + index * 40
++            virtual_size, rva, size, raw = struct.unpack_from("<IIII", self.data, row + 8)
++            self.sections.append((rva, max(virtual_size, size), raw, size))
++
++    def u16(self, offset):
++        return struct.unpack_from("<H", self.data, offset)[0]
++
++    def u32(self, offset):
++        return struct.unpack_from("<I", self.data, offset)[0]
++
++    def offset(self, rva):
++        for start, span, raw, size in self.sections:
++            if start <= rva < start + span:
++                require(rva - start < size, "RVA has no raw file data")
++                return raw + rva - start
++        raise ValueError(f"Unmapped RVA: {rva:#x}")
++
++    def imports(self):
++        directory = self.u32(self.optional + 96 + 8)
++        if not directory:
++            return []
++        row = self.offset(directory)
++        result = []
++        while any(struct.unpack_from("<IIIII", self.data, row)):
++            name = self.offset(self.u32(row + 12))
++            end = self.data.index(0, name)
++            result.append(self.data[name:end].decode("ascii"))
++            row += 20
++        return sorted(result, key=str.lower)
++
++    def resource(self, type_id, resource_id):
++        base = self.offset(self.u32(self.optional + 96 + 16))
++
++        def entries(relative):
++            head = base + relative
++            total = self.u16(head + 12) + self.u16(head + 14)
++            return [struct.unpack_from("<II", self.data, head + 16 + i * 8) for i in range(total)]
++
++        directory = 0
++        for expected in (type_id, resource_id):
++            candidates = [value for name, value in entries(directory) if name == expected]
++            require(len(candidates) == 1, f"Resource ID {expected} missing or ambiguous")
++            require(candidates[0] & 0x80000000, "Expected resource directory")
++            directory = candidates[0] & 0x7FFFFFFF
++        languages = entries(directory)
++        require(len(languages) == 1, "Expected one embedded worker language")
++        leaf = languages[0][1]
++        require(not leaf & 0x80000000, "Expected resource data entry")
++        rva, size = struct.unpack_from("<II", self.data, base + leaf)
++        start = self.offset(rva)
++        return self.data[start:start + size]
++
++
++def main():
++    root = Path(__file__).resolve().parents[1]
++    asi = PE(sys.argv[1] if len(sys.argv) > 1 else root / "build/Release/Keybinder.asi")
++    helper = PE(root / "build/ReconnectHelper.exe")
++    require(asi.machine == helper.machine == 0x14C, "Expected both binaries to be x86")
++    require(asi.characteristics & 0x2000, "ASI must be a DLL")
++    require(not helper.characteristics & 0x2000, "Worker must be an executable")
++    require(asi.resource(10, 300) == helper.data, "Embedded helper differs from built helper")
++    imports = asi.imports()
++    require(not any(name.lower().startswith(("vcruntime", "msvcp", "ucrtbased")) for name in imports),
++            "Unexpected external C++ runtime dependency")
++    try:
++        display_path = asi.path.resolve().relative_to(root).as_posix()
++    except ValueError:
++        display_path = asi.path.name
++    result = {
++        "revision": "v0.1.1-r8",
++        "asi": display_path,
++        "bytes": len(asi.data),
++        "format": "PE32 x86 DLL",
++        "sha256": hashlib.sha256(asi.data).hexdigest(),
++        "imports": imports,
++        "embedded_helper_id": 300,
++        "embedded_helper_bytes": len(helper.data),
++        "helper_sha256": hashlib.sha256(helper.data).hexdigest(),
++        "embedded_helper_matches": True,
++    }
++    report = json.dumps(result, indent=2)
++    (root / "build/revision8-artifact.json").write_text(report + "\n", encoding="utf-8")
++    print(report)
++
++
++if __name__ == "__main__":
++    main()

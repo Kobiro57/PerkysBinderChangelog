@@ -223,7 +223,8 @@ bool TestHudModsSubtabSourceContract() {
     ASSERT_TRUE(source.find("SubTabItem(\"Crosshair\"") != std::string::npos);
     ASSERT_TRUE(source.find("SubTabItem(\"Fist\"") != std::string::npos);
     ASSERT_TRUE(source.find("SubTabItem(\"Squaremap\"") == std::string::npos);
-    ASSERT_TRUE(source.find("SubTabItem(\"Interface\"") == std::string::npos);
+    ASSERT_TRUE(source.find("SubTabItem(\"Interface\"") != std::string::npos);
+    ASSERT_TRUE(source.find("SubTabItem(\"Interface\"") > source.find("SubTabItem(\"Waffenicons\""));
     ASSERT_TRUE(source.find("interfaceEditorUI_.Render()") != std::string::npos);
     ASSERT_TRUE(source.find("HD Blips") == std::string::npos);
     ASSERT_TRUE(source.find("QuickMap Radar-PNGs") != std::string::npos);

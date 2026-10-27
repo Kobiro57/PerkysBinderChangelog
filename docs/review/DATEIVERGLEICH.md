@@ -2,7 +2,7 @@
 
 Originalarchiv: `a328e78eea63420e9bfe9c084883100177fe0fd9c2d62c4fcaef38c0a44801e9`; Commitkennung im ZIP: `92ce21971bee2d166d830e23ad20950f1dc98921`.
 
-Aktueller Vergleich: `v0.1.1-r7`, ASI-SHA-256 `abdcca5a0f89ea6e2391834199eef83f267dfee4ac05e28cff7a946b3db9341d`.
+Aktueller Vergleich: `v0.1.1-r8`, ASI-SHA-256 `02401c76a69e40631698ac2e1a5ea5855f69fcbb3d9c0a9f7ee1909c28a30e3b`.
 
 Alle Dateien einschließlich wiederhergestellter Abhängigkeiten stehen in [SOURCE-COMPARISON.json](SOURCE-COMPARISON.json).
 Die Vorher-Prüfsummen stammen aus dem unveränderten gefilterten ZIP-Snapshot.
@@ -53,10 +53,19 @@ Diese Liste zeigt Inhaltsänderungen außerhalb der Vendor-Verzeichnisse.
 | added | [dist/NLBinder-0.1.1-r7/PRUEFBERICHT.json](../../dist/NLBinder-0.1.1-r7/PRUEFBERICHT.json) |
 | added | [dist/NLBinder-0.1.1-r7/RECONNECT-TEST.json](../../dist/NLBinder-0.1.1-r7/RECONNECT-TEST.json) |
 | added | [dist/NLBinder-0.1.1-r7/SHA256SUMS.txt](../../dist/NLBinder-0.1.1-r7/SHA256SUMS.txt) |
+| added | [dist/NLBinder-0.1.1-r8/BUILD-INFO.txt](../../dist/NLBinder-0.1.1-r8/BUILD-INFO.txt) |
+| added | [dist/NLBinder-0.1.1-r8/JOB-HINWEISE.md](../../dist/NLBinder-0.1.1-r8/JOB-HINWEISE.md) |
+| added | [dist/NLBinder-0.1.1-r8/Keybinder.asi](../../dist/NLBinder-0.1.1-r8/Keybinder.asi) |
+| added | [dist/NLBinder-0.1.1-r8/LIESMICH.md](../../dist/NLBinder-0.1.1-r8/LIESMICH.md) |
+| added | [dist/NLBinder-0.1.1-r8/NLBinder/Waffenicons/LIESMICH.md](../../dist/NLBinder-0.1.1-r8/NLBinder/Waffenicons/LIESMICH.md) |
+| added | [dist/NLBinder-0.1.1-r8/PRUEFBERICHT.json](../../dist/NLBinder-0.1.1-r8/PRUEFBERICHT.json) |
+| added | [dist/NLBinder-0.1.1-r8/RECONNECT-TEST.json](../../dist/NLBinder-0.1.1-r8/RECONNECT-TEST.json) |
+| added | [dist/NLBinder-0.1.1-r8/SHA256SUMS.txt](../../dist/NLBinder-0.1.1-r8/SHA256SUMS.txt) |
 | added | [dist/NLBinder-v0.1.1-KOBiRO-r4.zip](../../dist/NLBinder-v0.1.1-KOBiRO-r4.zip) |
 | added | [dist/NLBinder-v0.1.1-KOBiRO-r5.zip](../../dist/NLBinder-v0.1.1-KOBiRO-r5.zip) |
 | added | [dist/NLBinder-v0.1.1-KOBiRO-r6.zip](../../dist/NLBinder-v0.1.1-KOBiRO-r6.zip) |
 | added | [dist/NLBinder-v0.1.1-KOBiRO-r7.zip](../../dist/NLBinder-v0.1.1-KOBiRO-r7.zip) |
+| added | [dist/NLBinder-v0.1.1-KOBiRO-r8.zip](../../dist/NLBinder-v0.1.1-KOBiRO-r8.zip) |
 | added | [docs/BUILD-README.md](../../docs/BUILD-README.md) |
 | added | [docs/NLBinder-0.1.1-DE.md](../../docs/NLBinder-0.1.1-DE.md) |
 | added | [docs/NLBinder-0.1.1-r2-DE.md](../../docs/NLBinder-0.1.1-r2-DE.md) |
@@ -65,6 +74,7 @@ Diese Liste zeigt Inhaltsänderungen außerhalb der Vendor-Verzeichnisse.
 | added | [docs/NLBinder-0.1.1-r5-DE.md](../../docs/NLBinder-0.1.1-r5-DE.md) |
 | added | [docs/NLBinder-0.1.1-r6-DE.md](../../docs/NLBinder-0.1.1-r6-DE.md) |
 | added | [docs/NLBinder-0.1.1-r7-DE.md](../../docs/NLBinder-0.1.1-r7-DE.md) |
+| added | [docs/NLBinder-0.1.1-r8-DE.md](../../docs/NLBinder-0.1.1-r8-DE.md) |
 | added | [docs/ORIGINAL-README.md](../../docs/ORIGINAL-README.md) |
 | added | [docs/build-dependencies.md](../../docs/build-dependencies.md) |
 | added | [docs/jobs-support.md](../../docs/jobs-support.md) |
@@ -78,10 +88,14 @@ Diese Liste zeigt Inhaltsänderungen außerhalb der Vendor-Verzeichnisse.
 | added | [docs/review/r5-validation.json](../../docs/review/r5-validation.json) |
 | added | [docs/review/r6-validation.json](../../docs/review/r6-validation.json) |
 | added | [docs/review/r7-validation.json](../../docs/review/r7-validation.json) |
+| added | [docs/review/r8-validation.json](../../docs/review/r8-validation.json) |
 | modified | [include/ActionExecutor.h](../../include/ActionExecutor.h) |
 | modified | [include/DamageRPCAdapter.h](../../include/DamageRPCAdapter.h) |
 | modified | [include/DeathMessageRPCAdapter.h](../../include/DeathMessageRPCAdapter.h) |
 | modified | [include/IncomingDamageDetector.h](../../include/IncomingDamageDetector.h) |
+| modified | [include/InterfaceEditor.h](../../include/InterfaceEditor.h) |
+| modified | [include/InterfaceEditorUI.h](../../include/InterfaceEditorUI.h) |
+| added | [include/InterfaceLayout.h](../../include/InterfaceLayout.h) |
 | modified | [include/JobChatAdapter.h](../../include/JobChatAdapter.h) |
 | added | [include/JobSkillsSnapshot.h](../../include/JobSkillsSnapshot.h) |
 | modified | [include/JobTracker.h](../../include/JobTracker.h) |
@@ -95,6 +109,7 @@ Diese Liste zeigt Inhaltsänderungen außerhalb der Vendor-Verzeichnisse.
 | modified | [include/MainWindowUI.h](../../include/MainWindowUI.h) |
 | added | [include/MessageVariables.h](../../include/MessageVariables.h) |
 | added | [include/MessageVariablesUI.h](../../include/MessageVariablesUI.h) |
+| added | [include/NativeHudEditor.h](../../include/NativeHudEditor.h) |
 | modified | [include/OnlineDataManager.h](../../include/OnlineDataManager.h) |
 | modified | [include/OnlineOverlayController.h](../../include/OnlineOverlayController.h) |
 | modified | [include/OnlineOverlayRenderer.h](../../include/OnlineOverlayRenderer.h) |
@@ -118,6 +133,8 @@ Diese Liste zeigt Inhaltsänderungen außerhalb der Vendor-Verzeichnisse.
 | modified | [src/ActionExecutor.cpp](../../src/ActionExecutor.cpp) |
 | modified | [src/DamageRPCAdapter.cpp](../../src/DamageRPCAdapter.cpp) |
 | modified | [src/DeathMessageRPCAdapter.cpp](../../src/DeathMessageRPCAdapter.cpp) |
+| modified | [src/InterfaceEditor.cpp](../../src/InterfaceEditor.cpp) |
+| modified | [src/InterfaceEditorUI.cpp](../../src/InterfaceEditorUI.cpp) |
 | modified | [src/JobChatAdapter.cpp](../../src/JobChatAdapter.cpp) |
 | added | [src/JobSkillsSync.cpp](../../src/JobSkillsSync.cpp) |
 | modified | [src/JobTracker.cpp](../../src/JobTracker.cpp) |
@@ -128,6 +145,7 @@ Diese Liste zeigt Inhaltsänderungen außerhalb der Vendor-Verzeichnisse.
 | modified | [src/KillfeedAdapter.cpp](../../src/KillfeedAdapter.cpp) |
 | modified | [src/Main.cpp](../../src/Main.cpp) |
 | modified | [src/MainWindowUI.cpp](../../src/MainWindowUI.cpp) |
+| added | [src/NativeHudEditor.cpp](../../src/NativeHudEditor.cpp) |
 | modified | [src/OnlineDataManager.cpp](../../src/OnlineDataManager.cpp) |
 | modified | [src/OnlineOverlayController.cpp](../../src/OnlineOverlayController.cpp) |
 | modified | [src/OnlineOverlayRenderer.cpp](../../src/OnlineOverlayRenderer.cpp) |
@@ -146,6 +164,8 @@ Diese Liste zeigt Inhaltsänderungen außerhalb der Vendor-Verzeichnisse.
 | modified | [src/TextDrawAdapter.cpp](../../src/TextDrawAdapter.cpp) |
 | added | [src/WeaponIconManager.cpp](../../src/WeaponIconManager.cpp) |
 | added | [src/WeaponIconsUI.cpp](../../src/WeaponIconsUI.cpp) |
+| modified | [tests/InterfaceEditorTests.cpp](../../tests/InterfaceEditorTests.cpp) |
+| added | [tests/InterfaceLayoutSettingsTests.cpp](../../tests/InterfaceLayoutSettingsTests.cpp) |
 | modified | [tests/JobChatAdapterTests.cpp](../../tests/JobChatAdapterTests.cpp) |
 | modified | [tests/JobParserTests.cpp](../../tests/JobParserTests.cpp) |
 | modified | [tests/JobRegistryTests.cpp](../../tests/JobRegistryTests.cpp) |
@@ -156,6 +176,7 @@ Diese Liste zeigt Inhaltsänderungen außerhalb der Vendor-Verzeichnisse.
 | modified | [tests/KeybindTests.cpp](../../tests/KeybindTests.cpp) |
 | added | [tests/KillMessageTestTests.cpp](../../tests/KillMessageTestTests.cpp) |
 | added | [tests/LocationVariableTests.cpp](../../tests/LocationVariableTests.cpp) |
+| added | [tests/NativeHudEditorTests.cpp](../../tests/NativeHudEditorTests.cpp) |
 | modified | [tests/OnlineDataManagerTests.cpp](../../tests/OnlineDataManagerTests.cpp) |
 | modified | [tests/OnlineOverlayRendererTests.cpp](../../tests/OnlineOverlayRendererTests.cpp) |
 | modified | [tests/OnlineSettingsTests.cpp](../../tests/OnlineSettingsTests.cpp) |
@@ -180,6 +201,7 @@ Diese Liste zeigt Inhaltsänderungen außerhalb der Vendor-Verzeichnisse.
 | added | [tools/package_revision5.ps1](../../tools/package_revision5.ps1) |
 | added | [tools/package_revision6.ps1](../../tools/package_revision6.ps1) |
 | added | [tools/package_revision7.ps1](../../tools/package_revision7.ps1) |
+| added | [tools/package_revision8.ps1](../../tools/package_revision8.ps1) |
 | added | [tools/prepare_github_review.py](../../tools/prepare_github_review.py) |
 | modified | [tools/run_tests.bat](../../tools/run_tests.bat) |
 | added | [tools/setup_msvc.bat](../../tools/setup_msvc.bat) |
@@ -188,3 +210,4 @@ Diese Liste zeigt Inhaltsänderungen außerhalb der Vendor-Verzeichnisse.
 | added | [tools/verify_revision5_artifact.py](../../tools/verify_revision5_artifact.py) |
 | added | [tools/verify_revision6_artifact.py](../../tools/verify_revision6_artifact.py) |
 | added | [tools/verify_revision7_artifact.py](../../tools/verify_revision7_artifact.py) |
+| added | [tools/verify_revision8_artifact.py](../../tools/verify_revision8_artifact.py) |

@@ -488,3 +488,54 @@ Quelle und Tests: [SAMPBridge.cpp](../../src/SAMPBridge.cpp),
 Die endgültigen automatisierten Ergebnisse, ASI-Prüfsumme und Paketgleichheit
 gehören zu den r7-Paketnachweisen. Frühere Hashwerte bleiben ausschließlich den
 älteren ASIs zugeordnet; ein echter Ingame-Test auf dem Server steht aus.
+
+
+## 14. Nachtrag r8 – 27. Oktober 2026
+
+### Eigene Interface-Kategorie und getrennte HUD-Einstellungen
+
+Unter Mods wurde **Interface** direkt neben Waffenicons ergänzt. Die
+vorhandene Preset-Verwaltung ist dort eingeordnet. Leben, Rüstung, Atemluft,
+Geld, Uhrzeit, Waffenicon, Munition, Wanted-Sterne, Fahrzeugname, Gebietsname
+und Minimap erhalten jeweils eigene Positions- und Farboptionen. Ohne
+aktivierte eigene Farbe bleibt die jeweilige native Farbe erhalten. Die
+Position wird als auflösungsunabhängiger Versatz vom nativen GTA-Standort
+gespeichert. Position und Farbe lassen sich getrennt zurücksetzen.
+
+Der Binder verwendet weiterhin seine bisherigen Karten, Schalter und
+Farbauswahl. Die mitgelieferte historische InterfaceEditor-INI ist nur eine
+Funktionsvorlage; deren feste Koordinaten und Speicheränderungen werden
+nicht pauschal installiert.
+
+### Mit der Maus verschieben und mit Esc speichern
+
+Die Verschieben-Funktion wird für ein bestimmtes Element gestartet. Das
+Menü wird ausgeblendet und ein Griffrahmen mit Hinweis eingeblendet. Die
+Maus verschiebt das ausgewählte Element; Esc beendet den Modus und speichert
+den aktiven Preset-Stand. Andere Elemente behalten ihre eigenen Positionen
+und Farben. Die Eingaben im Verschiebemodus werden vom Spiel abgeschirmt,
+wie beim bestehenden Overlay-Verschieben.
+
+### Native Zeichnung und bestehende Mods
+
+Die Änderungen betreffen das lokale native GTA-HUD. Der Original-Zeichenpfad
+bleibt Grundlage; die vorhandene Waffenicon-Auswahl arbeitet weiterhin mit
+dem Interface-Editor zusammen. Farben werden für den jeweiligen Zeichen-
+bereich angewendet, ohne die gemeinsame HUD-Farbpalette dauerhaft für
+andere Elemente zu verändern. Eigene Server-Textdraws, Datum und sonstige
+Serveranzeigen gehören nicht zu diesem nativen GTA-Editor.
+
+Quellen: [InterfaceLayout.h](../../include/InterfaceLayout.h),
+[NativeHudEditor.cpp](../../src/NativeHudEditor.cpp),
+[InterfaceEditor.cpp](../../src/InterfaceEditor.cpp),
+[InterfaceEditorUI.cpp](../../src/InterfaceEditorUI.cpp),
+[SettingsManager.cpp](../../src/SettingsManager.cpp),
+[MainWindowUI.cpp](../../src/MainWindowUI.cpp).
+Tests: [NativeHudEditorTests.cpp](../../tests/NativeHudEditorTests.cpp),
+[InterfaceEditorTests.cpp](../../tests/InterfaceEditorTests.cpp),
+[InterfaceLayoutSettingsTests.cpp](../../tests/InterfaceLayoutSettingsTests.cpp).
+
+Die endgültigen automatisierten Ergebnisse und die ASI-Prüfsumme gehören zu
+[r8](../../dist/NLBinder-0.1.1-r8/BUILD-INFO.txt). Die ursprünglichen
+Urheberhinweise und frühere Prüfstände bleiben erhalten. Ein echter
+Ingame-Test mit dem konkreten Server steht aus.

@@ -1,0 +1,35 @@
+NLBinder v.0.1.1 by KOBiRO – Überarbeitung 8
+Erstellt: 27.10.2026 16:09:48 (Europe/Berlin)
+Datei: Keybinder.asi
+Format: Win32 Release, PE32/x86 DLL
+Größe: 18443776 Bytes
+SHA256: 02401c76a69e40631698ac2e1a5ea5855f69fcbb3d9c0a9f7ee1909c28a30e3b
+Eingebetteter Reconnect-Helfer: Ressource 300, 101376 Bytes
+Helfer-SHA256: df516d237e4fb971656b154c830df02c6f45548caf13d71749c2466f58d7e275
+
+Verifikation:
+- Vollständige automatisierte Tests: Exitcode 0
+- Release-Build: Exitcode 0
+- ASI-Format, Windows-Imports und eingebetteter Helfer geprüft
+- Eingebetteter Reconnect-Helfer stimmt mit dem geprüften Helfer überein
+- Nativer Reconnect-Helfer: 18 Prüfungen, 0 Fehler
+- Dafür ausschließlich harmlose Testprozesse verwendet
+- Kein echtes Spiel und kein installierter Launcher gestartet oder beendet
+- Kein Ingame-Test durchgeführt
+
+Neue Änderungen:
+- Eigene Kategorie Mods / Interface neben Waffenicons
+- Einzelne Positions- und Farboptionen für native HUD-Elemente
+- Leben, Rüstung, Atemluft, Geld, Uhrzeit, Waffenicon, Munition und Wanted-Sterne
+- Fahrzeugname, Gebietsname und Minimap
+- Verschieben per Maus mit Speichern über Esc im bisherigen Overlay-Stil
+- Gespeicherte Presets und getrennte Wiederherstellung von Position und Farbe
+
+Die früheren Job-, Skilltree-, Fraktions-, Radar-, Tacho- und Reconnect-
+Anpassungen sind enthalten. Die ursprüngliche Oberfläche bleibt Grundlage.
+Der Reconnect-Helfer ist in der ASI enthalten.
+
+Grenzen: Die Synchronisation wartet auf eine echte Serverantwort. Mehrere
+Schadensereignisse zwischen Messungen erscheinen als gemessener Gesamtverlust.
+Ein Live-Test mit dem konkreten Server und Launcher steht weiterhin aus.
+Installation und weitere Hinweise stehen in LIESMICH.md.

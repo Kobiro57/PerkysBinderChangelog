@@ -3,11 +3,11 @@
   "baseline_import_commit": "2da75e6c54a098243bf00ab48d86c5e3ee3cd261",
   "baseline_tag": "original-archive-92ce219",
   "original_archive_commit_comment": "92ce21971bee2d166d830e23ad20950f1dc98921",
-  "history_note": "Original archive and pinned-dependency imports remain intact. r7 is a subsequent Binder update; no previous history is rewritten.",
-  "asi_sha256": "abdcca5a0f89ea6e2391834199eef83f267dfee4ac05e28cff7a946b3db9341d",
+  "history_note": "Original archive and pinned-dependency imports remain intact. r8 is a subsequent Binder update; no previous history is rewritten.",
+  "asi_sha256": "02401c76a69e40631698ac2e1a5ea5855f69fcbb3d9c0a9f7ee1909c28a30e3b",
   "dependencies_import_commit": "3c8e11a76bc8d94962da0ce447a8d1a8b7c3eb83",
   "dependencies_tag": "build-dependencies-baseline",
-  "release": "v0.1.1-r7",
-  "previous_release": "v0.1.1-r6",
-  "previous_published_commit": "1f4f0991875e3aebd52694b49e3d9b5a0dbe5cde"
+  "release": "v0.1.1-r8",
+  "previous_release": "v0.1.1-r7",
+  "previous_published_commit": "1326a9af89dd8e4a764a0996e6d80bb28766b7a7"
 }

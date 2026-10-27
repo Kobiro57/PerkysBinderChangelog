@@ -14,6 +14,8 @@ int RunStatsDialogRPCAdapterTests();
 int RunSpeedTicketFlowTests();
 int RunWeaponIconManagerTests();
 int RunWeaponIconSettingsTests();
+int RunNativeHudEditorTests();
+int RunInterfaceLayoutSettingsTests();
 int RunJobSkillsSnapshotTests();
 int RunJobSkillsImportTests();
 int RunSpeedometerFocusedTests();
@@ -100,6 +102,8 @@ int main() {
         + run_suite("Running SpeedTicketFlowTests...", RunSpeedTicketFlowTests)
         + run_suite("Running WeaponIconManagerTests...", RunWeaponIconManagerTests)
         + run_suite("Running WeaponIconSettingsTests...", RunWeaponIconSettingsTests)
+        + run_suite("Running NativeHudEditorTests...", RunNativeHudEditorTests)
+        + run_suite("Running InterfaceLayoutSettingsTests...", RunInterfaceLayoutSettingsTests)
         + run_suite("Running JobSkillsSnapshotTests...", RunJobSkillsSnapshotTests)
         + run_suite("Running JobSkillsImportTests...", RunJobSkillsImportTests);
     if (r4_failures != 0) return r4_failures;

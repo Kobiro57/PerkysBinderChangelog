@@ -1,17 +1,12 @@
 #include "../include/InterfaceEditor.h"
 #include "../include/SAMPBridge.h"
 #include "../include/SettingsManager.h"
+#include "../include/ThemeManager.h"
 #include "../include/imgui-1.92.7/imgui.h"
 
 #ifndef KEYBINDER_TESTING
 #include "plugin.h"
-#include "common.h"
-#include "safetyhook.hpp"
-
-#include "../include/Logger.h"
-
 #include "../include/plugin-sdk/plugin_sa/game_sa/CHud.h"
-#include "../include/plugin-sdk/plugin_sa/game_sa/CHudColours.h"
 #endif
 
 #include <algorithm>
@@ -38,60 +33,6 @@ namespace keybinder {
 
 namespace {
 
-#ifndef KEYBINDER_TESTING
-constexpr unsigned char kHealthPaletteSlot = HUD_COLOUR_RED;
-constexpr unsigned char kArmorPaletteSlot = HUD_COLOUR_GREY;
-constexpr unsigned char kMoneyPaletteSlot = HUD_COLOUR_GREEN;
-InterfaceEditor* g_active_interface_editor = nullptr;
-safetyhook::InlineHook* g_draw_hud_hook = nullptr;
-bool g_logged_draw_hook_execution = false;
-
-unsigned char ClampToByte(float value) {
-    const float clamped = (std::max)(0.0f, (std::min)(value, 1.0f));
-    return static_cast<unsigned char>(std::lround(clamped * 255.0f));
-}
-
-void __cdecl HookedHudDraw() {
-    InterfaceEditor* editor = g_active_interface_editor;
-    if (editor == nullptr || g_draw_hud_hook == nullptr) {
-        return;
-    }
-
-    const InterfacePreset* preset = editor->GetPreset(editor->GetActivePreset());
-    if (preset == nullptr) {
-        g_draw_hud_hook->ccall<void>();
-        return;
-    }
-
-    g_draw_hud_hook->ccall<void>();
-    if (!g_logged_draw_hook_execution) {
-        keybinder::Logger::Debug("[InterfaceEditor] HUD draw hook executed");
-        g_logged_draw_hook_execution = true;
-    }
-}
-
-bool InstallHook(safetyhook::InlineHook*& hook, void* target, void* destination) {
-    if (hook != nullptr) {
-        return true;
-    }
-
-    auto createdHook = safetyhook::InlineHook::create(target, destination);
-    if (!createdHook) {
-        return false;
-    }
-
-    hook = new safetyhook::InlineHook(std::move(*createdHook));
-    return true;
-}
-
-void RemoveHook(safetyhook::InlineHook*& hook) {
-    if (hook != nullptr) {
-        delete hook;
-        hook = nullptr;
-    }
-}
-#endif
-
 unsigned char ClampColorComponent(float value) {
     const float clamped = (std::max)(0.0f, (std::min)(value, 1.0f));
     return static_cast<unsigned char>(std::lround(clamped * 255.0f));
@@ -99,10 +40,6 @@ unsigned char ClampColorComponent(float value) {
 
 int ClampPresetIndex(int index) {
     return (std::max)(0, (std::min)(index, InterfaceEditor::PRESET_SLOT_COUNT - 1));
-}
-
-float ClampNormalizedPosition(float value) {
-    return (std::max)(0.0f, (std::min)(value, 1.0f));
 }
 
 float ClampSignedNormalizedOffset(float value) {
@@ -179,50 +116,17 @@ bool TryReadPlayerVitalStats(const ::SAMPBridge* bridge, int& healthValue, int& 
 } // namespace
 
 bool InterfaceEditor::Initialize() {
-#ifndef KEYBINDER_TESTING
-    g_active_interface_editor = this;
-    if (!InstallHook(g_draw_hud_hook, reinterpret_cast<void*>(0x58FAE0), reinterpret_cast<void*>(&HookedHudDraw))) {
-        keybinder::Logger::Error("[InterfaceEditor] Failed to install CHud::Draw hook");
-        return false;
-    }
-    keybinder::Logger::Debug("[InterfaceEditor] Installed CHud::Draw hook");
-    g_logged_draw_hook_execution = false;
-#endif
-
+    // NativeHudEditor owns all native draw hooks. This class owns presets and
+    // the move interaction, so no second hook of CHud::Draw is necessary.
     return true;
 }
 
 void InterfaceEditor::Shutdown() {
-#ifndef KEYBINDER_TESTING
-    RemoveHook(g_draw_hud_hook);
-    if (g_active_interface_editor == this) {
-        g_active_interface_editor = nullptr;
-    }
-#endif
+    FinishElementMove();
 }
 
 void InterfaceEditor::ApplyCurrentPreset() {
     if (!original_values_captured_) {
-#ifndef KEYBINDER_TESTING
-        original_show_area_name_ = !CHud::bScriptDontDisplayAreaName;
-        const CRGBA originalHealth = HudColour.GetRGBA(kHealthPaletteSlot);
-        original_health_palette_[0] = originalHealth.r;
-        original_health_palette_[1] = originalHealth.g;
-        original_health_palette_[2] = originalHealth.b;
-        original_health_palette_[3] = originalHealth.a;
-
-        const CRGBA originalArmor = HudColour.GetRGBA(kArmorPaletteSlot);
-        original_armor_palette_[0] = originalArmor.r;
-        original_armor_palette_[1] = originalArmor.g;
-        original_armor_palette_[2] = originalArmor.b;
-        original_armor_palette_[3] = originalArmor.a;
-
-        const CRGBA originalMoney = HudColour.GetRGBA(kMoneyPaletteSlot);
-        original_money_palette_[0] = originalMoney.r;
-        original_money_palette_[1] = originalMoney.g;
-        original_money_palette_[2] = originalMoney.b;
-        original_money_palette_[3] = originalMoney.a;
-#else
         original_show_master_hud_ = CHud::m_Wants_To_Draw_Hud;
         original_show_radar_ = !CHud::bScriptDontDisplayRadar;
         original_show_area_name_ = !CHud::bScriptDontDisplayAreaName;
@@ -230,34 +134,14 @@ void InterfaceEditor::ApplyCurrentPreset() {
         original_show_clock_ = CHud::bDrawClock;
         original_show_vital_stats_ = CHud::bDrawingVitalStats;
         original_show_3d_markers_ = CHud::m_bDraw3dMarkers;
-#endif
         original_values_captured_ = true;
     }
 
-    InterfacePreset* preset = GetPreset(GetActivePreset());
-    if (preset == nullptr) {
-        return;
-    }
+    const InterfacePreset* preset = GetPreset(GetActivePreset());
+    if (preset == nullptr) return;
 
-#ifndef KEYBINDER_TESTING
-    HudColour.SetRGBAValue(
-        kHealthPaletteSlot,
-        ClampToByte(preset->hp_color_r),
-        ClampToByte(preset->hp_color_g),
-        ClampToByte(preset->hp_color_b),
-        ClampToByte(preset->hp_color_a));
-    HudColour.SetRGBAValue(
-        kArmorPaletteSlot,
-        ClampToByte(preset->armor_color_r),
-        ClampToByte(preset->armor_color_g),
-        ClampToByte(preset->armor_color_b),
-        ClampToByte(preset->armor_color_a));
-    HudColour.SetRGBAValue(
-        kMoneyPaletteSlot,
-        ClampToByte(preset->money_color_r),
-        ClampToByte(preset->money_color_g),
-        ClampToByte(preset->money_color_b),
-        ClampToByte(preset->money_color_a));
+    // Colors are applied only inside the corresponding native draw call.
+    // Keeping the shared GTA palette unchanged avoids recoloring other HUD text.
     CHud::m_Wants_To_Draw_Hud = preset->show_master_hud;
     CHud::bScriptDontDisplayRadar = !preset->show_radar;
     CHud::bScriptDontDisplayAreaName = !preset->show_area_name;
@@ -265,41 +149,10 @@ void InterfaceEditor::ApplyCurrentPreset() {
     CHud::bDrawClock = preset->show_clock;
     CHud::bDrawingVitalStats = preset->show_vital_stats;
     CHud::m_bDraw3dMarkers = preset->show_3d_markers;
-#else
-    CHud::m_Wants_To_Draw_Hud = preset->show_master_hud;
-    CHud::bScriptDontDisplayRadar = !preset->show_radar;
-    CHud::bScriptDontDisplayAreaName = !preset->show_area_name;
-    CHud::bScriptDontDisplayVehicleName = !preset->show_vehicle_name;
-    CHud::bDrawClock = preset->show_clock;
-    CHud::bDrawingVitalStats = preset->show_vital_stats;
-    CHud::m_bDraw3dMarkers = preset->show_3d_markers;
-#endif
 }
 
 void InterfaceEditor::RestoreOriginalValues() {
-    if (!original_values_captured_) {
-        return;
-    }
-
-#ifndef KEYBINDER_TESTING
-    HudColour.SetRGBAValue(
-        kHealthPaletteSlot,
-        original_health_palette_[0],
-        original_health_palette_[1],
-        original_health_palette_[2],
-        original_health_palette_[3]);
-    HudColour.SetRGBAValue(
-        kArmorPaletteSlot,
-        original_armor_palette_[0],
-        original_armor_palette_[1],
-        original_armor_palette_[2],
-        original_armor_palette_[3]);
-    HudColour.SetRGBAValue(
-        kMoneyPaletteSlot,
-        original_money_palette_[0],
-        original_money_palette_[1],
-        original_money_palette_[2],
-        original_money_palette_[3]);
+    if (!original_values_captured_) return;
     CHud::m_Wants_To_Draw_Hud = original_show_master_hud_;
     CHud::bScriptDontDisplayRadar = !original_show_radar_;
     CHud::bScriptDontDisplayAreaName = !original_show_area_name_;
@@ -307,21 +160,137 @@ void InterfaceEditor::RestoreOriginalValues() {
     CHud::bDrawClock = original_show_clock_;
     CHud::bDrawingVitalStats = original_show_vital_stats_;
     CHud::m_bDraw3dMarkers = original_show_3d_markers_;
-#else
-    CHud::m_Wants_To_Draw_Hud = original_show_master_hud_;
-    CHud::bScriptDontDisplayRadar = !original_show_radar_;
-    CHud::bScriptDontDisplayAreaName = !original_show_area_name_;
-    CHud::bScriptDontDisplayVehicleName = !original_show_vehicle_name_;
-    CHud::bDrawClock = original_show_clock_;
-    CHud::bDrawingVitalStats = original_show_vital_stats_;
-    CHud::m_bDraw3dMarkers = original_show_3d_markers_;
-#endif
     original_values_captured_ = false;
 }
 
 void InterfaceEditor::ReadSampLiveState() {
     // SA-MP live state remains runtime-only. The Interface Editor reads these
     // values directly from CChat / CScoreboard in the UI layer when available.
+}
+
+void InterfaceEditor::SetElementBoundsProvider(std::function<bool(HudElement, float&, float&, float&, float&)> provider) {
+    element_bounds_provider_ = std::move(provider);
+}
+
+bool InterfaceEditor::StartElementMove(HudElement element) {
+    if (static_cast<std::size_t>(element) >= kHudElementCount) return false;
+    if (IsElementMoveModeActive()) FinishElementMove();
+    moving_element_ = element;
+    moving_preset_ = active_preset_;
+    hp_number_move_mode_ = armor_number_move_mode_ = false;
+    hp_number_dragging_ = armor_number_dragging_ = false;
+    InterfacePreset* preset = GetPreset(moving_preset_);
+    preset->layout[static_cast<std::size_t>(element)] = SanitizeHudElementStyle(preset->layout[static_cast<std::size_t>(element)]);
+    return true;
+}
+
+bool InterfaceEditor::MoveElementBy(float normalizedDeltaX, float normalizedDeltaY) {
+    if (!IsElementMoveModeActive() || !std::isfinite(normalizedDeltaX) || !std::isfinite(normalizedDeltaY)) return false;
+    InterfacePreset* preset = GetPreset(moving_preset_);
+    HudElementStyle& style = preset->layout[static_cast<std::size_t>(moving_element_)];
+    style.offset_x += normalizedDeltaX;
+    style.offset_y += normalizedDeltaY;
+    style = SanitizeHudElementStyle(style);
+    return true;
+}
+
+void InterfaceEditor::FinishElementMove() {
+    if (!IsElementMoveModeActive()) return;
+    const int completedSlot = moving_preset_;
+    moving_element_ = HudElement::Count;
+    moving_preset_ = -1;
+    if (settings_manager_ != nullptr) {
+        Settings& settings = settings_manager_->GetMutable();
+        if (settings.interface_editor_saved_presets.size() < PRESET_SLOT_COUNT) {
+            settings.interface_editor_saved_presets.resize(PRESET_SLOT_COUNT);
+        }
+        settings.interface_editor_saved_presets[static_cast<std::size_t>(completedSlot)] = *GetPreset(completedSlot);
+    }
+    if (runtime_preset_changed_callback_) runtime_preset_changed_callback_();
+}
+
+bool InterfaceEditor::IsElementMoveModeActive() const {
+    return moving_preset_ >= 0 && moving_preset_ < PRESET_SLOT_COUNT && static_cast<std::size_t>(moving_element_) < kHudElementCount;
+}
+
+HudElement InterfaceEditor::GetMovingElement() const {
+    return IsElementMoveModeActive() ? moving_element_ : HudElement::Count;
+}
+
+void InterfaceEditor::RenderElementMoveMode(ImDrawList* drawList, float uiScale) {
+    if (!IsElementMoveModeActive()) return;
+    if (ImGui::IsKeyPressed(ImGuiKey_Escape, false)) {
+        FinishElementMove();
+        return;
+    }
+    ImGuiViewport* viewport = ImGui::GetMainViewport();
+    if (drawList == nullptr || viewport == nullptr || viewport->Size.x <= 0.0f || viewport->Size.y <= 0.0f) return;
+
+    const std::size_t elementIndex = static_cast<std::size_t>(moving_element_);
+    const HudElementStyle& style = GetPreset(moving_preset_)->layout[elementIndex];
+    // Fallback handles also allow moving elements which are currently invisible
+    // (for example armour without a vest). Observed native bounds take priority.
+    constexpr std::array<std::array<float, 4>, kHudElementCount> defaultRects{{
+        {{499, 77, 109, 10}}, {{546, 48, 62, 10}}, {{546, 62, 62, 10}},
+        {{480, 89, 128, 24}}, {{548, 22, 60, 24}}, {{546, 20, 62, 62}},
+        {{540, 64, 68, 20}}, {{490, 114, 118, 24}}, {{400, 344, 208, 32}},
+        {{400, 344, 208, 32}}, {{40, 344, 94, 76}}
+    }};
+    const auto& fallback = defaultRects[elementIndex];
+    float left = viewport->Size.x * (fallback[0] / 640.0f + style.offset_x);
+    float top = viewport->Size.y * (fallback[1] / 448.0f + style.offset_y);
+    float right = left + viewport->Size.x * fallback[2] / 640.0f;
+    float bottom = top + viewport->Size.y * fallback[3] / 448.0f;
+    if (element_bounds_provider_) {
+        float observedLeft = 0.0f, observedTop = 0.0f, observedWidth = 0.0f, observedHeight = 0.0f;
+        if (element_bounds_provider_(moving_element_, observedLeft, observedTop, observedWidth, observedHeight)
+            && std::isfinite(observedLeft) && std::isfinite(observedTop) && std::isfinite(observedWidth) && std::isfinite(observedHeight)
+            && observedWidth > 0.0f && observedHeight > 0.0f) {
+            left = observedLeft;
+            top = observedTop;
+            right = observedLeft + observedWidth;
+            bottom = observedTop + observedHeight;
+        }
+    }
+
+    const float scale = (std::max)(0.5f, uiScale);
+    const float pad = 6.0f * scale;
+    const ImVec2 handleMin(viewport->Pos.x + left - pad, viewport->Pos.y + top - pad);
+    const ImVec2 handleSize((std::max)(32.0f * scale, right - left + 2 * pad), (std::max)(28.0f * scale, bottom - top + 2 * pad));
+    ImGui::SetNextWindowPos(viewport->Pos);
+    ImGui::SetNextWindowSize(viewport->Size);
+    ImGui::SetNextWindowBgAlpha(0.0f);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+    const ImGuiWindowFlags flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove |
+        ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoNav |
+        ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse;
+    if (ImGui::Begin("##NativeInterfaceMoveLayer", nullptr, flags)) {
+        ImGui::SetCursorScreenPos(handleMin);
+        ImGui::InvisibleButton("##NativeInterfaceDragHandle", handleSize);
+        if (ImGui::IsItemHovered() || ImGui::IsItemActive()) ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeAll);
+        if (ImGui::IsItemActive() && ImGui::IsMouseDragging(ImGuiMouseButton_Left)) {
+            const ImVec2 delta = ImGui::GetIO().MouseDelta;
+            const float width = right - left, height = bottom - top;
+            const float nextLeft = (std::max)(0.0f, (std::min)(left + delta.x, (std::max)(0.0f, viewport->Size.x - width)));
+            const float nextTop = (std::max)(0.0f, (std::min)(top + delta.y, (std::max)(0.0f, viewport->Size.y - height)));
+            MoveElementBy((nextLeft - left) / viewport->Size.x, (nextTop - top) / viewport->Size.y);
+        }
+    }
+    ImGui::End();
+    ImGui::PopStyleVar();
+
+    const auto& theme = ThemeManager::Instance();
+    const ImU32 accent = ImGui::GetColorU32(theme.GetColor(ThemeColorRole::Accent));
+    drawList->AddRect(handleMin, ImVec2(handleMin.x + handleSize.x, handleMin.y + handleSize.y), accent, 5.0f * scale, 0, 2.0f * scale);
+    const std::string hint = std::string(kHudElements[elementIndex].label) + ": mit der Maus verschieben | Esc speichert";
+    const ImVec2 hintSize = ImGui::CalcTextSize(hint.c_str());
+    const ImVec2 hintMin(viewport->Pos.x + (viewport->Size.x - hintSize.x) * 0.5f - 10.0f * scale, viewport->Pos.y + 18.0f * scale);
+    const ImVec2 hintMax(hintMin.x + hintSize.x + 20.0f * scale, hintMin.y + hintSize.y + 16.0f * scale);
+    ImVec4 background = theme.GetColor(ThemeColorRole::Surface);
+    background.w = 0.93f;
+    drawList->AddRectFilled(hintMin, hintMax, ImGui::GetColorU32(background), 6.0f * scale);
+    drawList->AddRect(hintMin, hintMax, accent, 6.0f * scale);
+    drawList->AddText(ImVec2(hintMin.x + 10.0f * scale, hintMin.y + 8.0f * scale), ImGui::GetColorU32(theme.GetColor(ThemeColorRole::TextPrimary)), hint.c_str());
 }
 
 void InterfaceEditor::RenderVitalStatsNumbers(ImDrawList* drawList, bool overlayVisible, float uiScale) {
@@ -518,7 +487,9 @@ void InterfaceEditor::RenderVitalStatsNumbers(ImDrawList* drawList, bool overlay
 }
 
 void InterfaceEditor::SetActivePreset(int index) {
-    active_preset_ = ClampPresetIndex(index);
+    const int nextPreset = ClampPresetIndex(index);
+    if (nextPreset != active_preset_) FinishElementMove();
+    active_preset_ = nextPreset;
 }
 
 int InterfaceEditor::GetActivePreset() const {

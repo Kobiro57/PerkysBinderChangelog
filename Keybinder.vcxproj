@@ -204,6 +204,7 @@
     <ClCompile Include="src\SpeedTicketFlow.cpp" />
     <ClCompile Include="src\SpeedTicketBridge.cpp" />
     <ClCompile Include="src\WeaponIconManager.cpp" />
+    <ClCompile Include="src\NativeHudEditor.cpp" />
     <ClCompile Include="src\WeaponIconsUI.cpp" />
     <ClCompile Include="src\StatsDialogRPCAdapter.cpp" />
     <ClCompile Include="src\ActionExecutor.cpp" />

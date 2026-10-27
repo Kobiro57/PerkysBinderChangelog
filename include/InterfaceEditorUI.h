@@ -14,6 +14,7 @@ public:
     void SetSettingsManager(SettingsManager* manager);
     void SetInterfaceEditor(InterfaceEditor* editor);
     std::function<void()> OnSettingsChanged;
+    std::function<void()> OnRequestMoveMode;
 
 private:
     void SyncInterfaceEditorFromSettings();
