@@ -9,6 +9,7 @@
 #include "InterfaceEditor.h"
 #include "RssTypes.h"
 #include "ServerStatsSnapshot.h"
+#include "MessageVariables.h"
 
 namespace keybinder {
 
@@ -66,7 +67,7 @@ struct Settings {
     bool kill_tracker_server_kill_message_enabled = false;
     bool kill_tracker_server_death_message_enabled = false;
     bool kill_tracker_track_damage = true;
-    std::string kill_tracker_local_kill_message_template = "{33CCFF}[NL-BINDER]{FFFFFF} Kill in {city}, {bezirk}. Meine Kills: {total_kills}";
+    std::string kill_tracker_local_kill_message_template = kDefaultLocalKillMessageTemplate;
     std::string kill_tracker_local_death_message_template = "{33CCFF}[NL-BINDER]{FFFFFF} Du bist gestorben. Deine aktuelle Tode: {total_deaths}";
     std::string kill_tracker_server_kill_message_template = "Kill in {city}, {bezirk}. Meine Kills: {total_kills}";
     std::string kill_tracker_server_death_message_template = "Tode: {total_deaths}";

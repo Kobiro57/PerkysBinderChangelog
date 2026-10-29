@@ -1064,6 +1064,13 @@ bool SettingsManager::LoadFromJson(const std::string& json_content) {
     if (!found_local_kill_message_template) {
         found_local_kill_message_template = ParseStringField(json_content, "\"kill_tracker_message_template\"", kill_tracker_local_kill_message_template);
     }
+    // Older configurations duplicated their public kill bind locally. Migrate
+    // that local notice once; subsequent explicitly edited local texts survive.
+    bool localKillNoticeMigrated = false;
+    ParseBoolField(json_content, "\"kill_tracker_local_kill_notice_v1\"", localKillNoticeMigrated);
+    if (!localKillNoticeMigrated) {
+        kill_tracker_local_kill_message_template = kDefaultLocalKillMessageTemplate;
+    }
     found_local_death_message_template = ParseStringField(json_content, "\"kill_tracker_local_death_message_template\"", kill_tracker_local_death_message_template);
     if (!found_local_death_message_template) {
         found_local_death_message_template = ParseStringField(json_content, "\"kill_tracker_death_message_template\"", kill_tracker_local_death_message_template);
@@ -2116,6 +2123,7 @@ std::string SettingsManager::GetSettingsJson() const {
     size_t pos = 0;
     std::string escaped_template = EscapeJsonString(settings_.kill_tracker_local_kill_message_template);
     oss << "    \"kill_tracker_local_kill_message_template\": \"" << escaped_template << "\",\n";
+    oss << "    \"kill_tracker_local_kill_notice_v1\": true,\n";
 
     std::string escaped_death_template = EscapeJsonString(settings_.kill_tracker_local_death_message_template);
     oss << "    \"kill_tracker_local_death_message_template\": \"" << escaped_death_template << "\",\n";

@@ -1590,6 +1590,18 @@ void MainWindowUI::RenderSettingsKillCounterCard() {
     RenderMessageVariablesModal("Verfügbare Variablen##GeneralKillVariables", &showKillMessageVariables_, true);
 }
 
+bool MainWindowUI::RequestManualStateSynchronization() {
+    stateSynchronizationError_.clear();
+    if (bridge_ == nullptr) {
+        stateSynchronizationError_ = "Der Spielstand ist noch nicht verf\xC3\xBCgbar.";
+        return false;
+    }
+    if (!bridge_->RequestManualStateSynchronization(stateSynchronizationError_)) return false;
+    // The existing close request releases native chat/dialog input at frame end.
+    closeRequested_ = true;
+    return true;
+}
+
 void MainWindowUI::RenderSettingsTachoCard() {
     auto& theme = ThemeManager::Instance();
     Settings& settings = settingsManager_->GetMutable();
@@ -1635,6 +1647,21 @@ void MainWindowUI::RenderSettingsTachoCard() {
         ImGui::SetTooltip("Tachometer Arc zeigt geschätzte RPM; Analog Arc zeigt km/h als Rundinstrument; Minimal Tachometer zeigt km/h, Fuel und Motorzustand als schlanke HUD-Leiste.");
     }
 
+    UIComponents::EndCard();
+
+    UIComponents::BeginCard("StateSynchronizationCard", 0.0f, true);
+    ImGui::BeginDisabled(bridge_ == nullptr || bridge_->IsManualStateSynchronizationPending());
+    if (UIComponents::PrimaryButton("Aktuellen Spielstand synchronisieren")) {
+        RequestManualStateSynchronization();
+    }
+    ImGui::EndDisabled();
+    ImGui::TextColored(theme.GetColor(ThemeColorRole::TextMuted),
+        "Liest deine aktuellen Stats und Jobskills erneut ein.");
+    if (!stateSynchronizationError_.empty()) {
+        ImGui::PushStyleColor(ImGuiCol_Text, theme.GetColor(ThemeColorRole::Warning));
+        ImGui::TextWrapped("%s", stateSynchronizationError_.c_str());
+        ImGui::PopStyleColor();
+    }
     UIComponents::EndCard();
 }
 

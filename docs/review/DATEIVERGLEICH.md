@@ -2,7 +2,7 @@
 
 Originalarchiv: `a328e78eea63420e9bfe9c084883100177fe0fd9c2d62c4fcaef38c0a44801e9`; Commitkennung im ZIP: `92ce21971bee2d166d830e23ad20950f1dc98921`.
 
-Aktueller Vergleich: `v0.1.1-r10`, ASI-SHA-256 `0607a1d303333bc09e625f76b296f781a0ca71d48c9a494a1aefc32e0c0ab3d0`.
+Aktueller Vergleich: `v0.1.1-r11`, ASI-SHA-256 `204fba919b3b211a884841a099463389c981cd626e6927a10eb2ac1cccc29b2e`.
 
 Alle Dateien einschließlich wiederhergestellter Abhängigkeiten stehen in [SOURCE-COMPARISON.json](SOURCE-COMPARISON.json).
 Die Vorher-Prüfsummen stammen aus dem unveränderten gefilterten ZIP-Snapshot.
@@ -25,6 +25,15 @@ Diese Liste zeigt Inhaltsänderungen außerhalb der Vendor-Verzeichnisse.
 | added | [dist/NLBinder-0.1.1-r10/PRUEFBERICHT.json](../../dist/NLBinder-0.1.1-r10/PRUEFBERICHT.json) |
 | added | [dist/NLBinder-0.1.1-r10/RECONNECT-TEST.json](../../dist/NLBinder-0.1.1-r10/RECONNECT-TEST.json) |
 | added | [dist/NLBinder-0.1.1-r10/SHA256SUMS.txt](../../dist/NLBinder-0.1.1-r10/SHA256SUMS.txt) |
+| added | [dist/NLBinder-0.1.1-r11/BUILD-INFO.txt](../../dist/NLBinder-0.1.1-r11/BUILD-INFO.txt) |
+| added | [dist/NLBinder-0.1.1-r11/CHANGELOG-GESAMT.txt](../../dist/NLBinder-0.1.1-r11/CHANGELOG-GESAMT.txt) |
+| added | [dist/NLBinder-0.1.1-r11/JOB-HINWEISE.md](../../dist/NLBinder-0.1.1-r11/JOB-HINWEISE.md) |
+| added | [dist/NLBinder-0.1.1-r11/LIESMICH.md](../../dist/NLBinder-0.1.1-r11/LIESMICH.md) |
+| added | [dist/NLBinder-0.1.1-r11/NLBinder.asi](../../dist/NLBinder-0.1.1-r11/NLBinder.asi) |
+| added | [dist/NLBinder-0.1.1-r11/NLBinder/Waffenicons/LIESMICH.md](../../dist/NLBinder-0.1.1-r11/NLBinder/Waffenicons/LIESMICH.md) |
+| added | [dist/NLBinder-0.1.1-r11/PRUEFBERICHT.json](../../dist/NLBinder-0.1.1-r11/PRUEFBERICHT.json) |
+| added | [dist/NLBinder-0.1.1-r11/RECONNECT-TEST.json](../../dist/NLBinder-0.1.1-r11/RECONNECT-TEST.json) |
+| added | [dist/NLBinder-0.1.1-r11/SHA256SUMS.txt](../../dist/NLBinder-0.1.1-r11/SHA256SUMS.txt) |
 | added | [dist/NLBinder-0.1.1-r3/BUILD-INFO.txt](../../dist/NLBinder-0.1.1-r3/BUILD-INFO.txt) |
 | added | [dist/NLBinder-0.1.1-r3/JOB-HINWEISE.md](../../dist/NLBinder-0.1.1-r3/JOB-HINWEISE.md) |
 | added | [dist/NLBinder-0.1.1-r3/Keybinder.asi](../../dist/NLBinder-0.1.1-r3/Keybinder.asi) |
@@ -78,6 +87,7 @@ Diese Liste zeigt Inhaltsänderungen außerhalb der Vendor-Verzeichnisse.
 | added | [dist/NLBinder-0.1.1-r9/RECONNECT-TEST.json](../../dist/NLBinder-0.1.1-r9/RECONNECT-TEST.json) |
 | added | [dist/NLBinder-0.1.1-r9/SHA256SUMS.txt](../../dist/NLBinder-0.1.1-r9/SHA256SUMS.txt) |
 | added | [dist/NLBinder-v0.1.1-KOBiRO-r10.zip](../../dist/NLBinder-v0.1.1-KOBiRO-r10.zip) |
+| added | [dist/NLBinder-v0.1.1-KOBiRO-r11.zip](../../dist/NLBinder-v0.1.1-KOBiRO-r11.zip) |
 | added | [dist/NLBinder-v0.1.1-KOBiRO-r4.zip](../../dist/NLBinder-v0.1.1-KOBiRO-r4.zip) |
 | added | [dist/NLBinder-v0.1.1-KOBiRO-r5.zip](../../dist/NLBinder-v0.1.1-KOBiRO-r5.zip) |
 | added | [dist/NLBinder-v0.1.1-KOBiRO-r6.zip](../../dist/NLBinder-v0.1.1-KOBiRO-r6.zip) |
@@ -85,8 +95,10 @@ Diese Liste zeigt Inhaltsänderungen außerhalb der Vendor-Verzeichnisse.
 | added | [dist/NLBinder-v0.1.1-KOBiRO-r8.zip](../../dist/NLBinder-v0.1.1-KOBiRO-r8.zip) |
 | added | [dist/NLBinder-v0.1.1-KOBiRO-r9.zip](../../dist/NLBinder-v0.1.1-KOBiRO-r9.zip) |
 | added | [docs/BUILD-README.md](../../docs/BUILD-README.md) |
+| added | [docs/CHANGELOG-GESAMT.txt](../../docs/CHANGELOG-GESAMT.txt) |
 | added | [docs/NLBinder-0.1.1-DE.md](../../docs/NLBinder-0.1.1-DE.md) |
 | added | [docs/NLBinder-0.1.1-r10-DE.md](../../docs/NLBinder-0.1.1-r10-DE.md) |
+| added | [docs/NLBinder-0.1.1-r11-DE.md](../../docs/NLBinder-0.1.1-r11-DE.md) |
 | added | [docs/NLBinder-0.1.1-r2-DE.md](../../docs/NLBinder-0.1.1-r2-DE.md) |
 | added | [docs/NLBinder-0.1.1-r3-DE.md](../../docs/NLBinder-0.1.1-r3-DE.md) |
 | added | [docs/NLBinder-0.1.1-r4-DE.md](../../docs/NLBinder-0.1.1-r4-DE.md) |
@@ -105,6 +117,7 @@ Diese Liste zeigt Inhaltsänderungen außerhalb der Vendor-Verzeichnisse.
 | added | [docs/review/PUBLISHING-DE.md](../../docs/review/PUBLISHING-DE.md) |
 | added | [docs/review/README-GITHUB.md](../../docs/review/README-GITHUB.md) |
 | added | [docs/review/r10-validation.json](../../docs/review/r10-validation.json) |
+| added | [docs/review/r11-validation.json](../../docs/review/r11-validation.json) |
 | added | [docs/review/r4-validation.json](../../docs/review/r4-validation.json) |
 | added | [docs/review/r5-validation.json](../../docs/review/r5-validation.json) |
 | added | [docs/review/r6-validation.json](../../docs/review/r6-validation.json) |
@@ -228,18 +241,24 @@ Diese Liste zeigt Inhaltsänderungen außerhalb der Vendor-Verzeichnisse.
 | modified | [tools/build_plugin_sdk.bat](../../tools/build_plugin_sdk.bat) |
 | added | [tools/build_reconnect_helper.bat](../../tools/build_reconnect_helper.bat) |
 | added | [tools/build_release.bat](../../tools/build_release.bat) |
+| added | [tools/export_full_changelog.py](../../tools/export_full_changelog.py) |
+| added | [tools/export_source_bundle.py](../../tools/export_source_bundle.py) |
+| modified | [tools/launch_samp_03dl.ps1](../../tools/launch_samp_03dl.ps1) |
 | added | [tools/package_revision10.ps1](../../tools/package_revision10.ps1) |
+| added | [tools/package_revision11.ps1](../../tools/package_revision11.ps1) |
 | added | [tools/package_revision4.ps1](../../tools/package_revision4.ps1) |
 | added | [tools/package_revision5.ps1](../../tools/package_revision5.ps1) |
 | added | [tools/package_revision6.ps1](../../tools/package_revision6.ps1) |
 | added | [tools/package_revision7.ps1](../../tools/package_revision7.ps1) |
 | added | [tools/package_revision8.ps1](../../tools/package_revision8.ps1) |
 | added | [tools/package_revision9.ps1](../../tools/package_revision9.ps1) |
+| modified | [tools/premium_ui_qa.ps1](../../tools/premium_ui_qa.ps1) |
 | added | [tools/prepare_github_review.py](../../tools/prepare_github_review.py) |
 | modified | [tools/run_tests.bat](../../tools/run_tests.bat) |
 | added | [tools/setup_msvc.bat](../../tools/setup_msvc.bat) |
 | added | [tools/test_reconnect_worker.py](../../tools/test_reconnect_worker.py) |
 | added | [tools/verify_revision10_artifact.py](../../tools/verify_revision10_artifact.py) |
+| added | [tools/verify_revision11_artifact.py](../../tools/verify_revision11_artifact.py) |
 | added | [tools/verify_revision4_artifact.py](../../tools/verify_revision4_artifact.py) |
 | added | [tools/verify_revision5_artifact.py](../../tools/verify_revision5_artifact.py) |
 | added | [tools/verify_revision6_artifact.py](../../tools/verify_revision6_artifact.py) |

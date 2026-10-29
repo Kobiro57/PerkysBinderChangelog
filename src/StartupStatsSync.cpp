@@ -71,6 +71,9 @@ void SAMPBridge::ResetStartupStats() {
     startupStatsDialogToClose_.reset();
     startupJobSkillsRequested_ = startupJobSkillsComplete_ = startupJobSkillsFailed_ = false;
     startupStatsSaved_ = startupSyncNotified_ = false;
+    manualStateSyncCycle_ = manualStateSyncPending_ = false;
+    manualStateSyncAcceptedAt_ = 0;
+    manualStateSyncSessionKillsAtRequest_ = manualStateSyncSessionDeathsAtRequest_ = 0;
     jobSkillsRequestPending_ = false;
     ownJobSkillsCommandObserved_.store(false, std::memory_order_release);
     ownStatsCommandObserved_.store(false, std::memory_order_release);
@@ -82,6 +85,69 @@ void SAMPBridge::ResetStartupStats() {
     speedTicketDialogs_.clear();
     startupStatsOwnName_.clear();
     startupStatsPendingChat_ = startupStatsHiddenChat_ = false;
+}
+
+bool SAMPBridge::RequestManualStateSynchronization(std::string& error) {
+    error.clear();
+    if (!initialized_) {
+        error = "Der Binder ist noch nicht mit dem Spiel verbunden.";
+        return false;
+    }
+    if (manualStateSyncPending_) {
+        error = "Eine manuelle Synchronisation l\xC3\xA4uft bereits.";
+        return false;
+    }
+    const auto* network = GetNetGame();
+    const auto* player = GetLocalPlayer();
+    const std::string name = GetLocalPlayerName();
+#ifdef KEYBINDER_TESTING
+    const bool ready = GetTestingHooks().isStartupStatsReady && GetTestingHooks().isStartupStatsReady();
+    const unsigned long now = GetTestingHooks().getTickCount ? GetTestingHooks().getTickCount() : GetTickCount();
+#else
+    const bool ready = IsLocalCombatActive();
+    const unsigned long now = GetTickCount();
+#endif
+    if (!ready || !network
+        || network->m_nGameState != sampapi::v03dl::CNetGame::GAME_MODE_CONNECTED
+        || !player || !player->m_bIsActive || player->m_bIsWasted || !player->m_pPed
+        || player->m_bDoesSpectating || name.empty() || !GetInput()) {
+        error = "Du musst eingeloggt und im Spiel sein, um deinen Spielstand zu synchronisieren.";
+        return false;
+    }
+    if (manualInputOwner_ || IsChatOpen() || IsDialogOpen() || speedTicketFlow_.IsActive()) {
+        error = "Bitte beende zuerst die aktuelle Eingabe oder den ge\xC3\xB6" "ffneten Dialog.";
+        return false;
+    }
+    if ((startupStatsRequested_ && !startupStatsComplete_ && !startupStatsFailed_)
+        || (startupStatsComplete_ && !startupJobSkillsComplete_ && !startupJobSkillsFailed_)) {
+        error = "Die Synchronisation beim Einloggen l\xC3\xA4uft noch. Bitte warte auf ihren Abschluss.";
+        return false;
+    }
+    // Reuse both automatic phases, retaining live counters, cached account
+    // values, session events and job income until fresh responses are accepted.
+    ResetStartupStats();
+    startupStatsConnected_ = true;
+    startupStatsIdentity_ = std::string(network->m_szHostAddress, strnlen(network->m_szHostAddress, 257))
+        + ":" + std::to_string(network->m_nPort) + "/" + LowerStatsName(name);
+    manualStateSyncCycle_ = manualStateSyncPending_ = true;
+    manualStateSyncAcceptedAt_ = now;
+    manualStateSyncSessionKillsAtRequest_ = GetKillTracker()->GetSessionKills();
+    manualStateSyncSessionDeathsAtRequest_ = GetKillTracker()->GetSessionDeaths();
+    ownStatsContext_ = false;
+    return true;
+}
+
+void SAMPBridge::FailManualStateSynchronization(const std::string& reason) {
+    if (!manualStateSyncPending_) return;
+    manualStateSyncPending_ = false;
+    // End this requested cycle; a late dialog must never announce success for
+    // it, nor start an unrequested second phase after the button is available.
+    startupSyncNotified_ = true;
+    startupStatsRequested_ = startupJobSkillsRequested_ = true;
+    if (!startupStatsComplete_) startupStatsFailed_ = true;
+    if (!startupJobSkillsComplete_) startupJobSkillsFailed_ = true;
+    statsDialogRequestPending_ = jobSkillsRequestPending_ = false;
+    QueueLocalMessage("{FF6600}[NL-BINDER]{FFFFFF} Manuelle Synchronisation nicht abgeschlossen: " + reason);
 }
 
 void SAMPBridge::ObserveStatsCommand(const std::string& cmd) const {
@@ -205,9 +271,16 @@ void SAMPBridge::CompleteStartupStats(unsigned long now) {
         || previous.deaths != synchronizedStats_.deaths;
     if (firstCompletion || changedCounters) {
         const auto wallNow = std::time(nullptr);
-        if (!serverCombatBaselineEstablished_ || *synchronizedStats_.kills >= tracker->GetTotalKills()
+        // A refresh can correct old cached totals immediately. A real event
+        // confirmed after the request still gets the existing short protection
+        // against an earlier snapshot arriving from the server.
+        const bool manualKillsOverride = manualStateSyncPending_
+            && tracker->GetSessionKills() == manualStateSyncSessionKillsAtRequest_;
+        const bool manualDeathsOverride = manualStateSyncPending_
+            && tracker->GetSessionDeaths() == manualStateSyncSessionDeathsAtRequest_;
+        if (manualKillsOverride || !serverCombatBaselineEstablished_ || *synchronizedStats_.kills >= tracker->GetTotalKills()
             || wallNow - lastLocalKillTime_ > 5) tracker->ImportKillCount(*synchronizedStats_.kills);
-        if (!serverCombatBaselineEstablished_ || *synchronizedStats_.deaths >= tracker->GetTotalDeaths()
+        if (manualDeathsOverride || !serverCombatBaselineEstablished_ || *synchronizedStats_.deaths >= tracker->GetTotalDeaths()
             || wallNow - lastLocalDeathTime_ > 5) tracker->ImportDeathCount(*synchronizedStats_.deaths);
     }
     lastServerKillTotal_ = *synchronizedStats_.kills;
@@ -222,9 +295,15 @@ void SAMPBridge::CompleteStartupStats(unsigned long now) {
     }
     const bool saved = !statsSynchronizedCallback_ || statsSynchronizedCallback_(synchronizedStats_);
     startupStatsSaved_ = saved;
-    if (firstCompletion) QueueLocalMessage(saved
-        ? "{33CCFF}[NL-BINDER]{FFFFFF} Statistik übernommen."
-        : "{FF6600}[NL-BINDER]{FFFFFF} Synchronisation gelesen, aber die Daten konnten nicht gespeichert werden.");
+    if (firstCompletion) {
+        if (manualStateSyncPending_) {
+            if (!saved) FailManualStateSynchronization("Die Statistikwerte konnten nicht gespeichert werden.");
+        } else if (!manualStateSyncCycle_) {
+            QueueLocalMessage(saved
+                ? "{33CCFF}[NL-BINDER]{FFFFFF} Statistik übernommen."
+                : "{FF6600}[NL-BINDER]{FFFFFF} Synchronisation gelesen, aber die Daten konnten nicht gespeichert werden.");
+        }
+    }
 }
 
 void SAMPBridge::UpdateStartupStats(unsigned long now) {
@@ -247,6 +326,10 @@ void SAMPBridge::UpdateStartupStats(unsigned long now) {
         ownStatsContext_ = false;
     }
     if (!startupStatsRequested_) {
+        if (manualStateSyncPending_ && now - manualStateSyncAcceptedAt_ >= kStatsResponseTimeoutMs) {
+            FailManualStateSynchronization("Der Statistikabruf konnte nicht gestartet werden.");
+            return;
+        }
 #ifdef KEYBINDER_TESTING
         const bool ready = GetTestingHooks().isStartupStatsReady && GetTestingHooks().isStartupStatsReady();
 #else
@@ -259,6 +342,7 @@ void SAMPBridge::UpdateStartupStats(unsigned long now) {
         {
             std::lock_guard<std::mutex> lock(startupStatsMutex_);
             startupStatsLines_.clear();
+            startupStatsDialogs_.clear(); // Discard dialogs queued before this request.
             startupStatsOwnName_ = name;
             startupStatsPendingChat_ = true;
         }
@@ -269,7 +353,8 @@ void SAMPBridge::UpdateStartupStats(unsigned long now) {
                 std::lock_guard<std::mutex> lock(startupStatsMutex_);
                 startupStatsPendingChat_ = false;
             }
-            QueueLocalMessage("{FF6600}[NL-BINDER]{FFFFFF} Automatischer Statistikabruf fehlgeschlagen. Eigene /stats erneut öffnen.");
+            if (manualStateSyncPending_) FailManualStateSynchronization("Die Statistik konnte nicht abgefragt werden.");
+            else QueueLocalMessage("{FF6600}[NL-BINDER]{FFFFFF} Automatischer Statistikabruf fehlgeschlagen. Eigene /stats erneut öffnen.");
         }
     }
     if (ownStatsCommandObserved_.exchange(false, std::memory_order_acq_rel)) {
@@ -310,6 +395,7 @@ void SAMPBridge::UpdateStartupStats(unsigned long now) {
             std::lock_guard<std::mutex> lock(startupStatsMutex_);
             startupStatsPendingChat_ = startupStatsHiddenChat_ = false;
         }
-        QueueLocalMessage("{FF6600}[NL-BINDER]{FFFFFF} Keine eigenen Zähler empfangen. Eigene /stats erneut öffnen, um die Werte zu übernehmen.");
+        if (manualStateSyncPending_) FailManualStateSynchronization("Keine eigenen Statistikwerte empfangen.");
+        else QueueLocalMessage("{FF6600}[NL-BINDER]{FFFFFF} Keine eigenen Zähler empfangen. Eigene /stats erneut öffnen, um die Werte zu übernehmen.");
     }
 }

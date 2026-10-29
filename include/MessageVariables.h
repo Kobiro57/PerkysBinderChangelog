@@ -2,6 +2,9 @@
 
 namespace keybinder {
 
+inline constexpr const char* kDefaultLocalKillMessageTemplate =
+    "{33CCFF}[NL-BINDER]{FFFFFF} Du hast einen Kill gemacht! Aktuell hast du: {total_kills} Kills.";
+
 struct MessageVariableInfo {
     const char* tag;
     const char* description;

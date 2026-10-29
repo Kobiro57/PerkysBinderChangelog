@@ -6,6 +6,14 @@
 
 namespace keybinder {
 
+// These are sampling bounds, not limits imposed on player health. Servers can
+// use extremely large health values as temporary script/protection states;
+// differences across such states are not measurable combat damage. Ordinary
+// enhanced health/armour values (including values well above 100) remain valid.
+inline bool IsMeasurablePlayerVital(float value) {
+    return std::isfinite(value) && value < 1000000.0f;
+}
+
 // GTA:SA eWeaponType values that CPed::m_nLastWeaponDamage reports for
 // non-combat damage sources. The plugin-sdk eWeaponType enum omits these
 // engine "pseudo weapons", so they are defined here explicitly. They let the
@@ -172,11 +180,12 @@ struct IncomingDamageLogEntry {
 class IncomingDamageLog {
 public:
     IncomingDamageLogEntry Observe(float health, float armour) {
-        if (!std::isfinite(health) || !std::isfinite(armour) || armour < 0.0f) {
+        if (!IsMeasurablePlayerVital(health) || !IsMeasurablePlayerVital(armour)) {
             Reset();
             return {};
         }
         health = (std::max)(0.0f, health);
+        armour = (std::max)(0.0f, armour);
         if (!initialized_) {
             initialized_ = true;
             lastHealth_ = health;

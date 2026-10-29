@@ -265,7 +265,7 @@ void KillTrackerUI::RenderMessageSettings() {
     }
     ImGui::SameLine();
     if (UIComponents::SecondaryButton("Standard")) {
-        settings_.customLocalKillMessage = "{33CCFF}[NL-BINDER]{FFFFFF} Kill in {city}, {bezirk}. Meine Kills: {total_kills}";
+        settings_.customLocalKillMessage = kDefaultLocalKillMessageTemplate;
         strncpy(customLocalKillMessageBuf_, settings_.customLocalKillMessage.c_str(), sizeof(customLocalKillMessageBuf_) - 1);
         customLocalKillMessageBuf_[sizeof(customLocalKillMessageBuf_) - 1] = '\0';
         if (bridge_) bridge_->SetKillTrackerLocalKillMessageTemplate(settings_.customLocalKillMessage);

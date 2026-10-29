@@ -17,6 +17,10 @@ std::string JobSkillsGameText(const std::string& text) {
 
 void SAMPBridge::UpdateStartupJobSkills(unsigned long now) {
     if (!startupStatsComplete_) return;
+    if (manualStateSyncPending_ && !startupJobSkillsRequested_ && now - startupStatsCompletedAt_ >= 8000) {
+        FailManualStateSynchronization("Der Jobskill-Abruf konnte nicht gestartet werden.");
+        return;
+    }
 #ifdef KEYBINDER_TESTING
     const bool ready = GetTestingHooks().isStartupJobSkillsReady && GetTestingHooks().isStartupJobSkillsReady();
 #else
@@ -26,9 +30,14 @@ void SAMPBridge::UpdateStartupJobSkills(unsigned long now) {
         && !IsChatOpen() && !IsDialogOpen() && !IsCursorActive()) {
         startupJobSkillsRequested_ = true;
         startupJobSkillsRequestedAt_ = now;
+        {
+            std::lock_guard<std::mutex> lock(startupStatsMutex_);
+            jobSkillsDialogs_.clear(); // Only accept a response to the fresh phase-two request.
+        }
         if (!SendCommand("/jobskills")) {
             startupJobSkillsFailed_ = true;
-            QueueLocalMessage("{FF6600}[NL-BINDER]{FFFFFF} Jobskills konnten nicht abgefragt werden. /jobskills kann manuell geöffnet werden.");
+            if (manualStateSyncPending_) FailManualStateSynchronization("Die Jobskills konnten nicht abgefragt werden.");
+            else QueueLocalMessage("{FF6600}[NL-BINDER]{FFFFFF} Jobskills konnten nicht abgefragt werden. /jobskills kann manuell geöffnet werden.");
         }
     }
     if (ownJobSkillsCommandObserved_.exchange(false, std::memory_order_acq_rel)) {
@@ -63,7 +72,8 @@ void SAMPBridge::UpdateStartupJobSkills(unsigned long now) {
             if (!jobs::ParseJobSkillsDialog(JobSkillsGameText(event.caption), JobSkillsGameText(event.text),
                     jobTracker_->GetRegistrySnapshot(), true, snapshot, error)) continue;
             if (!jobTracker_->ImportSynchronizedSkills(snapshot.points)) {
-                QueueLocalMessage("{FF6600}[NL-BINDER]{FFFFFF} Jobskills konnten nicht gespeichert werden.");
+                if (manualStateSyncPending_) FailManualStateSynchronization("Die Jobskills konnten nicht gespeichert werden.");
+                else QueueLocalMessage("{FF6600}[NL-BINDER]{FFFFFF} Jobskills konnten nicht gespeichert werden.");
                 break;
             }
             const bool first = !startupJobSkillsComplete_;
@@ -76,8 +86,11 @@ void SAMPBridge::UpdateStartupJobSkills(unsigned long now) {
                 CloseStartupStatsDialog(now);
             }
             if (!startupSyncNotified_ && startupStatsSaved_) {
-                QueueLocalMessage("{33CCFF}[NL-BINDER]{FFFFFF} Synchronisation abgeschlossen.");
+                QueueLocalMessage(manualStateSyncPending_
+                    ? "{33CCFF}[NL-BINDER]{FFFFFF} Du hast deinen Spielestand manuell synchronisiert. Deine Werte sind jetzt im aktuellsten Stand."
+                    : "{33CCFF}[NL-BINDER]{FFFFFF} Synchronisation abgeschlossen.");
                 startupSyncNotified_ = true;
+                manualStateSyncPending_ = false;
             }
             break;
         }
@@ -86,6 +99,7 @@ void SAMPBridge::UpdateStartupJobSkills(unsigned long now) {
         && now - startupJobSkillsRequestedAt_ >= 8000) {
         startupJobSkillsFailed_ = true;
         jobSkillsRequestPending_ = false;
-        QueueLocalMessage("{FF6600}[NL-BINDER]{FFFFFF} Statistik übernommen, aber keine Jobskills empfangen. Eigene /jobskills erneut öffnen.");
+        if (manualStateSyncPending_) FailManualStateSynchronization("Keine aktuellen Jobskills empfangen.");
+        else QueueLocalMessage("{FF6600}[NL-BINDER]{FFFFFF} Statistik übernommen, aber keine Jobskills empfangen. Eigene /jobskills erneut öffnen.");
     }
 }

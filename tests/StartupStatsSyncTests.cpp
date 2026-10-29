@@ -1,5 +1,6 @@
 #include "../include/SAMPBridge.h"
 #include "../include/SettingsManager.h"
+#include "../include/MainWindowUI.h"
 #include "../include/RakHook/include/RakHook/samp.hpp"
 #include "../include/RakHook/include/RakNet/BitStream.h"
 #include "../include/RakHook/include/RakNet/StringCompressor.h"
@@ -515,6 +516,312 @@ void TestStartupSynchronizesStatsThenJobSkillsAndKeepsExistingEarnings() {
     bridge.Shutdown();
     SAMPBridge::ResetTestingHooks();
 }
+std::string ManualSyncSkillsTable(SAMPBridge& bridge, int firstPoints) {
+    std::string table = "T\xC3\xA4tigkeit\tStufe\n";
+    int index = 0;
+    for (const auto& job : bridge.GetJobTracker()->GetJobs())
+        table += job.name + "\t" + std::to_string(firstPoints + index++) + "\n";
+    return table + "Security Guard\t0\nTrucker\t0\n";
+}
+
+bool CompleteFreshSyncDialogs(SAMPBridge& bridge, Context& context, int kills, int deaths, int skillPoints) {
+    const std::string stats = "Name: " + context.name + "\nKills: " + std::to_string(kills)
+        + "\nTode: " + std::to_string(deaths) + "\nBargeld: 2.000$\nKontostand: 8.000$\nGold: 8";
+    if (!DeliverDialog(bridge, context, 800, 0, "Statistiken \xBB " + context.name, stats)) return false;
+    bridge.Update();
+    if (!bridge.AreStatsSynchronized() || context.commands.back() != "/jobskills") return false;
+    if (!DeliverDialog(bridge, context, 801, 5, "Jobs \xBB Skill\xFC" "bersicht",
+            TestGameEncoding(ManualSyncSkillsTable(bridge, skillPoints)))) return false;
+    bridge.Update();
+    return bridge.AreStatsSynchronized() && bridge.AreJobSkillsSynchronized();
+}
+
+int ManualSyncSuccessNotices(const Context& context) {
+    int notices = 0;
+    for (const auto& message : context.localMessages)
+        if (message.find("Du hast deinen Spielestand manuell synchronisiert. Deine Werte sind jetzt im aktuellsten Stand.")
+            != std::string::npos) ++notices;
+    return notices;
+}
+
+void TestManualFullSyncReusesPipelineAndImportsFreshValuesWithoutNewKills() {
+    Context context;
+    context.ready = context.jobSkillsReady = true;
+    SAMPBridge::SetTestingHooks(context.Hooks());
+    keybinder::SettingsManager settings;
+    SAMPBridge bridge;
+    bridge.SetSettingsManager(&settings);
+    bridge.SetKillTrackerEnabled(true);
+    bridge.SetKillTrackerServerKillMessageEnabled(false);
+    int saves = 0;
+    bridge.SetStatsSynchronizedCallback([&](const auto& value) {
+        settings.GetMutable().synchronized_player_stats = value;
+        ++saves;
+        return true;
+    });
+    CHECK(bridge.Initialize());
+    bridge.Update();
+    CHECK(CompleteFreshSyncDialogs(bridge, context, 100, 40, 10));
+    CHECK(saves == 1 && ManualSyncSuccessNotices(context) == 0);
+    bridge.ProcessDeathMessageForTesting({5, 9, 31, std::time(nullptr), true});
+    CHECK(bridge.GetTotalKills() == 101 && bridge.GetKillTracker()->GetSessionKills() == 1);
+    auto* jobTracker = bridge.GetJobTracker();
+    CHECK(!jobTracker->GetJobs().empty());
+    const auto job = jobTracker->GetJobs().front().id;
+    const auto income = jobTracker->GetAggregates(job).lifetime;
+    const auto commandsBefore = context.commands.size();
+    std::string error;
+    CHECK(bridge.RequestManualStateSynchronization(error));
+    CHECK(error.empty() && bridge.IsManualStateSynchronizationPending());
+    CHECK(!bridge.RequestManualStateSynchronization(error) && !error.empty());
+    CHECK(context.commands.size() == commandsBefore); // Request is deferred until UI closes.
+    CHECK(bridge.GetTotalKills() == 101 && jobTracker->GetAdjustedHighestSkill(job) == 10);
+
+    // A queued stale response from before the new /stats must not win.
+    bridge.ProcessStatsDialogForTesting({899, 0, "Statistiken", "Name: SyncPlayer\nKills: 999\nTode: 999"});
+    context.game.get()->m_nCursorMode = 2; // Binder menu remains open for this frame.
+    bridge.Update();
+    CHECK(context.commands.size() == commandsBefore && bridge.GetTotalKills() == 101);
+    context.game.get()->m_nCursorMode = 0;
+    bridge.Update();
+    CHECK(context.commands.size() == commandsBefore + 1 && context.commands.back() == "/stats");
+    CHECK(!bridge.AreStatsSynchronized() && bridge.GetTotalKills() == 101);
+    CHECK(ManualSyncSuccessNotices(context) == 0);
+    CHECK(DeliverDialog(bridge, context, 800, 0, "Statistiken \xBB SyncPlayer",
+        "Name: SyncPlayer\nKills: 25\nTode: 8\nBargeld: 4.000$\nKontostand: 9.000$\nGold: 6"));
+    // A previous jobskills response must likewise be discarded before phase two.
+    bridge.ProcessStatsDialogForTesting({899, 5, "Jobs \xBB Skill\xFC" "bersicht",
+        TestGameEncoding(ManualSyncSkillsTable(bridge, 999))});
+    bridge.Update();
+    CHECK(bridge.GetTotalKills() == 25 && bridge.GetTotalDeaths() == 8);
+    CHECK(saves == 2 && settings.Get().synchronized_player_stats.kills == 25);
+    CHECK(bridge.GetSynchronizedStats().GetAvailableWealth() == 13000);
+    CHECK(context.commands.back() == "/jobskills" && !bridge.AreJobSkillsSynchronized());
+    CHECK(jobTracker->GetAdjustedHighestSkill(job) == 10 && ManualSyncSuccessNotices(context) == 0);
+    CHECK(bridge.IsManualStateSynchronizationPending());
+    CHECK(DeliverDialog(bridge, context, 801, 5, "Jobs \xBB Skill\xFC" "bersicht",
+        TestGameEncoding(ManualSyncSkillsTable(bridge, 222))));
+    bridge.Update();
+    CHECK(bridge.AreStatsSynchronized() && bridge.AreJobSkillsSynchronized());
+    CHECK(!bridge.IsManualStateSynchronizationPending() && ManualSyncSuccessNotices(context) == 1);
+    CHECK(jobTracker->GetAdjustedHighestSkill(job) == 222 && jobTracker->GetAggregates(job).lifetime == income);
+    CHECK(bridge.GetKillTracker()->GetSessionKills() == 1 && bridge.GetKillTracker()->GetSessionDeaths() == 0);
+    CHECK(context.closed == 4 && context.messages.empty());
+    for (int i = 0; i < 4; ++i) bridge.Update();
+    CHECK(ManualSyncSuccessNotices(context) == 1);
+
+    CHECK(bridge.RequestManualStateSynchronization(error));
+    bridge.Update();
+    CHECK(CompleteFreshSyncDialogs(bridge, context, 26, 9, 223));
+    CHECK(saves == 3 && ManualSyncSuccessNotices(context) == 2);
+    CHECK(bridge.GetTotalKills() == 26 && bridge.GetTotalDeaths() == 9);
+    CHECK(jobTracker->GetAdjustedHighestSkill(job) == 223 && bridge.GetKillTracker()->GetSessionKills() == 1);
+    bridge.Shutdown();
+    SAMPBridge::ResetTestingHooks();
+}
+
+void TestManualSyncTimeoutPreservesValuesAndCanBeRetried() {
+    Context context;
+    context.ready = context.jobSkillsReady = true;
+    SAMPBridge::SetTestingHooks(context.Hooks());
+    SAMPBridge bridge;
+    CHECK(bridge.Initialize());
+    bridge.Update();
+    CHECK(CompleteFreshSyncDialogs(bridge, context, 10, 3, 20));
+    const auto job = bridge.GetJobTracker()->GetJobs().front().id;
+    std::string error;
+    CHECK(bridge.RequestManualStateSynchronization(error));
+    bridge.Update();
+    context.now += 8000;
+    bridge.Update();
+    CHECK(!bridge.IsManualStateSynchronizationPending() && ManualSyncSuccessNotices(context) == 0);
+    CHECK(bridge.GetTotalKills() == 10 && bridge.GetTotalDeaths() == 3);
+    CHECK(bridge.GetJobTracker()->GetAdjustedHighestSkill(job) == 20);
+    const auto stoppedCommands = context.commands.size();
+    for (int i = 0; i < 3; ++i) bridge.Update();
+    CHECK(context.commands.size() == stoppedCommands);
+    CHECK(DeliverDialog(bridge, context, 802, 0, "Statistiken \xBB SyncPlayer", "Name: SyncPlayer\nKills: 999\nTode: 999"));
+    bridge.Update();
+    CHECK(bridge.GetTotalKills() == 10 && ManualSyncSuccessNotices(context) == 0);
+    context.dialog.get()->m_bIsActive = FALSE;
+    CHECK(bridge.RequestManualStateSynchronization(error));
+    bridge.Update();
+    CHECK(DeliverDialog(bridge, context, 800, 0, "Statistiken \xBB SyncPlayer", "Name: SyncPlayer\nKills: 12\nTode: 5"));
+    bridge.Update();
+    CHECK(bridge.GetTotalKills() == 12 && bridge.IsManualStateSynchronizationPending());
+    context.now += 8000;
+    bridge.Update();
+    CHECK(!bridge.IsManualStateSynchronizationPending() && ManualSyncSuccessNotices(context) == 0);
+    CHECK(bridge.GetJobTracker()->GetAdjustedHighestSkill(job) == 20);
+    CHECK(bridge.RequestManualStateSynchronization(error));
+    bridge.Update();
+    CHECK(CompleteFreshSyncDialogs(bridge, context, 13, 6, 40));
+    CHECK(!bridge.IsManualStateSynchronizationPending() && ManualSyncSuccessNotices(context) == 1);
+    CHECK(bridge.GetTotalKills() == 13 && bridge.GetJobTracker()->GetAdjustedHighestSkill(job) == 40);
+    bridge.Shutdown();
+    SAMPBridge::ResetTestingHooks();
+}
+
+void TestManualSyncSaveFailureDoesNotClaimSuccessOrFetchJobSkills() {
+    Context context;
+    context.ready = context.jobSkillsReady = true;
+    SAMPBridge::SetTestingHooks(context.Hooks());
+    SAMPBridge bridge;
+    CHECK(bridge.Initialize());
+    bridge.Update();
+    CHECK(CompleteFreshSyncDialogs(bridge, context, 10, 3, 20));
+    const auto job = bridge.GetJobTracker()->GetJobs().front().id;
+    bridge.SetStatsSynchronizedCallback([](const auto&) { return false; });
+    const auto commandsBefore = context.commands.size();
+    std::string error;
+    CHECK(bridge.RequestManualStateSynchronization(error));
+    bridge.Update();
+    CHECK(DeliverDialog(bridge, context, 800, 0, "Statistiken \xBB SyncPlayer", "Name: SyncPlayer\nKills: 14\nTode: 7"));
+    bridge.Update();
+    CHECK(!bridge.IsManualStateSynchronizationPending() && ManualSyncSuccessNotices(context) == 0);
+    CHECK(context.commands.size() == commandsBefore + 1 && context.commands.back() == "/stats");
+    CHECK(bridge.GetJobTracker()->GetAdjustedHighestSkill(job) == 20);
+    CHECK(bridge.GetTotalKills() == 14); // Valid read stays available despite persistence failure.
+    bridge.SetStatsSynchronizedCallback([](const auto&) { return true; });
+    CHECK(bridge.RequestManualStateSynchronization(error));
+    bridge.Update();
+    CHECK(CompleteFreshSyncDialogs(bridge, context, 15, 8, 41));
+    CHECK(ManualSyncSuccessNotices(context) == 1);
+    bridge.Shutdown();
+    SAMPBridge::ResetTestingHooks();
+}
+
+void TestManualSyncRequestRejectsBusyOrOfflineAndUiClosesOnlyWhenAccepted() {
+    Context context;
+    context.ready = context.jobSkillsReady = true;
+    SAMPBridge::SetTestingHooks(context.Hooks());
+    SAMPBridge bridge;
+    CHECK(bridge.Initialize());
+    bridge.Update();
+    std::string error;
+    CHECK(!bridge.RequestManualStateSynchronization(error) && !error.empty()); // Active login sync.
+    CHECK(CompleteFreshSyncDialogs(bridge, context, 10, 3, 20));
+    const auto commandsBefore = context.commands.size();
+    keybinder::MainWindowUI ui;
+    ui.SetSAMPBridge(&bridge);
+    context.dialog.get()->m_bIsActive = TRUE;
+    CHECK(!ui.RequestManualStateSynchronization() && !ui.WasCloseRequested());
+    context.dialog.get()->m_bIsActive = FALSE;
+    context.input.get()->m_bEnabled = TRUE;
+    CHECK(!ui.RequestManualStateSynchronization() && !ui.WasCloseRequested());
+    context.input.get()->m_bEnabled = FALSE;
+    CHECK(bridge.BeginManualTextInput());
+    CHECK(!bridge.RequestManualStateSynchronization(error));
+    bridge.CancelManualTextInput();
+    context.local.get()->m_bIsWasted = TRUE;
+    CHECK(!ui.RequestManualStateSynchronization() && !ui.WasCloseRequested());
+    context.local.get()->m_bIsWasted = FALSE;
+    context.network.get()->m_nGameState = sampapi::v03dl::CNetGame::GAME_MODE_RESTARTING;
+    CHECK(!ui.RequestManualStateSynchronization() && !ui.WasCloseRequested());
+    context.network.get()->m_nGameState = sampapi::v03dl::CNetGame::GAME_MODE_CONNECTED;
+    CHECK(context.commands.size() == commandsBefore && !bridge.IsManualStateSynchronizationPending());
+    context.game.get()->m_nCursorMode = 2;
+    CHECK(ui.RequestManualStateSynchronization() && ui.WasCloseRequested());
+    ui.ResetCloseRequest();
+    CHECK(!ui.RequestManualStateSynchronization() && !ui.WasCloseRequested());
+    CHECK(context.commands.size() == commandsBefore);
+    context.game.get()->m_nCursorMode = 0;
+    bridge.Update();
+    CHECK(context.commands.size() == commandsBefore + 1);
+    context.network.get()->m_nGameState = sampapi::v03dl::CNetGame::GAME_MODE_RESTARTING;
+    bridge.Update();
+    CHECK(!bridge.IsManualStateSynchronizationPending() && ManualSyncSuccessNotices(context) == 0);
+    CHECK(bridge.GetTotalKills() == 10);
+    bridge.Shutdown();
+    SAMPBridge::ResetTestingHooks();
+}
+
+void TestManualSyncChatCountersAreImportedWithoutArtificialSessionEvents() {
+    Context context;
+    context.ready = context.jobSkillsReady = true;
+    SAMPBridge::SetTestingHooks(context.Hooks());
+    SAMPBridge bridge;
+    bridge.SetKillTrackerEnabled(true);
+    bridge.SetKillTrackerServerKillMessageEnabled(true);
+    bridge.SetKillTrackerServerKillMessageTemplate("/f must-not-send-for-import");
+    CHECK(bridge.Initialize());
+    bridge.Update();
+    CHECK(CompleteFreshSyncDialogs(bridge, context, 10, 3, 20));
+    std::string error;
+    CHECK(bridge.RequestManualStateSynchronization(error));
+    bridge.Update();
+    CHECK(!bridge.ProcessIncomingChatLineForTesting(nullptr, "*** SyncPlayer ***"));
+    CHECK(!bridge.ProcessIncomingChatLineForTesting(nullptr,
+        "Kills: [11] Tode: [4] Fraktion: [Zivilist] Gang: [-]"));
+    bridge.Update();
+    CHECK(bridge.GetTotalKills() == 11 && bridge.GetTotalDeaths() == 4);
+    CHECK(bridge.GetKillTracker()->GetSessionKills() == 0 && bridge.GetKillTracker()->GetSessionDeaths() == 0);
+    CHECK(context.commands == (std::vector<std::string>{"/stats", "/jobskills", "/stats", "/jobskills"}));
+    CHECK(bridge.IsManualStateSynchronizationPending() && ManualSyncSuccessNotices(context) == 0);
+    CHECK(DeliverDialog(bridge, context, 801, 5, "Jobs \xBB Skill\xFC" "bersicht",
+        TestGameEncoding(ManualSyncSkillsTable(bridge, 21))));
+    bridge.Update();
+    CHECK(ManualSyncSuccessNotices(context) == 1 && !bridge.IsManualStateSynchronizationPending());
+    CHECK(context.messages.empty());
+    bridge.Shutdown();
+    SAMPBridge::ResetTestingHooks();
+}
+
+void TestManualSyncCannotCompleteAcrossPlayerIdentityChange() {
+    Context context;
+    context.ready = context.jobSkillsReady = true;
+    SAMPBridge::SetTestingHooks(context.Hooks());
+    SAMPBridge bridge;
+    CHECK(bridge.Initialize());
+    bridge.Update();
+    CHECK(CompleteFreshSyncDialogs(bridge, context, 10, 3, 20));
+    std::string error;
+    CHECK(bridge.RequestManualStateSynchronization(error));
+    bridge.Update();
+    context.name = "NextPlayer";
+    bridge.ProcessStatsDialogForTesting({899, 0, "Statistiken", "Name: SyncPlayer\nKills: 999\nTode: 999"});
+    bridge.Update();
+    CHECK(!bridge.IsManualStateSynchronizationPending() && ManualSyncSuccessNotices(context) == 0);
+    CHECK(!bridge.AreStatsSynchronized() && bridge.GetTotalKills() == 10);
+    CHECK(context.commands == (std::vector<std::string>{"/stats", "/jobskills", "/stats", "/stats"}));
+    CHECK(CompleteFreshSyncDialogs(bridge, context, 15, 8, 30));
+    CHECK(bridge.GetSynchronizedStats().playerName == "NextPlayer");
+    CHECK(bridge.GetTotalKills() == 15 && ManualSyncSuccessNotices(context) == 0);
+    bridge.Shutdown();
+    SAMPBridge::ResetTestingHooks();
+}
+
+void TestManualSyncPreservesRealEventsConfirmedAfterTheRequest() {
+    Context context;
+    context.ready = context.jobSkillsReady = true;
+    SAMPBridge::SetTestingHooks(context.Hooks());
+    SAMPBridge bridge;
+    bridge.SetKillTrackerEnabled(true);
+    bridge.SetKillTrackerServerKillMessageEnabled(false);
+    CHECK(bridge.Initialize());
+    bridge.Update();
+    CHECK(CompleteFreshSyncDialogs(bridge, context, 10, 3, 20));
+    std::string error;
+    CHECK(bridge.RequestManualStateSynchronization(error));
+    bridge.Update();
+    bridge.ProcessDeathMessageForTesting({5, 9, 31, std::time(nullptr), true});
+    bridge.ProcessDeathMessageForTesting({8, 5, 31, std::time(nullptr), true});
+    CHECK(bridge.GetTotalKills() == 11 && bridge.GetTotalDeaths() == 4);
+    CHECK(bridge.GetKillTracker()->GetSessionKills() == 1 && bridge.GetKillTracker()->GetSessionDeaths() == 1);
+    CHECK(CompleteFreshSyncDialogs(bridge, context, 10, 3, 21)); // Reply created before the real events.
+    CHECK(bridge.GetTotalKills() == 11 && bridge.GetTotalDeaths() == 4);
+    CHECK(ManualSyncSuccessNotices(context) == 1 && !bridge.IsManualStateSynchronizationPending());
+    bridge.ProcessDeathMessageForTesting({5, 11, 31, std::time(nullptr), true});
+    CHECK(bridge.GetTotalKills() == 12 && bridge.GetKillTracker()->GetSessionKills() == 2);
+    context.now += 9000;
+    for (int i = 0; i < 4; ++i) bridge.Update(); // Unchanged collector is never reimported later.
+    CHECK(bridge.GetTotalKills() == 12 && bridge.GetTotalDeaths() == 4);
+    CHECK(bridge.GetKillTracker()->GetSessionKills() == 2 && bridge.GetKillTracker()->GetSessionDeaths() == 1);
+    CHECK(ManualSyncSuccessNotices(context) == 1);
+    bridge.Shutdown();
+    SAMPBridge::ResetTestingHooks();
+}
+
 } // namespace
 
 int RunStartupStatsSyncTests() {
@@ -528,6 +835,13 @@ int RunStartupStatsSyncTests() {
     TestObservedNovaScreenshotLayoutThroughCompressedRpcWithDynamicPlayerName();
     TestSpeedCommandPerformsThreeExactDialogRepliesAndSubmitsOnlyOnce();
     TestStartupSynchronizesStatsThenJobSkillsAndKeepsExistingEarnings();
+    TestManualFullSyncReusesPipelineAndImportsFreshValuesWithoutNewKills();
+    TestManualSyncTimeoutPreservesValuesAndCanBeRetried();
+    TestManualSyncSaveFailureDoesNotClaimSuccessOrFetchJobSkills();
+    TestManualSyncRequestRejectsBusyOrOfflineAndUiClosesOnlyWhenAccepted();
+    TestManualSyncChatCountersAreImportedWithoutArtificialSessionEvents();
+    TestManualSyncCannotCompleteAcrossPlayerIdentityChange();
+    TestManualSyncPreservesRealEventsConfirmedAfterTheRequest();
     std::printf("StartupStatsSyncTests: %d checks, %d failures\n", checks, failures);
     return failures;
 }

@@ -23,6 +23,7 @@
 #include "../include/SAMP-API/include/sampapi/sampapi.h"
 #ifndef KEYBINDER_TESTING
 #include "../include/plugin-sdk/plugin_sa/game_sa/CPlayerPed.h"
+#include "../include/plugin-sdk/plugin_sa/game_sa/CPad.h"
 #include "../include/plugin-sdk/plugin_sa/game_sa/CVehicle.h"
 #include "../include/plugin-sdk/plugin_sa/game_sa/CModelInfo.h"
 #include "../include/plugin-sdk/plugin_sa/game_sa/CText.h"
@@ -675,7 +676,7 @@ SAMPBridge::SAMPBridge()
       killTrackerServerKillMessageEnabled_(false),
       killTrackerServerDeathMessageEnabled_(false),
       killTrackerTrackDamage_(true),
-      killTrackerLocalKillMessageTemplate_("{FF6600}[NL-BINDER] {FFFFFF}Kill in {city}, {bezirk}. Kills: {total_kills}"),
+      killTrackerLocalKillMessageTemplate_(keybinder::kDefaultLocalKillMessageTemplate),
       killTrackerLocalDeathMessageTemplate_("{FF3333}[NL-BINDER] {FFFFFF}Du bist gestorben. Deine aktuellen Tode: {total_deaths}"),
       killTrackerServerKillMessageTemplate_("Ich habe einen Kill in {city}, {bezirk}. Meine Kills: {total_kills}"),
       killTrackerServerDeathMessageTemplate_("Ich bin gestorben. Meine Tode: {total_deaths}"),
@@ -1837,7 +1838,7 @@ void SAMPBridge::SetHitmarkerKillCallback(std::function<void(const killtracker::
 
 void SAMPBridge::SetKillTrackerLocalKillMessageTemplate(const std::string& messageTemplate) {
     if (messageTemplate.empty()) {
-        killTrackerLocalKillMessageTemplate_ = "{FF6600}[NL-BINDER] {FFFFFF}Kill in {city}, {bezirk}. Kills: {total_kills}";
+        killTrackerLocalKillMessageTemplate_ = keybinder::kDefaultLocalKillMessageTemplate;
         return;
     }
     killTrackerLocalKillMessageTemplate_ = messageTemplate;
@@ -2209,11 +2210,29 @@ bool SAMPBridge::IsLocalPlayerDead() const {
         return true;
     }
 
+    float health = 0.0f, armour = 0.0f;
+    int source = 0;
+    const void* ped = nullptr;
+    if (ReadLocalDamageSample(health, armour, source, ped) && ped && std::isfinite(health)
+        && health <= 0.0f) return true;
+
 #ifdef KEYBINDER_TESTING
     return false;
 #else
     return localPlayer->m_pPed != nullptr && localPlayer->m_pPed->GetHealth() <= 0.0f;
 #endif
+}
+
+namespace {
+bool IsLocalLifeControllable() {
+#ifdef KEYBINDER_TESTING
+    const auto& hooks = SAMPBridge::GetTestingHooks();
+    return !hooks.isLocalPlayerControllable || hooks.isLocalPlayerControllable();
+#else
+    const auto* pad = CPad::GetPad(0);
+    return pad && pad->DisablePlayerControls == 0;
+#endif
+}
 }
 
 void SAMPBridge::ResetKillTrackerDeathInferenceState() {
@@ -2223,6 +2242,9 @@ void SAMPBridge::ResetKillTrackerDeathInferenceState() {
     localDeathFallbackDelayFrames_ = 0;
     localDeathAwaitingNativeDead_ = false;
     localDeathAwaitDeadline_ = 0;
+    localAliveConfirmationFrames_ = 0;
+    localDeathSawInactive_ = false;
+    localDeathPed_ = nullptr;
 
     if (killTracker_ != nullptr) {
         killTracker_->UpdateDeathWindowState({});
@@ -2242,6 +2264,10 @@ void SAMPBridge::RecordLocalPlayerDeath(const std::string& killer, int weaponId)
     localDeathAwaitingNativeDead_ = !localPlayerWasDead_;
     localDeathAwaitDeadline_ = RuntimeTickCount() + 2000;
     localDeathHandledForCurrentLife_ = true;
+    localAliveConfirmationFrames_ = 0;
+    localDeathSawInactive_ = !IsLocalCombatActive() || !IsLocalLifeControllable();
+    const auto* deathPlayer = GetLocalPlayer();
+    localDeathPed_ = deathPlayer ? deathPlayer->m_pPed : nullptr;
     localDeathFallbackDelayFrames_ = 0;
 
     if (!countingDeaths) {
@@ -2265,17 +2291,51 @@ void SAMPBridge::UpdateLocalDeathFallback() {
     }
 
     const bool isDead = IsLocalPlayerDead();
+    if (localDeathHandledForCurrentLife_ && (!IsLocalCombatActive() || !IsLocalLifeControllable())) localDeathSawInactive_ = true;
     if (!isDead) {
-        if (localDeathAwaitingNativeDead_
-            && static_cast<long>(RuntimeTickCount() - localDeathAwaitDeadline_) < 0) {
-            return;
+        if (localDeathHandledForCurrentLife_) {
+            // An alive flag alone is also seen during the explosion/funeral
+            // transition. Do not rearm a life on zero/sentinel HP, inactive
+            // players or a single transient frame. A delayed cemetery line
+            // still describes the death that was already recorded.
+            bool confirmedAlive = false;
+#ifdef KEYBINDER_TESTING
+            if (!GetTestingHooks().readLocalDamageSample) {
+                // Older fixtures model the native life exclusively with the
+                // explicit wasted -> alive transition.
+                confirmedAlive = localPlayerWasDead_;
+                if (confirmedAlive) localAliveConfirmationFrames_ = 1;
+            } else
+#endif
+            {
+                float health = 0.0f, armour = 0.0f;
+                int source = 0;
+                const void* ped = nullptr;
+                const auto* player = GetLocalPlayer();
+                const bool newPed = player && player->m_pPed && player->m_pPed != localDeathPed_;
+                confirmedAlive = (localPlayerWasDead_ || localDeathSawInactive_ || newPed)
+                    && IsLocalCombatActive() && IsLocalLifeControllable()
+                    && ReadLocalDamageSample(health, armour, source, ped) && ped
+                    && keybinder::IsMeasurablePlayerVital(health) && health > 0.0f;
+#ifndef KEYBINDER_TESTING
+                if (confirmedAlive) {
+                    const auto* gamePed = static_cast<const CPlayerPed*>(ped);
+                    confirmedAlive = gamePed->m_ePedState != PEDSTATE_DIE
+                        && gamePed->m_ePedState != PEDSTATE_DEAD
+                        && gamePed->m_ePedState != PEDSTATE_DIE_BY_STEALTH;
+                }
+#endif
+            }
+            localAliveConfirmationFrames_ = confirmedAlive ? localAliveConfirmationFrames_ + 1 : 0;
+            if (localAliveConfirmationFrames_ < 2) return;
         }
-        const bool observedRespawn = localPlayerWasDead_;
+        const bool observedRespawn = localPlayerWasDead_ || (localDeathHandledForCurrentLife_ && localAliveConfirmationFrames_ >= 2);
         ResetKillTrackerDeathInferenceState();
         if (observedRespawn) hasCombatChatDeath_ = false;
         return;
     }
 
+    localAliveConfirmationFrames_ = 0;
     localDeathAwaitingNativeDead_ = false;
     if (!localPlayerWasDead_) {
         localPlayerWasDead_ = true;
@@ -2436,7 +2496,7 @@ void SAMPBridge::LogIncomingDamage(const keybinder::IncomingDamageLogEntry& dama
     std::snprintf(amount, sizeof(amount), "%.1f", rounded);
     std::string formatted = amount;
     std::replace(formatted.begin(), formatted.end(), '.', ',');
-    SendLocalMessage("{1E90FF}[NL-BINDER] {FF0000}-" + formatted
+    SendLocalMessage("{33CCFF}[NL-BINDER] {FF0000}-" + formatted
         + " HP {FFFFFF}Schaden (" + damage.Type() + ")");
 }
 
@@ -2476,14 +2536,15 @@ void SAMPBridge::PollLocalIncomingDamage() {
     int damageSource = 0;
     const void* pedIdentity = nullptr;
     const bool hasSample = ReadLocalDamageSample(health, armour, damageSource, pedIdentity);
-    if (!hasSample || pedIdentity == nullptr || !std::isfinite(health)
-        || !std::isfinite(armour) || armour < 0.0f || !std::isfinite(health + armour)) {
+    if (!hasSample || pedIdentity == nullptr || !keybinder::IsMeasurablePlayerVital(health)
+        || !keybinder::IsMeasurablePlayerVital(armour)) {
         ResetIncomingDamageState();
         return;
     }
     // GTA can briefly retain a negative HP value on a lethal hit. Only the
     // remaining HP was actually available to lose; never log extra overkill.
     health = (std::max)(health, 0.0f);
+    armour = (std::max)(armour, 0.0f);
 
     if (pedIdentity != incomingDamagePed_) {
         ResetIncomingDamageState();
@@ -2597,6 +2658,7 @@ std::string SAMPBridge::ExpandMessageVars(const std::string& tmpl,
         const int totalKills = killTracker_ ? killTracker_->GetTotalKills() : 0;
         const int totalDeaths = killTracker_ ? killTracker_->GetTotalDeaths() : 0;
         msg = ReplaceAll(msg, "{total_kills}",    std::to_string(totalKills));
+        msg = ReplaceAll(msg, "{kills}", std::to_string(totalKills));
         msg = ReplaceAll(msg, "{total_deaths}",   std::to_string(totalDeaths));
         msg = ReplaceAll(msg, "{session_kills}",  std::to_string(killTracker_ ? killTracker_->GetSessionKills() : 0));
         msg = ReplaceAll(msg, "{session_deaths}", std::to_string(killTracker_ ? killTracker_->GetSessionDeaths() : 0));
@@ -2931,7 +2993,7 @@ void SAMPBridge::ObserveServerCombatStats(const std::string& text) {
             kill.timestamp = now;
             HandleLocalKill(std::move(kill));
         }
-        if (deaths > lastServerDeathTotal_ && deaths - lastServerDeathTotal_ == 1
+        if (!localDeathHandledForCurrentLife_ && deaths > lastServerDeathTotal_ && deaths - lastServerDeathTotal_ == 1
             && deaths > tracker->GetTotalDeaths() && deaths - tracker->GetTotalDeaths() == 1) {
             RecordLocalPlayerDeath("", -1);
         }
@@ -3095,7 +3157,9 @@ void SAMPBridge::SetIncomingChatCallback(IncomingChatCallback callback) {
 
 void SAMPBridge::NotifyIncomingChat(const std::string& text) {
     CaptureStartupStatsLine(text);
-    ObserveServerCombatStats(text);
+    // A requested full refresh imports absolute totals rather than fabricating
+    // new combat events from the difference to the previously saved snapshot.
+    if (!manualStateSyncPending_ || startupStatsComplete_) ObserveServerCombatStats(text);
     if (incomingChatCallback_) {
         incomingChatCallback_(text);
     }

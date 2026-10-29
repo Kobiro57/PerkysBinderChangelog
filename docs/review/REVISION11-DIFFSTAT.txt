@@ -1,0 +1,33 @@
+.gitignore                          |   1 +
+ Keybinder.vcxproj                   |   4 +-
+ README.md                           |  35 +-
+ docs/BUILD-README.md                |   9 +-
+ docs/CHANGELOG-GESAMT.txt           | 784 ++++++++++++++++++++++++++++++++++++
+ docs/NLBinder-0.1.1-r11-DE.md       |  93 +++++
+ docs/review/CHANGELOG-DE.md         |  86 +++-
+ docs/review/PRUEFUNG-DE.md          | 100 ++++-
+ docs/review/PUBLICATION.json        |  10 +-
+ docs/review/README-GITHUB.md        |  35 +-
+ docs/review/r11-validation.json     |  36 ++
+ include/IncomingDamageDetector.h    |  11 +-
+ include/KillTrackerUI.h             |   3 +-
+ include/MainWindowUI.h              |   2 +
+ include/MessageVariables.h          |   3 +
+ include/SAMPBridge.h                |  12 +
+ include/SettingsManager.h           |   3 +-
+ src/JobSkillsSync.cpp               |  22 +-
+ src/KillTrackerUI.cpp               |   2 +-
+ src/MainWindowUI.cpp                |  27 ++
+ src/SAMPBridge.cpp                  |  86 +++-
+ src/SettingsManager.cpp             |   8 +
+ src/StartupStatsSync.cpp            | 100 ++++-
+ tests/SAMPBridgeTests.cpp           | 169 +++++++-
+ tests/StartupStatsSyncTests.cpp     | 314 +++++++++++++++
+ tools/build_and_test.bat            |   2 +-
+ tools/export_full_changelog.py      |  34 ++
+ tools/export_source_bundle.py       | 170 ++++++++
+ tools/launch_samp_03dl.ps1          |  17 +-
+ tools/package_revision11.ps1        | 138 +++++++
+ tools/premium_ui_qa.ps1             |   4 +-
+ tools/verify_revision11_artifact.py | 115 ++++++
+ 32 files changed, 2358 insertions(+), 77 deletions(-)

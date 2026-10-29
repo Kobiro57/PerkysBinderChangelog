@@ -53,14 +53,14 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <OutDir>$(ProjectDir)build\Release\</OutDir>
     <IntDir>$(ProjectDir)build\obj\Release\</IntDir>
-    <TargetName>Keybinder</TargetName>
+    <TargetName>NLBinder</TargetName>
     <TargetExt>.asi</TargetExt>
     <GenerateManifest>false</GenerateManifest>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <OutDir>$(ProjectDir)build\Debug\</OutDir>
     <IntDir>$(ProjectDir)build\obj\Debug\</IntDir>
-    <TargetName>Keybinder</TargetName>
+    <TargetName>NLBinder</TargetName>
     <TargetExt>.asi</TargetExt>
     <GenerateManifest>false</GenerateManifest>
   </PropertyGroup>

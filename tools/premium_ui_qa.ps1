@@ -73,7 +73,7 @@ $ScriptRoot  = Split-Path -Parent $MyInvocation.MyCommand.Path
 $ProjectRoot = Split-Path -Parent $ScriptRoot
 $EvidenceDir = Join-Path $ProjectRoot ".sisyphus\evidence"
 $BuildDir    = Join-Path $ProjectRoot "build\Release"
-$PluginBinary = Join-Path $BuildDir "Keybinder.asi"
+$PluginBinary = Join-Path $BuildDir "NLBinder.asi"
 $TestExe     = Join-Path $ProjectRoot "build\KeybinderTests.exe"
 $NlbinderRoot = Join-Path ([Environment]::GetFolderPath("MyDocuments")) "GTA San Andreas User Files\NLBinder"
 $LiveConfigDir = $NlbinderRoot
@@ -227,7 +227,7 @@ function Invoke-BuildVerify {
     }
 
     try {
-        Write-Host "[*] Building Keybinder (Release|Win32)..."
+        Write-Host "[*] Building NLBinder (Release|Win32)..."
         $buildOutput = & MSBuild.exe "$ProjectRoot\Keybinder.vcxproj" `
             /p:Configuration=Release /p:Platform=Win32 `
             /verbosity:minimal /nologo 2>&1 | Out-String

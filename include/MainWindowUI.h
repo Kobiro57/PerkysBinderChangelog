@@ -119,6 +119,7 @@ public:
 
     bool WasCloseRequested() const;
     void ResetCloseRequest();
+    bool RequestManualStateSynchronization();
     void PersistWindowState();
 
 private:
@@ -205,6 +206,7 @@ private:
 
     bool closeRequested_ = false;
     bool showKillMessageVariables_ = false;
+    std::string stateSynchronizationError_;
 
     void HandleCreateKeybind();
     void HandleEditKeybind(const Keybind& keybind);

@@ -8,12 +8,13 @@ Advanced keybinder and combat-assist plugin for GTA San Andreas Multiplayer (SA-
 - **Kill Tracker** — Track weapon statistics, kill/death ratios, and damage per victim in real time. Supports local and server-side kill/death message templates with customizable formatting. History for recent kills and deaths is persisted across sessions.
 - **Hitmarker** — Visual combat feedback overlay with multiple shapes (Cross-X, Plus, Circle, Diamond, Custom PNG). Separate colors for regular hits and kill-confirmations. Preset system for quick switching, plus configurable size, opacity, duration, and fade-out.
 - **QuickMap** — Full GTA:SA world map overlay with classic and satellite variants. Shows player position, checkpoints, race checkpoints, and gang zones. Toggle or hold-to-show modes with adjustable transparency.
-- **Interface Editor** — Customize HUD element visibility (radar, area names, clock, vital stats, 3D markers), money display color and font style, and zone text overrides. Five preset slots for quick configuration switching.
+- **Interface Editor** — Move and recolor the money display, weapon icon, ammunition and radar using the shared overlay move mode. Esc saves the layout. Five preset slots allow quick configuration switching.
 - **Crosshair Switcher** — Replace the native crosshair with a custom PNG texture. Textures are scanned from a `crosshairs/` directory and selectable through the UI.
 - **Hitsounds** — Configurable audio feedback for combat events. Separate sounds for outgoing hits (when you damage another player) and incoming hits (when you are damaged). Includes embedded defaults and supports custom WAV files from a `hitsounds/` folder.
 - **Slash Command Keybinds** — Bind keybind actions to slash commands (e.g., `/heal` executes your heal keybind). Configurable primary/secondary UI open commands (`/kb`, `/keybinder` by default).
 - **Auto-HUD Scale Fix** — Automatically sends `/hudscalefix` on SA-MP startup to correct HUD scaling on high-DPI displays.
 - **Settings Management** — All configuration is unified in a single `keybinder.json` file: keybinds, kill tracker data, hitmarker presets, interface editor presets, theme settings, and QuickMap options.
+- **State Synchronization** — Stats and job skills synchronize after login. **Einstellungen → General → Tacho → Aktuellen Spielstand synchronisieren** repeats the same import manually and confirms completion locally after the new values are saved.
 
 ## Building
 
@@ -39,11 +40,11 @@ Advanced keybinder and combat-assist plugin for GTA San Andreas Multiplayer (SA-
 tools\build_release.bat
 ```
 
-Output: `build\Release\Keybinder.asi`
+Output: `build\Release\NLBinder.asi`
 
 The script locates Visual Studio Build Tools through `vswhere`, including custom installation paths, and builds the Plugin-SDK library if it is missing.
 
-Debug builds output to `build\Debug\Keybinder.asi`.
+Debug builds output to `build\Debug\NLBinder.asi`. The solution and project filenames remain `Keybinder.sln` and `Keybinder.vcxproj`.
 
 ### Running Tests
 
@@ -60,7 +61,7 @@ powershell -ExecutionPolicy Bypass -File "build\run_tests.ps1"
 
 ## Installation
 
-1. Copy `Keybinder.asi` to your GTA San Andreas root directory
+1. Close GTA and back up the former `Keybinder.asi` outside the game's ASI directories, then copy `NLBinder.asi` to your existing Binder installation location. Load only one Binder ASI.
 2. Install an ASI loader (if not already present)
 3. Launch SA-MP 0.3.DL
 

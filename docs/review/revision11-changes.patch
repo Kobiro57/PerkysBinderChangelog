@@ -1,0 +1,3112 @@
+diff --git a/.gitignore b/.gitignore
+index 687e26d..0312f1b 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -57,6 +57,7 @@ imgui.ini
+ 
+ # Reviewed binaries and bundled build dependencies.
+ !dist/NLBinder-*/Keybinder.asi
++!dist/NLBinder-*/NLBinder.asi
+ !include/plugin-sdk/shared/**/*.lib
+ !include/plugin-sdk/shared/**/*.dll
+ !include/plugin-sdk/tools/**/*.exe
+diff --git a/Keybinder.vcxproj b/Keybinder.vcxproj
+index 2ec8bf9..ec17ff5 100644
+--- a/Keybinder.vcxproj
++++ b/Keybinder.vcxproj
+@@ -53,14 +53,14 @@
+   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+     <OutDir>$(ProjectDir)build\Release\</OutDir>
+     <IntDir>$(ProjectDir)build\obj\Release\</IntDir>
+-    <TargetName>Keybinder</TargetName>
++    <TargetName>NLBinder</TargetName>
+     <TargetExt>.asi</TargetExt>
+     <GenerateManifest>false</GenerateManifest>
+   </PropertyGroup>
+   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+     <OutDir>$(ProjectDir)build\Debug\</OutDir>
+     <IntDir>$(ProjectDir)build\obj\Debug\</IntDir>
+-    <TargetName>Keybinder</TargetName>
++    <TargetName>NLBinder</TargetName>
+     <TargetExt>.asi</TargetExt>
+     <GenerateManifest>false</GenerateManifest>
+   </PropertyGroup>
+diff --git a/README.md b/README.md
+index 70eb542..77ad0db 100644
+--- a/README.md
++++ b/README.md
+@@ -2,13 +2,15 @@
+ 
+ Vollständiger Prüfstand der Änderungen am **Perkys / NLBinder**, angepasst für
+ KOBiRO. Grundlage und ursprüngliche Urheberschaft bleiben beim Originalprojekt.
+-Der Stand lautet **NLBinder v.0.1.1 by KOBiRO, r10**. Der Nova-Reconnect
+-übernimmt den Spielstart im Launcher und prüft den Fortschritt. Der
+-Motorstart beim Einsteigen reagiert schneller und berücksichtigt weiterhin
+-das serverseitige Start-Addon. Die Kill-/Todeserkennung verarbeitet die
+-bestätigten Server-Chatmeldungen mit dem jeweils angemeldeten Spielernamen.
+-Die Variable `{input}` fragt beim Auslösen eines Textbinds nach einem frei
+-eingegebenen Text; Enter übernimmt ihn, Esc bricht ab.
++Der Stand lautet **NLBinder v.0.1.1 by KOBiRO, r11**. Unter Einstellungen
++ergänzt **Aktuellen Spielstand synchronisieren** den erneuten Abruf von
++Stats und Jobskills. Die kompilierte Datei heißt jetzt **NLBinder.asi**.
++Der vollständige Änderungsverlauf liegt zusätzlich als TXT vor.
++Der lokale Killhinweis zeigt den Gesamt-Killstand in einem einheitlichen
++Text; der frei gewählte Server-Killbind bleibt getrennt davon erhalten.
++Eine Korrektur führt native Todeserkennung und Friedhofsbestätigung für
++denselben Tod zusammen. Explosionen und ungültige Lebenswertübergänge
++verursachen keine Millionen-Schadensmeldungen im Damagelog.
+ Frühere Binder-Anpassungen und die ursprünglichen Oberflächenkomponenten
+ bleiben enthalten.
+ 
+@@ -22,9 +24,9 @@ NLBinder → Waffenicons**. Der Button **Waffenicons-Ordner öffnen** im Binder
+ 2. [Technisches Verhalten, Prüfungen und Grenzen](docs/review/PRUEFUNG-DE.md)
+ 3. [Dateien im Vergleich zum Original](docs/review/DATEIVERGLEICH.md)
+ 4. [Herkunft und Abhängigkeiten](docs/review/DEPENDENCIES.md)
+-5. [Programmänderungen als GitHub-Vergleich](https://github.com/Kobiro57/PerkysBinderChangelog/compare/build-dependencies-baseline...v0.1.1-r10)
++5. [Programmänderungen als GitHub-Vergleich](https://github.com/Kobiro57/PerkysBinderChangelog/compare/build-dependencies-baseline...v0.1.1-r11)
+    oder als [kompakter Quellcode-Patch](docs/review/first-party-changes.patch)
+-6. [Änderungen seit r9](https://github.com/Kobiro57/PerkysBinderChangelog/compare/v0.1.1-r9...v0.1.1-r10)
++6. [Änderungen seit r10](https://github.com/Kobiro57/PerkysBinderChangelog/compare/v0.1.1-r10...v0.1.1-r11)
+ 
+ Der vollständige bearbeitete Code liegt in `src/`, `include/`, `res/`,
+ `tests/`, `tools/` und `third_party/`. Die Übersicht verlinkt direkt zu den
+@@ -48,17 +50,18 @@ die [aktuelle Build-Anleitung](docs/BUILD-README.md) beschreibt das Bauen des Bi
+ 
+ ## Geprüfte ASI
+ 
+-- [Keybinder.asi herunterladen](dist/NLBinder-0.1.1-r10/Keybinder.asi)
+-- [Komplettes ZIP-Paket herunterladen](dist/NLBinder-v0.1.1-KOBiRO-r10.zip)
+-- [Installation und Bedienung](dist/NLBinder-0.1.1-r10/LIESMICH.md)
+-- [Build- und Prüfangaben](dist/NLBinder-0.1.1-r10/BUILD-INFO.txt)
+-- [Maschinenlesbarer Prüfnachweis](dist/NLBinder-0.1.1-r10/PRUEFBERICHT.json)
+-- [SHA-256 der ausgelieferten ASI](dist/NLBinder-0.1.1-r10/SHA256SUMS.txt)
++- [NLBinder.asi herunterladen](dist/NLBinder-0.1.1-r11/NLBinder.asi)
++- [Gesamter Changelog als TXT](docs/CHANGELOG-GESAMT.txt)
++- [Komplettes ZIP-Paket herunterladen](dist/NLBinder-v0.1.1-KOBiRO-r11.zip)
++- [Installation und Bedienung](dist/NLBinder-0.1.1-r11/LIESMICH.md)
++- [Build- und Prüfangaben](dist/NLBinder-0.1.1-r11/BUILD-INFO.txt)
++- [Maschinenlesbarer Prüfnachweis](dist/NLBinder-0.1.1-r11/PRUEFBERICHT.json)
++- [SHA-256 der ausgelieferten ASI](dist/NLBinder-0.1.1-r11/SHA256SUMS.txt)
+ 
+ Die Nachweise gehören zum jeweiligen Binärstand: automatisierte Gesamttests,
+ Win32-Release-Build, PE-/Ressourcenvergleich und Reconnect-Helfertest mit
+ harmlosen Testprozessen. Ein echter Ingame-Test mit dem konkreten Server und
+-Launcher steht aus. Die [vorherige r9-Fassung](dist/NLBinder-0.1.1-r9/BUILD-INFO.txt)
++Launcher steht aus. Die [vorherige r10-Fassung](dist/NLBinder-0.1.1-r10/BUILD-INFO.txt)
+ und ihre Prüfsumme bleiben zur Nachverfolgung erhalten.
+ 
+ ## Weitere Updates
+diff --git a/docs/BUILD-README.md b/docs/BUILD-README.md
+index 5bd4985..d7daf66 100644
+--- a/docs/BUILD-README.md
++++ b/docs/BUILD-README.md
+@@ -8,12 +8,13 @@ Advanced keybinder and combat-assist plugin for GTA San Andreas Multiplayer (SA-
+ - **Kill Tracker** — Track weapon statistics, kill/death ratios, and damage per victim in real time. Supports local and server-side kill/death message templates with customizable formatting. History for recent kills and deaths is persisted across sessions.
+ - **Hitmarker** — Visual combat feedback overlay with multiple shapes (Cross-X, Plus, Circle, Diamond, Custom PNG). Separate colors for regular hits and kill-confirmations. Preset system for quick switching, plus configurable size, opacity, duration, and fade-out.
+ - **QuickMap** — Full GTA:SA world map overlay with classic and satellite variants. Shows player position, checkpoints, race checkpoints, and gang zones. Toggle or hold-to-show modes with adjustable transparency.
+-- **Interface Editor** — Customize HUD element visibility (radar, area names, clock, vital stats, 3D markers), money display color and font style, and zone text overrides. Five preset slots for quick configuration switching.
++- **Interface Editor** — Move and recolor the money display, weapon icon, ammunition and radar using the shared overlay move mode. Esc saves the layout. Five preset slots allow quick configuration switching.
+ - **Crosshair Switcher** — Replace the native crosshair with a custom PNG texture. Textures are scanned from a `crosshairs/` directory and selectable through the UI.
+ - **Hitsounds** — Configurable audio feedback for combat events. Separate sounds for outgoing hits (when you damage another player) and incoming hits (when you are damaged). Includes embedded defaults and supports custom WAV files from a `hitsounds/` folder.
+ - **Slash Command Keybinds** — Bind keybind actions to slash commands (e.g., `/heal` executes your heal keybind). Configurable primary/secondary UI open commands (`/kb`, `/keybinder` by default).
+ - **Auto-HUD Scale Fix** — Automatically sends `/hudscalefix` on SA-MP startup to correct HUD scaling on high-DPI displays.
+ - **Settings Management** — All configuration is unified in a single `keybinder.json` file: keybinds, kill tracker data, hitmarker presets, interface editor presets, theme settings, and QuickMap options.
++- **State Synchronization** — Stats and job skills synchronize after login. **Einstellungen → General → Tacho → Aktuellen Spielstand synchronisieren** repeats the same import manually and confirms completion locally after the new values are saved.
+ 
+ ## Building
+ 
+@@ -39,11 +40,11 @@ Advanced keybinder and combat-assist plugin for GTA San Andreas Multiplayer (SA-
+ tools\build_release.bat
+ ```
+ 
+-Output: `build\Release\Keybinder.asi`
++Output: `build\Release\NLBinder.asi`
+ 
+ The script locates Visual Studio Build Tools through `vswhere`, including custom installation paths, and builds the Plugin-SDK library if it is missing.
+ 
+-Debug builds output to `build\Debug\Keybinder.asi`.
++Debug builds output to `build\Debug\NLBinder.asi`. The solution and project filenames remain `Keybinder.sln` and `Keybinder.vcxproj`.
+ 
+ ### Running Tests
+ 
+@@ -60,7 +61,7 @@ powershell -ExecutionPolicy Bypass -File "build\run_tests.ps1"
+ 
+ ## Installation
+ 
+-1. Copy `Keybinder.asi` to your GTA San Andreas root directory
++1. Close GTA and back up the former `Keybinder.asi` outside the game's ASI directories, then copy `NLBinder.asi` to your existing Binder installation location. Load only one Binder ASI.
+ 2. Install an ASI loader (if not already present)
+ 3. Launch SA-MP 0.3.DL
+ 
+diff --git a/docs/CHANGELOG-GESAMT.txt b/docs/CHANGELOG-GESAMT.txt
+new file mode 100644
+index 0000000..e3ae829
+--- /dev/null
++++ b/docs/CHANGELOG-GESAMT.txt
+@@ -0,0 +1,784 @@
++﻿Änderungen am Perkys Binder – NLBinder v.0.1.1 by KOBiRO
++========================================================
++
++Stand: 29. Oktober 2026, Arbeitsfassung r11 mit manueller Spielstandsynchronisation und NLBinder.asi. Die Abschnitte 1 bis 16 dokumentieren die früheren Stände; Abschnitt 17 ergänzt r11.
++
++Die Grundlage ist der vorhandene Perkys/NLBinder. Die Änderungen erweitern dessen bestehende Oberfläche und verwenden weiterhin die vorhandenen ImGui-Komponenten, Karten, Schalter und Darstellungseinstellungen. Der Ordner KOBiRO_ASI diente als funktionale Referenz für die Overlay-Erweiterung; seine Oberfläche wurde nicht als neue Binder-Oberfläche übernommen.
++
++Dieses Dokument beschreibt die im Bearbeitungsverlauf umgesetzten Änderungen einschließlich späterer Korrekturen. Es rekonstruiert keine ursprüngliche Git-Commitfolge. Maßgeblich für die Prüfung sind der veröffentlichte Quellstand, die zugehörigen Tests und die Prüfhinweise (PRUEFUNG-DE.md). Die Kurzbezeichnungen r2 und r3 bezeichnen ausgelieferte Arbeitsfassungen, keine behaupteten ursprünglichen Git-Tags.
++
++Als Vergleichsgrundlage wurde das vorhandene ursprüngliche Archiv NLBinder-master.zip identifiziert. Sein SHA-256 lautet a328e78eea63420e9bfe9c084883100177fe0fd9c2d62c4fcaef38c0a44801e9; der ZIP-Kommentar enthält 92ce21971bee2d166d830e23ad20950f1dc98921. Ein Import dieses Archivstands und ein anschließender Commit des bearbeiteten Stands erlauben einen echten Dateivergleich. Diese nachträglichen Import-Commits ersetzen keine ursprüngliche Entwicklungshistorie.
++
++1. Jobs: Holzfäller und Bauarbeiter
++===================================
++
++Beide Jobs wurden in die vorhandene Jobregistrierung, Übersicht und Detailansicht eingepflegt. Die eingebettete Registrierung enthält 17 Jobs. Gemeinsame Formate für Joblohn und absoluten Job-Skill werden weiterverwendet. Geldbeträge mit deutschen Tausenderpunkten, beispielsweise 2.940$, werden berücksichtigt.
++
++Für Holzfäller wurden die belegten Aufgabenformate von Vince Redwood, Baumfäll- und Setzlingsaufgaben sowie zusätzlich gefundenes Holz ergänzt. Für Bauarbeiter lagen in den verwendeten Belegen keine eigenen NPC-/Aufgabentexte vor; die gemeinsamen Lohn- und Skillformate sowie der vorgegebene Skilltree sind unterstützt. Diese Grenze ist in den Jobhinweisen (../jobs-support.md) ausdrücklich dokumentiert.
++
++Holzfäller-Skilltree
++--------------------
++
++| Punkte | Freischaltung / Belohnung |
++| ---: | --- |
++| 50 | 5 Bäume fällen |
++| 100 | Holzfäller Skin freischalten |
++| 250 | Privatfahrzeug: Bobcat |
++| 500 | +10% Lohn |
++| 1000 | +25% Lohn |
++| 1500 | Job-Achievement freigeschaltet |
++
++Bauarbeiter-Skilltree
++---------------------
++
++| Punkte | Freischaltung / Belohnung |
++| ---: | --- |
++| 25 | Großbaustellen werden freigeschaltet |
++| 100 | Bauarbeiter Skin freischalten |
++| 500 | +10% Lohn |
++| 750 | Business: Blueberry Construction |
++| 1000 | +25% Lohn |
++| 1500 | Job-Achievement freigeschaltet |
++
++Skilltree-Fortschritt und Animation berücksichtigen gespeicherte Skillwerte und manuelle Punktekorrekturen. Die Tabellen zeigen die vorgegebenen Belohnungen an; sie vergeben selbst keine serverseitigen Freischaltungen.
++
++Quellen: jobs_registry.json (../../res/jobs_registry.json), JobRegistry.cpp (../../src/JobRegistry.cpp), JobParser.cpp (../../src/JobParser.cpp), JobsUI.cpp (../../src/JobsUI.cpp). Tests: JobRegistryTests.cpp (../../tests/JobRegistryTests.cpp), JobParserTests.cpp (../../tests/JobParserTests.cpp), JobAdjustmentTests.cpp (../../tests/JobAdjustmentTests.cpp), JobsUITests.cpp (../../tests/JobsUITests.cpp).
++
++2. Online- und Overlay-Funktionen
++=================================
++
++Neue dauerhafte Anzeigen
++------------------------
++
++Ort, Fortbewegungsmittel und Pedslots wurden in den vorhandenen Overlay-Stil integriert. Die Anzeigen verwenden die vorhandenen Spiel-/Spielerdaten und sind einzeln schaltbar und verschiebbar. Bestehende Fraktions-, Gang- und Wanted-Anzeigen bleiben Teil der Oberfläche.
++
++Unter Darstellung heißt das bisher missverständliche gemeinsame Ziel jetzt Allgemeine Overlays. Die Beschreibung nennt seinen tatsächlichen Geltungsbereich: eigene Fraktion, Gang-Übersicht, Ort, Fortbewegungsmittel, Pedslots sowie Freunde- und Feinde-Radar. Eigene Gang und Wanted-Liste haben weiterhin ihre eigenen Darstellungseinstellungen.
++
++Zwei eigenständige Radars
++-------------------------
++
++- Freunde anzeigen steuert ausschließlich Freunde-Radar.
++- Feinde anzeigen steuert ausschließlich Feinde-Radar.
++- Beide besitzen eigene Fenster, Inhalte, Anker und gespeicherte Positionen. Sie können gleichzeitig eingeblendet und unabhängig voneinander verschoben werden.
++- Bei alten Einstellungen übernimmt das Freunde-Radar die bisherige gemeinsame Position. Das Feinde-Radar beginnt zunächst um 120 Pixel von derselben Bildschirmkante versetzt. Bereits gespeicherte neue Einzelpositionen haben Vorrang.
++- Die gemeinsame Verwaltung gespeicherter Spieler heißt Freunde & Feinde. Sie erzeugt kein gemeinsames Spieler-Radar mehr.
++- Längere Namen und Fraktionsangaben werden bei der Breitenberechnung berücksichtigt; die Anzeigen bleiben an die Bildschirmgröße gebunden.
++
++Gespeicherte Spieler lassen sich über Namen oder aktuelle Spieler-ID hinzufügen. Fraktion, Gang oder Zivilist werden automatisch aus dem vorhandenen Online-Datenbestand zugeordnet. Die manuellen Fraktions-/Notizfelder entfallen. Nicht verfügbare Zugehörigkeiten erscheinen als Unbekannt. Das Zeilenformat bleibt beispielsweise:
++
++text
++Freund: Name [Red County Brotherhood] | ID 7
++
++
++Red County Brotherhood wurde in die Fraktionszuordnung, Gruppen und relevanten Filter aufgenommen.
++
++Entfernte Online-Funktionen
++---------------------------
++
++Entfernt wurden Entfernungsermittlung und Live-Entfernungsangaben, Online-Watcher, Online-Alarme im Chat, Alarmbanner und Feind-Sound. Alte Einstellungen aktivieren diese entfernten Funktionen nicht wieder.
++
++Die zwischenzeitlich in r2 enthaltene, auf tatsächlich empfangenen /id-Antworten beruhende AFK-Anzeige mit 30-Sekunden-Ablauf wurde auf Wunsch vollständig entfernt: kein AFK-Parser, kein AFK-Zwischenspeicher und kein AFK-Zusatz im Radar. Der endgültige r3-Stand enthält diese AFK-Funktion nicht.
++
++Datenherkunft
++-------------
++
++Die automatische Online-Zuordnung verwendet lesende HTTP-Abfragen der vorhandenen Nova-Online-Spielerliste unter https://nova-legacy.de/api/players/online. Der Online-Datenmanager fragt standardmäßig im Abstand von zehn Sekunden ab und kennzeichnet veraltete beziehungsweise nicht verfügbare Daten. Die bestehende manuelle /info-Abfrage verwendet ebenfalls diese API. Die Zustimmung zur Einsicht in ein UCP während der Entwicklung bedeutet nicht, dass der Binder UCP-Anmeldedaten verwendet; diese Online-Funktion benötigt keine UCP-Anmeldung im Plugin.
++
++Die Online-API liefert keine Live-Entfernungen für das Radar. Der Binder sendet für die entfernte AFK-Funktion keine eigenen /id-Abfragen.
++
++Quellen: OnlineOverlayController.h (../../include/OnlineOverlayController.h), OnlineOverlayController.cpp (../../src/OnlineOverlayController.cpp), OnlineOverlayRenderer.cpp (../../src/OnlineOverlayRenderer.cpp), OnlineUI.cpp (../../src/OnlineUI.cpp), OnlineDataManager.cpp (../../src/OnlineDataManager.cpp), OnlinePlayerInfoService.cpp (../../src/OnlinePlayerInfoService.cpp), SettingsManager.cpp (../../src/SettingsManager.cpp). Tests: OnlineOverlayRendererTests.cpp (../../tests/OnlineOverlayRendererTests.cpp), OnlineSettingsTests.cpp (../../tests/OnlineSettingsTests.cpp), OnlineDataManagerTests.cpp (../../tests/OnlineDataManagerTests.cpp).
++
++3. Kill- und Todeszähler
++========================
++
++Unter Einstellungen → General wurde eine Karte Kill- & Todeszähler im bestehenden Schalterstil ergänzt. Kills und Tode sind unabhängig aktivierbar. Der Killzähler funktioniert auch bei deaktivierter Schadenstatistik.
++
++Die Erkennung gleicht neue Killfeed-Einträge, empfangene Todesmeldungen und tatsächlich empfangene eigene Server-Statistikstände ab. Bereits vorhandene Killfeed-Zeilen werden beim Aktivieren oder Wiedererscheinen der Anzeige zunächst als Ausgangsstand übernommen und nicht rückwirkend als neue Kills gezählt. Pro Leben wird derselbe Tod nicht durch mehrere Erkennungswege doppelt gezählt. Ein früher als der native Wasted-Zustand eingetroffenes Todesereignis und ein anschließender Respawn werden berücksichtigt; es gibt keine pauschale fünfsekündige Sperre für den nächsten echten Tod.
++
++Eigene Statistikblöcke werden nur mit passendem Spielernamen-Kontext übernommen. Fremde Statistikblöcke oder beliebige Chatzeilen mit Zahlen aktualisieren die eigenen Zähler nicht. Der Kontext läuft ab und wird nach Verwendung verbraucht. Ohne empfangenen Servergesamtstand verwendet der Binder seine gespeicherten und neu erkannten Ereignisse.
++
++Der Binder sendet hierfür keine versteckten /stats- oder /oldstats-Befehle. Eine reine Statistik-Erhöhung enthält keinen sicheren Gegnernamen oder Waffentyp. Werden weder ein geeignetes Ereignis noch neue eigene Statistikstände übermittelt, kann daraus kein zusätzlicher sicherer Kill abgeleitet werden.
++
++Bei aktiviertem Todeszähler erscheint ausschließlich lokal:
++
++text
++[NL-BINDER] Du bist gestorben. Deine aktuelle Tode: 206
++
++
++Die Anzeige des Gesamt-Killstands in der Statistikansicht verwendet den Tracker-Gesamtstand statt einer möglicherweise unvollständigen Summe der Waffenstatistiken.
++
++Quellen: SAMPBridge.cpp (../../src/SAMPBridge.cpp), KillTracker.cpp (../../src/KillTracker.cpp), KillfeedAdapter.cpp (../../src/KillfeedAdapter.cpp), DeathMessageRPCAdapter.cpp (../../src/DeathMessageRPCAdapter.cpp), KillTrackerUI.cpp (../../src/KillTrackerUI.cpp), MainWindowUI.cpp (../../src/MainWindowUI.cpp). Tests: SAMPBridgeTests.cpp (../../tests/SAMPBridgeTests.cpp), RegressionTests.cpp (../../tests/RegressionTests.cpp).
++
++4. Frei wählbarer Killtext und Variablen
++========================================
++
++Neben den Zählerschaltern gibt es ein Textfeld für die Nachricht nach einem erkannten eigenen Kill sowie einen Variablenknopf im vorhandenen Stil. Der Text darf einen beliebigen normalen Chattext oder einen Befehl enthalten, beispielsweise /f, /d oder /r. Der Kanal ist nicht auf /f festgelegt. Ein leeres Feld sendet nichts. Für das automatische Senden müssen Killzähler und Kill-Nachricht an Server senden aktiviert sein.
++
++Die Hilfe im Killzähler und in den Nachrichteneinstellungen verwendet nun denselben überschaubaren Variablenkatalog. Die direkt verfügbaren Variablen bleiben erhalten:
++
++| Variablen | Inhalt |
++| --- | --- |
++| {victim}, {killer}, {weapon} | Namen und Waffe des Ereignisses; im eigenen Killtext ist der Killer der eigene Spieler |
++| {zone}, {ZONE} | Eigene aktuelle Zone, normal oder in Großbuchstaben |
++| {hp}, {weste} | Eigene aktuelle Lebenspunkte und Weste |
++| {total_kills}, {total_deaths} | Gespeicherte Zählerstände des Binders |
++| {session_kills}, {session_deaths} | Seit Spielstart erfasste Kills beziehungsweise Tode |
++| {kd}, {KD} | Verhältnis aus den gespeicherten Zählerständen; beide Schreibweisen sind unterstützt |
++
++Die geschweiften Klammern gehören zur Variable. Fehlende Namen und Waffenangaben werden als Unbekannt ausgegeben. Diese Variablen benötigen keine zusätzlichen Spieler- oder Statistikabfragen.
++
++{hp} und {weste} lesen die aktuellen Werte des Spieler-Peds. Die frühere Priorisierung alter In-Car-Synchronisationsdaten wurde entfernt, damit nach dem Aussteigen keine alten Fahrzeugwerte erscheinen. Die Textersetzung liest Zonen- und Fahrzeugwerte nur, wenn die Vorlage sie tatsächlich verwendet.
++
++{carhp} und {carname} wurden aus der Killtext-Hilfe entfernt, bleiben in der Textbelegung verfügbar und funktionieren aus Kompatibilitätsgründen weiterhin in bereits gespeicherten Vorlagen. Servernachrichten entfernen lokale Farbcodes; die bestehende Begrenzung auf 144 Zeichen nach der Ersetzung bleibt erhalten.
++
++Quellen: MessageVariables.h (../../include/MessageVariables.h), MessageVariablesUI.h (../../include/MessageVariablesUI.h), SAMPBridge.cpp (../../src/SAMPBridge.cpp), MainWindowUI.cpp (../../src/MainWindowUI.cpp), KillTrackerUI.cpp (../../src/KillTrackerUI.cpp), ActionExecutor.cpp (../../src/ActionExecutor.cpp). Tests: SAMPBridgeTests.cpp (../../tests/SAMPBridgeTests.cpp), SourceContractTests.cpp (../../tests/SourceContractTests.cpp), RegressionTests.cpp (../../tests/RegressionTests.cpp).
++
++5. Tacho und automatischer Motorstart
++=====================================
++
++Der eigene Tacho wurde wieder aktivierbar gemacht. Er verwendet den tatsächlichen lokalen Spieler und Fahrerzustand. Fahrzeugwechsel und Verbindungswechsel setzen die Messung zurück. Geschätzte RPM werden nicht als echte Motordrehzahlmessung ausgegeben; fehlende Kraftstoffwerte werden nicht als vorhandene Messwerte erfunden.
++
++Die vorhandenen Server-Textdraws für TachoV2 werden während der eigenen Anzeige reversibel beim Zeichnen unterdrückt. Sie werden nicht gelöscht, und ihre eingehenden Aktualisierungen bleiben erhalten. Beim Deaktivieren kann die Serveranzeige wieder gezeichnet werden. Die Tacho-Einstellungen weisen weiterhin darauf hin, auf dem Server TachoV2 auszuwählen.
++
++Der automatische Motorstart erkennt den Wechsel auf den Fahrersitz auch ohne die bisher vorausgesetzte Einstiegsmeldung. Er hält Z kurz und versucht den Start nur begrenzt erneut, solange der Motor aus ist. Ein geöffneter Chat, Dialoge, das Binder-Menü, interaktive Zusatzansichten beziehungsweise ein nicht aktives Spielfenster verhindern die Eingabe. Als Beifahrer wird keine Motortaste ausgelöst.
++
++Quellen: SpeedometerManager.cpp (../../src/SpeedometerManager.cpp), SpeedometerUI.cpp (../../src/SpeedometerUI.cpp), TextDrawAdapter.cpp (../../src/TextDrawAdapter.cpp), SAMPBridge.cpp (../../src/SAMPBridge.cpp), Main.cpp (../../src/Main.cpp). Tests: SpeedometerFocusedTests.cpp (../../tests/SpeedometerFocusedTests.cpp), SAMPBridgeTests.cpp (../../tests/SAMPBridgeTests.cpp).
++
++6. Reconnect
++============
++
++/reconnect wurde als lokaler Binder-Befehl ergänzt. Unter General gibt es den Schalter Benutzt du den Nova Launcher? sowie optionale Launcher-Pfade. Mit Haken wird Nova gewählt, ohne Haken OpenMP.
++
++Der Binder prüft die Verbindung und den Launcher, schreibt den in der ASI enthaltenen Helfer in seinen Datenordner und startet ihn mit einer Bereitschaftsbestätigung. Erst nach erfolgreicher Vorbereitung und Speicherung der Binder-Daten wird die lokale SA-MP-Beenden-Funktion aufgerufen. Der Helfer wartet auf das tatsächliche Ende des bisherigen Spielprozesses und startet erst danach den Launcher.
++
++Die erste Umsetzung versandte /q über den allgemeinen Serverbefehlsweg; dadurch konnte der Helfer auf ein ausbleibendes Spielende warten. In r3 wird stattdessen der lokale Client-Quit-Handler aufgerufen. Dieser kann zunächst zurückkehren und das Beenden asynchron anfordern. Der Binder lässt diesen Ablauf zu. Läuft das Spiel nach acht Sekunden weiterhin, beendet er seinen wartenden Helfer, meldet den Fehlschlag lokal und erlaubt einen neuen Versuch.
++
++OpenMP erhält Serveradresse, Port, Spielernamen und Spielordner als einzeln maskierte Argumente. Es wird keine Shell zur Ausführung dieser Argumente benutzt. Nova wird über den normalen Launcher gestartet. Der Helfer versucht dort per Windows UI Automation ausschließlich den eindeutig gefundenen, aktivierten Knopf Spiel starten zu betätigen. Er automatisiert keine Anmeldung, Updates oder Rückfragen. Falls der Knopf nicht verfügbar ist, bleibt ein eigener Spielstart im Launcher erforderlich.
++
++Der Helfer beendet selbst nicht das Spiel. Ein Abbruch des vorbereiteten Ablaufs beendet nur den durch den Binder gestarteten Helfer. Ein ausbleibendes Elternprozessende führt nach begrenzter Wartezeit nicht später unkontrolliert zum Start einer zweiten Spielsitzung.
++
++Quellen: ReconnectManager.h (../../include/ReconnectManager.h), ReconnectManager.cpp (../../src/ReconnectManager.cpp), ReconnectHelper.cpp (../../tools/ReconnectHelper.cpp), Main.cpp (../../src/Main.cpp), Keybinder.rc (../../Keybinder.rc). Tests: ReconnectManagerTests.cpp (../../tests/ReconnectManagerTests.cpp), ReconnectWorkerFixture.cpp (../../tests/ReconnectWorkerFixture.cpp), test_reconnect_worker.py (../../tools/test_reconnect_worker.py).
++
++7. Hitsound beim Einloggen
++==========================
++
++Der Lebenswertvergleich berücksichtigt nur den verbundenen, aktiven und gespawnten lokalen SA-MP-Spieler. Ein Login- oder Vorschau-Ped allein reicht nicht mehr aus, um einen Treffer auszulösen. Verbindungsaufbau, Spectating, Klassenauswahl und das Warten auf die Spawn-Antwort setzen die Ausgangswerte zurück. Ein Pedwechsel, ungültige Werte, Respawn und Reconnect setzen sie ebenfalls zurück.
++
++Der erste gültige Wert nach einem solchen Wechsel etabliert den Ausgangsstand. Danach funktionieren echte Treffer ohne zusätzliche mehrsekündige Stummschaltung. Auch ausgehende Hitsounds verwenden die Spielphasenprüfung.
++
++Quellen: SAMPBridge.cpp (../../src/SAMPBridge.cpp), IncomingDamageDetector.h (../../include/IncomingDamageDetector.h). Tests: SAMPBridgeTests.cpp (../../tests/SAMPBridgeTests.cpp), HitsoundTests.cpp (../../tests/HitsoundTests.cpp).
++
++8. Damagelog
++============
++
++Unter Einstellungen → General → Gameplay wurde direkt unter Automatischer Motorstart der Schalter Damagelog ergänzt. Er ist standardmäßig aus, lässt sich unabhängig aktivieren und wird gespeichert. Meldungen erscheinen ausschließlich im eigenen Chat:
++
++text
++[NL-BINDER] Du hast -25 HP Schaden erhalten.
++[NL-BINDER] Du hast -12,5 HP Schaden erhalten.
++
++
++Erfasst wird der tatsächlich gemessene Verlust an HP und Weste. Eingehende Trefferereignisse werden auf dem Spielthread mit den Messwerten abgeglichen. Passende einzelne RPC-Ereignisse können auch eine gemeinsame Messwertabnahme in mehrere Schusszeilen aufteilen. RPC und Messung erzeugen nicht zwei Meldungen für denselben Treffer. Ein Trefferereignis ohne gemessenen Verlust erfindet keinen Schaden.
++
++Ohne passende Einzelereignisse wird eine geeignete gemessene Abnahme einmal als Gesamtverlust angezeigt. Weicht der rohe Waffenschaden vom tatsächlich abgezogenen Wert ab, etwa durch Serverregeln oder Overkill, wird kein proportionaler Einzelschaden geschätzt. Der letzte gemessene Treffer vor dem Tod wird einmal berücksichtigt; negative verbleibende HP werden nicht als zusätzlicher Overkill gezählt.
++
++Login, Spawn, Heilung und reine unbestätigte Script-Resets erzeugen keine Trefferzeile. Ein veralteter Umweltschaden-Code kann bei serverseitig angewandtem Schaden nur zusammen mit einem passenden tatsächlichen Combat-Ereignis als Treffer bestätigt werden. Ohne solches Ereignis bleibt Umweltschaden still.
++
++Der Log funktioniert auch bei ausgeschalteten Kill-/Todeszählern, Schadenstatistiken und Hitsounds. Die Schadensbeobachtung wurde dafür von der Statistikaktivierung getrennt. Beim Abschalten werden ausstehende Logeinträge verworfen; erneutes Einschalten erzeugt keine nachträglichen Meldungen für Schaden aus der ausgeschalteten Phase. Der RPC-Callback reiht nur Daten ein und schreibt nicht unmittelbar in den Chat.
++
++Grenze: Liefert ein Server ausschließlich eine Änderung der Lebenspunkte ohne brauchbares Combat-Ereignis, ist diese nicht sicher von einem Script-Reset unterscheidbar. Bei mehreren Treffern zwischen zwei Messungen ohne passende Einzelereignisse kann nur die gemessene Summe ausgegeben werden.
++
++Quellen: IncomingDamageDetector.h (../../include/IncomingDamageDetector.h), SAMPBridge.h (../../include/SAMPBridge.h), SAMPBridge.cpp (../../src/SAMPBridge.cpp), DamageRPCAdapter.cpp (../../src/DamageRPCAdapter.cpp), MainWindowUI.cpp (../../src/MainWindowUI.cpp), SettingsManager.cpp (../../src/SettingsManager.cpp). Tests: SAMPBridgeTests.cpp (../../tests/SAMPBridgeTests.cpp), RegressionTests.cpp (../../tests/RegressionTests.cpp), SourceContractTests.cpp (../../tests/SourceContractTests.cpp).
++
++9. Kennzeichnung, Einstellungen und Build
++=========================================
++
++- Die Menükennzeichnung wurde auf NLBinder v.0.1.1 by KOBiRO geändert. Die ursprüngliche Perkys-Grundlage wird in der Dokumentation beibehalten.
++- Neue Schalter, Launcher-Auswahl und getrennte Radarpositionen werden mit den vorhandenen Einstellungen gespeichert. Alte Radarpositionen werden migriert; alte entfernte Radar-/Alarmoptionen werden nicht reaktiviert.
++- Die Win32-Buildskripte finden Visual Studio Build Tools über vswhere, auch bei einer abweichenden Installation. Fehlende Plugin-SDK-Bibliotheken können aus den beigefügten Quellen gebaut werden.
++- Die verwendeten Plugin-SDK- und RakHook-Quellen wurden mit den dokumentierten Revisionen (../build-dependencies.md) wiederhergestellt. Das bestehende RakHook-API wird beibehalten.
++- Der Reconnect-Helfer wird aus Quellcode gebaut und als Ressource in die ASI eingebettet. Er muss nicht separat verteilt werden.
++- Tests verwenden einen eigenen temporären Datenbereich und bearbeiten keine echte Binder-Konfiguration.
++
++Quellen: Keybinder.vcxproj (../../Keybinder.vcxproj), setup_msvc.bat (../../tools/setup_msvc.bat), build_plugin_sdk.bat (../../tools/build_plugin_sdk.bat), build_release.bat (../../tools/build_release.bat), build_reconnect_helper.bat (../../tools/build_reconnect_helper.bat), run_tests.bat (../../tools/run_tests.bat), PersistentPaths.cpp (../../src/PersistentPaths.cpp).
++
++Die automatisierten Tests und der Release-Build der ausgelieferten Fassung waren erfolgreich. Der Reconnect-Helfer wurde zusätzlich mit eigenen harmlosen Testprozessen geprüft. Es wurde kein echter Ingame-Test mit der konkreten Server- und Launcher-Version durchgeführt. Details und die eindeutige ASI-Prüfsumme stehen in PRUEFUNG-DE.md (PRUEFUNG-DE.md).
++
++10. Nachtrag r4 – 25. Oktober 2026
++==================================
++
++Die Abschnitte 1 bis 9 halten den veröffentlichten r3-Stand fest. Dieser
++Nachtrag beschreibt die darauf folgenden Korrekturen und ersetzt für die
++betroffenen Funktionen die damaligen r3-Aussagen. Die ausführliche
++r4-Bedienungsbeschreibung (../NLBinder-0.1.1-r4-DE.md) gehört zum neuen Stand;
++eine neue endgültige ASI-Prüfsumme und neue Testergebnisse werden mit dessen
++Buildnachweisen dokumentiert.
++
++Damagelog nach dem AHK-Prinzip
++------------------------------
++
++Der Damagelog benötigt keine eingehende Schadens-RPC mehr. HP und Weste werden
++getrennt mit der vorigen gültigen Probe verglichen. Sinkt mindestens einer der
++Werte um mindestens 1 HP, erscheint der gemessene Verlust unmittelbar nach der
++Probe mit einer Nachkommastelle im eigenen Chat. Die Typen heißen HP Schaden,
++Weste getroffen und Weste + HP Schaden.
++
++Serverseitige SetHealth-/SetArmour-Abnahmen und Umweltschaden einschließlich Fallschaden werden während
++des Spiels mit erfasst. Die Script-/Umweltschaden-Unterdrückung des Hitsounds
++blockiert den Log nicht mehr. Gleichzeitige Heilung eines Werts vermindert den
++gemessenen Schaden am anderen Wert nicht. Login-/Spawn-/Pedwechsel und erneutes
++Einschalten setzen die Ausgangswerte zurück. Bei mehreren Treffern zwischen
++zwei Proben wird nur die gemessene Summe ausgegeben; es gibt keine Behauptung
++einer garantierten einzelnen Zeile pro Schuss. Die Ausgabe bleibt lokal.
++
++Quellen: SAMPBridge.cpp (../../src/SAMPBridge.cpp),
++IncomingDamageDetector.h (../../include/IncomingDamageDetector.h).
++Tests: SAMPBridgeTests.cpp (../../tests/SAMPBridgeTests.cpp).
++
++Getrennte Ortswerte und bereinigte Variablen
++--------------------------------------------
++
++Die angebotenen Ortsvariablen heißen {city} für Stadt/übergeordnetes
++Gebiet und {bezirk} für den aktuellen Bezirk, beispielsweise Los Santos
++und Market. Die Daten werden lokal aus den GTA-Zonen gelesen. Großgeschriebene
++Doppelungen sowie die unzuverlässigen Ereignisfelder victim, killer und
++weapon werden nicht mehr angeboten. Standardtexte verwenden die bereinigten
++Orts-/Zählerwerte; vorhandene alte Vorlagen bleiben lesbar.
++
++Quellen: MessageVariables.h (../../include/MessageVariables.h),
++MessageVariablesUI.h (../../include/MessageVariablesUI.h),
++ActionExecutor.cpp (../../src/ActionExecutor.cpp),
++SAMPBridge.cpp (../../src/SAMPBridge.cpp),
++KillTrackerUI.cpp (../../src/KillTrackerUI.cpp).
++
++Killtext ohne echten Kill testen
++--------------------------------
++
++Unter General / Kill- & Todeszähler wurde Kill simulieren ergänzt. Der
++aktuelle Text wird mit den aktuellen Variablenwerten expandiert und tatsächlich
++gesendet. Normaler Chat erhält [Testkill] am Anfang; bei Slash-Befehlen steht
++der Befehl weiterhin zuerst: /f [Testkill] …, /r [Testkill] …,
++/d [Testkill] …. Ein erster beliebiger Befehlstoken wird auf dieselbe Weise
++beibehalten. Der Test erhöht keine Kill-/Todes-/Sitzungszähler und benötigt
++keine aktivierte automatische Killnachricht. Leere oder mehrzeilige Texte
++werden abgelehnt; die Chatlänge wird begrenzt.
++
++Quellen: MainWindowUI.cpp (../../src/MainWindowUI.cpp),
++KillMessageTest.h (../../include/KillMessageTest.h),
++SAMPBridge.cpp (../../src/SAMPBridge.cpp).
++Tests: KillMessageTestTests.cpp (../../tests/KillMessageTestTests.cpp).
++
++Einmalige eigene /stats-Synchronisation
++---------------------------------------
++
++Auf ausdrücklichen neuen Benutzerwunsch fragt der Binder nach dem sicheren
++Loginzustand einmal /stats ab. Das ist eine Änderung gegenüber der zuvor
++rein passiven Statistikübernahme. Der Versuch startet im ersten geeigneten
++Spielframe ohne zusätzliche feste Wartepause; die Serverantwort bleibt
++zeitbestimmend. Offener Chat, Dialog, Cursor oder ein noch nicht spielbereiter
++Client blockieren den Start.
++
++Die eigene automatisch angeforderte Nova-Chatstatistik wird beim Anzeigen
++unterdrückt, während der Parser die normalisierten Zeilen weiterhin erhält.
++Leere Zeilen durchlaufen ebenfalls den Sichtbarkeitsfilter. Eine identifizierte
++eigene Statistik-Messagebox kann nach dem Lesen geschlossen werden. Andere
++Dialoge, fremde Statistikblöcke und normale Chatzeilen werden nicht pauschal
++versteckt oder geschlossen.
++
++Der lokale Cache umfasst empfangene Kills/Tode, Bargeld/Kontostand und einen
++gegebenenfalls gelieferten Gesamtvermögenswert sowie Level/XP/Levelziel, Gold,
++Eventcoins, Wantedpunkte und die Zeit bis zum Zahltag. Ohne eigenen
++Gesamtvermögenswert kann Bargeld plus Kontostand als verfügbare Summe dienen.
++Nicht gelieferte Zusatzwerte werden nicht erfunden. Die ersten Gesamtzähler
++sind ein Ausgangsstand und kein neuer Kill oder Tod.
++
++Nach erfolgreicher Übernahme und lokaler Speicherung meldet der Binder
++[NL-BINDER] Synchronisation abgeschlossen.. Nachfolgende Zeilen desselben
++Blocks können den Cache bis zum Footer beziehungsweise innerhalb von drei
++Sekunden ergänzen. Nach acht Sekunden ohne vollständige Antwort erscheint
++stattdessen ein lokaler Fehlerhinweis; es gibt weder eine Erfolgsmeldung ohne
++Daten noch wiederholten automatischen Abfragespam. Persönliche Cachewerte
++bleiben in der lokalen Konfiguration und gehören nicht in GitHub.
++
++Quellen: StartupStatsSync.cpp (../../src/StartupStatsSync.cpp),
++SAMPBridge.h (../../include/SAMPBridge.h),
++ServerStatsSnapshot.h (../../include/ServerStatsSnapshot.h),
++JobChatAdapter.cpp (../../src/JobChatAdapter.cpp),
++SettingsManager.cpp (../../src/SettingsManager.cpp), Main.cpp (../../src/Main.cpp).
++Tests: ServerStatsParserTests.cpp (../../tests/ServerStatsParserTests.cpp),
++SAMPBridgeTests.cpp (../../tests/SAMPBridgeTests.cpp),
++JobChatAdapterTests.cpp (../../tests/JobChatAdapterTests.cpp).
++
++Die r4-Änderungen wurden nicht in einer echten Spielsitzung geprüft. Die
++abschließenden automatisierten Tests, der neue Release-Build und die
++Veröffentlichung erfolgen mit den zugehörigen r4-Prüfnachweisen; die frühere
++r3-Prüfsumme beschreibt weiterhin ausschließlich die frühere Binärdatei.
++
++Automatischer Motorstart erneut korrigiert
++------------------------------------------
++
++Nach der erneuten Fehlermeldung des Benutzers wurde der automatische Motorstart
++überarbeitet. GTA kann beim Einsteigen kurz einen laufenden Motor melden,
++bevor der Server ihn ausschaltet. Die Entscheidung erfolgt deshalb erst bei
++vollständig erkanntem Fahrersitz und nach der bestehenden Wartezeit von
++1,5 Sekunden. Ein vorübergehendes EngineOn verwirft den geplanten Start nicht
++mehr. Ein alter „Motor Startet“-Chattext zählt nicht als neue Bestätigung;
++die begrenzte Wiederholungsphase beginnt erst beim tatsächlichen Tastendruck.
++Länger geöffneter Chat oder Binder lassen die Planung nicht vorzeitig ablaufen.
++Der Schutz vor Eingaben in Chat, Dialog oder Binder bleibt erhalten.
++Die konkrete Änderung und die ergänzten Regressionstests stehen in
++SAMPBridge.cpp (../../src/SAMPBridge.cpp) und
++SAMPBridgeTests.cpp (../../tests/SAMPBridgeTests.cpp).
++
++11. Nachtrag r5 – 25. Oktober 2026
++==================================
++
++Motor-Taste nur einmal pro Einstieg
++-----------------------------------
++
++Die bisherigen Wiederholungsversuche konnten die Motor-Taste erneut auslösen,
++bevor der Server einen laufenden Motor meldete. Da die Taste auf dem Server
++ein Umschalter ist, führte das zu Starten, Ausschalten und erneutem Starten.
++Der Binder verbraucht den Fahrer-Einstieg jetzt vor dem einen Tastendruck.
++Eine ausbleibende oder verzögerte Bestätigung erzeugt keine weiteren Versuche.
++Der zusätzliche Planungsweg über RPC 26 sowie die alte Textbestätigung wurden
++entfernt.
++
++Die bestehende Einstiegswartezeit von 1,5 Sekunden und die Sperren bei Chat,
++Dialog, Binder und fehlendem Fokus bleiben erhalten. Ein bereits laufender
++Motor bekommt keinen Druck. Ein späterer manueller Stopp und erneutes
++Aktivieren der Option lösen im selben Einstieg keinen automatischen Neustart
++aus. Ein echter Ausstieg oder ein anderes Fahrerfahrzeug erlaubt den nächsten
++einmaligen Start.
++
++Quellen: SAMPBridge.cpp (../../src/SAMPBridge.cpp),
++SAMPBridge.h (../../include/SAMPBridge.h).
++Tests: SAMPBridgeTests.cpp (../../tests/SAMPBridgeTests.cpp), einschließlich
++dauerhaftem EngineOff ohne Retry, Ausstieg/Wiedereinstieg im selben Fahrzeug,
++Optionswechsel ohne Doppelstart und manuellem Motorstopp.
++
++Vollständige Statistikantwort direkt lesen
++------------------------------------------
++
++Die r4-Synchronisation erkannte die tatsächlich geöffnete Statistik nicht
++zuverlässig. Sie beschränkte den Dialogpfad auf Messageboxen, verlangte neben
++Kills und Toden auch Bargeld/Kontostand und konnte längere oder anders
++formatierte Statistiktexte unvollständig auswerten.
++
++Die Korrektur liest den vollständigen RPC-61-Dialogtext direkt aus der
++Serverantwort. Messageboxen, Listen und Tabellen sind unterstützt. Der Parser
++berücksichtigt bis zu 128 Zeilen, Farbcodes und Tabulatoren sowie Zähler mit
++eckigen Klammern, runden Klammern oder ohne Klammern. Die eigenen Kills und
++Tode genügen für die Übernahme. Weitere tatsächlich gelieferte Statistikwerte
++werden ergänzt; fehlende Geldwerte verhindern die Zählerübernahme nicht mehr.
++
++Nach dem automatischen eigenen /stats-Abruf erfolgen Import und Schließen
++der identifizierten Startstatistik im selben Update. Es gibt keine zusätzliche
++feste Verzögerung; die echte Serverantwort bleibt notwendig. Die gelesenen
++Zähler werden als Ausgangsstand gespeichert und stehen anschließend auch
++{total_kills}, {total_deaths} und Kill simulieren zur Verfügung, ohne
++einen künstlichen Kill oder Tod zu erzeugen. Erst dann erscheint die lokale
++Erfolgsmeldung [NL-BINDER] Synchronisation abgeschlossen..
++
++Nach einem Timeout kann ein eigener manueller /stats-Aufruf noch
++nachsynchronisieren. Es gibt keine automatische Abfrageschleife. Nach bereits
++abgeschlossener Start-Synchronisation bleiben spätere manuell geöffnete eigene
++Statistiken sichtbar und aktualisieren empfangene Werte. Fremde Statistiken
++und andere Dialoge werden nicht pauschal geschlossen oder übernommen.
++
++Quellen: StartupStatsSync.cpp (../../src/StartupStatsSync.cpp),
++ServerStatsSnapshot.h (../../include/ServerStatsSnapshot.h),
++StatsDialogRPCAdapter.cpp (../../src/StatsDialogRPCAdapter.cpp),
++SettingsManager.cpp (../../src/SettingsManager.cpp).
++Tests: StartupStatsSyncTests.cpp (../../tests/StartupStatsSyncTests.cpp),
++ServerStatsParserTests.cpp (../../tests/ServerStatsParserTests.cpp),
++StatsDialogRPCAdapterTests.cpp (../../tests/StatsDialogRPCAdapterTests.cpp).
++
++Die endgültige r5-ASI, Prüfsumme und die zugehörigen Prüfnachweise stehen im
++r5-Paket (../../dist/NLBinder-0.1.1-r5/BUILD-INFO.txt). Die früheren r4-Werte
++gelten weiterhin ausschließlich für die frühere Binärdatei. Ein echter
++Ingame-Test auf dem konkreten Server steht aus.
++
++12. Nachtrag r6 – 25. Oktober 2026
++==================================
++
++Eigenen Statistik-Titel mit » korrekt zuordnen
++----------------------------------------------
++
++Das tatsächliche Statistikfenster verwendet einen Titel im Format
++Statistiken » Spielername. Die bisherige Titelbereinigung entfernte das
++Unicode-Trennzeichen » vor dem Namen nicht. Der anschließende Namensvergleich
++konnte deshalb die eigene Statistik als fremd abweisen, obwohl im Inhalt der
++richtige Name sowie Kills und Tode standen. Der Import blieb aus, das Fenster
++blieb geöffnet und der automatische Versuch endete im Timeout.
++
++Die Titelbereinigung trennt den Namen jetzt korrekt vom Statistikpräfix.
++Die Prüfung auf eine fremde Spieleridentität bleibt erhalten. Nach Erkennung
++der eigenen Antwort werden die Gesamtzähler übernommen und die eigene
++Startstatistik im selben Update geschlossen. Der importierte Stand steht
++anschließend auch den Textvariablen und Kill simulieren zur Verfügung.
++Eine zusätzliche feste Verzögerung wird nicht eingefügt; die Serverantwort
++bleibt erforderlich.
++
++Vollständigen komprimierten Dialogpfad prüfen
++---------------------------------------------
++
++Ein Regressionstest bildet das beobachtete Format mit erfundenem Namen und
++erfundenen Statistikwerten nach. Er führt die komprimierte RPC-61-Nachricht
++durch Dekodierung, Identitätsprüfung, Parser, Zählerübernahme und eigenen
++Dialogabschluss bis zum Testkill mit dem importierten Gesamtstand. Weitere
++Prüfungen grenzen fremde Spielernamen ab. Persönliche Screenshots und die
++ursprünglichen Statistikwerte gehören nicht zur Veröffentlichung.
++
++Quellen: ServerStatsSnapshot.h (../../include/ServerStatsSnapshot.h),
++StartupStatsSync.cpp (../../src/StartupStatsSync.cpp),
++StatsDialogRPCAdapter.cpp (../../src/StatsDialogRPCAdapter.cpp).
++Tests: ServerStatsParserTests.cpp (../../tests/ServerStatsParserTests.cpp),
++StartupStatsSyncTests.cpp (../../tests/StartupStatsSyncTests.cpp),
++StatsDialogRPCAdapterTests.cpp (../../tests/StatsDialogRPCAdapterTests.cpp).
++
++Der einmalige Motorstart aus r5 bleibt unverändert. Frühere Job-, Overlay-,
++Zähler-, Damagelog-, Tacho- und Reconnect-Anpassungen sind weiterhin enthalten.
++Die endgültige r6-ASI und deren eigene Prüfnachweise werden im
++r6-Paket (../../dist/NLBinder-0.1.1-r6/BUILD-INFO.txt) bereitgestellt. Frühere
++r5-Prüfwerte gelten ausschließlich für die damalige ASI. Ein echter
++Ingame-Test mit dem konkreten Server und Launcher steht aus.
++
++
++13. Nachtrag r7 – 25. Oktober 2026
++==================================
++
++Eigene Waffenicons im bisherigen Mods-Stil
++------------------------------------------
++
++Neben Hud wurde unter Mods Waffenicons ergänzt. Der Binder legt unter
++Dokumente/GTA San Andreas User Files/NLBinder/Waffenicons/ 43 Waffenunterordner
++an. Waffenicons-Ordner öffnen verwendet den tatsächlichen Windows-
++Dokumente-Pfad einschließlich einer möglichen OneDrive-Umleitung. Pro Waffe können mehrere
++PNGs abgelegt und als Vorschau ausgewählt werden. Die globale Aktivierung,
++einzelne Waffen und die jeweilige Bildauswahl werden gespeichert. Ohne eigene
++Auswahl dient die erste PNG nach Dateinamen als automatische Auswahl; die
++Originaldarstellung kann je Waffe wiederhergestellt werden. Fist bleibt im
++vorhandenen Hud-Bereich.
++
++Die lokale HUD-Ersetzung verwendet die bestehende Zeichengeometrie und
++überschreibt keine Spielarchive. Fehlende oder ungültige PNGs behalten die
++Originaldarstellung. Pfade werden auf die jeweilige Waffen-Unterbibliothek
++begrenzt; ungültige explizite Konfigurationen schalten die jeweilige Ersetzung
++ab. Das Paket enthält nur die Ordnerstruktur und Hinweise, keine persönlichen
++oder fremden Iconbilder.
++
++Quellen: WeaponIconCatalog.h (../../include/WeaponIconCatalog.h),
++WeaponIconManager.cpp (../../src/WeaponIconManager.cpp),
++WeaponIconsUI.cpp (../../src/WeaponIconsUI.cpp),
++SettingsManager.cpp (../../src/SettingsManager.cpp),
++MainWindowUI.cpp (../../src/MainWindowUI.cpp).
++Tests: WeaponIconManagerTests.cpp (../../tests/WeaponIconManagerTests.cpp),
++WeaponIconSettingsTests.cpp (../../tests/WeaponIconSettingsTests.cpp).
++
++Wanted-Dialogfolge über /speed ID
++---------------------------------
++
++Der Befehl startet /su und wählt anhand der gezeigten Titel und Zeilentexte
++Ordnungswidrigkeit, dann Geschwindigkeitsüberschreitung ab 20km/h.
++Im passenden Eingabefenster wird dieselbe Spieler-ID verwendet. Nach der
++zusätzlichen ausdrücklichen Benutzeranweisung wird Vergeben einmal
++bestätigt; die gezeigte Straftat umfasst 15 Wantedpunkte. Der Ablauf misst
++keine Geschwindigkeit und stellt keine automatische Verstoßfeststellung dar.
++
++Die Zustandsfolge begrenzt den Vorgang auf die passenden Dialoge und genau
++eine finale Absendung. Ungültige IDs, ein laufender Vorgang, fremde Dialoge,
++Abbruch, Timeout und Verbindungswechsel werden berücksichtigt.
++Quellen: SpeedTicketFlow.h (../../include/SpeedTicketFlow.h),
++SpeedTicketFlow.cpp (../../src/SpeedTicketFlow.cpp),
++SAMPBridge.cpp (../../src/SAMPBridge.cpp), Main.cpp (../../src/Main.cpp).
++Tests: SpeedTicketFlowTests.cpp (../../tests/SpeedTicketFlowTests.cpp).
++
++Vorhandene Job-Skillpunkte nach der Statistik übernehmen
++--------------------------------------------------------
++
++Die Start-Synchronisation wird nach /stats um /jobskills ergänzt.
++Vorhandene Punktestände bekannter Jobs werden als absolute Ausgangswerte
++übernommen und im Job-Feed sichtbar. Sie werden nicht als neue Einkünfte oder
++neu verdiente Punkte aufgezeichnet. Gleiche wiederholt gelieferte Stände
++verursachen keinen zusätzlichen Verdienst. Unbekannte oder mehrdeutige
++Jobnamen werden nicht stillschweigend einem anderen Job zugeordnet.
++Quellen: JobSkillsSnapshot.h (../../include/JobSkillsSnapshot.h),
++JobTracker.cpp (../../src/JobTracker.cpp),
++StartupStatsSync.cpp (../../src/StartupStatsSync.cpp).
++Tests: JobSkillsSnapshotTests.cpp (../../tests/JobSkillsSnapshotTests.cpp).
++
++Bestätigten Addon-Motorstart berücksichtigen
++--------------------------------------------
++
++Zusätzlich zur Begrenzung auf einen Motor-Tastendruck pro Einstieg wird eine
++bestätigte serverseitige Addon-Motorstartmeldung berücksichtigt. Hat das
++Addon den Start bereits bestätigt, darf der Binder keinen weiteren Toggle
++nachschieben. Chat-, Dialog- und Binder-Eingaben bleiben geschützt.
++Quelle und Tests: SAMPBridge.cpp (../../src/SAMPBridge.cpp),
++SAMPBridgeTests.cpp (../../tests/SAMPBridgeTests.cpp).
++
++Die endgültigen automatisierten Ergebnisse, ASI-Prüfsumme und Paketgleichheit
++gehören zu den r7-Paketnachweisen. Frühere Hashwerte bleiben ausschließlich den
++älteren ASIs zugeordnet; ein echter Ingame-Test auf dem Server steht aus.
++
++
++14. Nachtrag r8 – 27. Oktober 2026
++==================================
++
++Eigene Interface-Kategorie und getrennte HUD-Einstellungen
++----------------------------------------------------------
++
++Unter Mods wurde Interface direkt neben Waffenicons ergänzt. Die
++vorhandene Preset-Verwaltung ist dort eingeordnet. Leben, Rüstung, Atemluft,
++Geld, Uhrzeit, Waffenicon, Munition, Wanted-Sterne, Fahrzeugname, Gebietsname
++und Minimap erhalten jeweils eigene Positions- und Farboptionen. Ohne
++aktivierte eigene Farbe bleibt die jeweilige native Farbe erhalten. Die
++Position wird als auflösungsunabhängiger Versatz vom nativen GTA-Standort
++gespeichert. Position und Farbe lassen sich getrennt zurücksetzen.
++
++Der Binder verwendet weiterhin seine bisherigen Karten, Schalter und
++Farbauswahl. Die mitgelieferte historische InterfaceEditor-INI ist nur eine
++Funktionsvorlage; deren feste Koordinaten und Speicheränderungen werden
++nicht pauschal installiert.
++
++Mit der Maus verschieben und mit Esc speichern
++----------------------------------------------
++
++Die Verschieben-Funktion wird für ein bestimmtes Element gestartet. Das
++Menü wird ausgeblendet und ein Griffrahmen mit Hinweis eingeblendet. Die
++Maus verschiebt das ausgewählte Element; Esc beendet den Modus und speichert
++den aktiven Preset-Stand. Andere Elemente behalten ihre eigenen Positionen
++und Farben. Die Eingaben im Verschiebemodus werden vom Spiel abgeschirmt,
++wie beim bestehenden Overlay-Verschieben.
++
++Native Zeichnung und bestehende Mods
++------------------------------------
++
++Die Änderungen betreffen das lokale native GTA-HUD. Der Original-Zeichenpfad
++bleibt Grundlage; die vorhandene Waffenicon-Auswahl arbeitet weiterhin mit
++dem Interface-Editor zusammen. Farben werden für den jeweiligen Zeichen-
++bereich angewendet, ohne die gemeinsame HUD-Farbpalette dauerhaft für
++andere Elemente zu verändern. Eigene Server-Textdraws, Datum und sonstige
++Serveranzeigen gehören nicht zu diesem nativen GTA-Editor.
++
++Quellen: InterfaceLayout.h (../../include/InterfaceLayout.h),
++NativeHudEditor.cpp (../../src/NativeHudEditor.cpp),
++InterfaceEditor.cpp (../../src/InterfaceEditor.cpp),
++InterfaceEditorUI.cpp (../../src/InterfaceEditorUI.cpp),
++SettingsManager.cpp (../../src/SettingsManager.cpp),
++MainWindowUI.cpp (../../src/MainWindowUI.cpp).
++Tests: NativeHudEditorTests.cpp (../../tests/NativeHudEditorTests.cpp),
++InterfaceEditorTests.cpp (../../tests/InterfaceEditorTests.cpp),
++InterfaceLayoutSettingsTests.cpp (../../tests/InterfaceLayoutSettingsTests.cpp).
++
++Die endgültigen automatisierten Ergebnisse und die ASI-Prüfsumme gehören zu
++r8 (../../dist/NLBinder-0.1.1-r8/BUILD-INFO.txt). Die ursprünglichen
++Urheberhinweise und frühere Prüfstände bleiben erhalten. Ein echter
++Ingame-Test mit dem konkreten Server steht aus.
++
++
++15. Nachtrag r9 – 27. Oktober 2026
++==================================
++
++Interface auf vier Bereiche reduziert
++-------------------------------------
++
++Im Interface-Editor bleiben Geldanzeige, Waffenicon, Munition und Minimap.
++Gebietsname, Fahrzeugname, Wanted-Sterne, Uhrzeit, Atemluft, Rüstung und Leben
++wurden aus der Bearbeitung entfernt. Auch früher gespeicherte Interface-
++Versätze und Farben dieser sieben Bereiche werden nicht mehr angewendet.
++Die normalen Spielanzeigen bleiben vorhanden. Die vier übrigen Bereiche
++behalten separate Positions- und Farboptionen sowie die Preset-Verwaltung.
++
++Mauszeiger im Verschiebemodus freigegeben
++-----------------------------------------
++
++Der Interface-Modus blendete das Menü aus, während einzelne Maus-Hooks nur
++das sichtbare Menü als Eingabezuständigkeit erkannten. GTA konnte deshalb
++weiterhin den Mauszeiger zur Bildschirmmitte zurücksetzen. Interface und
++dauerhafte Online-Overlays verwenden jetzt dieselbe gemeinsame Prüfung für
++die Mauszuständigkeit. Sie berücksichtigt den aktiven Verschiebemodus auch
++bei ausgeblendetem Menü und schützt sowohl die Zeigerposition als auch die
++nativen Mauszustände und Mausereignisse. Esc speichert und beendet den Modus.
++
++Quellen: InterfaceLayout.h (../../include/InterfaceLayout.h),
++NativeHudEditor.cpp (../../src/NativeHudEditor.cpp),
++InterfaceEditor.cpp (../../src/InterfaceEditor.cpp),
++InterfaceEditorUI.cpp (../../src/InterfaceEditorUI.cpp),
++ImGuiOverlay.cpp (../../src/ImGuiOverlay.cpp),
++Main.cpp (../../src/Main.cpp),
++SettingsManager.cpp (../../src/SettingsManager.cpp).
++Tests: NativeHudEditorTests.cpp (../../tests/NativeHudEditorTests.cpp),
++InterfaceEditorTests.cpp (../../tests/InterfaceEditorTests.cpp),
++ImGuiOverlayTests.cpp (../../tests/ImGuiOverlayTests.cpp),
++InterfaceLayoutSettingsTests.cpp (../../tests/InterfaceLayoutSettingsTests.cpp).
++
++Die endgültigen Nachweise gehören zum
++r9-Paket (../../dist/NLBinder-0.1.1-r9/BUILD-INFO.txt). Frühere Prüfstände und
++ursprüngliche Urheberhinweise bleiben erhalten. Ein echter Ingame-Test auf
++dem konkreten Server steht aus.
++
++
++16. Nachtrag r10 – 29. Oktober 2026
++===================================
++
++Nova-Reconnect mit geprüftem Spielstart
++---------------------------------------
++
++Der Reconnect-Helfer führt nach dem beendeten Spiel den normalen Startweg
++im ausgewählten Nova Launcher aus. Die Startanforderung wird mit dem
++beobachteten Spielstart abgeglichen; ein einzelner erfolgreicher Aufruf des
++Launcher-Buttons gilt nicht allein als bestätigter Spielstart. Die
++Verarbeitung bleibt an den ausgewählten Launcher und den dazugehörigen
++Spielpfad gebunden. Der OpenMP-Weg bleibt enthalten.
++
++Schneller Motorstart mit erhaltenem Addon-Schutz
++------------------------------------------------
++
++Der Binder reagiert beim Erreichen des Fahrersitzes schneller. Es bleibt
++bei einem Startversuch pro Einstieg. Ein bereits laufender Motor oder die
++bestätigte Meldung des serverseitigen Motorstart-Addons darf keinen zweiten
++Tastendruck auslösen. Manuelles Ausschalten nach dem Einstieg löst keinen
++weiteren Binder-Start aus.
++
++Eigene Kills und Tode aus Servermeldungen
++-----------------------------------------
++
++Die bestätigten persönlichen Servermeldungen und die öffentlichen
++GANGWAR-, REVIERKAMPF-, STREETWAR- und DEATHZONE-Formate ergänzen die
++bestehende Ereigniserkennung. Öffentliche Meldungen werden an den Rollen
++im Text erkannt: Der eigene Name als Täter bestätigt einen eigenen Kill;
++der eigene Name als Opfer in der gesuchten-Verbrecher-Meldung bestätigt
++einen eigenen Tod. Ein bloßes Vorkommen des Namens irgendwo im Text reicht
++nicht aus. Normale Spielernachrichten sind keine Serverbestätigung.
++
++Mehrere Hinweise auf dasselbe Ereignis werden mit den vorhandenen
++Killfeed-, Todes-RPC- und Statistikdaten abgeglichen. Die bestehenden
++Einstellungen für Kill-/Todeszählung und Killtext-Ausgabe bleiben wirksam.
++Die Friedhofsmeldung dient ebenfalls als eigene Todesbestätigung.
++Die Gefängnis-gesprengt-Zeile nennt keinen Täter und bestätigt deshalb nur
++einen bereits zugeordneten eigenen Kill; sie vergibt alleine keinen Kill.
++
++Quellen: ReconnectManager.cpp (../../src/ReconnectManager.cpp),
++ReconnectHelper.cpp (../../tools/ReconnectHelper.cpp),
++SAMPBridge.cpp (../../src/SAMPBridge.cpp),
++CombatChatParser.cpp (../../src/CombatChatParser.cpp).
++Tests: ReconnectManagerTests.cpp (../../tests/ReconnectManagerTests.cpp),
++test_reconnect_worker.py (../../tools/test_reconnect_worker.py),
++SAMPBridgeTests.cpp (../../tests/SAMPBridgeTests.cpp),
++CombatChatParserTests.cpp (../../tests/CombatChatParserTests.cpp),
++CombatChatBridgeTests.cpp (../../tests/CombatChatBridgeTests.cpp).
++
++Manuelle Textvariable für Binds
++-------------------------------
++
++{input} öffnet beim Auslösen eines Tasten- oder Befehlsbinds den normalen
++Ingame-Chat mit einer lokalen Eingabeaufforderung. Enter übernimmt den Text
++für alle {input}-Stellen dieses Aufrufs; Esc bricht ab. Die Ausführung
++wartet vor der ersten Aktion. Die Antwort wird lokal abgefangen, bevor
++SA-MP sie als Nachricht oder Befehl weitergeben kann. Beim nächsten Aufruf
++wird erneut gefragt. Nachrichten mit führendem / werden als Befehl
++gesendet, damit beispielsweise /News In {input} befindet sich ein Blitzer.
++nach Eingabe von BSN direkt den gewünschten News-Befehl ausführt.
++
++Die Variable steht nur in der Hilfe für Textbindungen direkt unter {kd}.
++Quellen: ActionExecutor.cpp (../../src/ActionExecutor.cpp),
++MessageVariables.h (../../include/MessageVariables.h),
++SAMPBridge.cpp (../../src/SAMPBridge.cpp).
++Tests: ActionExecutorTests.cpp (../../tests/ActionExecutorTests.cpp),
++SAMPBridgeTests.cpp (../../tests/SAMPBridgeTests.cpp).
++
++Die endgültigen Nachweise gehören zum
++r10-Paket (../../dist/NLBinder-0.1.1-r10/BUILD-INFO.txt). Frühere Prüfstände
++und ursprüngliche Urheberhinweise bleiben erhalten. Ein echter Ingame-Test
++mit dem konkreten Server und dem installierten Nova Launcher steht aus.
++
++17. Nachtrag r11 – 29. Oktober 2026
++===================================
++
++Aktuellen Spielstand manuell synchronisieren
++--------------------------------------------
++
++Unter Einstellungen, direkt unter der Tacho-Tabelle, ergänzt der
++Button Aktuellen Spielstand synchronisieren den vorhandenen Abruf beim
++Einloggen. Er liest erneut die eigenen /stats und anschließend
++/jobskills ein. Die empfangenen Gesamtwerte und Job-Skillpunkte werden
++in die vorhandenen Anzeigen und Textvariablen übernommen und gespeichert.
++Die Sitzungserfassung wird dadurch nicht als neuer Kill oder Tod ausgelöst.
++
++Nach erfolgreichem Lesen und Speichern beider Antworten erscheint lokal:
++
++[NL-BINDER] Du hast deinen Spielestand manuell synchronisiert. Deine Werte sind jetzt im aktuellsten Stand.
++
++Ein bereits laufender Abruf wird nicht doppelt gestartet. Fremde oder
++unpassende Antworten ersetzen keine eigenen Daten. Fehlende Antworten
++führen zu einer Fehlermeldung und nicht zu einer Erfolgsmeldung. Die
++automatische Synchronisation beim Einloggen bleibt enthalten.
++
++Quellen: StartupStatsSync.cpp (../../src/StartupStatsSync.cpp),
++JobSkillsSync.cpp (../../src/JobSkillsSync.cpp),
++MainWindowUI.cpp (../../src/MainWindowUI.cpp),
++SAMPBridge.h (../../include/SAMPBridge.h).
++Tests: StartupStatsSyncTests.cpp (../../tests/StartupStatsSyncTests.cpp).
++
++Einheitliche lokale Killmeldung
++-------------------------------
++
++Die eigene lokale Killmeldung verwendet den Text
++[NL-BINDER] Du hast einen Kill gemacht! Aktuell hast du: {kills} Kills..
++{kills} wird durch den aktuellen Gesamt-Killstand ersetzt. Der lokale
++Hinweis wiederholt damit nicht den frei gewählten Server-Killbind; der
++Servertext und sein Chatkanal bleiben unverändert. Eine einmalige Migration
++aktualisiert die gespeicherten lokalen Altvorlagen. Die gemeinsame
++Ereigniszuordnung gegen doppelt gezählte Kills bleibt wirksam.
++
++{kills} ist in dieser Vorlage ein Alias für den Gesamt-Killzähler. Die
++Variablenhilfe erhält keinen zweiten Eintrag für denselben Wert.
++
++Todeszählung und Damagelog korrigiert
++-------------------------------------
++
++Ein eigener Tod darf nicht zweimal gezählt werden, wenn zuerst die native
++Lebenspunkte-Erkennung und danach die Friedhofsmeldung dasselbe Ereignis
++bestätigen. Der Abgleich berücksichtigt den laufenden Todes-/Respawn-Ablauf,
++damit die zusätzliche Chatbestätigung keinen zweiten Tod hinzufügt.
++
++Explosionen und ungültige Lebenswertübergänge führen nicht mehr zu
++unrealistischen Millionen-Schadensmeldungen im Damagelog. Gültige
++tatsächliche Schadensänderungen bleiben erfasst. Die Farbe des Damagelog-Präfixes
++verwendet jetzt {33CCFF} statt {1E90FF}.
++
++Beim geprüften Explosionsübergang von 50 HP auf einen internen negativen
++Überkillwert werden 50 HP Verlust gemeldet. Auch eine zehn Sekunden später
++eintreffende Friedhofsbestätigung zählt denselben Tod nicht erneut.
++Nach einem wieder steuerbaren Respawn kann der nächste Tod normal zählen.
++
++Quelle: SAMPBridge.cpp (../../src/SAMPBridge.cpp),
++IncomingDamageDetector.h (../../include/IncomingDamageDetector.h).
++Tests: SAMPBridgeTests.cpp (../../tests/SAMPBridgeTests.cpp).
++
++NLBinder.asi und vollständige Quellcode-Kopie
++---------------------------------------------
++
++Der Release-Build erzeugt jetzt NLBinder.asi. Projekt- und Lösungsdatei
++behalten ihre vorhandenen Namen. Beim Austausch ist die frühere
++Keybinder.asi zu ersetzen; beide Fassungen dürfen nicht gleichzeitig
++geladen werden.
++
++Der angeforderte Desktop-Ordner NLBinder-masterNEW enthält den
++vollständigen Quellcode einschließlich benötigter Abhängigkeiten, die
++kompilierte NLBinder.asi und CHANGELOG-GESAMT.txt. Die Textdatei
++führt den gesamten dokumentierten Änderungsverlauf dieses Binders auf.
++Persönliche Laufzeitdaten, Zugangsdaten und Compiler-Zwischendateien
++gehören nicht in die Quellcode-Weitergabe. Auch das r11-Paket enthält den
++gesamten Changelog als TXT.
++
++Quellen: Keybinder.vcxproj (../../Keybinder.vcxproj),
++package_revision11.ps1 (../../tools/package_revision11.ps1),
++Gesamter Changelog als Text (../CHANGELOG-GESAMT.txt).
++
++Die finalen Nachweise gehören zum
++r11-Paket (../../dist/NLBinder-0.1.1-r11/BUILD-INFO.txt). Frühere Stände,
++Vergleiche und ursprüngliche Urheberhinweise bleiben erhalten. Ein echter
++Ingame-Test auf dem konkreten Server steht aus.
+diff --git a/docs/NLBinder-0.1.1-r11-DE.md b/docs/NLBinder-0.1.1-r11-DE.md
+new file mode 100644
+index 0000000..667ca8e
+--- /dev/null
++++ b/docs/NLBinder-0.1.1-r11-DE.md
+@@ -0,0 +1,93 @@
++# NLBinder v.0.1.1 by KOBiRO – Überarbeitung 11
++
++Stand: 29. Oktober 2026. Diese Fassung ergänzt eine manuelle Synchronisation
++des aktuellen Spielstands und verwendet den Dateinamen **NLBinder.asi**.
++Alle bisherigen Binder-Anpassungen bleiben enthalten.
++
++## Installation
++
++1. GTA/SA-MP schließen und die bisherige Binder-ASI sichern.
++2. Die bisherige **Keybinder.asi** durch **NLBinder.asi** am bisherigen
++   Installationsort ersetzen. Die alte ASI aus dem Ladeordner entfernen,
++   damit nur eine Binder-Fassung geladen wird.
++3. GTA San Andreas 1.0 US mit SA-MP 0.3.DL-R1 normal starten und einloggen.
++
++Der vorhandene ASI-Loader bleibt erforderlich. Eigene Einstellungen und
++Waffenbilder bleiben im bisherigen NLBinder-Ordner unter
++**Dokumente → GTA San Andreas User Files → NLBinder**. Die mitgelieferte
++leere Waffenicon-Ordnerstruktur kann dort zusammengeführt werden.
++
++## Aktuellen Spielstand manuell synchronisieren
++
++Unter **Einstellungen**, direkt unter **Tacho**, auf
++**Aktuellen Spielstand synchronisieren** klicken. Der Binder liest die
++eigenen `/stats` und danach `/jobskills` erneut ein. Die empfangenen
++Gesamtstände und Skillpunkte werden direkt für die bisherigen Anzeigen,
++Skill-Feeds und Textvariablen übernommen und gespeichert.
++Das Bindermenü schließt sich für den Abruf.
++
++Nach erfolgreichem Abschluss beider Abrufe erscheint nur lokal:
++
++`[NL-BINDER] Du hast deinen Spielestand manuell synchronisiert. Deine Werte sind jetzt im aktuellsten Stand.`
++
++Eine laufende Synchronisation wird nicht nochmals gestartet. Fehlende oder
++unpassende Antworten führen nicht zu einer Erfolgsmeldung. Der Abruf
++benötigt echte Serverantworten; wie beim Einloggen schließt der Binder die
++zugehörigen eigenen Dialoge nach dem Lesen. Die automatische Synchronisation
++beim Einloggen bleibt bestehen.
++
++## Lokale Killmeldung
++
++Die eigene lokale Killmeldung lautet nun
++`[NL-BINDER] Du hast einen Kill gemacht! Aktuell hast du: {kills} Kills.`.
++Anstelle von `{kills}` erscheint der aktuelle Gesamt-Killstand. Der
++frei eingestellte Killbind für den Server bleibt erhalten und wird nicht
++zusätzlich als lokaler Hinweis wiederholt. Bestehende lokale Altvorlagen
++werden einmalig auf den neuen Text umgestellt.
++
++## Todeszählung und Damagelog
++
++Die native Todeserkennung und die Friedhofsmeldung werden für dasselbe
++Ereignis zusammengeführt, damit der Todeszähler nur einmal steigt.
++Explosionen und ungültige Lebenswertübergänge erzeugen keine
++Millionenwerte mehr im Damagelog. Tatsächliche gültige Schadensänderungen bleiben sichtbar.
++Das Damagelog-Präfix verwendet nun die Farbe `{33CCFF}`.
++
++## Vollständiger Quellordner und Changelog
++
++Der angeforderte Desktop-Ordner **NLBinder-masterNEW** enthält den gesamten
++Quellcode einschließlich der benötigten Abhängigkeiten, die fertige
++**NLBinder.asi** und **CHANGELOG-GESAMT.txt**. Die Projektdateien heißen
++weiterhin **Keybinder.sln** und **Keybinder.vcxproj**; der Release-Build
++erzeugt **NLBinder.asi**.
++
++Die Textdatei beschreibt den gesamten dokumentierten Änderungsverlauf,
++einschließlich der früheren Job-, Overlay-, Tacho-, Kill-/Todes-, Reconnect-,
++Interface-, Waffenicon- und Textvariablen-Anpassungen. Sie liegt auch
++diesem Paket bei. Persönliche Laufzeitkonfigurationen, Zugangsdaten und
++Compiler-Zwischendateien gehören nicht zur Quellcode-Weitergabe.
++
++Der Quellordner enthält die aktuelle ASI. Frühere Binärpakete bleiben über
++die GitHub-Historie erreichbar und werden dort nicht als zusätzliche alte
++Binder-Kopien beigelegt. Die **README.md** im Quellordner beschreibt das
++Bauen des Projekts; die Übersicht für die Projektleitung liegt zusätzlich
++unter **docs/review/README-GITHUB.md**.
++
++## Prüfung und frühere Funktionen
++
++Die Paketnachweise stehen in **BUILD-INFO.txt**, **SHA256SUMS.txt** und
++**PRUEFBERICHT.json**. Der Reconnect-Helfer bleibt in der ASI enthalten.
++Automatisierte Helfertests verwenden ausschließlich harmlose Testprozesse;
++der installierte Nova Launcher und das echte Spiel werden dafür nicht
++gestartet oder beendet. Ein echter Ingame-Test steht aus.
++
++Jobs und Skilltrees, Fraktionen, getrennte Freunde-/Feinde-Overlays,
++Damagelog, Kill-/Todeszähler, frei gewählte Killtexte, `/speed ID`, der
++Nova-/OpenMP-Reconnect, Waffenicons, die vier Interface-Bereiche und
++`{input}` für manuelle Textbindungen bleiben enthalten. Die Bedienung
++dieser früheren Änderungen steht im vollständigen Changelog.
++
++Quellcode und Prüfstand werden im
++[GitHub-Prüfrepository](https://github.com/Kobiro57/PerkysBinderChangelog)
++bereitgestellt. Frühere Stände und ursprüngliche Urheberhinweise bleiben
++erhalten.
+diff --git a/docs/review/CHANGELOG-DE.md b/docs/review/CHANGELOG-DE.md
+index 6e1f454..84d3030 100644
+--- a/docs/review/CHANGELOG-DE.md
++++ b/docs/review/CHANGELOG-DE.md
+@@ -1,6 +1,6 @@
+ # Änderungen am Perkys Binder – NLBinder v.0.1.1 by KOBiRO
+ 
+-Stand: 29. Oktober 2026, Arbeitsfassung **r10 mit erweitertem Nova-Reconnect, schnellerem Motorstart und Server-Chat-Erkennung für Kills/Tode**. Die Abschnitte 1 bis 15 dokumentieren die früheren Stände; Abschnitt 16 ergänzt r10.
++Stand: 29. Oktober 2026, Arbeitsfassung **r11 mit manueller Spielstandsynchronisation und NLBinder.asi**. Die Abschnitte 1 bis 16 dokumentieren die früheren Stände; Abschnitt 17 ergänzt r11.
+ 
+ Die Grundlage ist der vorhandene Perkys/NLBinder. Die Änderungen erweitern dessen bestehende Oberfläche und verwenden weiterhin die vorhandenen ImGui-Komponenten, Karten, Schalter und Darstellungseinstellungen. Der Ordner KOBiRO_ASI diente als funktionale Referenz für die Overlay-Erweiterung; seine Oberfläche wurde nicht als neue Binder-Oberfläche übernommen.
+ 
+@@ -648,3 +648,87 @@ Die endgültigen Nachweise gehören zum
+ [r10-Paket](../../dist/NLBinder-0.1.1-r10/BUILD-INFO.txt). Frühere Prüfstände
+ und ursprüngliche Urheberhinweise bleiben erhalten. Ein echter Ingame-Test
+ mit dem konkreten Server und dem installierten Nova Launcher steht aus.
++
++## 17. Nachtrag r11 – 29. Oktober 2026
++
++### Aktuellen Spielstand manuell synchronisieren
++
++Unter **Einstellungen**, direkt unter der **Tacho**-Tabelle, ergänzt der
++Button **Aktuellen Spielstand synchronisieren** den vorhandenen Abruf beim
++Einloggen. Er liest erneut die eigenen `/stats` und anschließend
++`/jobskills` ein. Die empfangenen Gesamtwerte und Job-Skillpunkte werden
++in die vorhandenen Anzeigen und Textvariablen übernommen und gespeichert.
++Die Sitzungserfassung wird dadurch nicht als neuer Kill oder Tod ausgelöst.
++
++Nach erfolgreichem Lesen und Speichern beider Antworten erscheint lokal:
++
++`[NL-BINDER] Du hast deinen Spielestand manuell synchronisiert. Deine Werte sind jetzt im aktuellsten Stand.`
++
++Ein bereits laufender Abruf wird nicht doppelt gestartet. Fremde oder
++unpassende Antworten ersetzen keine eigenen Daten. Fehlende Antworten
++führen zu einer Fehlermeldung und nicht zu einer Erfolgsmeldung. Die
++automatische Synchronisation beim Einloggen bleibt enthalten.
++
++Quellen: [StartupStatsSync.cpp](../../src/StartupStatsSync.cpp),
++[JobSkillsSync.cpp](../../src/JobSkillsSync.cpp),
++[MainWindowUI.cpp](../../src/MainWindowUI.cpp),
++[SAMPBridge.h](../../include/SAMPBridge.h).
++Tests: [StartupStatsSyncTests.cpp](../../tests/StartupStatsSyncTests.cpp).
++
++### Einheitliche lokale Killmeldung
++
++Die eigene lokale Killmeldung verwendet den Text
++`[NL-BINDER] Du hast einen Kill gemacht! Aktuell hast du: {kills} Kills.`.
++`{kills}` wird durch den aktuellen Gesamt-Killstand ersetzt. Der lokale
++Hinweis wiederholt damit nicht den frei gewählten Server-Killbind; der
++Servertext und sein Chatkanal bleiben unverändert. Eine einmalige Migration
++aktualisiert die gespeicherten lokalen Altvorlagen. Die gemeinsame
++Ereigniszuordnung gegen doppelt gezählte Kills bleibt wirksam.
++
++`{kills}` ist in dieser Vorlage ein Alias für den Gesamt-Killzähler. Die
++Variablenhilfe erhält keinen zweiten Eintrag für denselben Wert.
++
++### Todeszählung und Damagelog korrigiert
++
++Ein eigener Tod darf nicht zweimal gezählt werden, wenn zuerst die native
++Lebenspunkte-Erkennung und danach die Friedhofsmeldung dasselbe Ereignis
++bestätigen. Der Abgleich berücksichtigt den laufenden Todes-/Respawn-Ablauf,
++damit die zusätzliche Chatbestätigung keinen zweiten Tod hinzufügt.
++
++Explosionen und ungültige Lebenswertübergänge führen nicht mehr zu
++unrealistischen Millionen-Schadensmeldungen im Damagelog. Gültige
++tatsächliche Schadensänderungen bleiben erfasst. Die Farbe des Damagelog-Präfixes
++verwendet jetzt `{33CCFF}` statt `{1E90FF}`.
++
++Beim geprüften Explosionsübergang von 50 HP auf einen internen negativen
++Überkillwert werden 50 HP Verlust gemeldet. Auch eine zehn Sekunden später
++eintreffende Friedhofsbestätigung zählt denselben Tod nicht erneut.
++Nach einem wieder steuerbaren Respawn kann der nächste Tod normal zählen.
++
++Quelle: [SAMPBridge.cpp](../../src/SAMPBridge.cpp),
++[IncomingDamageDetector.h](../../include/IncomingDamageDetector.h).
++Tests: [SAMPBridgeTests.cpp](../../tests/SAMPBridgeTests.cpp).
++
++### NLBinder.asi und vollständige Quellcode-Kopie
++
++Der Release-Build erzeugt jetzt **NLBinder.asi**. Projekt- und Lösungsdatei
++behalten ihre vorhandenen Namen. Beim Austausch ist die frühere
++`Keybinder.asi` zu ersetzen; beide Fassungen dürfen nicht gleichzeitig
++geladen werden.
++
++Der angeforderte Desktop-Ordner **NLBinder-masterNEW** enthält den
++vollständigen Quellcode einschließlich benötigter Abhängigkeiten, die
++kompilierte **NLBinder.asi** und **CHANGELOG-GESAMT.txt**. Die Textdatei
++führt den gesamten dokumentierten Änderungsverlauf dieses Binders auf.
++Persönliche Laufzeitdaten, Zugangsdaten und Compiler-Zwischendateien
++gehören nicht in die Quellcode-Weitergabe. Auch das r11-Paket enthält den
++gesamten Changelog als TXT.
++
++Quellen: [Keybinder.vcxproj](../../Keybinder.vcxproj),
++[package_revision11.ps1](../../tools/package_revision11.ps1),
++[Gesamter Changelog als Text](../CHANGELOG-GESAMT.txt).
++
++Die finalen Nachweise gehören zum
++[r11-Paket](../../dist/NLBinder-0.1.1-r11/BUILD-INFO.txt). Frühere Stände,
++Vergleiche und ursprüngliche Urheberhinweise bleiben erhalten. Ein echter
++Ingame-Test auf dem konkreten Server steht aus.
+diff --git a/docs/review/PRUEFUNG-DE.md b/docs/review/PRUEFUNG-DE.md
+index c0271fd..1033d8d 100644
+--- a/docs/review/PRUEFUNG-DE.md
++++ b/docs/review/PRUEFUNG-DE.md
+@@ -1,6 +1,104 @@
+ # Hinweise zur Prüfung durch die Projektleitung
+ 
+-## Aktueller Stand r10 – 29. Oktober 2026
++## Aktueller Stand r11 – 29. Oktober 2026
++
++Der aktuelle Stand ist **NLBinder v.0.1.1 by KOBiRO, r11**.
++[Bedienung](../NLBinder-0.1.1-r11-DE.md),
++[r11-Nachtrag](CHANGELOG-DE.md#17-nachtrag-r11--29-oktober-2026) und
++[vollständiger TXT-Changelog](../CHANGELOG-GESAMT.txt) beschreiben die
++Änderungen. Frühere Prüfstände bleiben ihren ursprünglichen Binärdateien
++zugeordnet.
++
++### Verhalten und prüfbarer Umfang
++
++Der Button **Aktuellen Spielstand synchronisieren** unter Tacho verwendet
++erneut den bestehenden Ablauf zum Lesen eigener Stats und Jobskills.
++Erfolgreich empfangene Werte werden in die vorhandenen Datenmodelle und
++Variablen übernommen und gespeichert. Der Abschluss ist erst bestätigt,
++wenn beide frischen Antworten erfolgreich übernommen sind. Doppelte
++Anforderungen werden abgefangen; fehlende oder unpassende Antworten
++dürfen keine erfolgreiche manuelle Synchronisation melden.
++
++Eine Synchronisation zählt importierte Gesamtstände nicht als neue
++Sitzungsereignisse. Der Abruf beim Einloggen bleibt vorhanden. Die
++Serverantwort ist weiterhin erforderlich; ein bestimmtes Antworttempo
++wird nicht vorausgesetzt.
++
++Der lokale Killhinweis nutzt die einheitliche Vorlage
++`[NL-BINDER] Du hast einen Kill gemacht! Aktuell hast du: {kills} Kills.`.
++Die Gesamtzahl wird aus demselben aktuellen Killstand gelesen wie bisher;
++die Vorlage ist von der frei gewählten Servernachricht getrennt. Die
++gespeicherten lokalen Altvorlagen werden einmalig aktualisiert. Der Alias
++`{kills}` ergänzt keinen doppelten Eintrag in der Variablenhilfe.
++
++Die Todeserkennung führt die native HP-/Todesbestätigung und die
++Friedhofsmeldung desselben eigenen Todes zusammen. Der Lebenszyklus bis
++zum Respawn begrenzt die Zuordnung; die zusätzliche Meldung darf keinen
++zweiten Zähleranstieg verursachen. Explosionen und ungültige
++Lebenswertübergänge dürfen keine unrealistischen Millionen-Schadenswerte
++erzeugen. Gültige echte Verluste werden weiterhin verarbeitet. Das
++Damagelog-Präfix nutzt `{33CCFF}`.
++
++Für die Schadensmessung werden nicht-endliche Werte und einzelne HP- oder
++Westenwerte ab 1.000.000 verworfen; der Messvergleich startet danach mit
++einer frischen Basis. Endliche negative Überkillwerte werden für den
++Vergleich auf null begrenzt. Ein Explosionsübergang von 50 HP auf einen
++internen Wert von -8.000.000 entspricht damit 50 tatsächlich verlorenen HP.
++Regulär erhöhte Lebens-/Westenwerte oberhalb 100 bleiben messbar; es gibt
++keine pauschale Begrenzung aller gültigen Messwerte auf 100.
++
++Die konkrete Regression bestätigt denselben Tod trotz einer zehn Sekunden
++späteren Friedhofsmeldung nur einmal. Ein nachweisbar steuerbarer Respawn
++ermöglicht anschließend die Zählung des nächsten eigenständigen Todes.
++
++Die Ausgabe des Win32-Release-Builds heißt **NLBinder.asi**. Die ASI liegt
++auch im Paket und im angeforderten vollständigen Desktop-Quellordner
++**NLBinder-masterNEW**. Der TXT-Changelog enthält den gesamten bisherigen
++deutschen Änderungsverlauf. Compiler-Zwischenstände und persönliche
++Laufzeitdaten werden nicht in die Weitergabe kopiert.
++
++### r11-Prüfpfade
++
++| Bereich | Implementierung | Tests / Nachweise |
++| --- | --- | --- |
++| Manuelle vollständige Synchronisation | [StartupStatsSync.cpp](../../src/StartupStatsSync.cpp), [JobSkillsSync.cpp](../../src/JobSkillsSync.cpp), [MainWindowUI.cpp](../../src/MainWindowUI.cpp), [SAMPBridge.h](../../include/SAMPBridge.h) | [StartupStatsSyncTests.cpp](../../tests/StartupStatsSyncTests.cpp) |
++| ASI-Name und Paket | [Keybinder.vcxproj](../../Keybinder.vcxproj), [verify_revision11_artifact.py](../../tools/verify_revision11_artifact.py), [package_revision11.ps1](../../tools/package_revision11.ps1) | PE32/x86, Ressource 300, Paketdateien und ASI-Prüfsummen |
++
++### Zugehörige finale Paketnachweise
++
++- [NLBinder.asi](../../dist/NLBinder-0.1.1-r11/NLBinder.asi)
++- [Vollständiges ZIP](../../dist/NLBinder-v0.1.1-KOBiRO-r11.zip)
++- [Gesamter TXT-Changelog](../../dist/NLBinder-0.1.1-r11/CHANGELOG-GESAMT.txt)
++- [SHA-256](../../dist/NLBinder-0.1.1-r11/SHA256SUMS.txt)
++- [Build- und Prüfangaben](../../dist/NLBinder-0.1.1-r11/BUILD-INFO.txt)
++- [PE-/Ressourcenprüfung](../../dist/NLBinder-0.1.1-r11/PRUEFBERICHT.json)
++- [Nativer Helfertest](../../dist/NLBinder-0.1.1-r11/RECONNECT-TEST.json)
++
++### Ausgeführte Prüfungen für r11
++
++Gesamttests und Win32-Release-Build endeten mit Exitcode 0.
++Erfolgreiche Prüfungen: ActionExecutor: 143, Reconnect: 116, SAMPBridge: 555, StartupStatsSync: 363, StatsDialogRPCAdapter: 727, JobSkillsImport: 17, CombatChatParser: 181, CombatChatBridge: 83, native_reconnect_helper: 83.
++
++Der Statistik-/Jobskill-Ablauf und seine bisherigen Identitäts- und
++Dialogpfade werden gemeinsam mit den neuen manuellen Abruf-Fällen geprüft.
++Die Ausgabe des finalen Builds heißt NLBinder.asi. Die geprüfte Datei
++umfasst 18.500.608 Bytes; SHA-256:
++`204fba919b3b211a884841a099463389c981cd626e6927a10eb2ac1cccc29b2e`.
++
++PE32/x86, Windows-Imports und Ressource 300 sind geprüft. Der
++eingebettete Reconnect-Helfer stimmt mit dem frisch geprüften Helfer
++überein. Die Helferprüfung nutzt harmlose Testprozesse; das echte Spiel
++und der installierte Launcher werden dabei nicht gestartet oder beendet.
++
++Der vollständige TXT-Changelog umfasst die Abschnitte 1–17 und wird
++zusammen mit der ASI ausgeliefert.
++Separater ASI-Stand und ZIP-Inhalt stimmen bytegleich überein. Ein
++unabhängiger Abgleich bestätigt alle Paketdateien, den vollständigen
++TXT-Changelog, 43 explizite leere Waffenordner und keine persönlichen PNGs.
++[Maschinenlesbare Ergebnisse](r11-validation.json) ergänzen die Paketnachweise.
++Ein echter Ingame-Test auf dem konkreten Server steht aus.
++
++## Historischer Prüfstand r10 – 29. Oktober 2026
+ 
+ Der aktuelle Quellstand ist **NLBinder v.0.1.1 by KOBiRO, r10**. Die
+ [Bedienung](../NLBinder-0.1.1-r10-DE.md) und der
+diff --git a/docs/review/PUBLICATION.json b/docs/review/PUBLICATION.json
+index 69307d1..cabf416 100644
+--- a/docs/review/PUBLICATION.json
++++ b/docs/review/PUBLICATION.json
+@@ -3,11 +3,11 @@
+   "baseline_import_commit": "2da75e6c54a098243bf00ab48d86c5e3ee3cd261",
+   "baseline_tag": "original-archive-92ce219",
+   "original_archive_commit_comment": "92ce21971bee2d166d830e23ad20950f1dc98921",
+-  "history_note": "Original archive and pinned-dependency imports remain intact. r10 is a subsequent Binder update; no previous history is rewritten.",
+-  "asi_sha256": "0607a1d303333bc09e625f76b296f781a0ca71d48c9a494a1aefc32e0c0ab3d0",
++  "history_note": "Original archive and pinned-dependency imports remain intact. r11 is a subsequent Binder update; no previous history is rewritten.",
++  "asi_sha256": "204fba919b3b211a884841a099463389c981cd626e6927a10eb2ac1cccc29b2e",
+   "dependencies_import_commit": "3c8e11a76bc8d94962da0ce447a8d1a8b7c3eb83",
+   "dependencies_tag": "build-dependencies-baseline",
+-  "release": "v0.1.1-r10",
+-  "previous_release": "v0.1.1-r9",
+-  "previous_published_commit": "c8c868635382c93d758e077d419fda57e4a74c77"
++  "release": "v0.1.1-r11",
++  "previous_release": "v0.1.1-r10",
++  "previous_published_commit": "0da834a1fd2b4b0e38ece98dacb696587c1e2ef5"
+ }
+diff --git a/docs/review/README-GITHUB.md b/docs/review/README-GITHUB.md
+index 2432e12..5b4f334 100644
+--- a/docs/review/README-GITHUB.md
++++ b/docs/review/README-GITHUB.md
+@@ -2,13 +2,15 @@
+ 
+ Vollständiger Prüfstand der Änderungen am **Perkys / NLBinder**, angepasst für
+ KOBiRO. Grundlage und ursprüngliche Urheberschaft bleiben beim Originalprojekt.
+-Der Stand lautet **NLBinder v.0.1.1 by KOBiRO, r10**. Der Nova-Reconnect
+-übernimmt den Spielstart im Launcher und prüft den Fortschritt. Der
+-Motorstart beim Einsteigen reagiert schneller und berücksichtigt weiterhin
+-das serverseitige Start-Addon. Die Kill-/Todeserkennung verarbeitet die
+-bestätigten Server-Chatmeldungen mit dem jeweils angemeldeten Spielernamen.
+-Die Variable `{input}` fragt beim Auslösen eines Textbinds nach einem frei
+-eingegebenen Text; Enter übernimmt ihn, Esc bricht ab.
++Der Stand lautet **NLBinder v.0.1.1 by KOBiRO, r11**. Unter Einstellungen
++ergänzt **Aktuellen Spielstand synchronisieren** den erneuten Abruf von
++Stats und Jobskills. Die kompilierte Datei heißt jetzt **NLBinder.asi**.
++Der vollständige Änderungsverlauf liegt zusätzlich als TXT vor.
++Der lokale Killhinweis zeigt den Gesamt-Killstand in einem einheitlichen
++Text; der frei gewählte Server-Killbind bleibt getrennt davon erhalten.
++Eine Korrektur führt native Todeserkennung und Friedhofsbestätigung für
++denselben Tod zusammen. Explosionen und ungültige Lebenswertübergänge
++verursachen keine Millionen-Schadensmeldungen im Damagelog.
+ Frühere Binder-Anpassungen und die ursprünglichen Oberflächenkomponenten
+ bleiben enthalten.
+ 
+@@ -22,9 +24,9 @@ NLBinder → Waffenicons**. Der Button **Waffenicons-Ordner öffnen** im Binder
+ 2. [Technisches Verhalten, Prüfungen und Grenzen](../../docs/review/PRUEFUNG-DE.md)
+ 3. [Dateien im Vergleich zum Original](../../docs/review/DATEIVERGLEICH.md)
+ 4. [Herkunft und Abhängigkeiten](../../docs/review/DEPENDENCIES.md)
+-5. [Programmänderungen als GitHub-Vergleich](https://github.com/Kobiro57/PerkysBinderChangelog/compare/build-dependencies-baseline...v0.1.1-r10)
++5. [Programmänderungen als GitHub-Vergleich](https://github.com/Kobiro57/PerkysBinderChangelog/compare/build-dependencies-baseline...v0.1.1-r11)
+    oder als [kompakter Quellcode-Patch](../../docs/review/first-party-changes.patch)
+-6. [Änderungen seit r9](https://github.com/Kobiro57/PerkysBinderChangelog/compare/v0.1.1-r9...v0.1.1-r10)
++6. [Änderungen seit r10](https://github.com/Kobiro57/PerkysBinderChangelog/compare/v0.1.1-r10...v0.1.1-r11)
+ 
+ Der vollständige bearbeitete Code liegt in `src/`, `include/`, `res/`,
+ `tests/`, `tools/` und `third_party/`. Die Übersicht verlinkt direkt zu den
+@@ -48,17 +50,18 @@ die [aktuelle Build-Anleitung](../../docs/BUILD-README.md) beschreibt das Bauen
+ 
+ ## Geprüfte ASI
+ 
+-- [Keybinder.asi herunterladen](../../dist/NLBinder-0.1.1-r10/Keybinder.asi)
+-- [Komplettes ZIP-Paket herunterladen](../../dist/NLBinder-v0.1.1-KOBiRO-r10.zip)
+-- [Installation und Bedienung](../../dist/NLBinder-0.1.1-r10/LIESMICH.md)
+-- [Build- und Prüfangaben](../../dist/NLBinder-0.1.1-r10/BUILD-INFO.txt)
+-- [Maschinenlesbarer Prüfnachweis](../../dist/NLBinder-0.1.1-r10/PRUEFBERICHT.json)
+-- [SHA-256 der ausgelieferten ASI](../../dist/NLBinder-0.1.1-r10/SHA256SUMS.txt)
++- [NLBinder.asi herunterladen](../../dist/NLBinder-0.1.1-r11/NLBinder.asi)
++- [Gesamter Changelog als TXT](../../docs/CHANGELOG-GESAMT.txt)
++- [Komplettes ZIP-Paket herunterladen](../../dist/NLBinder-v0.1.1-KOBiRO-r11.zip)
++- [Installation und Bedienung](../../dist/NLBinder-0.1.1-r11/LIESMICH.md)
++- [Build- und Prüfangaben](../../dist/NLBinder-0.1.1-r11/BUILD-INFO.txt)
++- [Maschinenlesbarer Prüfnachweis](../../dist/NLBinder-0.1.1-r11/PRUEFBERICHT.json)
++- [SHA-256 der ausgelieferten ASI](../../dist/NLBinder-0.1.1-r11/SHA256SUMS.txt)
+ 
+ Die Nachweise gehören zum jeweiligen Binärstand: automatisierte Gesamttests,
+ Win32-Release-Build, PE-/Ressourcenvergleich und Reconnect-Helfertest mit
+ harmlosen Testprozessen. Ein echter Ingame-Test mit dem konkreten Server und
+-Launcher steht aus. Die [vorherige r9-Fassung](../../dist/NLBinder-0.1.1-r9/BUILD-INFO.txt)
++Launcher steht aus. Die [vorherige r10-Fassung](../../dist/NLBinder-0.1.1-r10/BUILD-INFO.txt)
+ und ihre Prüfsumme bleiben zur Nachverfolgung erhalten.
+ 
+ ## Weitere Updates
+diff --git a/docs/review/r11-validation.json b/docs/review/r11-validation.json
+new file mode 100644
+index 0000000..c29aff6
+--- /dev/null
++++ b/docs/review/r11-validation.json
+@@ -0,0 +1,36 @@
++{
++  "revision": "v0.1.1-r11",
++  "date": "2026-10-29",
++  "asi_filename": "NLBinder.asi",
++  "asi_bytes": 18500608,
++  "asi_sha256": "204fba919b3b211a884841a099463389c981cd626e6927a10eb2ac1cccc29b2e",
++  "full_test_suite_exit_code": 0,
++  "release_build_exit_code": 0,
++  "focused_checks": {
++    "ActionExecutor": 143,
++    "Reconnect": 116,
++    "SAMPBridge": 555,
++    "StartupStatsSync": 363,
++    "StatsDialogRPCAdapter": 727,
++    "JobSkillsImport": 17,
++    "CombatChatParser": 181,
++    "CombatChatBridge": 83,
++    "native_reconnect_helper": 83
++  },
++  "failures": 0,
++  "pe32_x86_dll": true,
++  "embedded_helper_matches": true,
++  "fresh_native_helper_checks": 83,
++  "nova_fixture_cases": 6,
++  "full_changelog_bytes": 52159,
++  "full_changelog_sha256": "f6864fbeb41cc501f700eed46aa301535aa14292bf885e0520d50886ab66d6fc",
++  "full_changelog_sections": 17,
++  "archive_asi_matches": true,
++  "weapon_template_directories": 43,
++  "live_game_test_performed": false,
++  "installed_nova_launcher_executed_for_verification": false,
++  "archive_bytes": 10581071,
++  "archive_sha256": "c8896db6be7068f5e3e56776c95a486a45bfcc2ca242635df7ba7d4c113b44f8",
++  "verified_package_files": 9,
++  "personal_pngs_in_archive": 0
++}
+diff --git a/include/IncomingDamageDetector.h b/include/IncomingDamageDetector.h
+index 19cd923..d02ab67 100644
+--- a/include/IncomingDamageDetector.h
++++ b/include/IncomingDamageDetector.h
+@@ -6,6 +6,14 @@
+ 
+ namespace keybinder {
+ 
++// These are sampling bounds, not limits imposed on player health. Servers can
++// use extremely large health values as temporary script/protection states;
++// differences across such states are not measurable combat damage. Ordinary
++// enhanced health/armour values (including values well above 100) remain valid.
++inline bool IsMeasurablePlayerVital(float value) {
++    return std::isfinite(value) && value < 1000000.0f;
++}
++
+ // GTA:SA eWeaponType values that CPed::m_nLastWeaponDamage reports for
+ // non-combat damage sources. The plugin-sdk eWeaponType enum omits these
+ // engine "pseudo weapons", so they are defined here explicitly. They let the
+@@ -172,11 +180,12 @@ struct IncomingDamageLogEntry {
+ class IncomingDamageLog {
+ public:
+     IncomingDamageLogEntry Observe(float health, float armour) {
+-        if (!std::isfinite(health) || !std::isfinite(armour) || armour < 0.0f) {
++        if (!IsMeasurablePlayerVital(health) || !IsMeasurablePlayerVital(armour)) {
+             Reset();
+             return {};
+         }
+         health = (std::max)(0.0f, health);
++        armour = (std::max)(0.0f, armour);
+         if (!initialized_) {
+             initialized_ = true;
+             lastHealth_ = health;
+diff --git a/include/KillTrackerUI.h b/include/KillTrackerUI.h
+index 30d48b3..c449c18 100644
+--- a/include/KillTrackerUI.h
++++ b/include/KillTrackerUI.h
+@@ -8,6 +8,7 @@
+ #include <vector>
+ #include <functional>
+ #include "KillTrackerTypes.h"
++#include "MessageVariables.h"
+ 
+ // Forward declarations
+ class SAMPBridge;
+@@ -26,7 +27,7 @@ struct KillTrackerSettings {
+     bool sendServerKillMessage = false;
+     bool sendServerDeathMessage = false;
+     bool trackDamage = true;
+-    std::string customLocalKillMessage = "{33CCFF}[NL-BINDER]{FFFFFF} Kill in {city}, {bezirk}. Meine Kills: {total_kills}";
++    std::string customLocalKillMessage = kDefaultLocalKillMessageTemplate;
+     std::string customLocalDeathMessage = "{33CCFF}[NL-BINDER]{FFFFFF} Du bist gestorben. Deine aktuelle Tode: {total_deaths}";
+     std::string customServerKillMessage = "Kill in {city}, {bezirk}. Meine Kills: {total_kills}";
+     std::string customServerDeathMessage = "Tode: {total_deaths}";
+diff --git a/include/MainWindowUI.h b/include/MainWindowUI.h
+index 3c46049..5402235 100644
+--- a/include/MainWindowUI.h
++++ b/include/MainWindowUI.h
+@@ -119,6 +119,7 @@ public:
+ 
+     bool WasCloseRequested() const;
+     void ResetCloseRequest();
++    bool RequestManualStateSynchronization();
+     void PersistWindowState();
+ 
+ private:
+@@ -205,6 +206,7 @@ private:
+ 
+     bool closeRequested_ = false;
+     bool showKillMessageVariables_ = false;
++    std::string stateSynchronizationError_;
+ 
+     void HandleCreateKeybind();
+     void HandleEditKeybind(const Keybind& keybind);
+diff --git a/include/MessageVariables.h b/include/MessageVariables.h
+index 911f016..8202b22 100644
+--- a/include/MessageVariables.h
++++ b/include/MessageVariables.h
+@@ -2,6 +2,9 @@
+ 
+ namespace keybinder {
+ 
++inline constexpr const char* kDefaultLocalKillMessageTemplate =
++    "{33CCFF}[NL-BINDER]{FFFFFF} Du hast einen Kill gemacht! Aktuell hast du: {total_kills} Kills.";
++
+ struct MessageVariableInfo {
+     const char* tag;
+     const char* description;
+diff --git a/include/SAMPBridge.h b/include/SAMPBridge.h
+index a4f497d..152352e 100644
+--- a/include/SAMPBridge.h
++++ b/include/SAMPBridge.h
+@@ -75,6 +75,8 @@ public:
+     const keybinder::ServerStatsSnapshot& GetSynchronizedStats() const { return synchronizedStats_; }
+     bool AreStatsSynchronized() const { return startupStatsComplete_; }
+     bool AreJobSkillsSynchronized() const { return startupJobSkillsComplete_; }
++    bool RequestManualStateSynchronization(std::string& error);
++    bool IsManualStateSynchronizationPending() const { return manualStateSyncPending_; }
+ 
+     void Update();
+ 
+@@ -176,6 +178,7 @@ public:
+         std::function<void(int)> hideDialog;
+         std::function<void(sampapi::v03dl::CInput*)> openChatInput;
+         std::function<void(sampapi::v03dl::CInput*)> closeChatInput;
++        std::function<bool()> isLocalPlayerControllable;
+     };
+ 
+     static void SetTestingHooks(const TestingHooks& hooks);
+@@ -201,6 +204,7 @@ private:
+     void ResetCombatChat();
+     void UpdateStartupStats(unsigned long now);
+     void ResetStartupStats();
++    void FailManualStateSynchronization(const std::string& reason);
+     void CaptureStartupStatsLine(const std::string& text);
+     bool ShouldDisplayStartupStatsChat(const jobs::JobChatEvent& event);
+     void CompleteStartupStats(unsigned long now);
+@@ -393,6 +397,9 @@ private:
+     int localDeathFallbackDelayFrames_;
+     bool localDeathAwaitingNativeDead_ = false;
+     unsigned long localDeathAwaitDeadline_ = 0;
++    unsigned int localAliveConfirmationFrames_ = 0;
++    bool localDeathSawInactive_ = false;
++    const void* localDeathPed_ = nullptr;
+     bool jobTrackerInitialized_;
+     
+     std::function<bool(const std::string&)> slashCommandInterceptor_;
+@@ -465,6 +472,11 @@ private:
+     bool startupJobSkillsFailed_ = false;
+     bool startupStatsSaved_ = false;
+     bool startupSyncNotified_ = false;
++    bool manualStateSyncCycle_ = false;
++    bool manualStateSyncPending_ = false;
++    unsigned long manualStateSyncAcceptedAt_ = 0;
++    int manualStateSyncSessionKillsAtRequest_ = 0;
++    int manualStateSyncSessionDeathsAtRequest_ = 0;
+     unsigned long startupJobSkillsRequestedAt_ = 0;
+     bool jobSkillsRequestPending_ = false;
+     unsigned long jobSkillsRequestAt_ = 0;
+diff --git a/include/SettingsManager.h b/include/SettingsManager.h
+index 3bd731b..261b470 100644
+--- a/include/SettingsManager.h
++++ b/include/SettingsManager.h
+@@ -9,6 +9,7 @@
+ #include "InterfaceEditor.h"
+ #include "RssTypes.h"
+ #include "ServerStatsSnapshot.h"
++#include "MessageVariables.h"
+ 
+ namespace keybinder {
+ 
+@@ -66,7 +67,7 @@ struct Settings {
+     bool kill_tracker_server_kill_message_enabled = false;
+     bool kill_tracker_server_death_message_enabled = false;
+     bool kill_tracker_track_damage = true;
+-    std::string kill_tracker_local_kill_message_template = "{33CCFF}[NL-BINDER]{FFFFFF} Kill in {city}, {bezirk}. Meine Kills: {total_kills}";
++    std::string kill_tracker_local_kill_message_template = kDefaultLocalKillMessageTemplate;
+     std::string kill_tracker_local_death_message_template = "{33CCFF}[NL-BINDER]{FFFFFF} Du bist gestorben. Deine aktuelle Tode: {total_deaths}";
+     std::string kill_tracker_server_kill_message_template = "Kill in {city}, {bezirk}. Meine Kills: {total_kills}";
+     std::string kill_tracker_server_death_message_template = "Tode: {total_deaths}";
+diff --git a/src/JobSkillsSync.cpp b/src/JobSkillsSync.cpp
+index ec7b391..83eb17f 100644
+--- a/src/JobSkillsSync.cpp
++++ b/src/JobSkillsSync.cpp
+@@ -17,6 +17,10 @@ std::string JobSkillsGameText(const std::string& text) {
+ 
+ void SAMPBridge::UpdateStartupJobSkills(unsigned long now) {
+     if (!startupStatsComplete_) return;
++    if (manualStateSyncPending_ && !startupJobSkillsRequested_ && now - startupStatsCompletedAt_ >= 8000) {
++        FailManualStateSynchronization("Der Jobskill-Abruf konnte nicht gestartet werden.");
++        return;
++    }
+ #ifdef KEYBINDER_TESTING
+     const bool ready = GetTestingHooks().isStartupJobSkillsReady && GetTestingHooks().isStartupJobSkillsReady();
+ #else
+@@ -26,9 +30,14 @@ void SAMPBridge::UpdateStartupJobSkills(unsigned long now) {
+         && !IsChatOpen() && !IsDialogOpen() && !IsCursorActive()) {
+         startupJobSkillsRequested_ = true;
+         startupJobSkillsRequestedAt_ = now;
++        {
++            std::lock_guard<std::mutex> lock(startupStatsMutex_);
++            jobSkillsDialogs_.clear(); // Only accept a response to the fresh phase-two request.
++        }
+         if (!SendCommand("/jobskills")) {
+             startupJobSkillsFailed_ = true;
+-            QueueLocalMessage("{FF6600}[NL-BINDER]{FFFFFF} Jobskills konnten nicht abgefragt werden. /jobskills kann manuell geöffnet werden.");
++            if (manualStateSyncPending_) FailManualStateSynchronization("Die Jobskills konnten nicht abgefragt werden.");
++            else QueueLocalMessage("{FF6600}[NL-BINDER]{FFFFFF} Jobskills konnten nicht abgefragt werden. /jobskills kann manuell geöffnet werden.");
+         }
+     }
+     if (ownJobSkillsCommandObserved_.exchange(false, std::memory_order_acq_rel)) {
+@@ -63,7 +72,8 @@ void SAMPBridge::UpdateStartupJobSkills(unsigned long now) {
+             if (!jobs::ParseJobSkillsDialog(JobSkillsGameText(event.caption), JobSkillsGameText(event.text),
+                     jobTracker_->GetRegistrySnapshot(), true, snapshot, error)) continue;
+             if (!jobTracker_->ImportSynchronizedSkills(snapshot.points)) {
+-                QueueLocalMessage("{FF6600}[NL-BINDER]{FFFFFF} Jobskills konnten nicht gespeichert werden.");
++                if (manualStateSyncPending_) FailManualStateSynchronization("Die Jobskills konnten nicht gespeichert werden.");
++                else QueueLocalMessage("{FF6600}[NL-BINDER]{FFFFFF} Jobskills konnten nicht gespeichert werden.");
+                 break;
+             }
+             const bool first = !startupJobSkillsComplete_;
+@@ -76,8 +86,11 @@ void SAMPBridge::UpdateStartupJobSkills(unsigned long now) {
+                 CloseStartupStatsDialog(now);
+             }
+             if (!startupSyncNotified_ && startupStatsSaved_) {
+-                QueueLocalMessage("{33CCFF}[NL-BINDER]{FFFFFF} Synchronisation abgeschlossen.");
++                QueueLocalMessage(manualStateSyncPending_
++                    ? "{33CCFF}[NL-BINDER]{FFFFFF} Du hast deinen Spielestand manuell synchronisiert. Deine Werte sind jetzt im aktuellsten Stand."
++                    : "{33CCFF}[NL-BINDER]{FFFFFF} Synchronisation abgeschlossen.");
+                 startupSyncNotified_ = true;
++                manualStateSyncPending_ = false;
+             }
+             break;
+         }
+@@ -86,6 +99,7 @@ void SAMPBridge::UpdateStartupJobSkills(unsigned long now) {
+         && now - startupJobSkillsRequestedAt_ >= 8000) {
+         startupJobSkillsFailed_ = true;
+         jobSkillsRequestPending_ = false;
+-        QueueLocalMessage("{FF6600}[NL-BINDER]{FFFFFF} Statistik übernommen, aber keine Jobskills empfangen. Eigene /jobskills erneut öffnen.");
++        if (manualStateSyncPending_) FailManualStateSynchronization("Keine aktuellen Jobskills empfangen.");
++        else QueueLocalMessage("{FF6600}[NL-BINDER]{FFFFFF} Statistik übernommen, aber keine Jobskills empfangen. Eigene /jobskills erneut öffnen.");
+     }
+ }
+diff --git a/src/KillTrackerUI.cpp b/src/KillTrackerUI.cpp
+index e120ae4..d116781 100644
+--- a/src/KillTrackerUI.cpp
++++ b/src/KillTrackerUI.cpp
+@@ -265,7 +265,7 @@ void KillTrackerUI::RenderMessageSettings() {
+     }
+     ImGui::SameLine();
+     if (UIComponents::SecondaryButton("Standard")) {
+-        settings_.customLocalKillMessage = "{33CCFF}[NL-BINDER]{FFFFFF} Kill in {city}, {bezirk}. Meine Kills: {total_kills}";
++        settings_.customLocalKillMessage = kDefaultLocalKillMessageTemplate;
+         strncpy(customLocalKillMessageBuf_, settings_.customLocalKillMessage.c_str(), sizeof(customLocalKillMessageBuf_) - 1);
+         customLocalKillMessageBuf_[sizeof(customLocalKillMessageBuf_) - 1] = '\0';
+         if (bridge_) bridge_->SetKillTrackerLocalKillMessageTemplate(settings_.customLocalKillMessage);
+diff --git a/src/MainWindowUI.cpp b/src/MainWindowUI.cpp
+index f9d9223..bbbb621 100644
+--- a/src/MainWindowUI.cpp
++++ b/src/MainWindowUI.cpp
+@@ -1590,6 +1590,18 @@ void MainWindowUI::RenderSettingsKillCounterCard() {
+     RenderMessageVariablesModal("Verfügbare Variablen##GeneralKillVariables", &showKillMessageVariables_, true);
+ }
+ 
++bool MainWindowUI::RequestManualStateSynchronization() {
++    stateSynchronizationError_.clear();
++    if (bridge_ == nullptr) {
++        stateSynchronizationError_ = "Der Spielstand ist noch nicht verf\xC3\xBCgbar.";
++        return false;
++    }
++    if (!bridge_->RequestManualStateSynchronization(stateSynchronizationError_)) return false;
++    // The existing close request releases native chat/dialog input at frame end.
++    closeRequested_ = true;
++    return true;
++}
++
+ void MainWindowUI::RenderSettingsTachoCard() {
+     auto& theme = ThemeManager::Instance();
+     Settings& settings = settingsManager_->GetMutable();
+@@ -1636,6 +1648,21 @@ void MainWindowUI::RenderSettingsTachoCard() {
+     }
+ 
+     UIComponents::EndCard();
++
++    UIComponents::BeginCard("StateSynchronizationCard", 0.0f, true);
++    ImGui::BeginDisabled(bridge_ == nullptr || bridge_->IsManualStateSynchronizationPending());
++    if (UIComponents::PrimaryButton("Aktuellen Spielstand synchronisieren")) {
++        RequestManualStateSynchronization();
++    }
++    ImGui::EndDisabled();
++    ImGui::TextColored(theme.GetColor(ThemeColorRole::TextMuted),
++        "Liest deine aktuellen Stats und Jobskills erneut ein.");
++    if (!stateSynchronizationError_.empty()) {
++        ImGui::PushStyleColor(ImGuiCol_Text, theme.GetColor(ThemeColorRole::Warning));
++        ImGui::TextWrapped("%s", stateSynchronizationError_.c_str());
++        ImGui::PopStyleColor();
++    }
++    UIComponents::EndCard();
+ }
+ 
+ void MainWindowUI::RenderHelpView() {
+diff --git a/src/SAMPBridge.cpp b/src/SAMPBridge.cpp
+index cd47c01..029ea46 100644
+--- a/src/SAMPBridge.cpp
++++ b/src/SAMPBridge.cpp
+@@ -23,6 +23,7 @@
+ #include "../include/SAMP-API/include/sampapi/sampapi.h"
+ #ifndef KEYBINDER_TESTING
+ #include "../include/plugin-sdk/plugin_sa/game_sa/CPlayerPed.h"
++#include "../include/plugin-sdk/plugin_sa/game_sa/CPad.h"
+ #include "../include/plugin-sdk/plugin_sa/game_sa/CVehicle.h"
+ #include "../include/plugin-sdk/plugin_sa/game_sa/CModelInfo.h"
+ #include "../include/plugin-sdk/plugin_sa/game_sa/CText.h"
+@@ -675,7 +676,7 @@ SAMPBridge::SAMPBridge()
+       killTrackerServerKillMessageEnabled_(false),
+       killTrackerServerDeathMessageEnabled_(false),
+       killTrackerTrackDamage_(true),
+-      killTrackerLocalKillMessageTemplate_("{FF6600}[NL-BINDER] {FFFFFF}Kill in {city}, {bezirk}. Kills: {total_kills}"),
++      killTrackerLocalKillMessageTemplate_(keybinder::kDefaultLocalKillMessageTemplate),
+       killTrackerLocalDeathMessageTemplate_("{FF3333}[NL-BINDER] {FFFFFF}Du bist gestorben. Deine aktuellen Tode: {total_deaths}"),
+       killTrackerServerKillMessageTemplate_("Ich habe einen Kill in {city}, {bezirk}. Meine Kills: {total_kills}"),
+       killTrackerServerDeathMessageTemplate_("Ich bin gestorben. Meine Tode: {total_deaths}"),
+@@ -1837,7 +1838,7 @@ void SAMPBridge::SetHitmarkerKillCallback(std::function<void(const killtracker::
+ 
+ void SAMPBridge::SetKillTrackerLocalKillMessageTemplate(const std::string& messageTemplate) {
+     if (messageTemplate.empty()) {
+-        killTrackerLocalKillMessageTemplate_ = "{FF6600}[NL-BINDER] {FFFFFF}Kill in {city}, {bezirk}. Kills: {total_kills}";
++        killTrackerLocalKillMessageTemplate_ = keybinder::kDefaultLocalKillMessageTemplate;
+         return;
+     }
+     killTrackerLocalKillMessageTemplate_ = messageTemplate;
+@@ -2209,6 +2210,12 @@ bool SAMPBridge::IsLocalPlayerDead() const {
+         return true;
+     }
+ 
++    float health = 0.0f, armour = 0.0f;
++    int source = 0;
++    const void* ped = nullptr;
++    if (ReadLocalDamageSample(health, armour, source, ped) && ped && std::isfinite(health)
++        && health <= 0.0f) return true;
++
+ #ifdef KEYBINDER_TESTING
+     return false;
+ #else
+@@ -2216,6 +2223,18 @@ bool SAMPBridge::IsLocalPlayerDead() const {
+ #endif
+ }
+ 
++namespace {
++bool IsLocalLifeControllable() {
++#ifdef KEYBINDER_TESTING
++    const auto& hooks = SAMPBridge::GetTestingHooks();
++    return !hooks.isLocalPlayerControllable || hooks.isLocalPlayerControllable();
++#else
++    const auto* pad = CPad::GetPad(0);
++    return pad && pad->DisablePlayerControls == 0;
++#endif
++}
++}
++
+ void SAMPBridge::ResetKillTrackerDeathInferenceState() {
+     const bool isDead = IsLocalPlayerDead();
+     localPlayerWasDead_ = isDead;
+@@ -2223,6 +2242,9 @@ void SAMPBridge::ResetKillTrackerDeathInferenceState() {
+     localDeathFallbackDelayFrames_ = 0;
+     localDeathAwaitingNativeDead_ = false;
+     localDeathAwaitDeadline_ = 0;
++    localAliveConfirmationFrames_ = 0;
++    localDeathSawInactive_ = false;
++    localDeathPed_ = nullptr;
+ 
+     if (killTracker_ != nullptr) {
+         killTracker_->UpdateDeathWindowState({});
+@@ -2242,6 +2264,10 @@ void SAMPBridge::RecordLocalPlayerDeath(const std::string& killer, int weaponId)
+     localDeathAwaitingNativeDead_ = !localPlayerWasDead_;
+     localDeathAwaitDeadline_ = RuntimeTickCount() + 2000;
+     localDeathHandledForCurrentLife_ = true;
++    localAliveConfirmationFrames_ = 0;
++    localDeathSawInactive_ = !IsLocalCombatActive() || !IsLocalLifeControllable();
++    const auto* deathPlayer = GetLocalPlayer();
++    localDeathPed_ = deathPlayer ? deathPlayer->m_pPed : nullptr;
+     localDeathFallbackDelayFrames_ = 0;
+ 
+     if (!countingDeaths) {
+@@ -2265,17 +2291,51 @@ void SAMPBridge::UpdateLocalDeathFallback() {
+     }
+ 
+     const bool isDead = IsLocalPlayerDead();
++    if (localDeathHandledForCurrentLife_ && (!IsLocalCombatActive() || !IsLocalLifeControllable())) localDeathSawInactive_ = true;
+     if (!isDead) {
+-        if (localDeathAwaitingNativeDead_
+-            && static_cast<long>(RuntimeTickCount() - localDeathAwaitDeadline_) < 0) {
+-            return;
++        if (localDeathHandledForCurrentLife_) {
++            // An alive flag alone is also seen during the explosion/funeral
++            // transition. Do not rearm a life on zero/sentinel HP, inactive
++            // players or a single transient frame. A delayed cemetery line
++            // still describes the death that was already recorded.
++            bool confirmedAlive = false;
++#ifdef KEYBINDER_TESTING
++            if (!GetTestingHooks().readLocalDamageSample) {
++                // Older fixtures model the native life exclusively with the
++                // explicit wasted -> alive transition.
++                confirmedAlive = localPlayerWasDead_;
++                if (confirmedAlive) localAliveConfirmationFrames_ = 1;
++            } else
++#endif
++            {
++                float health = 0.0f, armour = 0.0f;
++                int source = 0;
++                const void* ped = nullptr;
++                const auto* player = GetLocalPlayer();
++                const bool newPed = player && player->m_pPed && player->m_pPed != localDeathPed_;
++                confirmedAlive = (localPlayerWasDead_ || localDeathSawInactive_ || newPed)
++                    && IsLocalCombatActive() && IsLocalLifeControllable()
++                    && ReadLocalDamageSample(health, armour, source, ped) && ped
++                    && keybinder::IsMeasurablePlayerVital(health) && health > 0.0f;
++#ifndef KEYBINDER_TESTING
++                if (confirmedAlive) {
++                    const auto* gamePed = static_cast<const CPlayerPed*>(ped);
++                    confirmedAlive = gamePed->m_ePedState != PEDSTATE_DIE
++                        && gamePed->m_ePedState != PEDSTATE_DEAD
++                        && gamePed->m_ePedState != PEDSTATE_DIE_BY_STEALTH;
++                }
++#endif
++            }
++            localAliveConfirmationFrames_ = confirmedAlive ? localAliveConfirmationFrames_ + 1 : 0;
++            if (localAliveConfirmationFrames_ < 2) return;
+         }
+-        const bool observedRespawn = localPlayerWasDead_;
++        const bool observedRespawn = localPlayerWasDead_ || (localDeathHandledForCurrentLife_ && localAliveConfirmationFrames_ >= 2);
+         ResetKillTrackerDeathInferenceState();
+         if (observedRespawn) hasCombatChatDeath_ = false;
+         return;
+     }
+ 
++    localAliveConfirmationFrames_ = 0;
+     localDeathAwaitingNativeDead_ = false;
+     if (!localPlayerWasDead_) {
+         localPlayerWasDead_ = true;
+@@ -2436,7 +2496,7 @@ void SAMPBridge::LogIncomingDamage(const keybinder::IncomingDamageLogEntry& dama
+     std::snprintf(amount, sizeof(amount), "%.1f", rounded);
+     std::string formatted = amount;
+     std::replace(formatted.begin(), formatted.end(), '.', ',');
+-    SendLocalMessage("{1E90FF}[NL-BINDER] {FF0000}-" + formatted
++    SendLocalMessage("{33CCFF}[NL-BINDER] {FF0000}-" + formatted
+         + " HP {FFFFFF}Schaden (" + damage.Type() + ")");
+ }
+ 
+@@ -2476,14 +2536,15 @@ void SAMPBridge::PollLocalIncomingDamage() {
+     int damageSource = 0;
+     const void* pedIdentity = nullptr;
+     const bool hasSample = ReadLocalDamageSample(health, armour, damageSource, pedIdentity);
+-    if (!hasSample || pedIdentity == nullptr || !std::isfinite(health)
+-        || !std::isfinite(armour) || armour < 0.0f || !std::isfinite(health + armour)) {
++    if (!hasSample || pedIdentity == nullptr || !keybinder::IsMeasurablePlayerVital(health)
++        || !keybinder::IsMeasurablePlayerVital(armour)) {
+         ResetIncomingDamageState();
+         return;
+     }
+     // GTA can briefly retain a negative HP value on a lethal hit. Only the
+     // remaining HP was actually available to lose; never log extra overkill.
+     health = (std::max)(health, 0.0f);
++    armour = (std::max)(armour, 0.0f);
+ 
+     if (pedIdentity != incomingDamagePed_) {
+         ResetIncomingDamageState();
+@@ -2597,6 +2658,7 @@ std::string SAMPBridge::ExpandMessageVars(const std::string& tmpl,
+         const int totalKills = killTracker_ ? killTracker_->GetTotalKills() : 0;
+         const int totalDeaths = killTracker_ ? killTracker_->GetTotalDeaths() : 0;
+         msg = ReplaceAll(msg, "{total_kills}",    std::to_string(totalKills));
++        msg = ReplaceAll(msg, "{kills}", std::to_string(totalKills));
+         msg = ReplaceAll(msg, "{total_deaths}",   std::to_string(totalDeaths));
+         msg = ReplaceAll(msg, "{session_kills}",  std::to_string(killTracker_ ? killTracker_->GetSessionKills() : 0));
+         msg = ReplaceAll(msg, "{session_deaths}", std::to_string(killTracker_ ? killTracker_->GetSessionDeaths() : 0));
+@@ -2931,7 +2993,7 @@ void SAMPBridge::ObserveServerCombatStats(const std::string& text) {
+             kill.timestamp = now;
+             HandleLocalKill(std::move(kill));
+         }
+-        if (deaths > lastServerDeathTotal_ && deaths - lastServerDeathTotal_ == 1
++        if (!localDeathHandledForCurrentLife_ && deaths > lastServerDeathTotal_ && deaths - lastServerDeathTotal_ == 1
+             && deaths > tracker->GetTotalDeaths() && deaths - tracker->GetTotalDeaths() == 1) {
+             RecordLocalPlayerDeath("", -1);
+         }
+@@ -3095,7 +3157,9 @@ void SAMPBridge::SetIncomingChatCallback(IncomingChatCallback callback) {
+ 
+ void SAMPBridge::NotifyIncomingChat(const std::string& text) {
+     CaptureStartupStatsLine(text);
+-    ObserveServerCombatStats(text);
++    // A requested full refresh imports absolute totals rather than fabricating
++    // new combat events from the difference to the previously saved snapshot.
++    if (!manualStateSyncPending_ || startupStatsComplete_) ObserveServerCombatStats(text);
+     if (incomingChatCallback_) {
+         incomingChatCallback_(text);
+     }
+diff --git a/src/SettingsManager.cpp b/src/SettingsManager.cpp
+index 97c84bd..2575cd9 100644
+--- a/src/SettingsManager.cpp
++++ b/src/SettingsManager.cpp
+@@ -1064,6 +1064,13 @@ bool SettingsManager::LoadFromJson(const std::string& json_content) {
+     if (!found_local_kill_message_template) {
+         found_local_kill_message_template = ParseStringField(json_content, "\"kill_tracker_message_template\"", kill_tracker_local_kill_message_template);
+     }
++    // Older configurations duplicated their public kill bind locally. Migrate
++    // that local notice once; subsequent explicitly edited local texts survive.
++    bool localKillNoticeMigrated = false;
++    ParseBoolField(json_content, "\"kill_tracker_local_kill_notice_v1\"", localKillNoticeMigrated);
++    if (!localKillNoticeMigrated) {
++        kill_tracker_local_kill_message_template = kDefaultLocalKillMessageTemplate;
++    }
+     found_local_death_message_template = ParseStringField(json_content, "\"kill_tracker_local_death_message_template\"", kill_tracker_local_death_message_template);
+     if (!found_local_death_message_template) {
+         found_local_death_message_template = ParseStringField(json_content, "\"kill_tracker_death_message_template\"", kill_tracker_local_death_message_template);
+@@ -2116,6 +2123,7 @@ std::string SettingsManager::GetSettingsJson() const {
+     size_t pos = 0;
+     std::string escaped_template = EscapeJsonString(settings_.kill_tracker_local_kill_message_template);
+     oss << "    \"kill_tracker_local_kill_message_template\": \"" << escaped_template << "\",\n";
++    oss << "    \"kill_tracker_local_kill_notice_v1\": true,\n";
+ 
+     std::string escaped_death_template = EscapeJsonString(settings_.kill_tracker_local_death_message_template);
+     oss << "    \"kill_tracker_local_death_message_template\": \"" << escaped_death_template << "\",\n";
+diff --git a/src/StartupStatsSync.cpp b/src/StartupStatsSync.cpp
+index f07dfbe..945ba65 100644
+--- a/src/StartupStatsSync.cpp
++++ b/src/StartupStatsSync.cpp
+@@ -71,6 +71,9 @@ void SAMPBridge::ResetStartupStats() {
+     startupStatsDialogToClose_.reset();
+     startupJobSkillsRequested_ = startupJobSkillsComplete_ = startupJobSkillsFailed_ = false;
+     startupStatsSaved_ = startupSyncNotified_ = false;
++    manualStateSyncCycle_ = manualStateSyncPending_ = false;
++    manualStateSyncAcceptedAt_ = 0;
++    manualStateSyncSessionKillsAtRequest_ = manualStateSyncSessionDeathsAtRequest_ = 0;
+     jobSkillsRequestPending_ = false;
+     ownJobSkillsCommandObserved_.store(false, std::memory_order_release);
+     ownStatsCommandObserved_.store(false, std::memory_order_release);
+@@ -84,6 +87,69 @@ void SAMPBridge::ResetStartupStats() {
+     startupStatsPendingChat_ = startupStatsHiddenChat_ = false;
+ }
+ 
++bool SAMPBridge::RequestManualStateSynchronization(std::string& error) {
++    error.clear();
++    if (!initialized_) {
++        error = "Der Binder ist noch nicht mit dem Spiel verbunden.";
++        return false;
++    }
++    if (manualStateSyncPending_) {
++        error = "Eine manuelle Synchronisation l\xC3\xA4uft bereits.";
++        return false;
++    }
++    const auto* network = GetNetGame();
++    const auto* player = GetLocalPlayer();
++    const std::string name = GetLocalPlayerName();
++#ifdef KEYBINDER_TESTING
++    const bool ready = GetTestingHooks().isStartupStatsReady && GetTestingHooks().isStartupStatsReady();
++    const unsigned long now = GetTestingHooks().getTickCount ? GetTestingHooks().getTickCount() : GetTickCount();
++#else
++    const bool ready = IsLocalCombatActive();
++    const unsigned long now = GetTickCount();
++#endif
++    if (!ready || !network
++        || network->m_nGameState != sampapi::v03dl::CNetGame::GAME_MODE_CONNECTED
++        || !player || !player->m_bIsActive || player->m_bIsWasted || !player->m_pPed
++        || player->m_bDoesSpectating || name.empty() || !GetInput()) {
++        error = "Du musst eingeloggt und im Spiel sein, um deinen Spielstand zu synchronisieren.";
++        return false;
++    }
++    if (manualInputOwner_ || IsChatOpen() || IsDialogOpen() || speedTicketFlow_.IsActive()) {
++        error = "Bitte beende zuerst die aktuelle Eingabe oder den ge\xC3\xB6" "ffneten Dialog.";
++        return false;
++    }
++    if ((startupStatsRequested_ && !startupStatsComplete_ && !startupStatsFailed_)
++        || (startupStatsComplete_ && !startupJobSkillsComplete_ && !startupJobSkillsFailed_)) {
++        error = "Die Synchronisation beim Einloggen l\xC3\xA4uft noch. Bitte warte auf ihren Abschluss.";
++        return false;
++    }
++    // Reuse both automatic phases, retaining live counters, cached account
++    // values, session events and job income until fresh responses are accepted.
++    ResetStartupStats();
++    startupStatsConnected_ = true;
++    startupStatsIdentity_ = std::string(network->m_szHostAddress, strnlen(network->m_szHostAddress, 257))
++        + ":" + std::to_string(network->m_nPort) + "/" + LowerStatsName(name);
++    manualStateSyncCycle_ = manualStateSyncPending_ = true;
++    manualStateSyncAcceptedAt_ = now;
++    manualStateSyncSessionKillsAtRequest_ = GetKillTracker()->GetSessionKills();
++    manualStateSyncSessionDeathsAtRequest_ = GetKillTracker()->GetSessionDeaths();
++    ownStatsContext_ = false;
++    return true;
++}
++
++void SAMPBridge::FailManualStateSynchronization(const std::string& reason) {
++    if (!manualStateSyncPending_) return;
++    manualStateSyncPending_ = false;
++    // End this requested cycle; a late dialog must never announce success for
++    // it, nor start an unrequested second phase after the button is available.
++    startupSyncNotified_ = true;
++    startupStatsRequested_ = startupJobSkillsRequested_ = true;
++    if (!startupStatsComplete_) startupStatsFailed_ = true;
++    if (!startupJobSkillsComplete_) startupJobSkillsFailed_ = true;
++    statsDialogRequestPending_ = jobSkillsRequestPending_ = false;
++    QueueLocalMessage("{FF6600}[NL-BINDER]{FFFFFF} Manuelle Synchronisation nicht abgeschlossen: " + reason);
++}
++
+ void SAMPBridge::ObserveStatsCommand(const std::string& cmd) const {
+     const auto first = cmd.find_first_not_of(" \t\r\n");
+     if (first == std::string::npos) return;
+@@ -205,9 +271,16 @@ void SAMPBridge::CompleteStartupStats(unsigned long now) {
+         || previous.deaths != synchronizedStats_.deaths;
+     if (firstCompletion || changedCounters) {
+         const auto wallNow = std::time(nullptr);
+-        if (!serverCombatBaselineEstablished_ || *synchronizedStats_.kills >= tracker->GetTotalKills()
++        // A refresh can correct old cached totals immediately. A real event
++        // confirmed after the request still gets the existing short protection
++        // against an earlier snapshot arriving from the server.
++        const bool manualKillsOverride = manualStateSyncPending_
++            && tracker->GetSessionKills() == manualStateSyncSessionKillsAtRequest_;
++        const bool manualDeathsOverride = manualStateSyncPending_
++            && tracker->GetSessionDeaths() == manualStateSyncSessionDeathsAtRequest_;
++        if (manualKillsOverride || !serverCombatBaselineEstablished_ || *synchronizedStats_.kills >= tracker->GetTotalKills()
+             || wallNow - lastLocalKillTime_ > 5) tracker->ImportKillCount(*synchronizedStats_.kills);
+-        if (!serverCombatBaselineEstablished_ || *synchronizedStats_.deaths >= tracker->GetTotalDeaths()
++        if (manualDeathsOverride || !serverCombatBaselineEstablished_ || *synchronizedStats_.deaths >= tracker->GetTotalDeaths()
+             || wallNow - lastLocalDeathTime_ > 5) tracker->ImportDeathCount(*synchronizedStats_.deaths);
+     }
+     lastServerKillTotal_ = *synchronizedStats_.kills;
+@@ -222,9 +295,15 @@ void SAMPBridge::CompleteStartupStats(unsigned long now) {
+     }
+     const bool saved = !statsSynchronizedCallback_ || statsSynchronizedCallback_(synchronizedStats_);
+     startupStatsSaved_ = saved;
+-    if (firstCompletion) QueueLocalMessage(saved
+-        ? "{33CCFF}[NL-BINDER]{FFFFFF} Statistik übernommen."
+-        : "{FF6600}[NL-BINDER]{FFFFFF} Synchronisation gelesen, aber die Daten konnten nicht gespeichert werden.");
++    if (firstCompletion) {
++        if (manualStateSyncPending_) {
++            if (!saved) FailManualStateSynchronization("Die Statistikwerte konnten nicht gespeichert werden.");
++        } else if (!manualStateSyncCycle_) {
++            QueueLocalMessage(saved
++                ? "{33CCFF}[NL-BINDER]{FFFFFF} Statistik übernommen."
++                : "{FF6600}[NL-BINDER]{FFFFFF} Synchronisation gelesen, aber die Daten konnten nicht gespeichert werden.");
++        }
++    }
+ }
+ 
+ void SAMPBridge::UpdateStartupStats(unsigned long now) {
+@@ -247,6 +326,10 @@ void SAMPBridge::UpdateStartupStats(unsigned long now) {
+         ownStatsContext_ = false;
+     }
+     if (!startupStatsRequested_) {
++        if (manualStateSyncPending_ && now - manualStateSyncAcceptedAt_ >= kStatsResponseTimeoutMs) {
++            FailManualStateSynchronization("Der Statistikabruf konnte nicht gestartet werden.");
++            return;
++        }
+ #ifdef KEYBINDER_TESTING
+         const bool ready = GetTestingHooks().isStartupStatsReady && GetTestingHooks().isStartupStatsReady();
+ #else
+@@ -259,6 +342,7 @@ void SAMPBridge::UpdateStartupStats(unsigned long now) {
+         {
+             std::lock_guard<std::mutex> lock(startupStatsMutex_);
+             startupStatsLines_.clear();
++            startupStatsDialogs_.clear(); // Discard dialogs queued before this request.
+             startupStatsOwnName_ = name;
+             startupStatsPendingChat_ = true;
+         }
+@@ -269,7 +353,8 @@ void SAMPBridge::UpdateStartupStats(unsigned long now) {
+                 std::lock_guard<std::mutex> lock(startupStatsMutex_);
+                 startupStatsPendingChat_ = false;
+             }
+-            QueueLocalMessage("{FF6600}[NL-BINDER]{FFFFFF} Automatischer Statistikabruf fehlgeschlagen. Eigene /stats erneut öffnen.");
++            if (manualStateSyncPending_) FailManualStateSynchronization("Die Statistik konnte nicht abgefragt werden.");
++            else QueueLocalMessage("{FF6600}[NL-BINDER]{FFFFFF} Automatischer Statistikabruf fehlgeschlagen. Eigene /stats erneut öffnen.");
+         }
+     }
+     if (ownStatsCommandObserved_.exchange(false, std::memory_order_acq_rel)) {
+@@ -310,6 +395,7 @@ void SAMPBridge::UpdateStartupStats(unsigned long now) {
+             std::lock_guard<std::mutex> lock(startupStatsMutex_);
+             startupStatsPendingChat_ = startupStatsHiddenChat_ = false;
+         }
+-        QueueLocalMessage("{FF6600}[NL-BINDER]{FFFFFF} Keine eigenen Zähler empfangen. Eigene /stats erneut öffnen, um die Werte zu übernehmen.");
++        if (manualStateSyncPending_) FailManualStateSynchronization("Keine eigenen Statistikwerte empfangen.");
++        else QueueLocalMessage("{FF6600}[NL-BINDER]{FFFFFF} Keine eigenen Zähler empfangen. Eigene /stats erneut öffnen, um die Werte zu übernehmen.");
+     }
+ }
+diff --git a/tests/SAMPBridgeTests.cpp b/tests/SAMPBridgeTests.cpp
+index 1fbace4..106769b 100644
+--- a/tests/SAMPBridgeTests.cpp
++++ b/tests/SAMPBridgeTests.cpp
+@@ -224,7 +224,7 @@ bool TestDamageLogAhkBlueprintReportsDirectServerLossWithoutRpc() {
+     context.health = 75.0f;
+     bridge.Update();
+     ASSERT_EQ(DamageLogCount(context), static_cast<std::size_t>(1));
+-    ASSERT_EQ(context.localMessages.back(), std::string("{1E90FF}[NL-BINDER] {FF0000}-25,0 HP {FFFFFF}Schaden (HP Schaden)"));
++    ASSERT_EQ(context.localMessages.back(), std::string("{33CCFF}[NL-BINDER] {FF0000}-25,0 HP {FFFFFF}Schaden (HP Schaden)"));
+     bridge.RequestScriptedHealthSuppressionForTesting();
+     context.armour = 87.5f;
+     bridge.Update();
+@@ -2121,6 +2121,169 @@ bool TestStatsStorageEmptyFile() {
+     return true;
+ }
+ 
++std::size_t LocalDeathNoticeCount(const MockContext& context) {
++    return std::count_if(context.localMessages.begin(), context.localMessages.end(), [](const std::string& value) {
++        return value.find("Du bist gestorben.") != std::string::npos;
++    });
++}
++
++constexpr const char* kCemeteryDeathNotice = "Willkommen auf dem Friedhof. Hier verweilst du, bis du entweder reanimiert wirst oder deine Zeit abl\xC3\xA4uft.";
++
++bool TestExplosionOverkillAndDelayedCemeteryCountOneDeathPerLife() {
++    CombatSoundContext context;
++    context.health = 50.0f; context.armour = 0.0f;
++    auto hooks = context.BuildCombatHooks();
++    hooks.getLocalPlayerName = []() { return std::string("ExplosionPlayer"); };
++    hooks.getLocalPlayerId = []() { return 5; };
++    SAMPBridge::SetTestingHooks(hooks);
++    keybinder::SettingsManager settings;
++    settings.GetMutable().damage_log_enabled = true;
++    SAMPBridge bridge;
++    bridge.SetSettingsManager(&settings);
++    bridge.SetKillTrackerEnabled(true);
++    ASSERT_TRUE(bridge.Initialize());
++    bridge.ImportDeathCount(212);
++    bridge.Update();
++    context.damageSource = 51; // Explosion, with a large GTA negative overkill value.
++    context.health = -8000000.0f;
++    context.localPlayer->m_bIsWasted = TRUE;
++    context.localPlayer->m_bIsActive = FALSE;
++    for (int i = 0; i < 20; ++i) bridge.Update();
++    ASSERT_EQ(DamageLogCount(context), std::size_t(1));
++    ASSERT_TRUE(context.localMessages.front().find("{33CCFF}[NL-BINDER] {FF0000}-50,0 HP") != std::string::npos);
++    ASSERT_EQ(bridge.GetTotalDeaths(), 213);
++    ASSERT_EQ(LocalDeathNoticeCount(context), std::size_t(1));
++    // Clearing the native wasted flag does not resurrect a zero/negative-HP ped.
++    context.localPlayer->m_bIsWasted = FALSE;
++    context.localPlayer->m_bIsActive = TRUE;
++    context.tick += 10000;
++    bridge.Update();
++    bridge.ProcessIncomingChatLineForTesting(nullptr, kCemeteryDeathNotice);
++    bridge.Update();
++    ASSERT_EQ(bridge.GetTotalDeaths(), 213);
++    ASSERT_EQ(LocalDeathNoticeCount(context), std::size_t(1));
++    context.health = 8000050.0f; // Script/protection state is not a new life.
++    for (int i = 0; i < 3; ++i) bridge.Update();
++    bridge.ProcessIncomingChatLineForTesting(nullptr, kCemeteryDeathNotice);
++    bridge.Update();
++    ASSERT_EQ(bridge.GetTotalDeaths(), 213);
++    ASSERT_EQ(DamageLogCount(context), std::size_t(1));
++    context.health = 100.0f;
++    bridge.Update(); bridge.Update(); // Actual controllable, healthy respawn.
++    context.health = -8000000.0f;
++    for (int i = 0; i < 20; ++i) bridge.Update();
++    ASSERT_EQ(bridge.GetTotalDeaths(), 214);
++    ASSERT_EQ(LocalDeathNoticeCount(context), std::size_t(2));
++    ASSERT_EQ(DamageLogCount(context), std::size_t(2));
++    bridge.Shutdown();
++    SAMPBridge::ResetTestingHooks();
++    return true;
++}
++
++bool TestChatDeathStaysLatchedUntilControlledReanimationWithoutNativeWasted() {
++    CombatSoundContext context;
++    context.health = 100.0f;
++    bool controllable = true;
++    auto hooks = context.BuildCombatHooks();
++    hooks.getLocalPlayerName = []() { return std::string("ChatDeathPlayer"); };
++    hooks.isLocalPlayerControllable = [&]() { return controllable; };
++    SAMPBridge::SetTestingHooks(hooks);
++    SAMPBridge bridge;
++    bridge.SetKillTrackerEnabled(true);
++    ASSERT_TRUE(bridge.Initialize());
++    bridge.Update();
++    bridge.ProcessIncomingChatLineForTesting(nullptr, kCemeteryDeathNotice);
++    bridge.Update();
++    ASSERT_EQ(bridge.GetTotalDeaths(), 1);
++    context.tick += 10000;
++    for (int i = 0; i < 3; ++i) bridge.Update();
++    bridge.ProcessIncomingChatLineForTesting(nullptr, kCemeteryDeathNotice);
++    bridge.Update();
++    ASSERT_EQ(bridge.GetTotalDeaths(), 1); // A timer alone never starts another life.
++    controllable = false;
++    for (int i = 0; i < 4; ++i) bridge.Update();
++    bridge.ProcessIncomingChatLineForTesting(nullptr, kCemeteryDeathNotice);
++    bridge.Update();
++    ASSERT_EQ(bridge.GetTotalDeaths(), 1); // Healthy but frozen funeral ped.
++    controllable = true;
++    bridge.Update(); bridge.Update();
++    bridge.ProcessIncomingChatLineForTesting(nullptr, kCemeteryDeathNotice);
++    bridge.Update();
++    ASSERT_EQ(bridge.GetTotalDeaths(), 2);
++    ASSERT_EQ(LocalDeathNoticeCount(context), std::size_t(2));
++    bridge.Shutdown();
++    SAMPBridge::ResetTestingHooks();
++    return true;
++}
++
++bool TestDamageLogRejectsScriptSentinelsWithoutCappingEnhancedVitals() {
++    keybinder::IncomingDamageLog log;
++    ASSERT_TRUE(!log.Observe(8000050.0f, 0.0f).HasDamage());
++    ASSERT_TRUE(!log.Observe(0.0f, 0.0f).HasDamage());
++    ASSERT_TRUE(!log.Observe(5000.0f, 500.0f).HasDamage());
++    const auto normal = log.Observe(4900.0f, 450.0f);
++    ASSERT_EQ(normal.healthDamage, 100.0f);
++    ASSERT_EQ(normal.armourDamage, 50.0f);
++    const auto explosion = log.Observe(-8000000.0f, -8000000.0f);
++    ASSERT_EQ(explosion.healthDamage, 4900.0f);
++    ASSERT_EQ(explosion.armourDamage, 450.0f);
++    ASSERT_TRUE(!log.Observe(8000050.0f, 8000050.0f).HasDamage());
++    ASSERT_TRUE(!log.Observe(50.0f, 10.0f).HasDamage());
++    ASSERT_EQ(log.Observe(40.0f, 10.0f).healthDamage, 10.0f);
++    return true;
++}
++
++bool TestLocalKillNoticeMigratesWithoutChangingPublicBind() {
++    keybinder::SettingsManager settings;
++    ASSERT_TRUE(settings.LoadFromJson(R"({"kill_tracker_enabled":true,"kill_tracker_local_kill_message_template":"/r My public kill text {total_kills}","kill_tracker_server_kill_message_enabled":true,"kill_tracker_server_kill_message_template":"/r My public kill text {total_kills}"})"));
++    ASSERT_EQ(settings.Get().kill_tracker_local_kill_message_template,
++        std::string(keybinder::kDefaultLocalKillMessageTemplate));
++    ASSERT_EQ(settings.Get().kill_tracker_server_kill_message_template, "/r My public kill text {total_kills}");
++    ASSERT_TRUE(settings.Get().kill_tracker_server_kill_message_enabled);
++    keybinder::SettingsManager reloaded;
++    ASSERT_TRUE(reloaded.LoadFromJson(settings.GetSettingsJson()));
++    ASSERT_EQ(reloaded.Get().kill_tracker_local_kill_message_template, settings.Get().kill_tracker_local_kill_message_template);
++    reloaded.GetMutable().kill_tracker_local_kill_message_template = "An explicitly edited local notice {kills}";
++    keybinder::SettingsManager custom;
++    ASSERT_TRUE(custom.LoadFromJson(reloaded.GetSettingsJson()));
++    ASSERT_EQ(custom.Get().kill_tracker_local_kill_message_template, reloaded.Get().kill_tracker_local_kill_message_template);
++
++    CombatSoundContext context;
++    auto hooks = context.BuildCombatHooks();
++    hooks.getLocalPlayerId = []() { return 5; };
++    hooks.getLocalPlayerName = []() { return std::string("LocalPlayer"); };
++    hooks.getPlayerName = [](int id) { return "Enemy_" + std::to_string(id); };
++    SAMPBridge::SetTestingHooks(hooks);
++    SAMPBridge bridge;
++    bridge.SetSettingsManager(&settings);
++    bridge.SetKillTrackerEnabled(true);
++    bridge.SetKillTrackerLocalKillMessageTemplate(settings.Get().kill_tracker_local_kill_message_template);
++    bridge.SetKillTrackerServerKillMessageEnabled(true);
++    bridge.SetKillTrackerServerKillMessageTemplate(settings.Get().kill_tracker_server_kill_message_template);
++    ASSERT_TRUE(bridge.Initialize());
++    bridge.ImportKillCount(64);
++    const killtracker::DeathMessageEvent event{5, 7, 31, std::time(nullptr), true};
++    bridge.ProcessDeathMessageForTesting(event);
++    ASSERT_EQ(context.localMessages.size(), std::size_t(1));
++    ASSERT_EQ(context.lastLocalMessage, "{33CCFF}[NL-BINDER]{FFFFFF} Du hast einen Kill gemacht! Aktuell hast du: 65 Kills.");
++    ASSERT_EQ(context.serverMessages.size(), std::size_t(1));
++    ASSERT_EQ(context.serverMessages[0], "/r My public kill text 65");
++    bridge.ProcessDeathMessageForTesting(event);
++    ASSERT_EQ(context.localMessages.size(), std::size_t(1));
++    ASSERT_EQ(context.serverMessages.size(), std::size_t(1));
++    bridge.SetKillTrackerLocalKillMessageTemplate("Kills: {kills}");
++    bridge.ProcessDeathMessageForTesting({5, 8, 31, std::time(nullptr), true});
++    ASSERT_EQ(context.lastLocalMessage, "Kills: 66");
++    ASSERT_EQ(context.serverMessages.size(), std::size_t(2));
++    bridge.SetKillTrackerLocalKillMessageEnabled(false);
++    bridge.ProcessDeathMessageForTesting({5, 9, 31, std::time(nullptr), true});
++    ASSERT_EQ(context.localMessages.size(), std::size_t(2));
++    ASSERT_EQ(context.serverMessages.size(), std::size_t(3));
++    bridge.Shutdown();
++    SAMPBridge::ResetTestingHooks();
++    return true;
++}
++
+ int g_manualInputHudFixCalls = 0;
+ 
+ bool TestManualInputDefersHudScaleCommandUntilAnswered() {
+@@ -2272,6 +2435,10 @@ int RunSAMPBridgeTests() {
+     RUN_TEST(TestManualInputCapturesNativeChatAndCancelsCleanly);
+     RUN_TEST(TestManualInputBindSendsOnlyExpandedNewsCommand);
+     RUN_TEST(TestManualInputDefersHudScaleCommandUntilAnswered);
++    RUN_TEST(TestLocalKillNoticeMigratesWithoutChangingPublicBind);
++    RUN_TEST(TestExplosionOverkillAndDelayedCemeteryCountOneDeathPerLife);
++    RUN_TEST(TestChatDeathStaysLatchedUntilControlledReanimationWithoutNativeWasted);
++    RUN_TEST(TestDamageLogRejectsScriptSentinelsWithoutCappingEnhancedVitals);
+ 
+     RUN_TEST(TestInitFailureWithoutSampModule);
+     RUN_TEST(TestInitSuccessAndDirectCommandRegistration);
+diff --git a/tests/StartupStatsSyncTests.cpp b/tests/StartupStatsSyncTests.cpp
+index 949e79d..0c1b033 100644
+--- a/tests/StartupStatsSyncTests.cpp
++++ b/tests/StartupStatsSyncTests.cpp
+@@ -1,5 +1,6 @@
+ #include "../include/SAMPBridge.h"
+ #include "../include/SettingsManager.h"
++#include "../include/MainWindowUI.h"
+ #include "../include/RakHook/include/RakHook/samp.hpp"
+ #include "../include/RakHook/include/RakNet/BitStream.h"
+ #include "../include/RakHook/include/RakNet/StringCompressor.h"
+@@ -515,6 +516,312 @@ void TestStartupSynchronizesStatsThenJobSkillsAndKeepsExistingEarnings() {
+     bridge.Shutdown();
+     SAMPBridge::ResetTestingHooks();
+ }
++std::string ManualSyncSkillsTable(SAMPBridge& bridge, int firstPoints) {
++    std::string table = "T\xC3\xA4tigkeit\tStufe\n";
++    int index = 0;
++    for (const auto& job : bridge.GetJobTracker()->GetJobs())
++        table += job.name + "\t" + std::to_string(firstPoints + index++) + "\n";
++    return table + "Security Guard\t0\nTrucker\t0\n";
++}
++
++bool CompleteFreshSyncDialogs(SAMPBridge& bridge, Context& context, int kills, int deaths, int skillPoints) {
++    const std::string stats = "Name: " + context.name + "\nKills: " + std::to_string(kills)
++        + "\nTode: " + std::to_string(deaths) + "\nBargeld: 2.000$\nKontostand: 8.000$\nGold: 8";
++    if (!DeliverDialog(bridge, context, 800, 0, "Statistiken \xBB " + context.name, stats)) return false;
++    bridge.Update();
++    if (!bridge.AreStatsSynchronized() || context.commands.back() != "/jobskills") return false;
++    if (!DeliverDialog(bridge, context, 801, 5, "Jobs \xBB Skill\xFC" "bersicht",
++            TestGameEncoding(ManualSyncSkillsTable(bridge, skillPoints)))) return false;
++    bridge.Update();
++    return bridge.AreStatsSynchronized() && bridge.AreJobSkillsSynchronized();
++}
++
++int ManualSyncSuccessNotices(const Context& context) {
++    int notices = 0;
++    for (const auto& message : context.localMessages)
++        if (message.find("Du hast deinen Spielestand manuell synchronisiert. Deine Werte sind jetzt im aktuellsten Stand.")
++            != std::string::npos) ++notices;
++    return notices;
++}
++
++void TestManualFullSyncReusesPipelineAndImportsFreshValuesWithoutNewKills() {
++    Context context;
++    context.ready = context.jobSkillsReady = true;
++    SAMPBridge::SetTestingHooks(context.Hooks());
++    keybinder::SettingsManager settings;
++    SAMPBridge bridge;
++    bridge.SetSettingsManager(&settings);
++    bridge.SetKillTrackerEnabled(true);
++    bridge.SetKillTrackerServerKillMessageEnabled(false);
++    int saves = 0;
++    bridge.SetStatsSynchronizedCallback([&](const auto& value) {
++        settings.GetMutable().synchronized_player_stats = value;
++        ++saves;
++        return true;
++    });
++    CHECK(bridge.Initialize());
++    bridge.Update();
++    CHECK(CompleteFreshSyncDialogs(bridge, context, 100, 40, 10));
++    CHECK(saves == 1 && ManualSyncSuccessNotices(context) == 0);
++    bridge.ProcessDeathMessageForTesting({5, 9, 31, std::time(nullptr), true});
++    CHECK(bridge.GetTotalKills() == 101 && bridge.GetKillTracker()->GetSessionKills() == 1);
++    auto* jobTracker = bridge.GetJobTracker();
++    CHECK(!jobTracker->GetJobs().empty());
++    const auto job = jobTracker->GetJobs().front().id;
++    const auto income = jobTracker->GetAggregates(job).lifetime;
++    const auto commandsBefore = context.commands.size();
++    std::string error;
++    CHECK(bridge.RequestManualStateSynchronization(error));
++    CHECK(error.empty() && bridge.IsManualStateSynchronizationPending());
++    CHECK(!bridge.RequestManualStateSynchronization(error) && !error.empty());
++    CHECK(context.commands.size() == commandsBefore); // Request is deferred until UI closes.
++    CHECK(bridge.GetTotalKills() == 101 && jobTracker->GetAdjustedHighestSkill(job) == 10);
++
++    // A queued stale response from before the new /stats must not win.
++    bridge.ProcessStatsDialogForTesting({899, 0, "Statistiken", "Name: SyncPlayer\nKills: 999\nTode: 999"});
++    context.game.get()->m_nCursorMode = 2; // Binder menu remains open for this frame.
++    bridge.Update();
++    CHECK(context.commands.size() == commandsBefore && bridge.GetTotalKills() == 101);
++    context.game.get()->m_nCursorMode = 0;
++    bridge.Update();
++    CHECK(context.commands.size() == commandsBefore + 1 && context.commands.back() == "/stats");
++    CHECK(!bridge.AreStatsSynchronized() && bridge.GetTotalKills() == 101);
++    CHECK(ManualSyncSuccessNotices(context) == 0);
++    CHECK(DeliverDialog(bridge, context, 800, 0, "Statistiken \xBB SyncPlayer",
++        "Name: SyncPlayer\nKills: 25\nTode: 8\nBargeld: 4.000$\nKontostand: 9.000$\nGold: 6"));
++    // A previous jobskills response must likewise be discarded before phase two.
++    bridge.ProcessStatsDialogForTesting({899, 5, "Jobs \xBB Skill\xFC" "bersicht",
++        TestGameEncoding(ManualSyncSkillsTable(bridge, 999))});
++    bridge.Update();
++    CHECK(bridge.GetTotalKills() == 25 && bridge.GetTotalDeaths() == 8);
++    CHECK(saves == 2 && settings.Get().synchronized_player_stats.kills == 25);
++    CHECK(bridge.GetSynchronizedStats().GetAvailableWealth() == 13000);
++    CHECK(context.commands.back() == "/jobskills" && !bridge.AreJobSkillsSynchronized());
++    CHECK(jobTracker->GetAdjustedHighestSkill(job) == 10 && ManualSyncSuccessNotices(context) == 0);
++    CHECK(bridge.IsManualStateSynchronizationPending());
++    CHECK(DeliverDialog(bridge, context, 801, 5, "Jobs \xBB Skill\xFC" "bersicht",
++        TestGameEncoding(ManualSyncSkillsTable(bridge, 222))));
++    bridge.Update();
++    CHECK(bridge.AreStatsSynchronized() && bridge.AreJobSkillsSynchronized());
++    CHECK(!bridge.IsManualStateSynchronizationPending() && ManualSyncSuccessNotices(context) == 1);
++    CHECK(jobTracker->GetAdjustedHighestSkill(job) == 222 && jobTracker->GetAggregates(job).lifetime == income);
++    CHECK(bridge.GetKillTracker()->GetSessionKills() == 1 && bridge.GetKillTracker()->GetSessionDeaths() == 0);
++    CHECK(context.closed == 4 && context.messages.empty());
++    for (int i = 0; i < 4; ++i) bridge.Update();
++    CHECK(ManualSyncSuccessNotices(context) == 1);
++
++    CHECK(bridge.RequestManualStateSynchronization(error));
++    bridge.Update();
++    CHECK(CompleteFreshSyncDialogs(bridge, context, 26, 9, 223));
++    CHECK(saves == 3 && ManualSyncSuccessNotices(context) == 2);
++    CHECK(bridge.GetTotalKills() == 26 && bridge.GetTotalDeaths() == 9);
++    CHECK(jobTracker->GetAdjustedHighestSkill(job) == 223 && bridge.GetKillTracker()->GetSessionKills() == 1);
++    bridge.Shutdown();
++    SAMPBridge::ResetTestingHooks();
++}
++
++void TestManualSyncTimeoutPreservesValuesAndCanBeRetried() {
++    Context context;
++    context.ready = context.jobSkillsReady = true;
++    SAMPBridge::SetTestingHooks(context.Hooks());
++    SAMPBridge bridge;
++    CHECK(bridge.Initialize());
++    bridge.Update();
++    CHECK(CompleteFreshSyncDialogs(bridge, context, 10, 3, 20));
++    const auto job = bridge.GetJobTracker()->GetJobs().front().id;
++    std::string error;
++    CHECK(bridge.RequestManualStateSynchronization(error));
++    bridge.Update();
++    context.now += 8000;
++    bridge.Update();
++    CHECK(!bridge.IsManualStateSynchronizationPending() && ManualSyncSuccessNotices(context) == 0);
++    CHECK(bridge.GetTotalKills() == 10 && bridge.GetTotalDeaths() == 3);
++    CHECK(bridge.GetJobTracker()->GetAdjustedHighestSkill(job) == 20);
++    const auto stoppedCommands = context.commands.size();
++    for (int i = 0; i < 3; ++i) bridge.Update();
++    CHECK(context.commands.size() == stoppedCommands);
++    CHECK(DeliverDialog(bridge, context, 802, 0, "Statistiken \xBB SyncPlayer", "Name: SyncPlayer\nKills: 999\nTode: 999"));
++    bridge.Update();
++    CHECK(bridge.GetTotalKills() == 10 && ManualSyncSuccessNotices(context) == 0);
++    context.dialog.get()->m_bIsActive = FALSE;
++    CHECK(bridge.RequestManualStateSynchronization(error));
++    bridge.Update();
++    CHECK(DeliverDialog(bridge, context, 800, 0, "Statistiken \xBB SyncPlayer", "Name: SyncPlayer\nKills: 12\nTode: 5"));
++    bridge.Update();
++    CHECK(bridge.GetTotalKills() == 12 && bridge.IsManualStateSynchronizationPending());
++    context.now += 8000;
++    bridge.Update();
++    CHECK(!bridge.IsManualStateSynchronizationPending() && ManualSyncSuccessNotices(context) == 0);
++    CHECK(bridge.GetJobTracker()->GetAdjustedHighestSkill(job) == 20);
++    CHECK(bridge.RequestManualStateSynchronization(error));
++    bridge.Update();
++    CHECK(CompleteFreshSyncDialogs(bridge, context, 13, 6, 40));
++    CHECK(!bridge.IsManualStateSynchronizationPending() && ManualSyncSuccessNotices(context) == 1);
++    CHECK(bridge.GetTotalKills() == 13 && bridge.GetJobTracker()->GetAdjustedHighestSkill(job) == 40);
++    bridge.Shutdown();
++    SAMPBridge::ResetTestingHooks();
++}
++
++void TestManualSyncSaveFailureDoesNotClaimSuccessOrFetchJobSkills() {
++    Context context;
++    context.ready = context.jobSkillsReady = true;
++    SAMPBridge::SetTestingHooks(context.Hooks());
++    SAMPBridge bridge;
++    CHECK(bridge.Initialize());
++    bridge.Update();
++    CHECK(CompleteFreshSyncDialogs(bridge, context, 10, 3, 20));
++    const auto job = bridge.GetJobTracker()->GetJobs().front().id;
++    bridge.SetStatsSynchronizedCallback([](const auto&) { return false; });
++    const auto commandsBefore = context.commands.size();
++    std::string error;
++    CHECK(bridge.RequestManualStateSynchronization(error));
++    bridge.Update();
++    CHECK(DeliverDialog(bridge, context, 800, 0, "Statistiken \xBB SyncPlayer", "Name: SyncPlayer\nKills: 14\nTode: 7"));
++    bridge.Update();
++    CHECK(!bridge.IsManualStateSynchronizationPending() && ManualSyncSuccessNotices(context) == 0);
++    CHECK(context.commands.size() == commandsBefore + 1 && context.commands.back() == "/stats");
++    CHECK(bridge.GetJobTracker()->GetAdjustedHighestSkill(job) == 20);
++    CHECK(bridge.GetTotalKills() == 14); // Valid read stays available despite persistence failure.
++    bridge.SetStatsSynchronizedCallback([](const auto&) { return true; });
++    CHECK(bridge.RequestManualStateSynchronization(error));
++    bridge.Update();
++    CHECK(CompleteFreshSyncDialogs(bridge, context, 15, 8, 41));
++    CHECK(ManualSyncSuccessNotices(context) == 1);
++    bridge.Shutdown();
++    SAMPBridge::ResetTestingHooks();
++}
++
++void TestManualSyncRequestRejectsBusyOrOfflineAndUiClosesOnlyWhenAccepted() {
++    Context context;
++    context.ready = context.jobSkillsReady = true;
++    SAMPBridge::SetTestingHooks(context.Hooks());
++    SAMPBridge bridge;
++    CHECK(bridge.Initialize());
++    bridge.Update();
++    std::string error;
++    CHECK(!bridge.RequestManualStateSynchronization(error) && !error.empty()); // Active login sync.
++    CHECK(CompleteFreshSyncDialogs(bridge, context, 10, 3, 20));
++    const auto commandsBefore = context.commands.size();
++    keybinder::MainWindowUI ui;
++    ui.SetSAMPBridge(&bridge);
++    context.dialog.get()->m_bIsActive = TRUE;
++    CHECK(!ui.RequestManualStateSynchronization() && !ui.WasCloseRequested());
++    context.dialog.get()->m_bIsActive = FALSE;
++    context.input.get()->m_bEnabled = TRUE;
++    CHECK(!ui.RequestManualStateSynchronization() && !ui.WasCloseRequested());
++    context.input.get()->m_bEnabled = FALSE;
++    CHECK(bridge.BeginManualTextInput());
++    CHECK(!bridge.RequestManualStateSynchronization(error));
++    bridge.CancelManualTextInput();
++    context.local.get()->m_bIsWasted = TRUE;
++    CHECK(!ui.RequestManualStateSynchronization() && !ui.WasCloseRequested());
++    context.local.get()->m_bIsWasted = FALSE;
++    context.network.get()->m_nGameState = sampapi::v03dl::CNetGame::GAME_MODE_RESTARTING;
++    CHECK(!ui.RequestManualStateSynchronization() && !ui.WasCloseRequested());
++    context.network.get()->m_nGameState = sampapi::v03dl::CNetGame::GAME_MODE_CONNECTED;
++    CHECK(context.commands.size() == commandsBefore && !bridge.IsManualStateSynchronizationPending());
++    context.game.get()->m_nCursorMode = 2;
++    CHECK(ui.RequestManualStateSynchronization() && ui.WasCloseRequested());
++    ui.ResetCloseRequest();
++    CHECK(!ui.RequestManualStateSynchronization() && !ui.WasCloseRequested());
++    CHECK(context.commands.size() == commandsBefore);
++    context.game.get()->m_nCursorMode = 0;
++    bridge.Update();
++    CHECK(context.commands.size() == commandsBefore + 1);
++    context.network.get()->m_nGameState = sampapi::v03dl::CNetGame::GAME_MODE_RESTARTING;
++    bridge.Update();
++    CHECK(!bridge.IsManualStateSynchronizationPending() && ManualSyncSuccessNotices(context) == 0);
++    CHECK(bridge.GetTotalKills() == 10);
++    bridge.Shutdown();
++    SAMPBridge::ResetTestingHooks();
++}
++
++void TestManualSyncChatCountersAreImportedWithoutArtificialSessionEvents() {
++    Context context;
++    context.ready = context.jobSkillsReady = true;
++    SAMPBridge::SetTestingHooks(context.Hooks());
++    SAMPBridge bridge;
++    bridge.SetKillTrackerEnabled(true);
++    bridge.SetKillTrackerServerKillMessageEnabled(true);
++    bridge.SetKillTrackerServerKillMessageTemplate("/f must-not-send-for-import");
++    CHECK(bridge.Initialize());
++    bridge.Update();
++    CHECK(CompleteFreshSyncDialogs(bridge, context, 10, 3, 20));
++    std::string error;
++    CHECK(bridge.RequestManualStateSynchronization(error));
++    bridge.Update();
++    CHECK(!bridge.ProcessIncomingChatLineForTesting(nullptr, "*** SyncPlayer ***"));
++    CHECK(!bridge.ProcessIncomingChatLineForTesting(nullptr,
++        "Kills: [11] Tode: [4] Fraktion: [Zivilist] Gang: [-]"));
++    bridge.Update();
++    CHECK(bridge.GetTotalKills() == 11 && bridge.GetTotalDeaths() == 4);
++    CHECK(bridge.GetKillTracker()->GetSessionKills() == 0 && bridge.GetKillTracker()->GetSessionDeaths() == 0);
++    CHECK(context.commands == (std::vector<std::string>{"/stats", "/jobskills", "/stats", "/jobskills"}));
++    CHECK(bridge.IsManualStateSynchronizationPending() && ManualSyncSuccessNotices(context) == 0);
++    CHECK(DeliverDialog(bridge, context, 801, 5, "Jobs \xBB Skill\xFC" "bersicht",
++        TestGameEncoding(ManualSyncSkillsTable(bridge, 21))));
++    bridge.Update();
++    CHECK(ManualSyncSuccessNotices(context) == 1 && !bridge.IsManualStateSynchronizationPending());
++    CHECK(context.messages.empty());
++    bridge.Shutdown();
++    SAMPBridge::ResetTestingHooks();
++}
++
++void TestManualSyncCannotCompleteAcrossPlayerIdentityChange() {
++    Context context;
++    context.ready = context.jobSkillsReady = true;
++    SAMPBridge::SetTestingHooks(context.Hooks());
++    SAMPBridge bridge;
++    CHECK(bridge.Initialize());
++    bridge.Update();
++    CHECK(CompleteFreshSyncDialogs(bridge, context, 10, 3, 20));
++    std::string error;
++    CHECK(bridge.RequestManualStateSynchronization(error));
++    bridge.Update();
++    context.name = "NextPlayer";
++    bridge.ProcessStatsDialogForTesting({899, 0, "Statistiken", "Name: SyncPlayer\nKills: 999\nTode: 999"});
++    bridge.Update();
++    CHECK(!bridge.IsManualStateSynchronizationPending() && ManualSyncSuccessNotices(context) == 0);
++    CHECK(!bridge.AreStatsSynchronized() && bridge.GetTotalKills() == 10);
++    CHECK(context.commands == (std::vector<std::string>{"/stats", "/jobskills", "/stats", "/stats"}));
++    CHECK(CompleteFreshSyncDialogs(bridge, context, 15, 8, 30));
++    CHECK(bridge.GetSynchronizedStats().playerName == "NextPlayer");
++    CHECK(bridge.GetTotalKills() == 15 && ManualSyncSuccessNotices(context) == 0);
++    bridge.Shutdown();
++    SAMPBridge::ResetTestingHooks();
++}
++
++void TestManualSyncPreservesRealEventsConfirmedAfterTheRequest() {
++    Context context;
++    context.ready = context.jobSkillsReady = true;
++    SAMPBridge::SetTestingHooks(context.Hooks());
++    SAMPBridge bridge;
++    bridge.SetKillTrackerEnabled(true);
++    bridge.SetKillTrackerServerKillMessageEnabled(false);
++    CHECK(bridge.Initialize());
++    bridge.Update();
++    CHECK(CompleteFreshSyncDialogs(bridge, context, 10, 3, 20));
++    std::string error;
++    CHECK(bridge.RequestManualStateSynchronization(error));
++    bridge.Update();
++    bridge.ProcessDeathMessageForTesting({5, 9, 31, std::time(nullptr), true});
++    bridge.ProcessDeathMessageForTesting({8, 5, 31, std::time(nullptr), true});
++    CHECK(bridge.GetTotalKills() == 11 && bridge.GetTotalDeaths() == 4);
++    CHECK(bridge.GetKillTracker()->GetSessionKills() == 1 && bridge.GetKillTracker()->GetSessionDeaths() == 1);
++    CHECK(CompleteFreshSyncDialogs(bridge, context, 10, 3, 21)); // Reply created before the real events.
++    CHECK(bridge.GetTotalKills() == 11 && bridge.GetTotalDeaths() == 4);
++    CHECK(ManualSyncSuccessNotices(context) == 1 && !bridge.IsManualStateSynchronizationPending());
++    bridge.ProcessDeathMessageForTesting({5, 11, 31, std::time(nullptr), true});
++    CHECK(bridge.GetTotalKills() == 12 && bridge.GetKillTracker()->GetSessionKills() == 2);
++    context.now += 9000;
++    for (int i = 0; i < 4; ++i) bridge.Update(); // Unchanged collector is never reimported later.
++    CHECK(bridge.GetTotalKills() == 12 && bridge.GetTotalDeaths() == 4);
++    CHECK(bridge.GetKillTracker()->GetSessionKills() == 2 && bridge.GetKillTracker()->GetSessionDeaths() == 1);
++    CHECK(ManualSyncSuccessNotices(context) == 1);
++    bridge.Shutdown();
++    SAMPBridge::ResetTestingHooks();
++}
++
+ } // namespace
+ 
+ int RunStartupStatsSyncTests() {
+@@ -528,6 +835,13 @@ int RunStartupStatsSyncTests() {
+     TestObservedNovaScreenshotLayoutThroughCompressedRpcWithDynamicPlayerName();
+     TestSpeedCommandPerformsThreeExactDialogRepliesAndSubmitsOnlyOnce();
+     TestStartupSynchronizesStatsThenJobSkillsAndKeepsExistingEarnings();
++    TestManualFullSyncReusesPipelineAndImportsFreshValuesWithoutNewKills();
++    TestManualSyncTimeoutPreservesValuesAndCanBeRetried();
++    TestManualSyncSaveFailureDoesNotClaimSuccessOrFetchJobSkills();
++    TestManualSyncRequestRejectsBusyOrOfflineAndUiClosesOnlyWhenAccepted();
++    TestManualSyncChatCountersAreImportedWithoutArtificialSessionEvents();
++    TestManualSyncCannotCompleteAcrossPlayerIdentityChange();
++    TestManualSyncPreservesRealEventsConfirmedAfterTheRequest();
+     std::printf("StartupStatsSyncTests: %d checks, %d failures\n", checks, failures);
+     return failures;
+ }
+diff --git a/tools/build_and_test.bat b/tools/build_and_test.bat
+index 2f274c5..8dd6590 100644
+--- a/tools/build_and_test.bat
++++ b/tools/build_and_test.bat
+@@ -1,7 +1,7 @@
+ @echo off
+ setlocal
+ 
+-echo === Building Keybinder.asi (Release) ===
++echo === Building NLBinder.asi (Release) ===
+ call "%~dp0build_release.bat"
+ if %ERRORLEVEL% NEQ 0 (
+     echo BUILD FAILED with error %ERRORLEVEL%
+diff --git a/tools/export_full_changelog.py b/tools/export_full_changelog.py
+new file mode 100644
+index 0000000..397eacf
+--- /dev/null
++++ b/tools/export_full_changelog.py
+@@ -0,0 +1,34 @@
++"""Render the complete reviewed German change history as a portable TXT file."""
++from pathlib import Path
++import re
++
++
++def render(text):
++    text = re.sub(r"!\[([^\]]*)\]\(([^)]+)\)", r"\1 (\2)", text)
++    text = re.sub(r"\[([^\]]+)\]\(([^)]+)\)", r"\1 (\2)", text)
++    lines = []
++    for line in text.splitlines():
++        heading = re.match(r"^(#{1,6})\s+(.+)$", line)
++        if heading:
++            title = heading[2].replace("**", "").replace("`", "")
++            lines += [title, ("=" if len(heading[1]) <= 2 else "-") * len(title)]
++        else:
++            lines.append(line.replace("**", "").replace("`", ""))
++    return "\n".join(lines).rstrip() + "\n"
++
++
++def main():
++    root = Path(__file__).resolve().parents[1]
++    source = root / "docs/review/CHANGELOG-DE.md"
++    target = root / "docs/CHANGELOG-GESAMT.txt"
++    text = source.read_text(encoding="utf-8")
++    required = {f"## {number}. " for number in range(1, 18)}
++    if not all(marker in text for marker in required):
++        raise ValueError("Complete change history sections 1–17 required")
++    result = render(text)
++    target.write_text(result, encoding="utf-8-sig", newline="\n")
++    print(f"Full changelog: {len(result.splitlines())} lines, sections 1–17, {target.name}")
++
++
++if __name__ == "__main__":
++    main()
+diff --git a/tools/export_source_bundle.py b/tools/export_source_bundle.py
+new file mode 100644
+index 0000000..fcdc516
+--- /dev/null
++++ b/tools/export_source_bundle.py
+@@ -0,0 +1,170 @@
++"""Export a verified r11 source snapshot, current ASI and complete changelog.
++
++Reads Git blobs without changing Git or the game installation. The destination
++must not exist. Historical release binaries, Git metadata, local build outputs
++and private runtime files are excluded. The proof manifest stays under build/.
++"""
++from pathlib import Path, PurePosixPath
++import argparse
++import hashlib
++import json
++import re
++import subprocess
++
++
++ROOT = Path(__file__).resolve().parents[1]
++RELEASE = "v0.1.1-r11"
++PACKAGE = "dist/NLBinder-0.1.1-r11"
++PRIVATE_PARTS = {
++    ".git", ".vs", ".aws", ".codex", ".agents", "__pycache__", "build",
++    "output", "debug", "release", "obj", "cmakefiles", ".venv", "venv",
++}
++PRIVATE_NAMES = {
++    "keybinder.json", "jobs_data.json", "imgui.ini", ".env", ".git-credentials",
++    "credentials", "id_rsa", "id_ed25519", "nul",
++}
++PRIVATE_SUFFIXES = {".log", ".obj", ".pdb", ".ilk", ".exp", ".pyc", ".suo", ".user", ".o"}
++
++
++def require(ok, message):
++    if not ok:
++        raise ValueError(message)
++
++
++def digest(data):
++    return hashlib.sha256(data).hexdigest()
++
++
++def git(repo, *args):
++    return subprocess.check_output(["git", *args], cwd=repo)
++
++
++def safe_source_path(relative):
++    path = PurePosixPath(relative)
++    require(path.parts and not path.is_absolute() and ".." not in path.parts,
++            "Unsafe source path: " + relative)
++    require("\\" not in relative and ":" not in relative, "Invalid source path: " + relative)
++    require(not any(part.lower() in PRIVATE_PARTS for part in path.parts[:-1]),
++            "Private/build directory in source snapshot: " + relative)
++    require(path.name.lower() not in PRIVATE_NAMES and path.suffix.lower() not in PRIVATE_SUFFIXES,
++            "Private/runtime file in source snapshot: " + relative)
++
++
++def source_entries(repo, commit):
++    entries = {}
++    for entry in git(repo, "ls-tree", "-r", "-z", commit).split(b"\0"):
++        if not entry:
++            continue
++        metadata, raw_path = entry.split(b"\t", 1)
++        mode, kind, oid = metadata.split()
++        relative = raw_path.decode("utf-8")
++        require(kind == b"blob" and mode in {b"100644", b"100755"},
++                "Unsupported symlink/submodule: " + relative)
++        entries[relative] = oid
++    return entries
++
++
++def read_blobs(repo, entries):
++    oids = sorted(set(entries.values()))
++    process = subprocess.Popen(["git", "cat-file", "--batch"], cwd=repo,
++                               stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
++    output, errors = process.communicate(b"\n".join(oids) + b"\n")
++    require(process.returncode == 0, "Cannot read Git source objects: " + errors.decode("utf-8", "replace"))
++    offset, blobs = 0, {}
++    for oid in oids:
++        end_header = output.find(b"\n", offset)
++        require(end_header >= offset, "Truncated Git source header")
++        header = output[offset:end_header].split()
++        require(len(header) == 3 and header[0] == oid and header[1] == b"blob", "Unexpected source object")
++        size = int(header[2])
++        start, end = end_header + 1, end_header + 1 + size
++        require(output[end:end + 1] == b"\n", "Truncated source file")
++        blobs[oid] = output[start:end]
++        offset = end + 1
++    require(offset == len(output), "Unexpected trailing Git source data")
++    return {relative: blobs[oid] for relative, oid in entries.items()}
++
++
++def main():
++    parser = argparse.ArgumentParser(description=__doc__)
++    parser.add_argument("--destination", required=True, type=Path)
++    parser.add_argument("--repository", type=Path, default=ROOT / "build/github-publication/repository")
++    parser.add_argument("--revision", default="HEAD")
++    parser.add_argument("--binary", type=Path, default=ROOT / "build/Release/NLBinder.asi")
++    parser.add_argument("--manifest", type=Path, default=ROOT / "build/source-export-r11.json")
++    args = parser.parse_args()
++    repo = args.repository.resolve(strict=True)
++    destination = args.destination.resolve()
++    manifest_path = args.manifest.resolve()
++    require(not destination.exists(), "Destination already exists; nothing will be overwritten: " + str(destination))
++    require(destination.parent.is_dir(), "Destination parent must already exist")
++    require(not destination.is_relative_to(repo), "Export must be outside the publication checkout")
++    require(not manifest_path.is_relative_to(destination), "Manifest must remain outside the source export")
++    commit = git(repo, "rev-parse", "--verify", "--end-of-options", args.revision + "^{commit}").decode().strip()
++    require(re.fullmatch("[0-9a-f]{40}", commit), "Unexpected Git revision")
++    entries = source_entries(repo, commit)
++    selected = {}
++    for relative, oid in entries.items():
++        if PurePosixPath(relative).parts[0] == "dist":
++            continue  # Prior ASIs/ZIPs are available through the Git history.
++        safe_source_path(relative)
++        selected[relative] = oid
++    extras = {
++        "NLBinder.asi": PACKAGE + "/NLBinder.asi",
++        "CHANGELOG-GESAMT.txt": "docs/CHANGELOG-GESAMT.txt",
++        "README.md": "docs/BUILD-README.md",
++        "LIESMICH-DE.md": PACKAGE + "/LIESMICH.md",
++        "BUILD-INFO.txt": PACKAGE + "/BUILD-INFO.txt",
++        "PRUEFBERICHT.json": PACKAGE + "/PRUEFBERICHT.json",
++        "SHA256SUMS.txt": PACKAGE + "/SHA256SUMS.txt",
++        "RECONNECT-TEST.json": PACKAGE + "/RECONNECT-TEST.json",
++    }
++    for source in extras.values():
++        require(source in entries, "Verified r11 publication file missing: " + source)
++    read_entries = dict(selected)
++    read_entries.update({source: entries[source] for source in extras.values()})
++    files = read_blobs(repo, read_entries)
++    exported = {relative: files[relative] for relative in selected}
++    for target, source in extras.items():
++        exported[target] = files[source]
++    binary = exported["NLBinder.asi"]
++    require(binary == args.binary.read_bytes(), "Published ASI differs from the locally built NLBinder.asi")
++    report = json.loads(exported["PRUEFBERICHT.json"].decode("utf-8-sig"))
++    require(report.get("revision") == RELEASE and report.get("asi") == "NLBinder.asi" and report.get("sha256") == digest(binary)
++            and report.get("bytes") == len(binary) and report.get("embedded_helper_matches") is True,
++            "r11 artifact verification is missing or stale")
++    require(exported["Keybinder.vcxproj"].count(b"<TargetName>NLBinder</TargetName>") == 2,
++            "Release/Debug project names are not both NLBinder")
++    folded = [relative.casefold() for relative in exported]
++    require(len(folded) == len(set(folded)), "Case-insensitive destination path collision")
++    require(git(repo, "rev-parse", "--verify", "--end-of-options", args.revision + "^{commit}").decode().strip() == commit,
++            "Source revision changed during snapshot reading")
++    # All input and publication checks finish before the first destination write.
++    destination.mkdir()
++    for relative, data in sorted(exported.items()):
++        target = destination / relative
++        require(target.resolve().is_relative_to(destination), "Export escaped the destination")
++        target.parent.mkdir(parents=True, exist_ok=True)
++        target.write_bytes(data)
++    actual = {path.relative_to(destination).as_posix(): path for path in destination.rglob("*") if path.is_file()}
++    require(set(actual) == set(exported), "Exported file set differs")
++    for relative, data in exported.items():
++        require(actual[relative].read_bytes() == data, "Exported file differs: " + relative)
++        require(not actual[relative].is_symlink(), "Unexpected exported symlink: " + relative)
++    manifest = {
++        "release": RELEASE, "source_commit": commit, "destination": str(destination),
++        "exported_files": len(exported), "exported_bytes": sum(map(len, exported.values())),
++        "source_files": len(selected), "all_files_verified": True,
++        "historical_release_binaries_in_export": 0, "private_runtime_files": 0,
++        "asi_bytes": len(binary), "asi_sha256": digest(binary),
++        "changelog_sha256": digest(exported["CHANGELOG-GESAMT.txt"]),
++        "root_file_sources": extras,
++        "files": {relative: digest(data) for relative, data in sorted(exported.items())},
++    }
++    manifest_path.parent.mkdir(parents=True, exist_ok=True)
++    manifest_path.write_text(json.dumps(manifest, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
++    print(json.dumps({key: value for key, value in manifest.items() if key != "files"}, indent=2, ensure_ascii=False))
++
++
++if __name__ == "__main__":
++    main()
+diff --git a/tools/launch_samp_03dl.ps1 b/tools/launch_samp_03dl.ps1
+index accd434..86bfde7 100644
+--- a/tools/launch_samp_03dl.ps1
++++ b/tools/launch_samp_03dl.ps1
+@@ -94,9 +94,9 @@ if (-not (Test-Path $SampDir)) {
+ }
+ 
+ # ── Paths ────────────────────────────────────────────────────────
+-$PluginBinary  = Join-Path $ProjectRoot "build\Release\Keybinder.asi"
++$PluginBinary  = Join-Path $ProjectRoot "build\Release\NLBinder.asi"
+ $ScriptsDir    = Join-Path $GtaSaDir "scripts"
+-$TargetPlugin  = Join-Path $ScriptsDir "Keybinder.asi"
++$TargetPlugin  = Join-Path $ScriptsDir "NLBinder.asi"
+ $SampExe       = Join-Path $SampDir "samp.exe"
+ $EvidenceDir   = Join-Path $ProjectRoot ".sisyphus\evidence"
+ $QaFixtureFile = Join-Path $ProjectRoot "tools\qa\fixtures\keybinder_qa.json"
+@@ -106,6 +106,19 @@ $HitsoundsFixtureFile       = Join-Path $ProjectRoot "tools\qa\fixtures\hitsound
+ $LiveConfigDir = $NlbinderRoot
+ $LiveConfigFile = Join-Path $NlbinderRoot "keybinder.json"
+ 
++# Loading the former filename beside the renamed plugin runs the binder twice.
++# Leave existing installations untouched and require the operator to resolve it.
++$conflictingPlugins = @(
++    (Join-Path $GtaSaDir 'Keybinder.asi'),
++    (Join-Path $ScriptsDir 'Keybinder.asi'),
++    (Join-Path $GtaSaDir 'NLBinder.asi'),
++    (Join-Path $GtaSaDir 'plugins\Keybinder.asi'),
++    (Join-Path $GtaSaDir 'plugins\NLBinder.asi')
++) | Where-Object { Test-Path -LiteralPath $_ }
++if ($conflictingPlugins.Count -gt 0) {
++    throw ("Another Binder ASI is installed. Back it up outside the game's ASI folders before using this launcher: " + ($conflictingPlugins -join ', '))
++}
++
+ function Get-EvidencePath {
+     param(
+         [Parameter(Mandatory)] [string]$Slug,
+diff --git a/tools/package_revision11.ps1 b/tools/package_revision11.ps1
+new file mode 100644
+index 0000000..01dc970
+--- /dev/null
++++ b/tools/package_revision11.ps1
+@@ -0,0 +1,138 @@
++$ErrorActionPreference = 'Stop'
++$projectRoot = Split-Path -Parent $PSScriptRoot
++$binary = Join-Path $projectRoot 'build\Release\NLBinder.asi'
++$reportPath = Join-Path $projectRoot 'build\revision11-artifact.json'
++$report = Get-Content -LiteralPath $reportPath -Raw | ConvertFrom-Json
++$binaryHash = (Get-FileHash -LiteralPath $binary -Algorithm SHA256).Hash.ToLowerInvariant()
++if ($report.revision -ne 'v0.1.1-r11' -or $binaryHash -ne $report.sha256 -or -not $report.embedded_helper_matches) {
++    throw 'Die ASI stimmt nicht mit dem finalen r11-Prüfbericht überein.'
++}
++$helperPath = Join-Path $projectRoot 'build\ReconnectHelper.exe'
++$helperHash = (Get-FileHash -LiteralPath $helperPath -Algorithm SHA256).Hash.ToLowerInvariant()
++if ($helperHash -ne $report.helper_sha256) { throw 'Der Reconnect-Helfer hat sich seit der Artefaktprüfung geändert.' }
++$workerPath = Join-Path $projectRoot 'build\reconnect-worker-tests\result.json'
++$workerResult = Get-Content -LiteralPath $workerPath -Raw | ConvertFrom-Json
++$validationPath = Join-Path $projectRoot 'docs\review\r11-validation.json'
++$finalValidation = Get-Content -LiteralPath $validationPath -Raw | ConvertFrom-Json
++$expectedWorkerChecks = [int]$finalValidation.focused_checks.native_reconnect_helper
++if ($finalValidation.revision -ne 'v0.1.1-r11' -or $finalValidation.asi_sha256 -ne $binaryHash -or $expectedWorkerChecks -lt 18) {
++    throw 'Finaler r11-Prüfnachweis fehlt oder stimmt nicht mit dem Build überein.'
++}
++if ($workerResult.failures -ne 0 -or $workerResult.checks -ne $expectedWorkerChecks) { throw 'Reconnect-Helfertest fehlgeschlagen oder stimmt nicht mit dem finalen Prüfnachweis überein.' }
++if ($workerResult.nova_cases -ne 6 -or $workerResult.nova_start_requires_spawn_confirmation -ne $true -or $workerResult.cancellation_after_readiness_checked -ne $true) {
++    throw 'Die neuen Nova-Start-, Beitritts- und Abbruchfälle sind im Helfertest nicht bestätigt.'
++}
++if ((Get-Item -LiteralPath $workerPath).LastWriteTimeUtc -lt (Get-Item -LiteralPath $helperPath).LastWriteTimeUtc) {
++    throw 'Den nativen Helfertest nach dem letzten Helfer-Build erneut ausführen.'
++}
++$testLog = Get-Content -LiteralPath (Join-Path $projectRoot 'build\revision11-tests.log') -Raw
++if ($testLog -notmatch '(?m)^Test exit code: 0\s*$' -or $testLog -match '\[FAIL\]') { throw 'Gesamttests nicht erfolgreich.' }
++$buildLog = Get-Content -LiteralPath (Join-Path $projectRoot 'build\revision11-build.log') -Raw
++if ($buildLog -notmatch '(?m)^RELEASE_BUILD_EXIT_CODE=0\s*$' -or $buildLog -notmatch 'Keybinder\.vcxproj -> .*NLBinder\.asi' -or $buildLog -match ': (fatal )?error [A-Z]+\d+:') {
++    throw 'Erfolgreicher finaler Release-Build nicht bestätigt.'
++}
++
++$packageDirectory = Join-Path $projectRoot 'dist\NLBinder-0.1.1-r11'
++$archive = Join-Path $projectRoot 'dist\NLBinder-v0.1.1-KOBiRO-r11.zip'
++if ((Test-Path -LiteralPath $packageDirectory) -or (Test-Path -LiteralPath $archive)) {
++    throw 'r11-Paket existiert bereits; nicht automatisch überschreiben.'
++}
++New-Item -ItemType Directory -Path $packageDirectory | Out-Null
++Copy-Item -LiteralPath $binary -Destination (Join-Path $packageDirectory 'NLBinder.asi')
++Copy-Item -LiteralPath (Join-Path $projectRoot 'docs\NLBinder-0.1.1-r11-DE.md') -Destination (Join-Path $packageDirectory 'LIESMICH.md')
++Copy-Item -LiteralPath (Join-Path $projectRoot 'docs\jobs-support.md') -Destination (Join-Path $packageDirectory 'JOB-HINWEISE.md')
++Copy-Item -LiteralPath $reportPath -Destination (Join-Path $packageDirectory 'PRUEFBERICHT.json')
++Copy-Item -LiteralPath $workerPath -Destination (Join-Path $packageDirectory 'RECONNECT-TEST.json')
++Copy-Item -LiteralPath (Join-Path $projectRoot 'docs\CHANGELOG-GESAMT.txt') -Destination (Join-Path $packageDirectory 'CHANGELOG-GESAMT.txt')
++
++# Ship only empty weapon folders and instructions, never personal PNG files.
++$catalogSource = Get-Content -LiteralPath (Join-Path $projectRoot 'include\WeaponIconCatalog.h') -Raw
++$weaponFolderNames = @([regex]::Matches($catalogSource, '\{\s*\d+,\s*"[^"]+",\s*"([^"]+)"\s*\}') | ForEach-Object { $_.Groups[1].Value })
++if ($weaponFolderNames.Count -ne 43 -or @($weaponFolderNames | Sort-Object -Unique).Count -ne 43) { throw 'Der Waffenordner-Katalog ist unvollständig oder doppelt.' }
++$templateRoot = Join-Path $packageDirectory 'NLBinder\Waffenicons'
++New-Item -ItemType Directory -Path $templateRoot | Out-Null
++foreach ($folderName in $weaponFolderNames) {
++    if ($folderName -notmatch '^[A-Za-z0-9 -]+$') { throw 'Ungültiger Waffenordner im Katalog.' }
++    New-Item -ItemType Directory -Path (Join-Path $templateRoot $folderName) | Out-Null
++}
++@'
++# Eigene Waffenicons
++
++Den Vorlagenordner NLBinder nach Dokumente/GTA San Andreas User Files kopieren
++und dort mit dem bestehenden NLBinder-Ordner zusammenführen. Vorhandene eigene
++Bilder beibehalten. Die Waffenbilder liegen unter:
++Dokumente/GTA San Andreas User Files/NLBinder/Waffenicons/<Waffe>/
++PNG-Dateien in den passenden Unterordner legen, z.B. Desert Eagle/mein-icon.png.
++Am einfachsten im Binder unter Mods / Waffenicons auf 'Waffenicons-Ordner öffnen'
++klicken: So wird auch ein verschobener Dokumente-Ordner, etwa unter OneDrive,
++korrekt geöffnet. Danach Waffenicons aktivieren und bei Bedarf neu einlesen.
++Mehrere PNGs pro Waffe sind möglich; ohne PNG bleibt das originale Waffenicon.
++Die Fist wird weiterhin unter Mods / Hud eingerichtet.
++'@ | Set-Content -LiteralPath (Join-Path $templateRoot 'LIESMICH.md') -Encoding utf8
++
++$buildInfo = @"
++NLBinder v.0.1.1 by KOBiRO – Überarbeitung 11
++Erstellt: $([System.TimeZoneInfo]::ConvertTimeBySystemTimeZoneId([DateTime]::UtcNow, 'W. Europe Standard Time').ToString('dd.MM.yyyy HH:mm:ss')) (Europe/Berlin)
++Datei: NLBinder.asi
++Format: Win32 Release, PE32/x86 DLL
++Größe: $($report.bytes) Bytes
++SHA256: $binaryHash
++Eingebetteter Reconnect-Helfer: Ressource 300, $($report.embedded_helper_bytes) Bytes
++Helfer-SHA256: $($report.helper_sha256)
++
++Verifikation:
++- Vollständige automatisierte Tests: Exitcode 0
++- Release-Build: Exitcode 0
++- ASI-Format, Windows-Imports und eingebetteter Helfer geprüft
++- Eingebetteter Reconnect-Helfer stimmt mit dem geprüften Helfer überein
++- Nativer Reconnect-Helfer: $($workerResult.checks) Prüfungen, 0 Fehler
++- Dafür ausschließlich harmlose Testprozesse verwendet
++- Kein echtes Spiel und kein installierter Launcher gestartet oder beendet
++- Kein Ingame-Test durchgeführt
++
++Neue Änderungen:
++- Button unter Tacho zum erneuten Synchronisieren von Stats und Jobskills
++- Frisch bestätigte Zähler und Skillpunkte werden direkt übernommen
++- Lokale Bestätigung erst nach erfolgreichem Lesen und Speichern beider Antworten
++- Einheitliche lokale Killmeldung mit aktuellem Killstand; eigener Server-Killbind bleibt erhalten
++- Native Todeserkennung und Friedhofsbestätigung zählen denselben Tod einmal
++- Explosionen und ungültige Lebenswertübergänge erzeugen keine Millionen-Schadensmeldungen; Damagelog-Präfix nutzt {33CCFF}
++- Kompilierter Dateiname heißt jetzt NLBinder.asi
++- Gesamter Changelog liegt als CHANGELOG-GESAMT.txt bei
++
++Die früheren Job-, Skilltree-, Fraktions-, Radar-, Tacho- und Reconnect-
++Anpassungen sind enthalten. Die ursprüngliche Oberfläche bleibt Grundlage.
++Der Reconnect-Helfer ist in der ASI enthalten.
++
++Grenzen: Die Synchronisation wartet auf eine echte Serverantwort. Mehrere
++Schadensereignisse zwischen Messungen erscheinen als gemessener Gesamtverlust.
++Ein Live-Test mit dem konkreten Server und Launcher steht weiterhin aus.
++Installation und weitere Hinweise stehen in LIESMICH.md.
++"@
++$buildInfo | Set-Content -LiteralPath (Join-Path $packageDirectory 'BUILD-INFO.txt') -Encoding utf8
++"$binaryHash  NLBinder.asi" | Set-Content -LiteralPath (Join-Path $packageDirectory 'SHA256SUMS.txt') -Encoding ascii
++Compress-Archive -LiteralPath $packageDirectory -DestinationPath $archive -CompressionLevel Optimal
++
++Add-Type -AssemblyName System.IO.Compression.FileSystem
++$templateZip = [System.IO.Compression.ZipFile]::Open($archive, [System.IO.Compression.ZipArchiveMode]::Update)
++try {
++    foreach ($folderName in $weaponFolderNames) {
++        $entryName = 'NLBinder-0.1.1-r11/NLBinder/Waffenicons/' + $folderName + '/'
++        if (-not $templateZip.GetEntry($entryName)) { $null = $templateZip.CreateEntry($entryName) }
++    }
++} finally { $templateZip.Dispose() }
++$zip = [System.IO.Compression.ZipFile]::OpenRead($archive)
++try {
++    $entry = $zip.Entries | Where-Object { $_.FullName -match '/NLBinder\.asi$' }
++    if (@($entry).Count -ne 1) { throw 'ASI fehlt im Archiv oder ist mehrfach enthalten.' }
++    $stream = $entry.Open()
++    $digest = [System.Security.Cryptography.SHA256]::Create()
++    try {
++        $zippedHash = [BitConverter]::ToString($digest.ComputeHash($stream)).Replace('-', '').ToLowerInvariant()
++        if ($zippedHash -ne $binaryHash) { throw 'ASI-Prüfsumme im Archiv stimmt nicht.' }
++    } finally { $stream.Dispose(); $digest.Dispose() }
++} finally { $zip.Dispose() }
++$stagedHash = (Get-FileHash -LiteralPath (Join-Path $packageDirectory 'NLBinder.asi') -Algorithm SHA256).Hash.ToLowerInvariant()
++if ($stagedHash -ne $binaryHash) { throw 'Kopierte ASI stimmt nicht überein.' }
++Get-Item -LiteralPath (Join-Path $packageDirectory 'NLBinder.asi'), $archive | Select-Object FullName,Length
++Write-Output "SHA256: $binaryHash"
+diff --git a/tools/premium_ui_qa.ps1 b/tools/premium_ui_qa.ps1
+index f1bce77..0578b3c 100644
+--- a/tools/premium_ui_qa.ps1
++++ b/tools/premium_ui_qa.ps1
+@@ -73,7 +73,7 @@ $ScriptRoot  = Split-Path -Parent $MyInvocation.MyCommand.Path
+ $ProjectRoot = Split-Path -Parent $ScriptRoot
+ $EvidenceDir = Join-Path $ProjectRoot ".sisyphus\evidence"
+ $BuildDir    = Join-Path $ProjectRoot "build\Release"
+-$PluginBinary = Join-Path $BuildDir "Keybinder.asi"
++$PluginBinary = Join-Path $BuildDir "NLBinder.asi"
+ $TestExe     = Join-Path $ProjectRoot "build\KeybinderTests.exe"
+ $NlbinderRoot = Join-Path ([Environment]::GetFolderPath("MyDocuments")) "GTA San Andreas User Files\NLBinder"
+ $LiveConfigDir = $NlbinderRoot
+@@ -227,7 +227,7 @@ function Invoke-BuildVerify {
+     }
+ 
+     try {
+-        Write-Host "[*] Building Keybinder (Release|Win32)..."
++        Write-Host "[*] Building NLBinder (Release|Win32)..."
+         $buildOutput = & MSBuild.exe "$ProjectRoot\Keybinder.vcxproj" `
+             /p:Configuration=Release /p:Platform=Win32 `
+             /verbosity:minimal /nologo 2>&1 | Out-String
+diff --git a/tools/verify_revision11_artifact.py b/tools/verify_revision11_artifact.py
+new file mode 100644
+index 0000000..8c93748
+--- /dev/null
++++ b/tools/verify_revision11_artifact.py
+@@ -0,0 +1,115 @@
++"""Read-only r11 PE/artifact verification; never loads or executes binaries."""
++import hashlib
++import json
++from pathlib import Path
++import struct
++import sys
++
++
++def require(condition, message):
++    if not condition:
++        raise ValueError(message)
++
++
++class PE:
++    def __init__(self, path):
++        self.path = Path(path)
++        self.data = self.path.read_bytes()
++        require(self.data[:2] == b"MZ", "Missing DOS header")
++        start = self.u32(0x3C)
++        require(self.data[start:start + 4] == b"PE\0\0", "Missing PE signature")
++        self.machine = self.u16(start + 4)
++        count = self.u16(start + 6)
++        self.characteristics = self.u16(start + 22)
++        self.optional = start + 24
++        require(self.u16(self.optional) == 0x10B, "Expected PE32")
++        self.sections = []
++        table = self.optional + self.u16(start + 20)
++        for index in range(count):
++            row = table + index * 40
++            virtual_size, rva, size, raw = struct.unpack_from("<IIII", self.data, row + 8)
++            self.sections.append((rva, max(virtual_size, size), raw, size))
++
++    def u16(self, offset):
++        return struct.unpack_from("<H", self.data, offset)[0]
++
++    def u32(self, offset):
++        return struct.unpack_from("<I", self.data, offset)[0]
++
++    def offset(self, rva):
++        for start, span, raw, size in self.sections:
++            if start <= rva < start + span:
++                require(rva - start < size, "RVA has no raw file data")
++                return raw + rva - start
++        raise ValueError(f"Unmapped RVA: {rva:#x}")
++
++    def imports(self):
++        directory = self.u32(self.optional + 96 + 8)
++        if not directory:
++            return []
++        row = self.offset(directory)
++        result = []
++        while any(struct.unpack_from("<IIIII", self.data, row)):
++            name = self.offset(self.u32(row + 12))
++            end = self.data.index(0, name)
++            result.append(self.data[name:end].decode("ascii"))
++            row += 20
++        return sorted(result, key=str.lower)
++
++    def resource(self, type_id, resource_id):
++        base = self.offset(self.u32(self.optional + 96 + 16))
++
++        def entries(relative):
++            head = base + relative
++            total = self.u16(head + 12) + self.u16(head + 14)
++            return [struct.unpack_from("<II", self.data, head + 16 + i * 8) for i in range(total)]
++
++        directory = 0
++        for expected in (type_id, resource_id):
++            candidates = [value for name, value in entries(directory) if name == expected]
++            require(len(candidates) == 1, f"Resource ID {expected} missing or ambiguous")
++            require(candidates[0] & 0x80000000, "Expected resource directory")
++            directory = candidates[0] & 0x7FFFFFFF
++        languages = entries(directory)
++        require(len(languages) == 1, "Expected one embedded worker language")
++        leaf = languages[0][1]
++        require(not leaf & 0x80000000, "Expected resource data entry")
++        rva, size = struct.unpack_from("<II", self.data, base + leaf)
++        start = self.offset(rva)
++        return self.data[start:start + size]
++
++
++def main():
++    root = Path(__file__).resolve().parents[1]
++    asi = PE(sys.argv[1] if len(sys.argv) > 1 else root / "build/Release/NLBinder.asi")
++    helper = PE(root / "build/ReconnectHelper.exe")
++    require(asi.machine == helper.machine == 0x14C, "Expected both binaries to be x86")
++    require(asi.characteristics & 0x2000, "ASI must be a DLL")
++    require(not helper.characteristics & 0x2000, "Worker must be an executable")
++    require(asi.resource(10, 300) == helper.data, "Embedded helper differs from built helper")
++    imports = asi.imports()
++    require(not any(name.lower().startswith(("vcruntime", "msvcp", "ucrtbased")) for name in imports),
++            "Unexpected external C++ runtime dependency")
++    try:
++        display_path = asi.path.resolve().relative_to(root).as_posix()
++    except ValueError:
++        display_path = asi.path.name
++    result = {
++        "revision": "v0.1.1-r11",
++        "asi": display_path,
++        "bytes": len(asi.data),
++        "format": "PE32 x86 DLL",
++        "sha256": hashlib.sha256(asi.data).hexdigest(),
++        "imports": imports,
++        "embedded_helper_id": 300,
++        "embedded_helper_bytes": len(helper.data),
++        "helper_sha256": hashlib.sha256(helper.data).hexdigest(),
++        "embedded_helper_matches": True,
++    }
++    report = json.dumps(result, indent=2)
++    (root / "build/revision11-artifact.json").write_text(report + "\n", encoding="utf-8")
++    print(report)
++
++
++if __name__ == "__main__":
++    main()

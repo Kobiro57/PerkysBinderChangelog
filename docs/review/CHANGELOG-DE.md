@@ -1,6 +1,6 @@
 # Änderungen am Perkys Binder – NLBinder v.0.1.1 by KOBiRO
 
-Stand: 29. Oktober 2026, Arbeitsfassung **r10 mit erweitertem Nova-Reconnect, schnellerem Motorstart und Server-Chat-Erkennung für Kills/Tode**. Die Abschnitte 1 bis 15 dokumentieren die früheren Stände; Abschnitt 16 ergänzt r10.
+Stand: 29. Oktober 2026, Arbeitsfassung **r11 mit manueller Spielstandsynchronisation und NLBinder.asi**. Die Abschnitte 1 bis 16 dokumentieren die früheren Stände; Abschnitt 17 ergänzt r11.
 
 Die Grundlage ist der vorhandene Perkys/NLBinder. Die Änderungen erweitern dessen bestehende Oberfläche und verwenden weiterhin die vorhandenen ImGui-Komponenten, Karten, Schalter und Darstellungseinstellungen. Der Ordner KOBiRO_ASI diente als funktionale Referenz für die Overlay-Erweiterung; seine Oberfläche wurde nicht als neue Binder-Oberfläche übernommen.
 
@@ -648,3 +648,87 @@ Die endgültigen Nachweise gehören zum
 [r10-Paket](../../dist/NLBinder-0.1.1-r10/BUILD-INFO.txt). Frühere Prüfstände
 und ursprüngliche Urheberhinweise bleiben erhalten. Ein echter Ingame-Test
 mit dem konkreten Server und dem installierten Nova Launcher steht aus.
+
+## 17. Nachtrag r11 – 29. Oktober 2026
+
+### Aktuellen Spielstand manuell synchronisieren
+
+Unter **Einstellungen**, direkt unter der **Tacho**-Tabelle, ergänzt der
+Button **Aktuellen Spielstand synchronisieren** den vorhandenen Abruf beim
+Einloggen. Er liest erneut die eigenen `/stats` und anschließend
+`/jobskills` ein. Die empfangenen Gesamtwerte und Job-Skillpunkte werden
+in die vorhandenen Anzeigen und Textvariablen übernommen und gespeichert.
+Die Sitzungserfassung wird dadurch nicht als neuer Kill oder Tod ausgelöst.
+
+Nach erfolgreichem Lesen und Speichern beider Antworten erscheint lokal:
+
+`[NL-BINDER] Du hast deinen Spielestand manuell synchronisiert. Deine Werte sind jetzt im aktuellsten Stand.`
+
+Ein bereits laufender Abruf wird nicht doppelt gestartet. Fremde oder
+unpassende Antworten ersetzen keine eigenen Daten. Fehlende Antworten
+führen zu einer Fehlermeldung und nicht zu einer Erfolgsmeldung. Die
+automatische Synchronisation beim Einloggen bleibt enthalten.
+
+Quellen: [StartupStatsSync.cpp](../../src/StartupStatsSync.cpp),
+[JobSkillsSync.cpp](../../src/JobSkillsSync.cpp),
+[MainWindowUI.cpp](../../src/MainWindowUI.cpp),
+[SAMPBridge.h](../../include/SAMPBridge.h).
+Tests: [StartupStatsSyncTests.cpp](../../tests/StartupStatsSyncTests.cpp).
+
+### Einheitliche lokale Killmeldung
+
+Die eigene lokale Killmeldung verwendet den Text
+`[NL-BINDER] Du hast einen Kill gemacht! Aktuell hast du: {kills} Kills.`.
+`{kills}` wird durch den aktuellen Gesamt-Killstand ersetzt. Der lokale
+Hinweis wiederholt damit nicht den frei gewählten Server-Killbind; der
+Servertext und sein Chatkanal bleiben unverändert. Eine einmalige Migration
+aktualisiert die gespeicherten lokalen Altvorlagen. Die gemeinsame
+Ereigniszuordnung gegen doppelt gezählte Kills bleibt wirksam.
+
+`{kills}` ist in dieser Vorlage ein Alias für den Gesamt-Killzähler. Die
+Variablenhilfe erhält keinen zweiten Eintrag für denselben Wert.
+
+### Todeszählung und Damagelog korrigiert
+
+Ein eigener Tod darf nicht zweimal gezählt werden, wenn zuerst die native
+Lebenspunkte-Erkennung und danach die Friedhofsmeldung dasselbe Ereignis
+bestätigen. Der Abgleich berücksichtigt den laufenden Todes-/Respawn-Ablauf,
+damit die zusätzliche Chatbestätigung keinen zweiten Tod hinzufügt.
+
+Explosionen und ungültige Lebenswertübergänge führen nicht mehr zu
+unrealistischen Millionen-Schadensmeldungen im Damagelog. Gültige
+tatsächliche Schadensänderungen bleiben erfasst. Die Farbe des Damagelog-Präfixes
+verwendet jetzt `{33CCFF}` statt `{1E90FF}`.
+
+Beim geprüften Explosionsübergang von 50 HP auf einen internen negativen
+Überkillwert werden 50 HP Verlust gemeldet. Auch eine zehn Sekunden später
+eintreffende Friedhofsbestätigung zählt denselben Tod nicht erneut.
+Nach einem wieder steuerbaren Respawn kann der nächste Tod normal zählen.
+
+Quelle: [SAMPBridge.cpp](../../src/SAMPBridge.cpp),
+[IncomingDamageDetector.h](../../include/IncomingDamageDetector.h).
+Tests: [SAMPBridgeTests.cpp](../../tests/SAMPBridgeTests.cpp).
+
+### NLBinder.asi und vollständige Quellcode-Kopie
+
+Der Release-Build erzeugt jetzt **NLBinder.asi**. Projekt- und Lösungsdatei
+behalten ihre vorhandenen Namen. Beim Austausch ist die frühere
+`Keybinder.asi` zu ersetzen; beide Fassungen dürfen nicht gleichzeitig
+geladen werden.
+
+Der angeforderte Desktop-Ordner **NLBinder-masterNEW** enthält den
+vollständigen Quellcode einschließlich benötigter Abhängigkeiten, die
+kompilierte **NLBinder.asi** und **CHANGELOG-GESAMT.txt**. Die Textdatei
+führt den gesamten dokumentierten Änderungsverlauf dieses Binders auf.
+Persönliche Laufzeitdaten, Zugangsdaten und Compiler-Zwischendateien
+gehören nicht in die Quellcode-Weitergabe. Auch das r11-Paket enthält den
+gesamten Changelog als TXT.
+
+Quellen: [Keybinder.vcxproj](../../Keybinder.vcxproj),
+[package_revision11.ps1](../../tools/package_revision11.ps1),
+[Gesamter Changelog als Text](../CHANGELOG-GESAMT.txt).
+
+Die finalen Nachweise gehören zum
+[r11-Paket](../../dist/NLBinder-0.1.1-r11/BUILD-INFO.txt). Frühere Stände,
+Vergleiche und ursprüngliche Urheberhinweise bleiben erhalten. Ein echter
+Ingame-Test auf dem konkreten Server steht aus.

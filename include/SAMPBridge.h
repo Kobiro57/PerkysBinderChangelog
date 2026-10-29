@@ -75,6 +75,8 @@ public:
     const keybinder::ServerStatsSnapshot& GetSynchronizedStats() const { return synchronizedStats_; }
     bool AreStatsSynchronized() const { return startupStatsComplete_; }
     bool AreJobSkillsSynchronized() const { return startupJobSkillsComplete_; }
+    bool RequestManualStateSynchronization(std::string& error);
+    bool IsManualStateSynchronizationPending() const { return manualStateSyncPending_; }
 
     void Update();
 
@@ -176,6 +178,7 @@ public:
         std::function<void(int)> hideDialog;
         std::function<void(sampapi::v03dl::CInput*)> openChatInput;
         std::function<void(sampapi::v03dl::CInput*)> closeChatInput;
+        std::function<bool()> isLocalPlayerControllable;
     };
 
     static void SetTestingHooks(const TestingHooks& hooks);
@@ -201,6 +204,7 @@ private:
     void ResetCombatChat();
     void UpdateStartupStats(unsigned long now);
     void ResetStartupStats();
+    void FailManualStateSynchronization(const std::string& reason);
     void CaptureStartupStatsLine(const std::string& text);
     bool ShouldDisplayStartupStatsChat(const jobs::JobChatEvent& event);
     void CompleteStartupStats(unsigned long now);
@@ -393,6 +397,9 @@ private:
     int localDeathFallbackDelayFrames_;
     bool localDeathAwaitingNativeDead_ = false;
     unsigned long localDeathAwaitDeadline_ = 0;
+    unsigned int localAliveConfirmationFrames_ = 0;
+    bool localDeathSawInactive_ = false;
+    const void* localDeathPed_ = nullptr;
     bool jobTrackerInitialized_;
     
     std::function<bool(const std::string&)> slashCommandInterceptor_;
@@ -465,6 +472,11 @@ private:
     bool startupJobSkillsFailed_ = false;
     bool startupStatsSaved_ = false;
     bool startupSyncNotified_ = false;
+    bool manualStateSyncCycle_ = false;
+    bool manualStateSyncPending_ = false;
+    unsigned long manualStateSyncAcceptedAt_ = 0;
+    int manualStateSyncSessionKillsAtRequest_ = 0;
+    int manualStateSyncSessionDeathsAtRequest_ = 0;
     unsigned long startupJobSkillsRequestedAt_ = 0;
     bool jobSkillsRequestPending_ = false;
     unsigned long jobSkillsRequestAt_ = 0;

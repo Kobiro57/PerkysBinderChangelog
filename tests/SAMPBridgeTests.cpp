@@ -224,7 +224,7 @@ bool TestDamageLogAhkBlueprintReportsDirectServerLossWithoutRpc() {
     context.health = 75.0f;
     bridge.Update();
     ASSERT_EQ(DamageLogCount(context), static_cast<std::size_t>(1));
-    ASSERT_EQ(context.localMessages.back(), std::string("{1E90FF}[NL-BINDER] {FF0000}-25,0 HP {FFFFFF}Schaden (HP Schaden)"));
+    ASSERT_EQ(context.localMessages.back(), std::string("{33CCFF}[NL-BINDER] {FF0000}-25,0 HP {FFFFFF}Schaden (HP Schaden)"));
     bridge.RequestScriptedHealthSuppressionForTesting();
     context.armour = 87.5f;
     bridge.Update();
@@ -2121,6 +2121,169 @@ bool TestStatsStorageEmptyFile() {
     return true;
 }
 
+std::size_t LocalDeathNoticeCount(const MockContext& context) {
+    return std::count_if(context.localMessages.begin(), context.localMessages.end(), [](const std::string& value) {
+        return value.find("Du bist gestorben.") != std::string::npos;
+    });
+}
+
+constexpr const char* kCemeteryDeathNotice = "Willkommen auf dem Friedhof. Hier verweilst du, bis du entweder reanimiert wirst oder deine Zeit abl\xC3\xA4uft.";
+
+bool TestExplosionOverkillAndDelayedCemeteryCountOneDeathPerLife() {
+    CombatSoundContext context;
+    context.health = 50.0f; context.armour = 0.0f;
+    auto hooks = context.BuildCombatHooks();
+    hooks.getLocalPlayerName = []() { return std::string("ExplosionPlayer"); };
+    hooks.getLocalPlayerId = []() { return 5; };
+    SAMPBridge::SetTestingHooks(hooks);
+    keybinder::SettingsManager settings;
+    settings.GetMutable().damage_log_enabled = true;
+    SAMPBridge bridge;
+    bridge.SetSettingsManager(&settings);
+    bridge.SetKillTrackerEnabled(true);
+    ASSERT_TRUE(bridge.Initialize());
+    bridge.ImportDeathCount(212);
+    bridge.Update();
+    context.damageSource = 51; // Explosion, with a large GTA negative overkill value.
+    context.health = -8000000.0f;
+    context.localPlayer->m_bIsWasted = TRUE;
+    context.localPlayer->m_bIsActive = FALSE;
+    for (int i = 0; i < 20; ++i) bridge.Update();
+    ASSERT_EQ(DamageLogCount(context), std::size_t(1));
+    ASSERT_TRUE(context.localMessages.front().find("{33CCFF}[NL-BINDER] {FF0000}-50,0 HP") != std::string::npos);
+    ASSERT_EQ(bridge.GetTotalDeaths(), 213);
+    ASSERT_EQ(LocalDeathNoticeCount(context), std::size_t(1));
+    // Clearing the native wasted flag does not resurrect a zero/negative-HP ped.
+    context.localPlayer->m_bIsWasted = FALSE;
+    context.localPlayer->m_bIsActive = TRUE;
+    context.tick += 10000;
+    bridge.Update();
+    bridge.ProcessIncomingChatLineForTesting(nullptr, kCemeteryDeathNotice);
+    bridge.Update();
+    ASSERT_EQ(bridge.GetTotalDeaths(), 213);
+    ASSERT_EQ(LocalDeathNoticeCount(context), std::size_t(1));
+    context.health = 8000050.0f; // Script/protection state is not a new life.
+    for (int i = 0; i < 3; ++i) bridge.Update();
+    bridge.ProcessIncomingChatLineForTesting(nullptr, kCemeteryDeathNotice);
+    bridge.Update();
+    ASSERT_EQ(bridge.GetTotalDeaths(), 213);
+    ASSERT_EQ(DamageLogCount(context), std::size_t(1));
+    context.health = 100.0f;
+    bridge.Update(); bridge.Update(); // Actual controllable, healthy respawn.
+    context.health = -8000000.0f;
+    for (int i = 0; i < 20; ++i) bridge.Update();
+    ASSERT_EQ(bridge.GetTotalDeaths(), 214);
+    ASSERT_EQ(LocalDeathNoticeCount(context), std::size_t(2));
+    ASSERT_EQ(DamageLogCount(context), std::size_t(2));
+    bridge.Shutdown();
+    SAMPBridge::ResetTestingHooks();
+    return true;
+}
+
+bool TestChatDeathStaysLatchedUntilControlledReanimationWithoutNativeWasted() {
+    CombatSoundContext context;
+    context.health = 100.0f;
+    bool controllable = true;
+    auto hooks = context.BuildCombatHooks();
+    hooks.getLocalPlayerName = []() { return std::string("ChatDeathPlayer"); };
+    hooks.isLocalPlayerControllable = [&]() { return controllable; };
+    SAMPBridge::SetTestingHooks(hooks);
+    SAMPBridge bridge;
+    bridge.SetKillTrackerEnabled(true);
+    ASSERT_TRUE(bridge.Initialize());
+    bridge.Update();
+    bridge.ProcessIncomingChatLineForTesting(nullptr, kCemeteryDeathNotice);
+    bridge.Update();
+    ASSERT_EQ(bridge.GetTotalDeaths(), 1);
+    context.tick += 10000;
+    for (int i = 0; i < 3; ++i) bridge.Update();
+    bridge.ProcessIncomingChatLineForTesting(nullptr, kCemeteryDeathNotice);
+    bridge.Update();
+    ASSERT_EQ(bridge.GetTotalDeaths(), 1); // A timer alone never starts another life.
+    controllable = false;
+    for (int i = 0; i < 4; ++i) bridge.Update();
+    bridge.ProcessIncomingChatLineForTesting(nullptr, kCemeteryDeathNotice);
+    bridge.Update();
+    ASSERT_EQ(bridge.GetTotalDeaths(), 1); // Healthy but frozen funeral ped.
+    controllable = true;
+    bridge.Update(); bridge.Update();
+    bridge.ProcessIncomingChatLineForTesting(nullptr, kCemeteryDeathNotice);
+    bridge.Update();
+    ASSERT_EQ(bridge.GetTotalDeaths(), 2);
+    ASSERT_EQ(LocalDeathNoticeCount(context), std::size_t(2));
+    bridge.Shutdown();
+    SAMPBridge::ResetTestingHooks();
+    return true;
+}
+
+bool TestDamageLogRejectsScriptSentinelsWithoutCappingEnhancedVitals() {
+    keybinder::IncomingDamageLog log;
+    ASSERT_TRUE(!log.Observe(8000050.0f, 0.0f).HasDamage());
+    ASSERT_TRUE(!log.Observe(0.0f, 0.0f).HasDamage());
+    ASSERT_TRUE(!log.Observe(5000.0f, 500.0f).HasDamage());
+    const auto normal = log.Observe(4900.0f, 450.0f);
+    ASSERT_EQ(normal.healthDamage, 100.0f);
+    ASSERT_EQ(normal.armourDamage, 50.0f);
+    const auto explosion = log.Observe(-8000000.0f, -8000000.0f);
+    ASSERT_EQ(explosion.healthDamage, 4900.0f);
+    ASSERT_EQ(explosion.armourDamage, 450.0f);
+    ASSERT_TRUE(!log.Observe(8000050.0f, 8000050.0f).HasDamage());
+    ASSERT_TRUE(!log.Observe(50.0f, 10.0f).HasDamage());
+    ASSERT_EQ(log.Observe(40.0f, 10.0f).healthDamage, 10.0f);
+    return true;
+}
+
+bool TestLocalKillNoticeMigratesWithoutChangingPublicBind() {
+    keybinder::SettingsManager settings;
+    ASSERT_TRUE(settings.LoadFromJson(R"({"kill_tracker_enabled":true,"kill_tracker_local_kill_message_template":"/r My public kill text {total_kills}","kill_tracker_server_kill_message_enabled":true,"kill_tracker_server_kill_message_template":"/r My public kill text {total_kills}"})"));
+    ASSERT_EQ(settings.Get().kill_tracker_local_kill_message_template,
+        std::string(keybinder::kDefaultLocalKillMessageTemplate));
+    ASSERT_EQ(settings.Get().kill_tracker_server_kill_message_template, "/r My public kill text {total_kills}");
+    ASSERT_TRUE(settings.Get().kill_tracker_server_kill_message_enabled);
+    keybinder::SettingsManager reloaded;
+    ASSERT_TRUE(reloaded.LoadFromJson(settings.GetSettingsJson()));
+    ASSERT_EQ(reloaded.Get().kill_tracker_local_kill_message_template, settings.Get().kill_tracker_local_kill_message_template);
+    reloaded.GetMutable().kill_tracker_local_kill_message_template = "An explicitly edited local notice {kills}";
+    keybinder::SettingsManager custom;
+    ASSERT_TRUE(custom.LoadFromJson(reloaded.GetSettingsJson()));
+    ASSERT_EQ(custom.Get().kill_tracker_local_kill_message_template, reloaded.Get().kill_tracker_local_kill_message_template);
+
+    CombatSoundContext context;
+    auto hooks = context.BuildCombatHooks();
+    hooks.getLocalPlayerId = []() { return 5; };
+    hooks.getLocalPlayerName = []() { return std::string("LocalPlayer"); };
+    hooks.getPlayerName = [](int id) { return "Enemy_" + std::to_string(id); };
+    SAMPBridge::SetTestingHooks(hooks);
+    SAMPBridge bridge;
+    bridge.SetSettingsManager(&settings);
+    bridge.SetKillTrackerEnabled(true);
+    bridge.SetKillTrackerLocalKillMessageTemplate(settings.Get().kill_tracker_local_kill_message_template);
+    bridge.SetKillTrackerServerKillMessageEnabled(true);
+    bridge.SetKillTrackerServerKillMessageTemplate(settings.Get().kill_tracker_server_kill_message_template);
+    ASSERT_TRUE(bridge.Initialize());
+    bridge.ImportKillCount(64);
+    const killtracker::DeathMessageEvent event{5, 7, 31, std::time(nullptr), true};
+    bridge.ProcessDeathMessageForTesting(event);
+    ASSERT_EQ(context.localMessages.size(), std::size_t(1));
+    ASSERT_EQ(context.lastLocalMessage, "{33CCFF}[NL-BINDER]{FFFFFF} Du hast einen Kill gemacht! Aktuell hast du: 65 Kills.");
+    ASSERT_EQ(context.serverMessages.size(), std::size_t(1));
+    ASSERT_EQ(context.serverMessages[0], "/r My public kill text 65");
+    bridge.ProcessDeathMessageForTesting(event);
+    ASSERT_EQ(context.localMessages.size(), std::size_t(1));
+    ASSERT_EQ(context.serverMessages.size(), std::size_t(1));
+    bridge.SetKillTrackerLocalKillMessageTemplate("Kills: {kills}");
+    bridge.ProcessDeathMessageForTesting({5, 8, 31, std::time(nullptr), true});
+    ASSERT_EQ(context.lastLocalMessage, "Kills: 66");
+    ASSERT_EQ(context.serverMessages.size(), std::size_t(2));
+    bridge.SetKillTrackerLocalKillMessageEnabled(false);
+    bridge.ProcessDeathMessageForTesting({5, 9, 31, std::time(nullptr), true});
+    ASSERT_EQ(context.localMessages.size(), std::size_t(2));
+    ASSERT_EQ(context.serverMessages.size(), std::size_t(3));
+    bridge.Shutdown();
+    SAMPBridge::ResetTestingHooks();
+    return true;
+}
+
 int g_manualInputHudFixCalls = 0;
 
 bool TestManualInputDefersHudScaleCommandUntilAnswered() {
@@ -2272,6 +2435,10 @@ int RunSAMPBridgeTests() {
     RUN_TEST(TestManualInputCapturesNativeChatAndCancelsCleanly);
     RUN_TEST(TestManualInputBindSendsOnlyExpandedNewsCommand);
     RUN_TEST(TestManualInputDefersHudScaleCommandUntilAnswered);
+    RUN_TEST(TestLocalKillNoticeMigratesWithoutChangingPublicBind);
+    RUN_TEST(TestExplosionOverkillAndDelayedCemeteryCountOneDeathPerLife);
+    RUN_TEST(TestChatDeathStaysLatchedUntilControlledReanimationWithoutNativeWasted);
+    RUN_TEST(TestDamageLogRejectsScriptSentinelsWithoutCappingEnhancedVitals);
 
     RUN_TEST(TestInitFailureWithoutSampModule);
     RUN_TEST(TestInitSuccessAndDirectCommandRegistration);

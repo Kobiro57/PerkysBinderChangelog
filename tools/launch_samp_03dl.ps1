@@ -94,9 +94,9 @@ if (-not (Test-Path $SampDir)) {
 }
 
 # ── Paths ────────────────────────────────────────────────────────
-$PluginBinary  = Join-Path $ProjectRoot "build\Release\Keybinder.asi"
+$PluginBinary  = Join-Path $ProjectRoot "build\Release\NLBinder.asi"
 $ScriptsDir    = Join-Path $GtaSaDir "scripts"
-$TargetPlugin  = Join-Path $ScriptsDir "Keybinder.asi"
+$TargetPlugin  = Join-Path $ScriptsDir "NLBinder.asi"
 $SampExe       = Join-Path $SampDir "samp.exe"
 $EvidenceDir   = Join-Path $ProjectRoot ".sisyphus\evidence"
 $QaFixtureFile = Join-Path $ProjectRoot "tools\qa\fixtures\keybinder_qa.json"
@@ -105,6 +105,19 @@ $JobsOverviewFixtureFile    = Join-Path $ProjectRoot "tools\qa\fixtures\jobs-ove
 $HitsoundsFixtureFile       = Join-Path $ProjectRoot "tools\qa\fixtures\hitsounds_qa.json"
 $LiveConfigDir = $NlbinderRoot
 $LiveConfigFile = Join-Path $NlbinderRoot "keybinder.json"
+
+# Loading the former filename beside the renamed plugin runs the binder twice.
+# Leave existing installations untouched and require the operator to resolve it.
+$conflictingPlugins = @(
+    (Join-Path $GtaSaDir 'Keybinder.asi'),
+    (Join-Path $ScriptsDir 'Keybinder.asi'),
+    (Join-Path $GtaSaDir 'NLBinder.asi'),
+    (Join-Path $GtaSaDir 'plugins\Keybinder.asi'),
+    (Join-Path $GtaSaDir 'plugins\NLBinder.asi')
+) | Where-Object { Test-Path -LiteralPath $_ }
+if ($conflictingPlugins.Count -gt 0) {
+    throw ("Another Binder ASI is installed. Back it up outside the game's ASI folders before using this launcher: " + ($conflictingPlugins -join ', '))
+}
 
 function Get-EvidencePath {
     param(

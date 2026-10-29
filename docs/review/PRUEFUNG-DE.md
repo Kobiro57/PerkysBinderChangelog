@@ -1,6 +1,104 @@
 # Hinweise zur Prüfung durch die Projektleitung
 
-## Aktueller Stand r10 – 29. Oktober 2026
+## Aktueller Stand r11 – 29. Oktober 2026
+
+Der aktuelle Stand ist **NLBinder v.0.1.1 by KOBiRO, r11**.
+[Bedienung](../NLBinder-0.1.1-r11-DE.md),
+[r11-Nachtrag](CHANGELOG-DE.md#17-nachtrag-r11--29-oktober-2026) und
+[vollständiger TXT-Changelog](../CHANGELOG-GESAMT.txt) beschreiben die
+Änderungen. Frühere Prüfstände bleiben ihren ursprünglichen Binärdateien
+zugeordnet.
+
+### Verhalten und prüfbarer Umfang
+
+Der Button **Aktuellen Spielstand synchronisieren** unter Tacho verwendet
+erneut den bestehenden Ablauf zum Lesen eigener Stats und Jobskills.
+Erfolgreich empfangene Werte werden in die vorhandenen Datenmodelle und
+Variablen übernommen und gespeichert. Der Abschluss ist erst bestätigt,
+wenn beide frischen Antworten erfolgreich übernommen sind. Doppelte
+Anforderungen werden abgefangen; fehlende oder unpassende Antworten
+dürfen keine erfolgreiche manuelle Synchronisation melden.
+
+Eine Synchronisation zählt importierte Gesamtstände nicht als neue
+Sitzungsereignisse. Der Abruf beim Einloggen bleibt vorhanden. Die
+Serverantwort ist weiterhin erforderlich; ein bestimmtes Antworttempo
+wird nicht vorausgesetzt.
+
+Der lokale Killhinweis nutzt die einheitliche Vorlage
+`[NL-BINDER] Du hast einen Kill gemacht! Aktuell hast du: {kills} Kills.`.
+Die Gesamtzahl wird aus demselben aktuellen Killstand gelesen wie bisher;
+die Vorlage ist von der frei gewählten Servernachricht getrennt. Die
+gespeicherten lokalen Altvorlagen werden einmalig aktualisiert. Der Alias
+`{kills}` ergänzt keinen doppelten Eintrag in der Variablenhilfe.
+
+Die Todeserkennung führt die native HP-/Todesbestätigung und die
+Friedhofsmeldung desselben eigenen Todes zusammen. Der Lebenszyklus bis
+zum Respawn begrenzt die Zuordnung; die zusätzliche Meldung darf keinen
+zweiten Zähleranstieg verursachen. Explosionen und ungültige
+Lebenswertübergänge dürfen keine unrealistischen Millionen-Schadenswerte
+erzeugen. Gültige echte Verluste werden weiterhin verarbeitet. Das
+Damagelog-Präfix nutzt `{33CCFF}`.
+
+Für die Schadensmessung werden nicht-endliche Werte und einzelne HP- oder
+Westenwerte ab 1.000.000 verworfen; der Messvergleich startet danach mit
+einer frischen Basis. Endliche negative Überkillwerte werden für den
+Vergleich auf null begrenzt. Ein Explosionsübergang von 50 HP auf einen
+internen Wert von -8.000.000 entspricht damit 50 tatsächlich verlorenen HP.
+Regulär erhöhte Lebens-/Westenwerte oberhalb 100 bleiben messbar; es gibt
+keine pauschale Begrenzung aller gültigen Messwerte auf 100.
+
+Die konkrete Regression bestätigt denselben Tod trotz einer zehn Sekunden
+späteren Friedhofsmeldung nur einmal. Ein nachweisbar steuerbarer Respawn
+ermöglicht anschließend die Zählung des nächsten eigenständigen Todes.
+
+Die Ausgabe des Win32-Release-Builds heißt **NLBinder.asi**. Die ASI liegt
+auch im Paket und im angeforderten vollständigen Desktop-Quellordner
+**NLBinder-masterNEW**. Der TXT-Changelog enthält den gesamten bisherigen
+deutschen Änderungsverlauf. Compiler-Zwischenstände und persönliche
+Laufzeitdaten werden nicht in die Weitergabe kopiert.
+
+### r11-Prüfpfade
+
+| Bereich | Implementierung | Tests / Nachweise |
+| --- | --- | --- |
+| Manuelle vollständige Synchronisation | [StartupStatsSync.cpp](../../src/StartupStatsSync.cpp), [JobSkillsSync.cpp](../../src/JobSkillsSync.cpp), [MainWindowUI.cpp](../../src/MainWindowUI.cpp), [SAMPBridge.h](../../include/SAMPBridge.h) | [StartupStatsSyncTests.cpp](../../tests/StartupStatsSyncTests.cpp) |
+| ASI-Name und Paket | [Keybinder.vcxproj](../../Keybinder.vcxproj), [verify_revision11_artifact.py](../../tools/verify_revision11_artifact.py), [package_revision11.ps1](../../tools/package_revision11.ps1) | PE32/x86, Ressource 300, Paketdateien und ASI-Prüfsummen |
+
+### Zugehörige finale Paketnachweise
+
+- [NLBinder.asi](../../dist/NLBinder-0.1.1-r11/NLBinder.asi)
+- [Vollständiges ZIP](../../dist/NLBinder-v0.1.1-KOBiRO-r11.zip)
+- [Gesamter TXT-Changelog](../../dist/NLBinder-0.1.1-r11/CHANGELOG-GESAMT.txt)
+- [SHA-256](../../dist/NLBinder-0.1.1-r11/SHA256SUMS.txt)
+- [Build- und Prüfangaben](../../dist/NLBinder-0.1.1-r11/BUILD-INFO.txt)
+- [PE-/Ressourcenprüfung](../../dist/NLBinder-0.1.1-r11/PRUEFBERICHT.json)
+- [Nativer Helfertest](../../dist/NLBinder-0.1.1-r11/RECONNECT-TEST.json)
+
+### Ausgeführte Prüfungen für r11
+
+Gesamttests und Win32-Release-Build endeten mit Exitcode 0.
+Erfolgreiche Prüfungen: ActionExecutor: 143, Reconnect: 116, SAMPBridge: 555, StartupStatsSync: 363, StatsDialogRPCAdapter: 727, JobSkillsImport: 17, CombatChatParser: 181, CombatChatBridge: 83, native_reconnect_helper: 83.
+
+Der Statistik-/Jobskill-Ablauf und seine bisherigen Identitäts- und
+Dialogpfade werden gemeinsam mit den neuen manuellen Abruf-Fällen geprüft.
+Die Ausgabe des finalen Builds heißt NLBinder.asi. Die geprüfte Datei
+umfasst 18.500.608 Bytes; SHA-256:
+`204fba919b3b211a884841a099463389c981cd626e6927a10eb2ac1cccc29b2e`.
+
+PE32/x86, Windows-Imports und Ressource 300 sind geprüft. Der
+eingebettete Reconnect-Helfer stimmt mit dem frisch geprüften Helfer
+überein. Die Helferprüfung nutzt harmlose Testprozesse; das echte Spiel
+und der installierte Launcher werden dabei nicht gestartet oder beendet.
+
+Der vollständige TXT-Changelog umfasst die Abschnitte 1–17 und wird
+zusammen mit der ASI ausgeliefert.
+Separater ASI-Stand und ZIP-Inhalt stimmen bytegleich überein. Ein
+unabhängiger Abgleich bestätigt alle Paketdateien, den vollständigen
+TXT-Changelog, 43 explizite leere Waffenordner und keine persönlichen PNGs.
+[Maschinenlesbare Ergebnisse](r11-validation.json) ergänzen die Paketnachweise.
+Ein echter Ingame-Test auf dem konkreten Server steht aus.
+
+## Historischer Prüfstand r10 – 29. Oktober 2026
 
 Der aktuelle Quellstand ist **NLBinder v.0.1.1 by KOBiRO, r10**. Die
 [Bedienung](../NLBinder-0.1.1-r10-DE.md) und der

@@ -1,7 +1,7 @@
 @echo off
 setlocal
 
-echo === Building Keybinder.asi (Release) ===
+echo === Building NLBinder.asi (Release) ===
 call "%~dp0build_release.bat"
 if %ERRORLEVEL% NEQ 0 (
     echo BUILD FAILED with error %ERRORLEVEL%

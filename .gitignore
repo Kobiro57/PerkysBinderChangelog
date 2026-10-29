@@ -57,6 +57,7 @@ imgui.ini
 
 # Reviewed binaries and bundled build dependencies.
 !dist/NLBinder-*/Keybinder.asi
+!dist/NLBinder-*/NLBinder.asi
 !include/plugin-sdk/shared/**/*.lib
 !include/plugin-sdk/shared/**/*.dll
 !include/plugin-sdk/tools/**/*.exe

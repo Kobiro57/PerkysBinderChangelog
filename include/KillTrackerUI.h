@@ -8,6 +8,7 @@
 #include <vector>
 #include <functional>
 #include "KillTrackerTypes.h"
+#include "MessageVariables.h"
 
 // Forward declarations
 class SAMPBridge;
@@ -26,7 +27,7 @@ struct KillTrackerSettings {
     bool sendServerKillMessage = false;
     bool sendServerDeathMessage = false;
     bool trackDamage = true;
-    std::string customLocalKillMessage = "{33CCFF}[NL-BINDER]{FFFFFF} Kill in {city}, {bezirk}. Meine Kills: {total_kills}";
+    std::string customLocalKillMessage = kDefaultLocalKillMessageTemplate;
     std::string customLocalDeathMessage = "{33CCFF}[NL-BINDER]{FFFFFF} Du bist gestorben. Deine aktuelle Tode: {total_deaths}";
     std::string customServerKillMessage = "Kill in {city}, {bezirk}. Meine Kills: {total_kills}";
     std::string customServerDeathMessage = "Tode: {total_deaths}";
