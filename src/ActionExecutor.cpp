@@ -189,6 +189,7 @@ ActionExecutor::ActionExecutor()
     , delayStartTick_(0)
     , delayDuration_(0)
     , updating_(false)
+    , manualInputBridge_(nullptr)
     , bridge_(nullptr)
     , zoneProvider_(nullptr)
     , gameDataProvider_(nullptr)
@@ -210,25 +211,37 @@ ActionExecutor::~ActionExecutor()
 
 void ActionExecutor::Execute(const std::vector<Action>& actions)
 {
+    Stop();
+
     if (actions.empty()) {
         if (OnComplete) OnComplete();
         return;
     }
 
-    Stop();
-
     queue_ = actions;
     currentIndex_ = 0;
-    state_ = State::Executing;
+    const bool requiresInput = std::any_of(queue_.begin(), queue_.end(), [](const Action& action) {
+        return (action.type == ActionType::Chat || action.type == ActionType::Command)
+            && action.data.find("{input}") != std::string::npos;
+    });
+    // Slash-command callbacks run before native chat closes. Open the new chat
+    // on Update, and obtain input before any part of this bind is executed.
+    state_ = requiresInput ? State::RequestingInput : State::Executing;
 }
 
 void ActionExecutor::Stop()
 {
+    SAMPBridgeInterface* inputBridge = manualInputBridge_;
+    manualInputBridge_ = nullptr;
     state_ = State::Idle;
     queue_.clear();
     currentIndex_ = 0;
     delayStartTick_ = 0;
     delayDuration_ = 0;
+    manualInput_.clear();
+    if (inputBridge != nullptr) {
+        inputBridge->CancelManualTextInput();
+    }
 }
 
 bool ActionExecutor::IsExecuting() const
@@ -245,6 +258,32 @@ void ActionExecutor::Update()
     updating_ = true;
 
     switch (state_) {
+    case State::RequestingInput:
+        if (bridge_ != nullptr && bridge_->BeginManualTextInput()) {
+            manualInputBridge_ = bridge_;
+            state_ = State::WaitingInput;
+        } else {
+            Stop();
+        }
+        break;
+
+    case State::WaitingInput: {
+        std::string value;
+        const ManualTextInputStatus result = manualInputBridge_ != nullptr
+            ? manualInputBridge_->PollManualTextInput(value)
+            : ManualTextInputStatus::Cancelled;
+        if (result == ManualTextInputStatus::Submitted) {
+            manualInputBridge_ = nullptr;
+            manualInput_ = std::move(value);
+            state_ = State::Executing;
+        } else if (result == ManualTextInputStatus::Cancelled) {
+            // A terminal poll result releases the bridge's request ownership.
+            manualInputBridge_ = nullptr;
+            Stop();
+        }
+        break;
+    }
+
     case State::Executing:
         ProcessCurrentAction();
         break;
@@ -267,6 +306,9 @@ void ActionExecutor::Update()
 
 void ActionExecutor::SetSAMPBridge(SAMPBridgeInterface* bridge)
 {
+    if (manualInputBridge_ != nullptr && manualInputBridge_ != bridge) {
+        Stop();
+    }
     bridge_ = bridge;
 }
 
@@ -333,6 +375,7 @@ void ActionExecutor::FinishExecution()
     currentIndex_ = 0;
     delayStartTick_ = 0;
     delayDuration_ = 0;
+    manualInput_.clear();
 
     if (OnComplete) {
         OnComplete();
@@ -347,7 +390,11 @@ void ActionExecutor::ExecuteChat(const std::string& data)
     }
 
     std::string expanded = ExpandPlaceholders(data);
-    bridge_->SendChat(expanded);
+    if (!expanded.empty() && expanded.front() == '/') {
+        bridge_->SendCommand(expanded);
+    } else {
+        bridge_->SendChat(expanded);
+    }
 }
 
 void ActionExecutor::ExecuteCommand(const std::string& data)
@@ -400,6 +447,14 @@ std::string ActionExecutor::ExpandPlaceholders(const std::string& text) const
             size_t end = text.find('}', i + 1);
             if (end != std::string::npos) {
                 std::string tag = text.substr(i + 1, end - i - 1);
+
+                if (tag == "input") {
+                    // Append verbatim: user input containing another {tag}
+                    // must never be interpreted as a second template.
+                    result += manualInput_;
+                    i = end;
+                    continue;
+                }
 
                 if (tag == "city") {
                     result += GetCurrentCity();

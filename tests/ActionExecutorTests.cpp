@@ -44,6 +44,7 @@ ExecutorTestState g_exec_state;
     if (name()) { \
         std::printf("[PASS] %s\n", #name); \
     } else { \
+        ++g_exec_state.failed; \
         std::printf("[FAIL] %s: %s\n", #name, g_exec_state.error.c_str()); \
     } \
 } while(0)
@@ -72,6 +73,39 @@ public:
 
     std::string GetCurrentZoneName() const override {
         return zoneName;
+    }
+};
+
+class ManualInputBridge : public MockBridge {
+public:
+    bool acceptsInput = true;
+    bool inputActive = false;
+    int prompts = 0;
+    int polls = 0;
+    int cancellations = 0;
+    ManualTextInputStatus nextStatus = ManualTextInputStatus::Waiting;
+    std::string inputValue;
+
+    bool BeginManualTextInput() override {
+        ++prompts;
+        if (!acceptsInput || inputActive) return false;
+        inputActive = true;
+        nextStatus = ManualTextInputStatus::Waiting;
+        inputValue.clear();
+        return true;
+    }
+
+    ManualTextInputStatus PollManualTextInput(std::string& value) override {
+        ++polls;
+        if (!inputActive) return ManualTextInputStatus::Cancelled;
+        if (nextStatus == ManualTextInputStatus::Submitted) value = inputValue;
+        if (nextStatus != ManualTextInputStatus::Waiting) inputActive = false;
+        return nextStatus;
+    }
+
+    void CancelManualTextInput() override {
+        ++cancellations;
+        inputActive = false;
     }
 };
 
@@ -651,6 +685,202 @@ bool TestPlaceholderExpansionCarNameOnFootFallback() {
     return true;
 }
 
+bool TestManualInputPausesWholeBindAndPromptsOnce() {
+    ManualInputBridge bridge;
+    ActionExecutor executor;
+    executor.SetSAMPBridge(&bridge);
+    bool completed = false;
+    executor.OnComplete = [&]() { completed = true; };
+    executor.Execute({Action(ActionType::Chat, "Before"),
+                      Action(ActionType::Chat, "/News In {input} befindet sich ein Blitzer. Bitte vorsichtig fahren.")});
+    EXEC_ASSERT_EQ(bridge.prompts, 0); // Never open a new chat inside the slash callback.
+    executor.Update();
+    EXEC_ASSERT_EQ(bridge.prompts, 1);
+    EXEC_ASSERT_TRUE(executor.IsExecuting());
+    executor.Update();
+    executor.Update();
+    EXEC_ASSERT_EQ(bridge.prompts, 1);
+    EXEC_ASSERT_TRUE(bridge.chatMessages.empty() && bridge.commands.empty());
+    EXEC_ASSERT_TRUE(!completed);
+    bridge.inputValue = "BSN";
+    bridge.nextStatus = ManualTextInputStatus::Submitted;
+    executor.Update();
+    EXEC_ASSERT_TRUE(bridge.chatMessages.empty() && bridge.commands.empty());
+    executor.Update();
+    EXEC_ASSERT_EQ(bridge.chatMessages.size(), size_t{1});
+    EXEC_ASSERT_EQ(bridge.chatMessages[0], "Before");
+    executor.Update();
+    EXEC_ASSERT_EQ(bridge.commands.size(), size_t{1});
+    EXEC_ASSERT_EQ(bridge.commands[0], "/News In BSN befindet sich ein Blitzer. Bitte vorsichtig fahren.");
+    EXEC_ASSERT_EQ(bridge.prompts, 1);
+    EXEC_ASSERT_EQ(bridge.cancellations, 0);
+    EXEC_ASSERT_TRUE(completed && !executor.IsExecuting());
+    return true;
+}
+
+bool TestManualInputIsLiteralAndSharedAcrossActions() {
+    ManualInputBridge bridge;
+    ActionExecutor executor;
+    MockZoneProvider zone;
+    zone.zoneName = "Market";
+    executor.SetSAMPBridge(&bridge);
+    executor.SetZoneProvider(&zone);
+    executor.Execute({Action(ActionType::Chat, "Ort {input}|{input}|{zone}"),
+                      Action(ActionType::Command, "/r {input}")});
+    executor.Update();
+    // Unicode and template-looking input must remain literal, including a slash.
+    bridge.inputValue = "B\xC3\xBCrger {zone} /f {input}";
+    bridge.nextStatus = ManualTextInputStatus::Submitted;
+    executor.Update();
+    executor.Update();
+    executor.Update();
+    EXEC_ASSERT_EQ(bridge.prompts, 1);
+    EXEC_ASSERT_EQ(bridge.chatMessages.size(), size_t{1});
+    EXEC_ASSERT_EQ(bridge.chatMessages[0], "Ort B\xC3\xBCrger {zone} /f {input}|B\xC3\xBCrger {zone} /f {input}|Market");
+    EXEC_ASSERT_EQ(bridge.commands.size(), size_t{1});
+    EXEC_ASSERT_EQ(bridge.commands[0], "/r B\xC3\xBCrger {zone} /f {input}");
+    EXEC_ASSERT_TRUE(!executor.IsExecuting());
+    return true;
+}
+
+bool TestManualInputCancelledDropsEntireBind() {
+    ManualInputBridge bridge;
+    ActionExecutor executor;
+    executor.SetSAMPBridge(&bridge);
+    bool completed = false;
+    executor.OnComplete = [&]() { completed = true; };
+    executor.Execute({Action(ActionType::Chat, "Must not be sent"), Action(ActionType::Chat, "{input}")});
+    executor.Update();
+    bridge.nextStatus = ManualTextInputStatus::Cancelled;
+    executor.Update();
+    executor.Update();
+    EXEC_ASSERT_TRUE(!executor.IsExecuting());
+    EXEC_ASSERT_TRUE(!completed);
+    EXEC_ASSERT_TRUE(bridge.chatMessages.empty() && bridge.commands.empty());
+    EXEC_ASSERT_EQ(bridge.cancellations, 0); // Terminal poll already released the request.
+    return true;
+}
+
+bool TestManualInputStopAndReplacementCancelOwnedRequest() {
+    ManualInputBridge bridge;
+    ActionExecutor executor;
+    executor.SetSAMPBridge(&bridge);
+    executor.Execute({Action(ActionType::Chat, "Old {input}")});
+    executor.Update();
+    executor.Stop();
+    EXEC_ASSERT_EQ(bridge.cancellations, 1);
+    EXEC_ASSERT_TRUE(!bridge.inputActive && !executor.IsExecuting());
+    executor.Update();
+    executor.Execute({Action(ActionType::Chat, "Replace {input}")});
+    executor.Update();
+    executor.Execute({Action(ActionType::Chat, "Replacement")});
+    EXEC_ASSERT_EQ(bridge.cancellations, 2);
+    executor.Update();
+    EXEC_ASSERT_EQ(bridge.chatMessages.size(), size_t{1});
+    EXEC_ASSERT_EQ(bridge.chatMessages[0], "Replacement");
+    executor.Execute({Action(ActionType::Chat, "Empty replacement {input}")});
+    executor.Update();
+    executor.Execute({});
+    EXEC_ASSERT_EQ(bridge.cancellations, 3);
+    EXEC_ASSERT_TRUE(!bridge.inputActive && !executor.IsExecuting());
+    executor.Execute({Action(ActionType::Chat, "Not opened {input}")});
+    executor.Stop();
+    EXEC_ASSERT_EQ(bridge.prompts, 3);
+    EXEC_ASSERT_EQ(bridge.cancellations, 3);
+    return true;
+}
+
+bool TestManualInputNextInvocationAsksForFreshValue() {
+    ManualInputBridge bridge;
+    ActionExecutor executor;
+    executor.SetSAMPBridge(&bridge);
+    const std::vector<Action> bind = {Action(ActionType::Chat, "Place {input}")};
+    executor.Execute(bind);
+    executor.Update();
+    bridge.inputValue = "BSN";
+    bridge.nextStatus = ManualTextInputStatus::Submitted;
+    executor.Update();
+    executor.Update();
+    executor.Execute(bind);
+    executor.Update();
+    EXEC_ASSERT_EQ(bridge.prompts, 2);
+    EXEC_ASSERT_EQ(bridge.chatMessages.size(), size_t{1});
+    bridge.inputValue = "LSPD";
+    bridge.nextStatus = ManualTextInputStatus::Submitted;
+    executor.Update();
+    executor.Update();
+    EXEC_ASSERT_EQ(bridge.chatMessages.size(), size_t{2});
+    EXEC_ASSERT_EQ(bridge.chatMessages[0], "Place BSN");
+    EXEC_ASSERT_EQ(bridge.chatMessages[1], "Place LSPD");
+    return true;
+}
+
+bool TestManualInputOnlyExactChatAndCommandTagsPrompt() {
+    ManualInputBridge bridge;
+    ActionExecutor executor;
+    executor.SetSAMPBridge(&bridge);
+    executor.Execute({Action(ActionType::Delay, "{input}"),
+                      Action(ActionType::KeyPress, "{input}"),
+                      Action(ActionType::Chat, "{INPUT}|{inputx}")});
+    executor.Update();
+    executor.Update();
+    executor.Update();
+    EXEC_ASSERT_EQ(bridge.prompts, 0);
+    EXEC_ASSERT_EQ(bridge.chatMessages.size(), size_t{1});
+    EXEC_ASSERT_EQ(bridge.chatMessages[0], "{INPUT}|{inputx}");
+    return true;
+}
+
+bool TestChatActionRoutesLeadingSlashToCommand() {
+    MockBridge bridge;
+    ActionExecutor executor;
+    executor.SetSAMPBridge(&bridge);
+    executor.Execute({Action(ActionType::Chat, "/r Test"),
+                      Action(ActionType::Chat, "Normal chat"),
+                      Action(ActionType::Command, "news Test")});
+    executor.Update();
+    executor.Update();
+    executor.Update();
+    EXEC_ASSERT_EQ(bridge.commands.size(), size_t{2});
+    EXEC_ASSERT_EQ(bridge.commands[0], "/r Test");
+    EXEC_ASSERT_EQ(bridge.commands[1], "news Test");
+    EXEC_ASSERT_EQ(bridge.chatMessages.size(), size_t{1});
+    EXEC_ASSERT_EQ(bridge.chatMessages[0], "Normal chat");
+    return true;
+}
+
+bool TestManualInputUnavailableNeverSendsPartialBind() {
+    ManualInputBridge bridge;
+    ActionExecutor executor;
+    executor.SetSAMPBridge(&bridge);
+    bridge.acceptsInput = false;
+    executor.Execute({Action(ActionType::Chat, "Before"), Action(ActionType::Command, "/r {input}")});
+    executor.Update();
+    EXEC_ASSERT_EQ(bridge.prompts, 1);
+    EXEC_ASSERT_EQ(bridge.cancellations, 0);
+    EXEC_ASSERT_TRUE(!executor.IsExecuting());
+    EXEC_ASSERT_TRUE(bridge.chatMessages.empty() && bridge.commands.empty());
+    ActionExecutor noBridge;
+    noBridge.Execute({Action(ActionType::Chat, "{input}")});
+    noBridge.Update();
+    EXEC_ASSERT_TRUE(!noBridge.IsExecuting());
+    return true;
+}
+
+bool TestManualInputChangingBridgeCancelsPreviousOwner() {
+    ManualInputBridge first;
+    ManualInputBridge second;
+    ActionExecutor executor;
+    executor.SetSAMPBridge(&first);
+    executor.Execute({Action(ActionType::Chat, "{input}")});
+    executor.Update();
+    executor.SetSAMPBridge(&second);
+    EXEC_ASSERT_EQ(first.cancellations, 1);
+    EXEC_ASSERT_TRUE(!first.inputActive && !executor.IsExecuting());
+    EXEC_ASSERT_EQ(second.prompts, 0);
+    return true;
+}
+
 } // namespace
 
 int RunActionExecutorTests() {
@@ -678,6 +908,15 @@ int RunActionExecutorTests() {
     EXEC_RUN_TEST(TestCommandPlaceholderExpansion);
     EXEC_RUN_TEST(TestPlaceholderExpansionCarName);
     EXEC_RUN_TEST(TestPlaceholderExpansionCarNameOnFootFallback);
+    EXEC_RUN_TEST(TestManualInputPausesWholeBindAndPromptsOnce);
+    EXEC_RUN_TEST(TestManualInputIsLiteralAndSharedAcrossActions);
+    EXEC_RUN_TEST(TestManualInputCancelledDropsEntireBind);
+    EXEC_RUN_TEST(TestManualInputStopAndReplacementCancelOwnedRequest);
+    EXEC_RUN_TEST(TestManualInputNextInvocationAsksForFreshValue);
+    EXEC_RUN_TEST(TestManualInputOnlyExactChatAndCommandTagsPrompt);
+    EXEC_RUN_TEST(TestChatActionRoutesLeadingSlashToCommand);
+    EXEC_RUN_TEST(TestManualInputUnavailableNeverSendsPartialBind);
+    EXEC_RUN_TEST(TestManualInputChangingBridgeCancelsPreviousOwner);
 
     std::printf("\n=== ActionExecutor Results: %d passed, %d failed ===\n\n",
                 g_exec_state.passed, g_exec_state.failed);

@@ -876,6 +876,14 @@ public:
 
             bridge_.Initialize();
             bridge_.Update();
+            if (const auto* netGame = bridge_.GetNetGame(); netGame
+                && netGame->m_nGameState == sampapi::v03dl::CNetGame::GAME_MODE_CONNECTED) {
+                const auto* localPlayer = bridge_.GetLocalPlayer();
+                if (localPlayer && localPlayer->m_bIsActive && !localPlayer->m_bIsWasted
+                    && !localPlayer->m_bDoesSpectating && localPlayer->m_pPed) {
+                    keybinder::NotifyReconnectGameEntered();
+                }
+            }
             speedometerManager_.Update();
             SyncOnlineRuntimeContext();
             inputManager_.Initialize();

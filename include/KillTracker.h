@@ -18,6 +18,9 @@ public:
     // Process a kill event (returns true if it was a new, valid kill)
     bool ProcessKillEvent(const KillEvent& event);
     bool CompleteServerStatsKill(const KillEvent& event);
+    // Enrich an already counted observation without incrementing totals or
+    // producing a second bind. Unknown weapons never create weapon statistics.
+    bool EnrichKillObservation(std::uint64_t observationId, const KillEvent& event);
 
     // Process a damage event (accumulates into weapon stats)
     void ProcessDamageEvent(const DamageEvent& event);

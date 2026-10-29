@@ -1462,17 +1462,17 @@ bool TestAutoEngineStartUsesDriverTransitionsAndHeldInput() {
     ASSERT_TRUE(keyStates.empty());
     driver = true; // no outgoing enter-vehicle RPC is needed
     bridge.Update();
-    now = 2499;
+    now = 1099;
     bridge.Update();
     ASSERT_TRUE(keyStates.empty());
-    now = 2500;
+    now = 1100;
     bridge.Update();
     ASSERT_EQ(keyStates.size(), std::size_t(1));
     ASSERT_TRUE(keyStates[0]);
-    now = 2600;
+    now = 1200;
     bridge.Update();
     ASSERT_EQ(keyStates.size(), std::size_t(1));
-    now = 2650;
+    now = 1250;
     bridge.Update();
     ASSERT_EQ(keyStates.size(), std::size_t(2));
     ASSERT_TRUE(!keyStates[1]);
@@ -1560,11 +1560,13 @@ bool TestAutoEngineStartWaitsForServerEngineStateAfterEntry() {
     engineOn = false; // server applies engine-off after seating
     now = 1600;
     bridge.Update();
+    ASSERT_EQ(keys.size(), std::size_t(1)); // no extra 1.5-second wait after engine-off
+    ASSERT_TRUE(keys.back());
     bridge.SetAutoEngineStart(true); // repeated settings application is harmless
     now = 2500;
     bridge.Update();
-    ASSERT_EQ(keys.size(), std::size_t(1));
-    ASSERT_TRUE(keys.back());
+    ASSERT_EQ(keys.size(), std::size_t(2));
+    ASSERT_TRUE(!keys.back());
     now = 2650;
     bridge.Update();
     ASSERT_EQ(keys.size(), std::size_t(2));
@@ -1805,11 +1807,9 @@ bool TestServerAutoEngineNoticeRejectsPlayerPrefixAndReleasesOwnHeldKey() {
     bridge.ProcessIncomingChatLineForTesting("Other_Player", kServerAutoEngineNotice);
     bridge.ProcessIncomingChatLineForTesting(nullptr, "INFO: Automatischer Motorstart: anderer Text");
     bridge.Update();
-    now = 2500;
-    bridge.Update();
     ASSERT_EQ(keys.size(), std::size_t(1));
     ASSERT_TRUE(keys.back());
-    now = 2520;
+    now = 1120;
     bridge.ProcessIncomingChatLineForTesting(nullptr, kServerAutoEngineNotice);
     bridge.Update();
     ASSERT_EQ(keys.size(), std::size_t(2));
@@ -1817,6 +1817,70 @@ bool TestServerAutoEngineNoticeRejectsPlayerPrefixAndReleasesOwnHeldKey() {
     now = 5000;
     bridge.Update();
     ASSERT_EQ(keys.size(), std::size_t(2));
+    bridge.Shutdown();
+    SAMPBridge::ResetTestingHooks();
+    return true;
+}
+
+bool TestFastAutoEngineAddonWinsAtTheLastGuardFrame() {
+    MockContext context;
+    auto hooks = context.BuildHooks();
+    unsigned long now = 1000;
+    std::vector<bool> keys;
+    hooks.getTickCount = [&]() { return now; };
+    hooks.getDriverVehicle = [](unsigned short& id, bool& running) { id = 61; running = false; return true; };
+    hooks.isEngineInputAvailable = []() { return true; };
+    hooks.setEngineStartKeyDown = [&](bool down) { keys.push_back(down); };
+    SAMPBridge::SetTestingHooks(hooks);
+    SAMPBridge bridge;
+    bridge.SetAutoEngineStart(true);
+    ASSERT_TRUE(bridge.Initialize());
+    bridge.Update();
+    now = 1099;
+    bridge.Update();
+    ASSERT_TRUE(keys.empty());
+    // The native engine flag can still be false after the server's addon
+    // already started it. Its notice must beat the fast-path motor toggle.
+    bridge.ProcessIncomingChatLineForTesting(nullptr, kServerAutoEngineNotice);
+    now = 1100;
+    bridge.Update();
+    ASSERT_TRUE(keys.empty());
+    now = 4000;
+    bridge.Update();
+    ASSERT_TRUE(keys.empty());
+    bridge.Shutdown();
+    SAMPBridge::ResetTestingHooks();
+    return true;
+}
+
+bool TestFastAutoEngineDoesNotToggleAnAddonRunningBeforeItsNotice() {
+    MockContext context;
+    auto hooks = context.BuildHooks();
+    unsigned long now = 1000;
+    bool engineOn = false;
+    std::vector<bool> keys;
+    hooks.getTickCount = [&]() { return now; };
+    hooks.getDriverVehicle = [&](unsigned short& id, bool& running) { id = 62; running = engineOn; return true; };
+    hooks.isEngineInputAvailable = []() { return true; };
+    hooks.setEngineStartKeyDown = [&](bool down) { keys.push_back(down); };
+    SAMPBridge::SetTestingHooks(hooks);
+    SAMPBridge bridge;
+    bridge.SetAutoEngineStart(true);
+    ASSERT_TRUE(bridge.Initialize());
+    bridge.Update();
+    engineOn = true;
+    now = 1100;
+    bridge.Update();
+    ASSERT_TRUE(keys.empty());
+    now = 1150;
+    bridge.ProcessIncomingChatLineForTesting(nullptr, kServerAutoEngineNotice);
+    bridge.Update();
+    engineOn = false; // later manual stop is deliberately left alone
+    now = 1200;
+    bridge.Update();
+    now = 5000;
+    bridge.Update();
+    ASSERT_TRUE(keys.empty());
     bridge.Shutdown();
     SAMPBridge::ResetTestingHooks();
     return true;
@@ -2057,10 +2121,157 @@ bool TestStatsStorageEmptyFile() {
     return true;
 }
 
+int g_manualInputHudFixCalls = 0;
+
+bool TestManualInputDefersHudScaleCommandUntilAnswered() {
+    CombatSoundContext context;
+    auto hooks = context.BuildCombatHooks();
+    hooks.isStartupStatsReady = []() { return false; };
+    hooks.isStartupJobSkillsReady = []() { return false; };
+    g_manualInputHudFixCalls = 0;
+    context.commandHandlers["hudscalefix"] = [](const char*) { ++g_manualInputHudFixCalls; };
+    SAMPBridge::SetTestingHooks(hooks);
+    SAMPBridge bridge;
+    bridge.SetAutoHudScaleFix(true);
+    ASSERT_TRUE(bridge.Initialize());
+    ASSERT_TRUE(bridge.BeginManualTextInput());
+    strcpy_s(context.input->m_szInput, "not yet confirmed");
+    for (int i = 0; i < 125; ++i) bridge.Update();
+    ASSERT_EQ(g_manualInputHudFixCalls, 0);
+    ASSERT_TRUE(bridge.IsChatOpen());
+    std::string answer;
+    ASSERT_EQ(bridge.PollManualTextInput(answer), keybinder::ManualTextInputStatus::Waiting);
+    ASSERT_EQ(std::string(context.input->m_szInput), "not yet confirmed");
+    ASSERT_TRUE(context.serverMessages.empty());
+    SAMPBridge::ProcessNativeChatInputForTesting(context.input);
+    ASSERT_EQ(bridge.PollManualTextInput(answer), keybinder::ManualTextInputStatus::Submitted);
+    ASSERT_EQ(answer, "not yet confirmed");
+    bridge.Update();
+    ASSERT_EQ(g_manualInputHudFixCalls, 1);
+    ASSERT_TRUE(context.serverMessages.empty());
+    bridge.Shutdown();
+    SAMPBridge::ResetTestingHooks();
+    return true;
+}
+
+bool TestManualInputCapturesNativeChatAndCancelsCleanly() {
+    using Status = keybinder::ManualTextInputStatus;
+    CombatSoundContext context;
+    auto hooks = context.BuildCombatHooks();
+    int opened = 0, closed = 0;
+    hooks.openChatInput = [&](sampapi::v03dl::CInput* input) { ++opened; input->m_bEnabled = TRUE; };
+    hooks.closeChatInput = [&](sampapi::v03dl::CInput* input) { ++closed; input->m_bEnabled = FALSE; };
+    SAMPBridge::SetTestingHooks(hooks);
+    SAMPBridge bridge;
+    ASSERT_TRUE(bridge.Initialize());
+    ASSERT_TRUE(bridge.BeginManualTextInput());
+    ASSERT_EQ(opened, 1);
+    ASSERT_TRUE(context.lastLocalMessage.find("Input-Text") != std::string::npos);
+    ASSERT_TRUE(context.serverMessages.empty());
+    ASSERT_TRUE(!bridge.BeginManualTextInput());
+    std::string answer;
+    ASSERT_EQ(bridge.PollManualTextInput(answer), Status::Waiting);
+    ASSERT_TRUE(bridge.InterceptManualTextInput("/q {city}"));
+    ASSERT_EQ(closed, 1);
+    ASSERT_TRUE(!bridge.IsChatOpen());
+    ASSERT_TRUE(context.serverMessages.empty());
+    ASSERT_EQ(bridge.PollManualTextInput(answer), Status::Submitted);
+    ASSERT_EQ(answer, "/q {city}");
+    ASSERT_EQ(bridge.PollManualTextInput(answer), Status::Cancelled);
+    ASSERT_TRUE(!bridge.InterceptManualTextInput("ordinary chat"));
+
+    ASSERT_TRUE(bridge.BeginManualTextInput());
+    context.input->m_bEnabled = FALSE; // Native Escape closes the chat.
+    ASSERT_EQ(bridge.PollManualTextInput(answer), Status::Cancelled);
+    ASSERT_TRUE(!bridge.InterceptManualTextInput("after escape"));
+    ASSERT_TRUE(context.serverMessages.empty());
+
+    ASSERT_TRUE(bridge.BeginManualTextInput());
+    context.netGame->m_nGameState = sampapi::v03dl::CNetGame::GAME_MODE_WAITCONNECT;
+    ASSERT_EQ(bridge.PollManualTextInput(answer), Status::Cancelled);
+    ASSERT_TRUE(!bridge.IsChatOpen());
+    ASSERT_TRUE(!bridge.BeginManualTextInput());
+    context.netGame->m_nGameState = sampapi::v03dl::CNetGame::GAME_MODE_CONNECTED;
+    context.dialog->m_bIsActive = TRUE;
+    ASSERT_TRUE(!bridge.BeginManualTextInput());
+    context.dialog->m_bIsActive = FALSE;
+
+    ASSERT_TRUE(bridge.BeginManualTextInput());
+    context.localPlayer->m_bIsWasted = TRUE;
+    ASSERT_EQ(bridge.PollManualTextInput(answer), Status::Cancelled);
+    context.localPlayer->m_bIsWasted = FALSE;
+    ASSERT_TRUE(bridge.BeginManualTextInput());
+    context.dialog->m_bIsActive = TRUE;
+    ASSERT_EQ(bridge.PollManualTextInput(answer), Status::Cancelled);
+    context.dialog->m_bIsActive = FALSE;
+    ASSERT_TRUE(context.serverMessages.empty());
+    ASSERT_TRUE(bridge.BeginManualTextInput());
+    bridge.Shutdown();
+    ASSERT_TRUE(!context.input->m_bEnabled);
+    ASSERT_EQ(bridge.PollManualTextInput(answer), Status::Cancelled);
+    SAMPBridge::ResetTestingHooks();
+    return true;
+}
+
+bool TestManualInputBindSendsOnlyExpandedNewsCommand() {
+    CombatSoundContext context;
+    auto hooks = context.BuildCombatHooks();
+    SAMPBridge::SetTestingHooks(hooks);
+    SAMPBridge bridge;
+    ASSERT_TRUE(bridge.Initialize());
+    keybinder::ActionExecutor executor;
+    executor.SetSAMPBridge(&bridge);
+    executor.Execute({keybinder::Action(keybinder::ActionType::Chat,
+        "/News In {input} befindet sich ein Blitzer. Bitte vorsichtig fahren.")});
+    for (int i = 0; i < 3; ++i) executor.Update();
+    ASSERT_TRUE(bridge.IsChatOpen());
+    ASSERT_TRUE(context.serverMessages.empty());
+    strcpy_s(context.input->m_szInput, "BSN");
+    SAMPBridge::ProcessNativeChatInputForTesting(context.input);
+    ASSERT_TRUE(!bridge.IsChatOpen());
+    ASSERT_EQ(context.input->m_szInput[0], '\0');
+    for (int i = 0; i < 3; ++i) executor.Update();
+    ASSERT_TRUE(!executor.IsExecuting());
+    ASSERT_EQ(context.serverMessages.size(), std::size_t(1));
+    ASSERT_EQ(context.serverMessages[0], "/News In BSN befindet sich ein Blitzer. Bitte vorsichtig fahren.");
+    executor.Execute({keybinder::Action(keybinder::ActionType::Chat, "In {input}")});
+    for (int i = 0; i < 3; ++i) executor.Update();
+    context.input->m_bEnabled = FALSE;
+    executor.Update();
+    ASSERT_TRUE(!executor.IsExecuting());
+    ASSERT_EQ(context.serverMessages.size(), std::size_t(1));
+
+    std::string answer;
+    ASSERT_TRUE(bridge.BeginManualTextInput());
+    const std::wstring umlaut = L"B\u00fcrgerhaus";
+    const int length = WideCharToMultiByte(CP_ACP, 0, umlaut.data(), static_cast<int>(umlaut.size()), nullptr, 0, nullptr, nullptr);
+    std::string gameText(static_cast<std::size_t>(length), '\0');
+    WideCharToMultiByte(CP_ACP, 0, umlaut.data(), static_cast<int>(umlaut.size()), gameText.data(), length, nullptr, nullptr);
+    ASSERT_TRUE(bridge.InterceptManualTextInput(gameText));
+    ASSERT_EQ(bridge.PollManualTextInput(answer), keybinder::ManualTextInputStatus::Submitted);
+    ASSERT_EQ(answer, std::string("B\xC3\xBCrgerhaus"));
+    ASSERT_EQ(context.serverMessages.size(), std::size_t(1));
+    ASSERT_TRUE(bridge.BeginManualTextInput());
+    strcpy_s(context.input->m_szInput, "/q");
+    SAMPBridge::ProcessNativeChatInputForTesting(context.input);
+    ASSERT_EQ(bridge.PollManualTextInput(answer), keybinder::ManualTextInputStatus::Submitted);
+    ASSERT_EQ(answer, "/q");
+    ASSERT_EQ(context.serverMessages.size(), std::size_t(1));
+    ASSERT_TRUE(bridge.BeginManualTextInput());
+    SAMPBridge::ProcessNativeChatInputForTesting(context.input); // Empty Enter cancels.
+    ASSERT_EQ(bridge.PollManualTextInput(answer), keybinder::ManualTextInputStatus::Cancelled);
+    bridge.Shutdown();
+    SAMPBridge::ResetTestingHooks();
+    return true;
+}
+
 } // namespace
 
 int RunSAMPBridgeTests() {
     std::printf("=== SAMPBridge Tests ===\n\n");
+    RUN_TEST(TestManualInputCapturesNativeChatAndCancelsCleanly);
+    RUN_TEST(TestManualInputBindSendsOnlyExpandedNewsCommand);
+    RUN_TEST(TestManualInputDefersHudScaleCommandUntilAnswered);
 
     RUN_TEST(TestInitFailureWithoutSampModule);
     RUN_TEST(TestInitSuccessAndDirectCommandRegistration);
@@ -2110,6 +2321,8 @@ int RunSAMPBridgeTests() {
     RUN_TEST(TestServerAutoEngineNoticeConsumesCurrentEntryBeforeLaggingEngineFlag);
     RUN_TEST(TestServerAutoEngineNoticeImmediatelyBeforeFirstDriverFrameAndNextEntry);
     RUN_TEST(TestServerAutoEngineNoticeRejectsPlayerPrefixAndReleasesOwnHeldKey);
+    RUN_TEST(TestFastAutoEngineAddonWinsAtTheLastGuardFrame);
+    RUN_TEST(TestFastAutoEngineDoesNotToggleAnAddonRunningBeforeItsNotice);
     RUN_TEST(TestServerAutoEngineNoticeIsBoundToVehicleGenerationAndFreshness);
     RUN_TEST(TestServerAutoEngineNoticeWhileOptionDisabledRemainsConsumedOnEnable);
     RUN_TEST(TestServerAutoEngineNoticeNewerThanCachedFrameClockIsNotDiscarded);

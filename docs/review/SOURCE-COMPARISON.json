@@ -2,9 +2,9 @@
   "original_archive": "NLBinder-master.zip",
   "original_sha256": "a328e78eea63420e9bfe9c084883100177fe0fd9c2d62c4fcaef38c0a44801e9",
   "original_archive_commit_comment": "92ce21971bee2d166d830e23ad20950f1dc98921",
-  "release_asi_sha256": "41a1e6d772f6c68b5541b4a7ea4ec1f997d5d97a55ffdbe446d0d89117734964",
+  "release_asi_sha256": "0607a1d303333bc09e625f76b296f781a0ca71d48c9a494a1aefc32e0c0ab3d0",
   "baseline_files": 2006,
-  "current_files": 5722,
+  "current_files": 5742,
   "changes": [
     {
       "path": ".gitattributes",
@@ -36,7 +36,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": "9ce784480d2be6bf031f91ae852de817748a194285ad98e3c53d0af54b612973",
-      "after_sha256": "81fcb32567f0f94f10eed18b54b6e81acf9a1b63dbb4d0342981b5977e3fb300"
+      "after_sha256": "07ad4dd53f6be31a87d4e5196407913ea22ca458480665ffec475fa44f7f8d93"
     },
     {
       "path": "README.md",
@@ -44,7 +44,71 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": "65b8ae3822ae33054ece73689612fc8afb758e59282f3ee1185ee5fce62e269d",
-      "after_sha256": "a2432c39500524626fcace59b8feed17913b90c9c139b294cf94f78350297232"
+      "after_sha256": "9860ced4fed1cafcd8e384b0e93d8689101508db94a49f5d80c64a02d755e72b"
+    },
+    {
+      "path": "dist/NLBinder-0.1.1-r10/BUILD-INFO.txt",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "512cb68fc7679aeb39a08410a42a9b6ba3b20705dff27eb026cc127eb9aa94ac"
+    },
+    {
+      "path": "dist/NLBinder-0.1.1-r10/JOB-HINWEISE.md",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "3f10215fe2080301060baadcbfdedcd4754cc31c0b33386c00e7405ec4fc2755"
+    },
+    {
+      "path": "dist/NLBinder-0.1.1-r10/Keybinder.asi",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "0607a1d303333bc09e625f76b296f781a0ca71d48c9a494a1aefc32e0c0ab3d0"
+    },
+    {
+      "path": "dist/NLBinder-0.1.1-r10/LIESMICH.md",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "f04f5bb2386180ab24104c001087857fe2af644e4ee9167db916beaca3b5c493"
+    },
+    {
+      "path": "dist/NLBinder-0.1.1-r10/NLBinder/Waffenicons/LIESMICH.md",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "839adf849f48623a1a302d1f819bd94b84c6e1f3371289a337eb6754c67d227b"
+    },
+    {
+      "path": "dist/NLBinder-0.1.1-r10/PRUEFBERICHT.json",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "f3cf307949afdbc314c9c9f5c56bc74e4d70ea04677b13f4bfb7a0b8c82275cc"
+    },
+    {
+      "path": "dist/NLBinder-0.1.1-r10/RECONNECT-TEST.json",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "98cc61e1e0f8285047ba22725b9460dbcc09dc59f15096b1a38aa22a7a36d9ce"
+    },
+    {
+      "path": "dist/NLBinder-0.1.1-r10/SHA256SUMS.txt",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "8dd07cefccb12bcbbc114798f5402506983dc1c97cdbc8cf0bad05270b4e8a23"
     },
     {
       "path": "dist/NLBinder-0.1.1-r3/BUILD-INFO.txt",
@@ -463,6 +527,14 @@
       "after_sha256": "c670c572e157fdfb1c14554310affd07012a40b05f271da9375ed1334b62b66a"
     },
     {
+      "path": "dist/NLBinder-v0.1.1-KOBiRO-r10.zip",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "05efb12474477e628cbefbf470dc5588a8a4c1b20231b82c4935c8874e8e5458"
+    },
+    {
       "path": "dist/NLBinder-v0.1.1-KOBiRO-r4.zip",
       "status": "added",
       "dependency": false,
@@ -525,6 +597,14 @@
       "line_endings_only": false,
       "before_sha256": null,
       "after_sha256": "1ba57db57eacf3e922ad46e9c1d171e08b2e4d8160076e6dd4aacd8dcf1f735e"
+    },
+    {
+      "path": "docs/NLBinder-0.1.1-r10-DE.md",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "f04f5bb2386180ab24104c001087857fe2af644e4ee9167db916beaca3b5c493"
     },
     {
       "path": "docs/NLBinder-0.1.1-r2-DE.md",
@@ -620,7 +700,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": null,
-      "after_sha256": "5301bb3b6d092fc30e28096999ddb46a83df4e832407fd60b316549d0fd5e5cc"
+      "after_sha256": "22775458602722b12edd0172fc8ae68ed6fb0956b257798782ff51ff0c457464"
     },
     {
       "path": "docs/review/DEPENDENCIES.md",
@@ -636,7 +716,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": null,
-      "after_sha256": "93a11b610cd7594801b64f9b47d4fe9dd3d621167dd2376c5ad6eeca4bfb301f"
+      "after_sha256": "ddd80efe80eadabdd8a6a56bdfca12e49b2bef14f862ec01d94688a5fbf43116"
     },
     {
       "path": "docs/review/PUBLICATION.json",
@@ -644,7 +724,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": null,
-      "after_sha256": "f5c341d17813de769287219a9abaec0af6ce3002939204726b613bf6fc5d62a1"
+      "after_sha256": "9d7cbe551d8fd839a091dbb45d010acb4a5ecc0d0cafbf4a27ea98c9d84483f5"
     },
     {
       "path": "docs/review/PUBLISHING-DE.md",
@@ -660,7 +740,15 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": null,
-      "after_sha256": "fe1b72e63ae2212d49a1557cb3413f302e5a38620f65ef432810db2331d19889"
+      "after_sha256": "7bede82f8690ff3b07ca3878fa2b48f3b70db16dec1ecc1d58e8b716f7aa3985"
+    },
+    {
+      "path": "docs/review/r10-validation.json",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "5768ed152d17c3a837b3a8d7a0b54d97fe0a4c243bcc4f7ccf13cfb807e42253"
     },
     {
       "path": "docs/review/r4-validation.json",
@@ -716,7 +804,15 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": "96fdab60ec5bc1f5f07ccbe6b6f77bfb4dd9a809f894a819d0768067227e04d6",
-      "after_sha256": "477f7bbed4ef3567b9eccf5eee623f1d20d6ac5aa3244f33b40c421848bbf4bf"
+      "after_sha256": "a9b02f576b15f3395bb6b8ed3dc23314d95199664fe126c71a1302cfaa051fe9"
+    },
+    {
+      "path": "include/CombatChatParser.h",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "775fcb0295af95df2ecb9b9e10604fd8b58494c1edb566ccd5385fe0eba18f09"
     },
     {
       "path": "include/DamageRPCAdapter.h",
@@ -820,7 +916,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": "02cd86662a338aac8b461add7cbb85605a03603da3f0b1eeb9a41da1b09eb0c9",
-      "after_sha256": "04a221f04bc0c12d88cfa9e3734e2e25e032ad12acca4b7efd0b18a6436fc8fd"
+      "after_sha256": "a0d31a8b4b7ef340eb308206268d530f782b24877373059b34a74feb0ac3a98d"
     },
     {
       "path": "include/KillTrackerTypes.h",
@@ -828,7 +924,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": "1bcc743839df8c7ee67cdb800a656f290fb70104e109a6f495dc13664a819314",
-      "after_sha256": "4827015fa83f9d9b8da5d2bfffcf337547d24cc660d08d276bcf6031a22531bf"
+      "after_sha256": "6f77b303a8b00769d672a9c6688b46d038d35c7e02c0a58e1f5286f8804f8d87"
     },
     {
       "path": "include/KillTrackerUI.h",
@@ -868,7 +964,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": null,
-      "after_sha256": "fa8e832ec7cce236a65f6432293f03ab2a4a9990b011dbdab2d4ce4767793d0c"
+      "after_sha256": "7ca0097c19ab7b61a2363be9b96235a0316cb7fed4dfeda107501b16718f35a7"
     },
     {
       "path": "include/MessageVariablesUI.h",
@@ -876,7 +972,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": null,
-      "after_sha256": "eda90890149e7f76517653352732ee6e84374fe2c3c2d396dd7404ad50a45c55"
+      "after_sha256": "bf7bbe2f344fd5f0bdfb160f27f62fb3fdea4af9277125bb10b2b77e5da7d07b"
     },
     {
       "path": "include/NativeHudEditor.h",
@@ -885,6 +981,14 @@
       "line_endings_only": false,
       "before_sha256": null,
       "after_sha256": "f4000c1b70a9b91c67a37b6be3386636999f2a14d9a4d91c5e10618d5a7b9a47"
+    },
+    {
+      "path": "include/NovaReconnectFlow.h",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "5dae037c53c38349c5c58aa9dd7963a6f7b5fbfcbd64f7b78baa2a4a980e28fa"
     },
     {
       "path": "include/OnlineDataManager.h",
@@ -1236,7 +1340,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": null,
-      "after_sha256": "f602cff2bdb71e60f5965e6c85f8244e7a805a28d07859fb1ab957e9a391c1b7"
+      "after_sha256": "eaceea6038b4de859ab392352117c066ae0452010da77f2e5a5f17c6c8e0398f"
     },
     {
       "path": "include/ResourceIds.h",
@@ -1252,7 +1356,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": "2299aeab1ef34de7189e4d246e7956bf5028638a7593289451304fb78e61f20e",
-      "after_sha256": "9fa55c0e25b82bcc784620631eaece8ffe75d04aa35a147219dffc6bfd44bcd5"
+      "after_sha256": "5ead4b2ca38c38dae625242fdfe216e7a07fe433e9c84d10fe27c3faf95d5bda"
     },
     {
       "path": "include/ServerStatsSnapshot.h",
@@ -29900,7 +30004,15 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": "b47ee107baccedbbfd5d655f1e23f508dca0e773a1a1008bfd1ba45bfb0e6af3",
-      "after_sha256": "7447671d1230e394f881f9ad4e40279ad58b9f72d6b8d17dcd9ec9702c76d74a"
+      "after_sha256": "dbe59bf394aa00d22deb99abb9524d0adfc13bb0b2d04b6878b2dec62c1d9f31"
+    },
+    {
+      "path": "src/CombatChatParser.cpp",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "78b5e741bc42065f736c4b39e518fb4dbf70599d46e942714ec00a263df79c46"
     },
     {
       "path": "src/DamageRPCAdapter.cpp",
@@ -29980,7 +30092,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": "9530aef290a4b974a19fd5f055cb1b8fe0e23b28e29831083aafab94496abbcf",
-      "after_sha256": "f745e787716d66db14ffd63e63e3c59fabc69742be8291e44dd930bba17e275e"
+      "after_sha256": "cf07674545a978336b1ec144e68b6280ca50c06f7244f25a6cc7be844e719bfb"
     },
     {
       "path": "src/KillTracker.cpp",
@@ -29988,7 +30100,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": "08b42123767b85d5cd33e443fbf7debd729bd8e3e6c806562f2af98b1918a195",
-      "after_sha256": "535d5ee46f18770d3649e20440d720bf3516f6076df6f7add6a87465367a9bf7"
+      "after_sha256": "b8ff65eaf373f80c617d07fc7a5e7057702a8b8b1d792de9a16eca2db0dd39a5"
     },
     {
       "path": "src/KillTrackerUI.cpp",
@@ -30012,7 +30124,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": "eb9f28895fa6b3b435282a6285e06fff924a252ab88bfe81ad90658a0a222781",
-      "after_sha256": "4246dc5c5ee3f15fab602c4b497c99ef6fba5fbb6eaef27091d686f247a2b210"
+      "after_sha256": "4c85a6dd3b6fe43a2bcabd0b9c065a8ce3010afa21a4be0fcd63773b8f93a86b"
     },
     {
       "path": "src/MainWindowUI.cpp",
@@ -30076,7 +30188,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": null,
-      "after_sha256": "bd973680a91fc1865c8191ba3ab7f934e059cbfde85567359786fc9125d7f489"
+      "after_sha256": "9ae60fd6ce5fc31702132d42f25674c94ef012257bc533f8112edc4e4dbdc120"
     },
     {
       "path": "src/SAMPBridge.cpp",
@@ -30084,7 +30196,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": "d955624a2eb4a14103100e09a90ddbb5a7525ae8cc082665deadd324c08feef2",
-      "after_sha256": "3c4d3c8ba3f49a873b13ac95c0b43f09361a16738a82a7cbb3df44de7e493a10"
+      "after_sha256": "02d3c7449dbd965c3ae6f1b8a7b42461ff06037ee9ab44df3248d4fb843c4a87"
     },
     {
       "path": "src/SettingsManager.cpp",
@@ -30140,7 +30252,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": null,
-      "after_sha256": "e67d7e3b14528cf36081666dbe4c11a3cecdab959f2fac2d09ea3e87c26098fa"
+      "after_sha256": "cc075a1b9ebc3c43f65ab27b56cbcbe500eac7925411c4bf2dd2cabf3dc1ee40"
     },
     {
       "path": "src/StatsDialogRPCAdapter.cpp",
@@ -30173,6 +30285,30 @@
       "line_endings_only": false,
       "before_sha256": null,
       "after_sha256": "f26c6a82977f1a5726e0126dbfca6c94aa2a0db8fc05a66b97380ff2f07effed"
+    },
+    {
+      "path": "tests/ActionExecutorTests.cpp",
+      "status": "modified",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": "744bb4dcfc4f3300be35bd52e051fb025d22e5da179d83737b289696591251d3",
+      "after_sha256": "e26c2d523d4e16b4edda4a10c137e7a8eb89826aa01381c6e73a1c1cf4018233"
+    },
+    {
+      "path": "tests/CombatChatBridgeTests.cpp",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "70d43e42713073f821c5adcce81e1e429a3621b172144be9677070e4df158952"
+    },
+    {
+      "path": "tests/CombatChatParserTests.cpp",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "f1adba336dfd2841bd3907fbd5340d2f257d221ced1d94f1b3dd0a76d8d92906"
     },
     {
       "path": "tests/ImGuiOverlayTests.cpp",
@@ -30260,7 +30396,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": "1fac4a1d9c947b62b3910b9b0cee32c0a604560edf7a048e03dca7f7a461d3f3",
-      "after_sha256": "2d1c5771ca9d014a999f105e815bc864278f4500426303fec07b46c4bea6d721"
+      "after_sha256": "2b7e446f88a96dea6b9b5601a73004878b1ecae2017b14862fc4eeb4dc0dd02a"
     },
     {
       "path": "tests/KillMessageTestTests.cpp",
@@ -30316,7 +30452,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": null,
-      "after_sha256": "28908522c5f506599f773ddbe1f42850b148ffce359ec6b4dbdb79d3d7304e8b"
+      "after_sha256": "b8b8346a80bac3974e4754324863a7c27e26fd9d767b03fd233e235fd78d6398"
     },
     {
       "path": "tests/ReconnectWorkerFixture.cpp",
@@ -30324,7 +30460,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": null,
-      "after_sha256": "04f4c4b35b62b01c5107cb0e2a62c801115a22751953fce933038f4e5d442944"
+      "after_sha256": "3355caec155e947aab92f8f0d02f25ae94bad69f125e2db07cb7ed5d8f75d1a8"
     },
     {
       "path": "tests/RegressionTests.cpp",
@@ -30340,7 +30476,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": "405f55f0f241ac1d1d6d96747dab9a64d929e8912581591b1aac84548d1a7473",
-      "after_sha256": "183ec5a859aec4c4c71ec528212d67976b5759075678c4276b33ed3a6e36f8d0"
+      "after_sha256": "3f46206f2cc4d0308c45cdbd714d36b34c4bcee01a7888b3e6b2ce76334d0dcf"
     },
     {
       "path": "tests/ServerStatsParserTests.cpp",
@@ -30420,7 +30556,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": null,
-      "after_sha256": "0cb641c389d6ad69b77b89f15ba3d7b6ac838365ea40d8a1b0b2ad35486d1d46"
+      "after_sha256": "63b0fb466d4a5747755284fcb85730fca43d63d4030a77a3218faf87f17d7359"
     },
     {
       "path": "tools/build_and_test.bat",
@@ -30444,7 +30580,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": null,
-      "after_sha256": "3bb945c2c2b75cc2f113b3d7fa21cd49536bb3a79cec936f87c79442068cad53"
+      "after_sha256": "2c71a2870d3297653ae9c38e6f2332b294e410424a29ea9efac25e9fc33be38d"
     },
     {
       "path": "tools/build_release.bat",
@@ -30453,6 +30589,14 @@
       "line_endings_only": false,
       "before_sha256": null,
       "after_sha256": "990bd975891d89fb52d9fe5fd6b3d5d601ce32807e25d19d510d8e997d2c7e44"
+    },
+    {
+      "path": "tools/package_revision10.ps1",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "aecc35333acd9f247b848da0ded7f146e193fbaad73992e8efdf9697da5bdaf6"
     },
     {
       "path": "tools/package_revision4.ps1",
@@ -30516,7 +30660,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": "e8c7a0a6dde01e6ef6d857c59ffe1fec9278f15863e1f5a690b65d87ad002e69",
-      "after_sha256": "2926606320ce54f9c89a4b4118855fc3b77a433e6c655cf8238b8ade269f7a85"
+      "after_sha256": "06081ab12232939f096b54d21ee737860f12ea0558cde2b8cc8d926853c718ff"
     },
     {
       "path": "tools/setup_msvc.bat",
@@ -30532,7 +30676,15 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": null,
-      "after_sha256": "fd01c06700b2a5d0f90e9478ece1ee5b4205647667c0e81263d63c18c5233863"
+      "after_sha256": "63a85529d7ecab6a9f32dbcbdc023b2b0e33d32a7f50a1e46e965e4e643c98c9"
+    },
+    {
+      "path": "tools/verify_revision10_artifact.py",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "c2bd62c8a49cadd757b43407b0537743d40ce5939966117491ac1dbac3de5989"
     },
     {
       "path": "tools/verify_revision4_artifact.py",
@@ -30586,6 +30738,7 @@
   "comparison_excludes_generated": [
     "docs/review/DATEIVERGLEICH.md",
     "docs/review/DIFFSTAT.txt",
+    "docs/review/REVISION10-DIFFSTAT.txt",
     "docs/review/REVISION4-DIFFSTAT.txt",
     "docs/review/REVISION5-DIFFSTAT.txt",
     "docs/review/REVISION6-DIFFSTAT.txt",
@@ -30594,6 +30747,7 @@
     "docs/review/REVISION9-DIFFSTAT.txt",
     "docs/review/SOURCE-COMPARISON.json",
     "docs/review/first-party-changes.patch",
+    "docs/review/revision10-changes.patch",
     "docs/review/revision4-changes.patch",
     "docs/review/revision5-changes.patch",
     "docs/review/revision6-changes.patch",
@@ -30601,7 +30755,7 @@
     "docs/review/revision8-changes.patch",
     "docs/review/revision9-changes.patch"
   ],
-  "release": "v0.1.1-r9",
+  "release": "v0.1.1-r10",
   "before_bytes": "Unmodified filtered original ZIP snapshot",
   "after_bytes": "Exact staged Git blobs after Git text/EOL normalization"
 }

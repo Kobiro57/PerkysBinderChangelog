@@ -31,6 +31,7 @@ inline constexpr MessageVariableInfo kTextBindingVariables[] = {
     {"total_kills", "Gespeicherter Killstand des Binders"},
     {"total_deaths", "Gespeicherter Todesstand des Binders"},
     {"kd", "K/D aus den gespeicherten Zählerständen"},
+    {"input", "Manuelle Textabfrage"},
 };
 
 } // namespace keybinder

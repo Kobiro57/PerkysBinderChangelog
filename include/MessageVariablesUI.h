@@ -20,6 +20,7 @@ inline void RenderMessageVariablesModal(const char* popupId, bool* open, bool co
     ImGui::PushStyleColor(ImGuiCol_PopupBg, theme.GetColor(ThemeColorRole::SurfaceElevated));
     if (ImGui::BeginPopupModal(popupId, open, ImGuiWindowFlags_NoSavedSettings)) {
         ImGui::TextWrapped("Variablen immer mit geschweiften Klammern schreiben, z.B. {total_kills}. Die Werte stammen direkt aus dem Spiel oder dem gespeicherten Binderstand.");
+        if (!combatMessage) ImGui::TextWrapped("{input} fragt beim Ausl\xC3\xB6sen des Binds einmal nach deinem Text. Enter best\xC3\xA4tigt, Esc bricht ab.");
         ImGui::Spacing();
         ImGui::BeginChild("VariableListScroll", ImVec2(0.0f, -50.0f * scale));
         UIComponents::BeginCard("VariableList", 0.0f, false);

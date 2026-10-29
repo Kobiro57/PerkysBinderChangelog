@@ -1,6 +1,6 @@
 # Änderungen am Perkys Binder – NLBinder v.0.1.1 by KOBiRO
 
-Stand: 25. Oktober 2026, Arbeitsfassung **r7 mit Waffenicons, Wanted-Dialogablauf und erweitertem Startabgleich**. Die Abschnitte 1 bis 12 dokumentieren die bisherigen Stände; Abschnitt 13 ergänzt r7.
+Stand: 29. Oktober 2026, Arbeitsfassung **r10 mit erweitertem Nova-Reconnect, schnellerem Motorstart und Server-Chat-Erkennung für Kills/Tode**. Die Abschnitte 1 bis 15 dokumentieren die früheren Stände; Abschnitt 16 ergänzt r10.
 
 Die Grundlage ist der vorhandene Perkys/NLBinder. Die Änderungen erweitern dessen bestehende Oberfläche und verwenden weiterhin die vorhandenen ImGui-Komponenten, Karten, Schalter und Darstellungseinstellungen. Der Ordner KOBiRO_ASI diente als funktionale Referenz für die Overlay-Erweiterung; seine Oberfläche wurde nicht als neue Binder-Oberfläche übernommen.
 
@@ -578,3 +578,73 @@ Die endgültigen Nachweise gehören zum
 [r9-Paket](../../dist/NLBinder-0.1.1-r9/BUILD-INFO.txt). Frühere Prüfstände und
 ursprüngliche Urheberhinweise bleiben erhalten. Ein echter Ingame-Test auf
 dem konkreten Server steht aus.
+
+
+## 16. Nachtrag r10 – 29. Oktober 2026
+
+### Nova-Reconnect mit geprüftem Spielstart
+
+Der Reconnect-Helfer führt nach dem beendeten Spiel den normalen Startweg
+im ausgewählten Nova Launcher aus. Die Startanforderung wird mit dem
+beobachteten Spielstart abgeglichen; ein einzelner erfolgreicher Aufruf des
+Launcher-Buttons gilt nicht allein als bestätigter Spielstart. Die
+Verarbeitung bleibt an den ausgewählten Launcher und den dazugehörigen
+Spielpfad gebunden. Der OpenMP-Weg bleibt enthalten.
+
+### Schneller Motorstart mit erhaltenem Addon-Schutz
+
+Der Binder reagiert beim Erreichen des Fahrersitzes schneller. Es bleibt
+bei einem Startversuch pro Einstieg. Ein bereits laufender Motor oder die
+bestätigte Meldung des serverseitigen Motorstart-Addons darf keinen zweiten
+Tastendruck auslösen. Manuelles Ausschalten nach dem Einstieg löst keinen
+weiteren Binder-Start aus.
+
+### Eigene Kills und Tode aus Servermeldungen
+
+Die bestätigten persönlichen Servermeldungen und die öffentlichen
+GANGWAR-, REVIERKAMPF-, STREETWAR- und DEATHZONE-Formate ergänzen die
+bestehende Ereigniserkennung. Öffentliche Meldungen werden an den Rollen
+im Text erkannt: Der eigene Name als Täter bestätigt einen eigenen Kill;
+der eigene Name als Opfer in der gesuchten-Verbrecher-Meldung bestätigt
+einen eigenen Tod. Ein bloßes Vorkommen des Namens irgendwo im Text reicht
+nicht aus. Normale Spielernachrichten sind keine Serverbestätigung.
+
+Mehrere Hinweise auf dasselbe Ereignis werden mit den vorhandenen
+Killfeed-, Todes-RPC- und Statistikdaten abgeglichen. Die bestehenden
+Einstellungen für Kill-/Todeszählung und Killtext-Ausgabe bleiben wirksam.
+Die Friedhofsmeldung dient ebenfalls als eigene Todesbestätigung.
+Die Gefängnis-gesprengt-Zeile nennt keinen Täter und bestätigt deshalb nur
+einen bereits zugeordneten eigenen Kill; sie vergibt alleine keinen Kill.
+
+Quellen: [ReconnectManager.cpp](../../src/ReconnectManager.cpp),
+[ReconnectHelper.cpp](../../tools/ReconnectHelper.cpp),
+[SAMPBridge.cpp](../../src/SAMPBridge.cpp),
+[CombatChatParser.cpp](../../src/CombatChatParser.cpp).
+Tests: [ReconnectManagerTests.cpp](../../tests/ReconnectManagerTests.cpp),
+[test_reconnect_worker.py](../../tools/test_reconnect_worker.py),
+[SAMPBridgeTests.cpp](../../tests/SAMPBridgeTests.cpp),
+[CombatChatParserTests.cpp](../../tests/CombatChatParserTests.cpp),
+[CombatChatBridgeTests.cpp](../../tests/CombatChatBridgeTests.cpp).
+
+### Manuelle Textvariable für Binds
+
+`{input}` öffnet beim Auslösen eines Tasten- oder Befehlsbinds den normalen
+Ingame-Chat mit einer lokalen Eingabeaufforderung. Enter übernimmt den Text
+für alle `{input}`-Stellen dieses Aufrufs; Esc bricht ab. Die Ausführung
+wartet vor der ersten Aktion. Die Antwort wird lokal abgefangen, bevor
+SA-MP sie als Nachricht oder Befehl weitergeben kann. Beim nächsten Aufruf
+wird erneut gefragt. Nachrichten mit führendem `/` werden als Befehl
+gesendet, damit beispielsweise `/News In {input} befindet sich ein Blitzer.`
+nach Eingabe von `BSN` direkt den gewünschten News-Befehl ausführt.
+
+Die Variable steht nur in der Hilfe für Textbindungen direkt unter `{kd}`.
+Quellen: [ActionExecutor.cpp](../../src/ActionExecutor.cpp),
+[MessageVariables.h](../../include/MessageVariables.h),
+[SAMPBridge.cpp](../../src/SAMPBridge.cpp).
+Tests: [ActionExecutorTests.cpp](../../tests/ActionExecutorTests.cpp),
+[SAMPBridgeTests.cpp](../../tests/SAMPBridgeTests.cpp).
+
+Die endgültigen Nachweise gehören zum
+[r10-Paket](../../dist/NLBinder-0.1.1-r10/BUILD-INFO.txt). Frühere Prüfstände
+und ursprüngliche Urheberhinweise bleiben erhalten. Ein echter Ingame-Test
+mit dem konkreten Server und dem installierten Nova Launcher steht aus.

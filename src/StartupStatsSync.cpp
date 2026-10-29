@@ -204,8 +204,11 @@ void SAMPBridge::CompleteStartupStats(unsigned long now) {
     const bool changedCounters = !previous.HasCounters() || previous.kills != synchronizedStats_.kills
         || previous.deaths != synchronizedStats_.deaths;
     if (firstCompletion || changedCounters) {
-        tracker->ImportKillCount(*synchronizedStats_.kills);
-        tracker->ImportDeathCount(*synchronizedStats_.deaths);
+        const auto wallNow = std::time(nullptr);
+        if (!serverCombatBaselineEstablished_ || *synchronizedStats_.kills >= tracker->GetTotalKills()
+            || wallNow - lastLocalKillTime_ > 5) tracker->ImportKillCount(*synchronizedStats_.kills);
+        if (!serverCombatBaselineEstablished_ || *synchronizedStats_.deaths >= tracker->GetTotalDeaths()
+            || wallNow - lastLocalDeathTime_ > 5) tracker->ImportDeathCount(*synchronizedStats_.deaths);
     }
     lastServerKillTotal_ = *synchronizedStats_.kills;
     lastServerDeathTotal_ = *synchronizedStats_.deaths;

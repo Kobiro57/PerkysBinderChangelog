@@ -8,11 +8,23 @@
 
 namespace keybinder {
 
+enum class ManualTextInputStatus {
+    Cancelled,
+    Waiting,
+    Submitted
+};
+
 class SAMPBridgeInterface {
 public:
     virtual ~SAMPBridgeInterface() = default;
     virtual bool SendChat(const std::string& text) const = 0;
     virtual bool SendCommand(const std::string& cmd) const = 0;
+    virtual bool BeginManualTextInput() { return false; }
+    virtual ManualTextInputStatus PollManualTextInput(std::string& value) {
+        (void)value;
+        return ManualTextInputStatus::Cancelled;
+    }
+    virtual void CancelManualTextInput() {}
 };
 
 class ZoneProvider {
@@ -71,7 +83,9 @@ private:
     enum class State {
         Idle,
         Executing,
-        WaitingDelay
+        WaitingDelay,
+        RequestingInput,
+        WaitingInput
     };
 
     void ProcessCurrentAction();
@@ -102,6 +116,8 @@ private:
     unsigned long delayStartTick_;
     unsigned long delayDuration_;
     bool updating_;
+    std::string manualInput_;
+    SAMPBridgeInterface* manualInputBridge_;
 
     SAMPBridgeInterface* bridge_;
     ZoneProvider* zoneProvider_;

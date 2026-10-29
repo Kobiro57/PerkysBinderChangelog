@@ -1,5 +1,6 @@
 #include "../include/KillTracker.h"
 #include <cmath>
+#include "../include/WeaponNames.h"
 
 namespace killtracker {
 
@@ -26,7 +27,7 @@ bool KillTracker::ProcessKillEvent(const KillEvent& event) {
         return false;
     }
 
-    if (!event.isServerStatsOnly && IsDuplicateKill(event)) {
+    if (!event.isServerStatsOnly && !event.isServerChatOnly && IsDuplicateKill(event)) {
         return false;
     }
 
@@ -51,7 +52,7 @@ bool KillTracker::ProcessKillEvent(const KillEvent& event) {
     recentKills_.push_back(killWithDamage);
     TrimRecentKills();
 
-    if (event.isServerStatsOnly) {
+    if (event.isServerStatsOnly || event.isServerChatOnly || !IsValidWeaponId(event.weaponId)) {
         ++kills_;
     } else {
         IncrementWeaponKill(event.weaponId);
@@ -65,9 +66,36 @@ bool KillTracker::CompleteServerStatsKill(const KillEvent& event) {
     for (auto it = recentKills_.rbegin(); it != recentKills_.rend(); ++it) {
         if (!it->isServerStatsOnly || std::abs(std::difftime(event.timestamp, it->timestamp)) > DUPLICATE_TIME_WINDOW_SECONDS) continue;
         *it = event;
-        auto& stats = weaponStats_[event.weaponId];
-        stats.weaponId = event.weaponId;
-        ++stats.killCount;
+        if (IsValidWeaponId(event.weaponId)) {
+            auto& stats = weaponStats_[event.weaponId];
+            stats.weaponId = event.weaponId;
+            ++stats.killCount;
+        }
+        return true;
+    }
+    return false;
+}
+
+bool KillTracker::EnrichKillObservation(std::uint64_t observationId, const KillEvent& event) {
+    if (!observationId) return false;
+    for (auto it = recentKills_.rbegin(); it != recentKills_.rend(); ++it) {
+        if (it->observationId != observationId) continue;
+        const bool hadWeapon = !it->isServerStatsOnly && !it->isServerChatOnly && IsValidWeaponId(it->weaponId);
+        if (!it->victimKnown && event.victimKnown && !event.victim.empty()) {
+            std::unique_lock<std::shared_mutex> lock(victimDamageMutex_);
+            auto damage = victimDamage_.find(event.victim);
+            if (damage != victimDamage_.end()) { it->damageDealt = damage->second.totalDamage; victimDamage_.erase(damage); }
+        }
+        if (event.victimKnown && !event.victim.empty()) { it->victim = event.victim; it->victimKnown = true; }
+        if (!event.killer.empty()) it->killer = event.killer;
+        if (event.victimId >= 0) it->victimId = event.victimId;
+        if (!event.isServerStatsOnly && !event.isServerChatOnly && IsValidWeaponId(event.weaponId)) {
+            if (!hadWeapon) {
+                auto& stats = weaponStats_[event.weaponId]; stats.weaponId = event.weaponId; ++stats.killCount;
+            }
+            it->weaponId = event.weaponId;
+            it->isServerStatsOnly = it->isServerChatOnly = false;
+        }
         return true;
     }
     return false;
@@ -124,7 +152,8 @@ bool KillTracker::IsEnabled() const {
 
 bool KillTracker::IsDuplicateKill(const KillEvent& event) const {
     for (const auto& kill : recentKills_) {
-        if (kill.victim == event.victim &&
+        if ((kill.victimId < 0 || event.victimId < 0 || kill.victimId == event.victimId) &&
+            kill.victim == event.victim &&
             kill.weaponId == event.weaponId &&
             std::difftime(event.timestamp, kill.timestamp) < DUPLICATE_TIME_WINDOW_SECONDS) {
             return true;

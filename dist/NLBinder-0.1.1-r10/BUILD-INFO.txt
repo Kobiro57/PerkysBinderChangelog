@@ -1,0 +1,36 @@
+NLBinder v.0.1.1 by KOBiRO – Überarbeitung 10
+Erstellt: 29.10.2026 22:40:31 (Europe/Berlin)
+Datei: Keybinder.asi
+Format: Win32 Release, PE32/x86 DLL
+Größe: 18493952 Bytes
+SHA256: 0607a1d303333bc09e625f76b296f781a0ca71d48c9a494a1aefc32e0c0ab3d0
+Eingebetteter Reconnect-Helfer: Ressource 300, 127488 Bytes
+Helfer-SHA256: d7877191eec1b17af089b12ee3a34a0ca89e9ac027719e379488c5a84a75449e
+
+Verifikation:
+- Vollständige automatisierte Tests: Exitcode 0
+- Release-Build: Exitcode 0
+- ASI-Format, Windows-Imports und eingebetteter Helfer geprüft
+- Eingebetteter Reconnect-Helfer stimmt mit dem geprüften Helfer überein
+- Nativer Reconnect-Helfer: 83 Prüfungen, 0 Fehler
+- Dafür ausschließlich harmlose Testprozesse verwendet
+- Kein echtes Spiel und kein installierter Launcher gestartet oder beendet
+- Kein Ingame-Test durchgeführt
+
+Neue Änderungen:
+- Nova-Reconnect startet das Spiel über den Launcher und prüft den Startfortschritt
+- Wiederholte Startversuche im zugehörigen Launcher bis zum erkannten Spielstart
+- Schnellerer einmaliger Motorstart beim Einsteigen mit Schutz für das Server-Addon
+- Kill-/Todeserkennung anhand der bestätigten Server-Chatmeldungen
+- Eigener Spielername wird an der jeweiligen Täter-/Opferposition abgeglichen
+- Gemeinsame Zählung mit bestehenden Killfeed-, RPC- und Statistikereignissen
+- Manuelle Variable {input} mit nativer Texteingabe, Enter zum Senden und Esc zum Abbrechen
+
+Die früheren Job-, Skilltree-, Fraktions-, Radar-, Tacho- und Reconnect-
+Anpassungen sind enthalten. Die ursprüngliche Oberfläche bleibt Grundlage.
+Der Reconnect-Helfer ist in der ASI enthalten.
+
+Grenzen: Die Synchronisation wartet auf eine echte Serverantwort. Mehrere
+Schadensereignisse zwischen Messungen erscheinen als gemessener Gesamtverlust.
+Ein Live-Test mit dem konkreten Server und Launcher steht weiterhin aus.
+Installation und weitere Hinweise stehen in LIESMICH.md.

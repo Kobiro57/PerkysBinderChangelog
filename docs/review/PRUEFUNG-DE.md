@@ -1,6 +1,210 @@
 # Hinweise zur Prüfung durch die Projektleitung
 
-## Aktueller Stand r9 – 27. Oktober 2026
+## Aktueller Stand r10 – 29. Oktober 2026
+
+Der aktuelle Quellstand ist **NLBinder v.0.1.1 by KOBiRO, r10**. Die
+[Bedienung](../NLBinder-0.1.1-r10-DE.md) und der
+[r10-Nachtrag](CHANGELOG-DE.md#16-nachtrag-r10--29-oktober-2026) beschreiben
+den Nova-Spielstart, den schnelleren Motorstart und die ergänzte
+Server-Chat-Erkennung sowie die neue manuelle Variable `{input}`. Frühere Prüfstände bleiben nachfolgend ihren
+jeweiligen ASI-Dateien zugeordnet.
+
+### Verhalten und prüfbarer Umfang
+
+Der Nova-Reconnect nutzt den normalen Startweg im ausgewählten Launcher und
+beobachtet den zugehörigen Spielstart. Der Helfer wartet zuvor auf das
+Ende des bisherigen Spielprozesses. Die bestehende Bereitschaftsmeldung
+zwischen Binder und Helfer verhindert ein Beenden ohne vorbereiteten
+Neustart. Verifikation startet ausschließlich harmlose Testprogramme;
+der installierte Launcher und das echte Spiel werden dafür nicht geöffnet
+oder beendet.
+
+Der automatische Motorstart reagiert schneller auf einen neuen Einstieg
+als Fahrer. Die vorhandene Zuordnung der Server-Addon-Meldung zum aktuellen
+Fahrzeug und Einstieg bleibt erhalten. Laufende Motoren, bereits verbrauchte
+Einstiege und blockierte Benutzereingaben dürfen keine zusätzlichen
+Motor-Tastendrücke verursachen.
+
+Bei Kill-/Todesmeldungen ist der angemeldete eigene Spielername maßgeblich.
+Öffentliche Meldungen werden anhand ihrer Täter-/Opferposition ausgewertet.
+Persönliche Servermeldungen mit „Du“ beziehen sich auf den Empfänger.
+Chatzeilen mit einem Spielerpräfix dürfen diese Erkennung nicht auslösen.
+Verschiedene Servertexte, Todes-RPC, Killfeed und Statistikabgleich müssen
+bei demselben Ereignis gemeinsam gezählt werden. Die bestehenden Ein-/Aus-
+Schalter und die Killtext-Einstellungen bleiben wirksam.
+
+### Konkrete Start- und Erkennungsregeln
+
+Wenn das installierte Nova-Programm laut seinem Manifest Administratorrechte
+benötigt und der laufende Binder nicht bereits mit diesen Rechten arbeitet,
+wird der Helfer über die normale Windows-Freigabe vorbereitet, bevor das
+Spiel beendet wird. Abgelehnte Freigabe, fehlende Bereitschaft oder ein
+fehlgeschlagenes Speichern lassen den alten Spielprozess geöffnet. Ein
+eigenes Abbruchereignis verhindert einen späteren Neustart auch dann, wenn
+der vorbereitete Helfer wegen unterschiedlicher Rechte nicht direkt
+beendet werden kann. Windows-Freigaben werden nicht automatisch bestätigt.
+
+Der Nova-Helfer sucht nur Fenster des eingestellten Launcher-Programms.
+Er aktiviert den eindeutig zugeordneten, aktiven Button „Spiel starten“ über
+die Windows-Zugänglichkeitsaktion (Invoke oder normale Standardaktion).
+Er klickt nicht anhand von Bildschirmkoordinaten. Die Beschriftungen
+„Wird gestartet…“ und „GTA beenden“ sind keine Startschaltflächen. Ein
+vorhandener Launcher wird wiederverwendet. Solange noch kein zugehöriger
+Spielprozess vorhanden ist, sind weitere Startanforderungen im Abstand von
+2,5 Sekunden möglich; das Gesamtfenster beträgt regulär 90 Sekunden.
+
+Die Prüfung des neuen Spielprozesses nutzt den vollständigen Pfad zum zuvor
+verwendeten Spielprogramm. Ein gleichnamiges Programm aus einem anderen
+Ordner bestätigt keinen Reconnect. Sobald der passende Prozess läuft,
+unterbleiben weitere Startaktionen. Erfolg verlangt zusätzlich eine
+Bestätigung des neu geladenen Binders: Verbindung hergestellt, eigener
+Spieler aktiv und vorhanden, weder Wasted noch Spectating. Die Bestätigung
+ist an den vollständigen Spielpfad und die neue Prozess-ID gebunden. Ein
+bereits vorhandener weiterer Spielprozess desselben Pfads verhindert schon
+die Bereitschaft des Helfers, sodass der alte Client geöffnet bleibt.
+
+Die Wartezeit vor einem Binder-Start bei gestopptem Motor beträgt 100 ms
+statt zuvor 1.500 ms. Wenn der native Motorzustand beim Einsteigen zunächst
+„an“ meldet, bleibt eine Bestätigung über bis zu 1.500 ms erhalten, um einen
+kurzen GTA-Übergang nicht als endgültigen Motorstart zu behandeln. Eine
+bereits eingetroffene Server-Addon-Meldung wird fahrzeug- und einstiegsbezogen
+zugeordnet. Der Binder kann einen noch nicht empfangenen Serverzustand
+nicht vorwegnehmen; trifft die Addon-Bestätigung erst nach dem eigenen
+Tastendruck ein und war der native Zustand zugleich veraltet, bleibt eine
+zeitliche Grenze dieser Beobachtung. Die Tests prüfen die bestätigten
+Meldungs- und Zustandsfolgen; sie ersetzen keinen Test mit Serverlatenz im
+laufenden Spiel.
+
+Die Gefängnis-gesprengt-Zeile nennt nur die Person, die nicht inhaftiert
+werden konnte. Sie enthält keinen Täter. Sie wird deshalb nur einem bereits
+bekannten eigenen Kill dieser Person zugeordnet und schreibt für sich
+alleine keinen fremden Kill gut. Bei den ausdrücklich adressierten
+„Du hast …“-Meldungen ist der eigene Spieler der Empfänger. Die öffentlichen
+Formate verlangen dagegen die vollständige Übereinstimmung des eigenen
+Namens in der jeweiligen Täter- oder Opferrolle.
+
+Bekannte Opfernamen werden innerhalb des vorhandenen Fünf-Sekunden-
+Abgleichs mit Chat, Killfeed und Todes-RPC zusammengeführt. Verschiedene
+Opfer bleiben getrennt. Bei nativen Meldungen haben zusätzlich vorhandene
+Spieler-IDs und die native Waffenidentität Vorrang: Unterschiedliche
+bekannte Opfer-IDs oder widersprechende bekannte native Waffen dürfen
+nicht wegen eines gleichen Namens als dasselbe Ereignis verschwinden.
+Ein technischer Ersatzname „Player_ID“ bei noch nicht aufgelöstem Spielernamen
+gilt nicht als bestätigter Opfername; der spätere richtige Name ergänzt
+dieselbe Beobachtung. Bei persönlichen Hinweisen ohne Opfername werden
+unterschiedliche Textfamilien innerhalb von 1,2 Sekunden einem noch nicht
+mit dieser Familie belegten Ereignis zugeordnet. Eine weitere Meldung
+derselben persönlichen Textfamilie zählt als neues Ereignis, auch wenn
+mehrere solche Meldungen im selben Frame eintreffen. Ohne Opfer oder
+serverseitige Ereignis-ID ist dieser Abgleich zeitlich und anhand der
+Meldungsfamilie begrenzt. Später bekannte Namen und Waffendaten ergänzen die
+vorhandene Beobachtung, ohne noch einmal einen Bind zu senden. Unbekannte
+Waffen legen keinen Statistik-Eintrag mit Waffen-ID -1 an.
+
+Die bestehenden Gesamtzähler werden weiterhin mit den autoritativen
+Server-Statistiken abgeglichen. Wenn der Server für seine Gesamtstatistik
+andere Regeln verwendet, etwa Teamkills nicht im Lebenszeitwert mitzählt,
+bleibt dessen später gelesener Gesamtwert maßgeblich. Die Sitzungszähler
+halten die im aktuellen Lauf erkannten Ereignisse fest. Ein kurzzeitig
+älterer Statistikstand überschreibt einen gerade erkannten Kill oder Tod
+nicht unmittelbar.
+
+### Unterstützte Servertexte und Zuordnung
+
+`EIGENER_NAME` steht für den dynamisch gelesenen eigenen Spielernamen;
+`OPFER` und sonstige Platzhalter sind variable Serverwerte.
+
+| Textform | Zuordnung |
+| --- | --- |
+| Du hast ein Verbrechen begangen ( Vorsätzlicher Mord ). Reporter: Anonym | eigener Kill |
+| Du hast einen Spieler getötet. | eigener Kill |
+| GANGWAR (...): Du hast einen Feind ausgeschaltet! | eigener Kill |
+| << EIGENER_NAME hat den gesuchten Verbrecher OPFER getötet. >> | eigener Kill |
+| << TÄTER hat den gesuchten Verbrecher EIGENER_NAME getötet. >> | eigener Tod |
+| << OPFER konnte nicht inhaftiert werden, da das Gefängnis gesprengt wurde. >> | Ergänzung zu bereits bekanntem eigenem Kill dieses Opfers |
+| REVIERKAMPF: EIGENER_NAME hat OPFER getötet. Neuer Spielstand: Angreifer: ZAHL - Verteidiger: ZAHL | eigener Kill |
+| REVIERKAMPF: EIGENER_NAME hat OPFER getötet (Teamkill). Neuer Spielstand: Angreifer: ZAHL - Verteidiger: ZAHL | eigener Kill |
+| REVIERKAMPF: EIGENER_NAME hat OPFER getötet. | eigener Kill |
+| REVIERKAMPF: EIGENER_NAME hat einen Teamkill begangen. | eigener Kill |
+| STREETWAR: EIGENER_NAME hat OPFER (...) getötet. Aktuelle Kills: ZAHL | eigener Kill |
+| DEATHZONE: EIGENER_NAME hat OPFER mit einer WAFFE getötet. | eigener Kill |
+| Willkommen auf dem Friedhof. Hier verweilst du, bis du entweder reanimiert wirst oder deine Zeit abläuft. | eigener Tod |
+
+### Manuelle Texteingabe für Binds
+
+`{input}` wird vor der ersten Aktion eines Tasten- oder Befehlsbinds einmal
+abgefragt. Der native Chat öffnet erst im nächsten Frame, nachdem die
+ursprüngliche Slash-Eingabe abgeschlossen ist. Der lokale Hinweis lautet
+**Gib hier deinen Input-Text ein:**. Die nächste native Eingabe wird vor
+der Slash-Befehlsverarbeitung abgefangen und in UTF-8 übernommen. Die
+Antwort selbst wird nicht an den Server weitergegeben. Erst ein späterer
+Frame führt die fertig ersetzten Aktionen aus. Mehrere Platzhalter
+verwenden dieselbe Antwort; darin enthaltene Platzhalter bleiben wörtlich.
+
+Esc, eine leere Eingabe bzw. das Schließen des Chats, ein Serverdialog, Tod, Verbindungsende,
+ein ersetzter Bind oder explizites Stoppen verwirft die wartende Sequenz.
+Ohne installierten Abfang-Hook wird keine Eingabeaufforderung geöffnet.
+Ein führender `/` in einer Nachrichtenaktion nutzt den Befehlskanal; ohne
+Schrägstrich bleibt es normaler Chat. `{input}` steht nur in der Hilfe für
+Textbindungen, direkt unter `{kd}`. Automatische Killtexte fragen nichts ab.
+
+### r10-Prüfpfade
+
+| Bereich | Implementierung | Tests |
+| --- | --- | --- |
+| Reconnect-Plan und Helfer | [ReconnectManager.cpp](../../src/ReconnectManager.cpp), [ReconnectHelper.cpp](../../tools/ReconnectHelper.cpp), [NovaReconnectFlow.h](../../include/NovaReconnectFlow.h), [Main.cpp](../../src/Main.cpp) | [ReconnectManagerTests.cpp](../../tests/ReconnectManagerTests.cpp), [test_reconnect_worker.py](../../tools/test_reconnect_worker.py) |
+| Schneller Motorstart und Addon-Schutz | [SAMPBridge.cpp](../../src/SAMPBridge.cpp) | [SAMPBridgeTests.cpp](../../tests/SAMPBridgeTests.cpp) |
+| Server-Chat und Spielerrollen | [CombatChatParser.cpp](../../src/CombatChatParser.cpp), [SAMPBridge.cpp](../../src/SAMPBridge.cpp) | [CombatChatParserTests.cpp](../../tests/CombatChatParserTests.cpp), [CombatChatBridgeTests.cpp](../../tests/CombatChatBridgeTests.cpp) |
+| Manuelle Texteingabe und Befehlsrouting | [ActionExecutor.cpp](../../src/ActionExecutor.cpp), [SAMPBridge.cpp](../../src/SAMPBridge.cpp), [MessageVariables.h](../../include/MessageVariables.h) | [ActionExecutorTests.cpp](../../tests/ActionExecutorTests.cpp), [SAMPBridgeTests.cpp](../../tests/SAMPBridgeTests.cpp) |
+| ASI, Helfer und Paket | [verify_revision10_artifact.py](../../tools/verify_revision10_artifact.py), [package_revision10.ps1](../../tools/package_revision10.ps1) | PE32/x86, Ressource 300, Helfer-/Paket-SHA-256 und 43 Waffenordner |
+
+### Zugehörige finale Paketnachweise
+
+- [Keybinder.asi](../../dist/NLBinder-0.1.1-r10/Keybinder.asi)
+- [SHA-256](../../dist/NLBinder-0.1.1-r10/SHA256SUMS.txt)
+- [Build- und Prüfangaben](../../dist/NLBinder-0.1.1-r10/BUILD-INFO.txt)
+- [PE-/Import-/Ressourcenprüfung](../../dist/NLBinder-0.1.1-r10/PRUEFBERICHT.json)
+- [Nativer Helfertest](../../dist/NLBinder-0.1.1-r10/RECONNECT-TEST.json)
+
+### Ausgeführte Prüfungen für r10
+
+Gesamttests und Win32-Release-Build endeten mit Exitcode 0.
+Prüfungen des finalen Stands: ActionExecutor: 143, Reconnect: 116, SAMPBridge: 508, CombatChatParser: 181, CombatChatBridge: 83, StartupStatsSync: 252, StatsDialogRPCAdapter: 727, native_reconnect_helper: 83.
+
+Die Chat-Integration prüft die eigenen Täter-/Opferrollen, die vorgegebenen
+Textfamilien, CP1252/UTF-8, Spielerpräfixe und lokale Binder-Echos. Persönliche
+Hinweise, benannte Meldungen, Todes-RPC und Statistikabgleich werden in
+verschiedenen Reihenfolgen gemeinsam geprüft. Gleichzeitige persönliche
+Kills bleiben getrennt; native IDs sowie fehlende Namen/Waffen werden
+beim späteren Ergänzen ohne zweiten Bind berücksichtigt.
+
+Die Texteingabe-Tests prüfen das Pausieren der gesamten Sequenz, Enter,
+Esc/Stop/Ersetzen, eine neue Abfrage beim nächsten Aufruf, gemeinsame
+wörtliche Ersetzung mehrerer Platzhalter und Umlaut-Konvertierung.
+Der vollständige /News-In-BSN-Fall bestätigt, dass die rohe Antwort
+nicht separat gesendet wird und der fertige Befehl den Befehlskanal nutzt.
+
+Der native Helfer wird mit harmlosen GUI-/Spielprozess-Fixtures geprüft.
+Sechs Nova-Fälle umfassen wiederholtes Play, verzögerten Start, ein laufendes
+Spiel ohne Beitrittsbestätigung, Startabbruch mit erneutem Versuch, einen
+gleichnamigen Prozess aus einem anderen Ordner und eine bereits laufende
+zweite Instanz desselben Pfads. Zusätzlich wird der Abbruch nach Bereitschaft
+vor dem späteren Ende des Elternprozesses geprüft. Installierter Launcher
+und echtes GTA wurden dafür weder gestartet noch beendet.
+
+Die geprüfte ASI umfasst 18.493.952 Bytes; SHA-256:
+`0607a1d303333bc09e625f76b296f781a0ca71d48c9a494a1aefc32e0c0ab3d0`.
+PE32/x86, Windows-Imports und Ressource 300 sind geprüft. Der eingebettete
+Reconnect-Helfer stimmt bytegleich mit dem frisch geprüften Helfer überein.
+Die separate ASI und die ASI im ZIP haben dieselbe Prüfsumme. Ein
+unabhängiger Abgleich bestätigt alle Paketdateien, 43 explizite leere
+Waffenordner und keine persönlichen PNGs im ZIP.
+[Maschinenlesbare Ergebnisse](r10-validation.json) ergänzen die Paketnachweise.
+Ein echter Ingame-Test mit dem konkreten Server und installierten Nova
+Launcher steht aus. Ein noch nicht empfangener Server-Addon-Zustand kann
+nicht vorweggenommen werden.
+
+## Historischer Prüfstand r9 – 27. Oktober 2026
 
 Der aktuelle Quellstand ist **NLBinder v.0.1.1 by KOBiRO, r9**. Die
 [Bedienung](../NLBinder-0.1.1-r9-DE.md) und der

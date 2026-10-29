@@ -16,6 +16,7 @@ struct ReconnectLaunchPlan {
     ReconnectLauncher launcher = ReconnectLauncher::Nova;
     std::wstring executable;
     std::wstring workingDirectory;
+    std::wstring gameExecutable;
     std::vector<std::wstring> arguments;
 };
 
@@ -60,6 +61,10 @@ void CancelPreparedReconnect();
 bool RequestReconnect(const Settings& settings, SAMPBridge& bridge,
                       const std::function<bool()>& saveState, std::string& error);
 bool UpdateReconnect(std::string& error);
+
+// Called only after the replacement client's local player has actually spawned.
+// No action is taken if no reconnect worker is awaiting this exact process.
+void NotifyReconnectGameEntered();
 
 #ifdef KEYBINDER_TESTING
 struct ReconnectTestingHooks {

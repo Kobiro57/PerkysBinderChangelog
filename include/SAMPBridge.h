@@ -13,6 +13,7 @@
 
 #include "ActionExecutor.h"
 #include "KillTracker.h"
+#include "CombatChatParser.h"
 #include "KillfeedAdapter.h"
 #include "DamageRPCAdapter.h"
 #include "IncomingDamageDetector.h"
@@ -56,6 +57,12 @@ public:
 
     bool SendChat(const std::string& text) const override;
     bool SendCommand(const std::string& cmd) const override;
+    bool BeginManualTextInput() override;
+    keybinder::ManualTextInputStatus PollManualTextInput(std::string& value) override;
+    void CancelManualTextInput() override;
+    // Native chat submissions are consumed locally before command dispatch.
+    bool InterceptManualTextInput(const std::string& gameText);
+    bool IsAwaitingManualTextInput(const sampapi::v03dl::CInput* input) const;
     void ObserveStatsCommand(const std::string& cmd) const;
     bool SendSimulatedKillMessage(const std::string& text, std::string& error) const;
     bool RequestSpeedTicket(const std::string& arguments, std::string& error);
@@ -167,11 +174,14 @@ public:
         std::function<void(int)> closeStatsDialog;
         std::function<bool(RakNet::BitStream*)> sendDialogResponse;
         std::function<void(int)> hideDialog;
+        std::function<void(sampapi::v03dl::CInput*)> openChatInput;
+        std::function<void(sampapi::v03dl::CInput*)> closeChatInput;
     };
 
     static void SetTestingHooks(const TestingHooks& hooks);
     static void ResetTestingHooks();
     static const TestingHooks& GetTestingHooks();
+    static void ProcessNativeChatInputForTesting(sampapi::v03dl::CInput* input);
     static std::string BuildTrackedIncomeMessageForTesting(int amount, int todayTotal);
     void ProcessDeathMessageForTesting(const killtracker::DeathMessageEvent& event);
     void ProcessDamageFeedbackForTesting(const killtracker::DamageEvent& event);
@@ -186,6 +196,9 @@ private:
     void HandleDeathMessage(const killtracker::DeathMessageEvent& event);
     void HandleLocalKill(killtracker::KillEvent event);
     void ObserveServerCombatStats(const std::string& text);
+    void QueueCombatChat(const std::string& text);
+    void UpdateCombatChat(unsigned long now);
+    void ResetCombatChat();
     void UpdateStartupStats(unsigned long now);
     void ResetStartupStats();
     void CaptureStartupStatsLine(const std::string& text);
@@ -383,6 +396,10 @@ private:
     bool jobTrackerInitialized_;
     
     std::function<bool(const std::string&)> slashCommandInterceptor_;
+    keybinder::ManualTextInputStatus manualInputStatus_ = keybinder::ManualTextInputStatus::Cancelled;
+    std::string manualInputValue_;
+    sampapi::v03dl::CInput* manualInputOwner_ = nullptr;
+    sampapi::v03dl::CNetGame* manualInputConnection_ = nullptr;
     std::vector<std::string> registeredSlashCommands_;
     IncomingChatCallback incomingChatCallback_;
     bool serverCombatBaselineEstablished_ = false;
@@ -393,6 +410,28 @@ private:
     int lastServerDeathTotal_ = 0;
     std::time_t lastLocalKillTime_ = 0;
     std::time_t lastLocalDeathTime_ = 0;
+    struct PendingCombatChat { std::string text; unsigned long at = 0; };
+    std::mutex combatChatMutex_;
+    std::vector<PendingCombatChat> pendingCombatChat_;
+    struct CombatKillObservation {
+        std::uint64_t id = 0;
+        unsigned long at = 0;
+        unsigned long lastNoticeAt = 0;
+        std::string victim;
+        bool victimKnown = false;
+        bool native = false;
+        std::uint32_t families = 0;
+        int victimId = -1;
+        int nativeWeaponId = -1;
+    };
+    std::vector<CombatKillObservation> combatKillObservations_;
+    std::uint64_t nextCombatObservationId_ = 1;
+    unsigned long currentCombatNoticeTick_ = 0;
+    bool processingCombatChat_ = false;
+    bool combatChatConnected_ = false;
+    std::string combatChatPlayer_;
+    unsigned long lastCombatChatDeathAt_ = 0;
+    bool hasCombatChatDeath_ = false;
     keybinder::ServerStatsCollector startupStatsCollector_;
     std::unique_ptr<keybinder::StatsDialogRPCAdapter> statsDialogAdapter_;
     keybinder::ServerStatsSnapshot synchronizedStats_;

@@ -1,6 +1,7 @@
 #include "../include/ReconnectManager.h"
 #include "../include/SettingsManager.h"
 #include "../include/SAMPBridge.h"
+#include "../include/NovaReconnectFlow.h"
 #include <windows.h>
 #include <shellapi.h>
 #include <cstdio>
@@ -51,7 +52,44 @@ void TestNovaUsesNormalLauncherStart() {
         L"C:\\Games\\GTA", "127.0.0.1", 7777, "Player", plan, error));
     CHECK(plan.launcher == keybinder::ReconnectLauncher::Nova);
     CHECK(plan.arguments.empty()); // No invented direct-connect API or bypass of the launcher.
+    CHECK(plan.gameExecutable == L"C:\\Games\\GTA\\gta_sa.exe");
     CHECK(plan.workingDirectory == L"C:\\User Space\\Nova Legacy Launcher");
+}
+
+void TestNovaRetriesUntilSpawnConfirmationAndNeverClicksWhileGameLives() {
+    using Flow=keybinder::NovaReconnectFlow;
+    using Action=Flow::Action;
+    Flow flow(1000);
+    CHECK(flow.Update(1000,false,false,false)==Action::Wait);
+    CHECK(flow.Update(1000,false,false,true)==Action::InvokePlay);
+    CHECK(flow.Attempts()==1);
+    CHECK(flow.Update(3499,false,false,true)==Action::Wait);
+    CHECK(flow.Update(3500,false,false,true)==Action::InvokePlay);
+    CHECK(flow.Attempts()==2);
+    CHECK(flow.Update(6000,true,false,true)==Action::Wait);
+    CHECK(flow.Update(50000,true,false,true)==Action::Wait);
+    CHECK(flow.Attempts()==2);
+    CHECK(flow.Update(51000,true,true,false)==Action::Complete);
+    Flow crashed(0,90000,2500);
+    CHECK(crashed.Update(0,false,false,true)==Action::InvokePlay);
+    CHECK(crashed.Update(1000,true,false,true)==Action::Wait);
+    CHECK(crashed.Update(3000,false,false,true)==Action::InvokePlay);
+    CHECK(crashed.Update(90000,false,false,true)==Action::TimedOut);
+    Flow busy(0);
+    CHECK(busy.Update(0,true,false,true)==Action::Wait);
+    CHECK(busy.Update(90000,true,false,true)==Action::TimedOut);
+    CHECK(busy.Attempts()==0);
+}
+
+void TestNovaPlayLabelsAndEntryEventsAreStrictlyScoped() {
+    CHECK(keybinder::NormalizeNovaPlayLabel(L" \r\nSPIEL\tSTARTEN\u00a0")==L"spiel starten");
+    for(const wchar_t* other:{L"GTA beenden",L"Wird gestartet...",L"Spiel starten erlauben",L"Erneut starten",L"Update starten"}) {
+        CHECK(keybinder::NormalizeNovaPlayLabel(other)!=L"spiel starten");
+    }
+    const auto first=keybinder::ReconnectEnteredEventName(L"C:\\Games\\GTA\\gta_sa.exe",123);
+    CHECK(first==keybinder::ReconnectEnteredEventName(L"c:/games/gta/GTA_SA.EXE",123));
+    CHECK(first!=keybinder::ReconnectEnteredEventName(L"C:\\Other\\gta_sa.exe",123));
+    CHECK(first!=keybinder::ReconnectEnteredEventName(L"C:\\Games\\GTA\\gta_sa.exe",124));
 }
 
 void TestLauncherAtDriveRootKeepsAbsoluteWorkingDirectory() {
@@ -204,6 +242,8 @@ int RunReconnectTests() {
     checks = 0;
     TestOpenMpPlanAndArgumentQuoting();
     TestNovaUsesNormalLauncherStart();
+    TestNovaRetriesUntilSpawnConfirmationAndNeverClicksWhileGameLives();
+    TestNovaPlayLabelsAndEntryEventsAreStrictlyScoped();
     TestLauncherAtDriveRootKeepsAbsoluteWorkingDirectory();
     TestRejectsIncompleteConnectionData();
     TestSettingsRoundTripAndNoRealRestartInTests();

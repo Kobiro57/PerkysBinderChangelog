@@ -4,6 +4,7 @@
 #include "../include/PersistentPaths.h"
 #include "../include/ResourceIds.h"
 #include "../include/Logger.h"
+#include "../include/NovaReconnectFlow.h"
 
 #include <algorithm>
 #include <cctype>
@@ -24,10 +25,11 @@ constexpr unsigned long long kQuitTimeoutMilliseconds = 8000;
 ReconnectTestingHooks testingHooks;
 #else
 HANDLE preparedWorker = nullptr;
+HANDLE preparedCancel = nullptr;
 
 void StopWorker(HANDLE worker) {
     if (!worker) return;
-    if (WaitForSingleObject(worker, 0) == WAIT_TIMEOUT) {
+    if (WaitForSingleObject(worker, 1000) == WAIT_TIMEOUT) {
         // This handle belongs only to the helper started by this command.
         TerminateProcess(worker, 1);
         WaitForSingleObject(worker, 1000);
@@ -92,6 +94,29 @@ std::wstring FindLauncher(const Settings& settings) {
 }
 
 #ifndef KEYBINDER_TESTING
+bool IsElevated() {
+    HANDLE token = nullptr;
+    if (!OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &token)) return false;
+    TOKEN_ELEVATION elevation{};
+    DWORD size = sizeof(elevation);
+    const bool result = GetTokenInformation(token, TokenElevation, &elevation, sizeof(elevation), &size)
+        && elevation.TokenIsElevated;
+    CloseHandle(token);
+    return result;
+}
+
+bool LauncherRequiresAdministrator(const std::wstring& launcher) {
+    HMODULE image = LoadLibraryExW(launcher.c_str(), nullptr, LOAD_LIBRARY_AS_DATAFILE | LOAD_LIBRARY_AS_IMAGE_RESOURCE);
+    if (!image) return false;
+    HRSRC manifest = FindResourceW(image, MAKEINTRESOURCEW(1), MAKEINTRESOURCEW(24));
+    HGLOBAL data = manifest ? LoadResource(image, manifest) : nullptr;
+    const char* bytes = data ? static_cast<const char*>(LockResource(data)) : nullptr;
+    const DWORD size = manifest ? SizeofResource(image, manifest) : 0;
+    const bool result = bytes && std::string(bytes, size).find("requireAdministrator") != std::string::npos;
+    FreeLibrary(image);
+    return result;
+}
+
 bool ExtractWorker(std::wstring& path, std::string& error) {
     HMODULE module = nullptr;
     if (!GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
@@ -143,6 +168,7 @@ bool BuildReconnectPlan(ReconnectLauncher launcher, const std::wstring& executab
     }
     plan.launcher = launcher;
     plan.executable = executable;
+    plan.gameExecutable = gameDirectory + (gameDirectory.back() == L'\\' || gameDirectory.back() == L'/' ? L"" : L"\\") + L"gta_sa.exe";
     const auto separator = executable.find_last_of(L"\\/");
     plan.workingDirectory = separator == std::wstring::npos ? gameDirectory
         : executable.substr(0, separator == 2 && executable[1] == L':' ? 3 : separator);
@@ -165,6 +191,7 @@ bool PrepareReconnect(const Settings& settings, SAMPBridge& bridge, std::string&
         }
         CloseHandle(preparedWorker);
         preparedWorker = nullptr;
+        if (preparedCancel) { CloseHandle(preparedCancel); preparedCancel = nullptr; }
     }
     auto* netGame = bridge.GetNetGame();
     if (!netGame || netGame->m_nGameState != sampapi::v03dl::CNetGame::GAME_MODE_CONNECTED) {
@@ -187,15 +214,20 @@ bool PrepareReconnect(const Settings& settings, SAMPBridge& bridge, std::string&
     if (!BuildReconnectPlan(settings.reconnect_use_nova_launcher ? ReconnectLauncher::Nova : ReconnectLauncher::OpenMp,
         launcher, gameDirectory, std::string(netGame->m_szHostAddress, strnlen(netGame->m_szHostAddress, 257)),
         netGame->m_nPort, bridge.GetLocalPlayerName(), plan, error)) return false;
+    plan.gameExecutable.assign(gamePath, length);
     std::wstring worker;
     if (!ExtractWorker(worker, error)) return false;
     const std::wstring eventName = L"Local\\NLBinderReconnect-" + std::to_wstring(GetCurrentProcessId())
         + L"-" + std::to_wstring(GetTickCount64());
     HANDLE ready = CreateEventW(nullptr, TRUE, FALSE, eventName.c_str());
     if (!ready) { error = "Reconnect konnte nicht vorbereitet werden."; return false; }
+    const auto cancelName = eventName + L"-cancel";
+    HANDLE cancel = CreateEventW(nullptr, TRUE, FALSE, cancelName.c_str());
+    if (!cancel) { CloseHandle(ready); error = "Reconnect konnte nicht vorbereitet werden."; return false; }
     std::vector<std::wstring> arguments = {L"--parent", std::to_wstring(GetCurrentProcessId()),
         L"--ready", eventName, L"--mode", settings.reconnect_use_nova_launcher ? L"nova" : L"openmp",
-        L"--launcher", plan.executable, L"--working-directory", plan.workingDirectory};
+        L"--launcher", plan.executable, L"--working-directory", plan.workingDirectory,
+        L"--game-executable", plan.gameExecutable, L"--cancel", cancelName};
     arguments.insert(arguments.end(), plan.arguments.begin(), plan.arguments.end());
     std::wstring command = ReconnectCommandLine(worker, arguments);
     STARTUPINFOW startup = {};
@@ -203,23 +235,49 @@ bool PrepareReconnect(const Settings& settings, SAMPBridge& bridge, std::string&
     startup.dwFlags = STARTF_USESHOWWINDOW;
     startup.wShowWindow = SW_HIDE;
     PROCESS_INFORMATION process = {};
-    const bool created = CreateProcessW(worker.c_str(), command.data(), nullptr, nullptr, FALSE,
-        CREATE_NO_WINDOW, nullptr, plan.workingDirectory.c_str(), &startup, &process) != FALSE;
+    bool created = false;
+    if (settings.reconnect_use_nova_launcher && LauncherRequiresAdministrator(plan.executable) && !IsElevated()) {
+        // Nova's installed manifest requires elevation. Elevate the helper
+        // BEFORE quitting, through the normal Windows consent prompt, so its
+        // UI Automation requests have the same privilege as the launcher.
+        std::wstring parameters;
+        for (const auto& argument : arguments) {
+            if (!parameters.empty()) parameters += L' ';
+            parameters += QuoteReconnectArgument(argument);
+        }
+        SHELLEXECUTEINFOW shell{};
+        shell.cbSize = sizeof(shell);
+        shell.fMask = SEE_MASK_NOCLOSEPROCESS | SEE_MASK_NOASYNC | SEE_MASK_FLAG_NO_UI;
+        shell.lpVerb = L"runas";
+        shell.lpFile = worker.c_str();
+        shell.lpParameters = parameters.c_str();
+        shell.lpDirectory = plan.workingDirectory.c_str();
+        shell.nShow = SW_HIDE;
+        created = ShellExecuteExW(&shell) && shell.hProcess;
+        process.hProcess = shell.hProcess;
+    } else {
+        created = CreateProcessW(worker.c_str(), command.data(), nullptr, nullptr, FALSE,
+            CREATE_NO_WINDOW, nullptr, plan.workingDirectory.c_str(), &startup, &process) != FALSE;
+    }
     if (!created) {
         CloseHandle(ready);
+        CloseHandle(cancel);
         error = "Reconnect-Helfer konnte nicht gestartet werden.";
         return false;
     }
-    CloseHandle(process.hThread);
+    if (process.hThread) CloseHandle(process.hThread);
     HANDLE handles[] = {ready, process.hProcess};
     const DWORD wait = WaitForMultipleObjects(2, handles, FALSE, 4000);
     CloseHandle(ready);
     if (wait != WAIT_OBJECT_0) {
+        SetEvent(cancel);
         StopWorker(process.hProcess);
+        CloseHandle(cancel);
         error = "Reconnect-Helfer ist nicht bereit. Das Spiel bleibt geöffnet.";
         return false;
     }
     preparedWorker = process.hProcess;
+    preparedCancel = cancel;
     Logger::Info("[Reconnect] Worker ready; launcher=%s", settings.reconnect_use_nova_launcher ? "Nova" : "OpenMP");
     return true;
 #endif
@@ -231,6 +289,7 @@ void CancelPreparedReconnect() {
 #ifdef KEYBINDER_TESTING
     if (testingHooks.cancel) testingHooks.cancel();
 #else
+    if (preparedCancel) { SetEvent(preparedCancel); CloseHandle(preparedCancel); preparedCancel = nullptr; }
     StopWorker(preparedWorker);
     preparedWorker = nullptr;
 #endif
@@ -278,6 +337,23 @@ bool UpdateReconnect(std::string& error) {
     error = "Spiel konnte nicht beendet werden. Reconnect abgebrochen; erneuter Versuch ist möglich.";
     Logger::Warning("[Reconnect] Local quit did not close the game; worker cancelled");
     return true;
+}
+
+void NotifyReconnectGameEntered() {
+#ifndef KEYBINDER_TESTING
+    static bool signaled = false;
+    static unsigned long long nextTry = 0;
+    if (signaled || GetTickCount64() < nextTry) return;
+    nextTry = GetTickCount64() + 1000;
+    wchar_t path[32768]{};
+    const DWORD length = GetModuleFileNameW(nullptr, path, 32768);
+    if (!length || length >= 32768) return;
+    const auto name = ReconnectEnteredEventName(std::wstring(path, length), GetCurrentProcessId());
+    HANDLE entered = OpenEventW(EVENT_MODIFY_STATE, FALSE, name.c_str());
+    if (!entered) return;
+    signaled = SetEvent(entered) != FALSE;
+    CloseHandle(entered);
+#endif
 }
 
 #ifdef KEYBINDER_TESTING

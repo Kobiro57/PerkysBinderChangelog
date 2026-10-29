@@ -2,10 +2,13 @@
 
 Vollständiger Prüfstand der Änderungen am **Perkys / NLBinder**, angepasst für
 KOBiRO. Grundlage und ursprüngliche Urheberschaft bleiben beim Originalprojekt.
-Der Stand lautet **NLBinder v.0.1.1 by KOBiRO, r9**. Unter **Mods →
-Interface** bleiben Geldanzeige, Waffenicon, Munition und Minimap mit
-getrennten Positions- und Farbeinstellungen. Der Verschiebemodus nutzt die
-gemeinsame Maussteuerung der dauerhaften Online-Overlays. Esc speichert.
+Der Stand lautet **NLBinder v.0.1.1 by KOBiRO, r10**. Der Nova-Reconnect
+übernimmt den Spielstart im Launcher und prüft den Fortschritt. Der
+Motorstart beim Einsteigen reagiert schneller und berücksichtigt weiterhin
+das serverseitige Start-Addon. Die Kill-/Todeserkennung verarbeitet die
+bestätigten Server-Chatmeldungen mit dem jeweils angemeldeten Spielernamen.
+Die Variable `{input}` fragt beim Auslösen eines Textbinds nach einem frei
+eingegebenen Text; Enter übernimmt ihn, Esc bricht ab.
 Frühere Binder-Anpassungen und die ursprünglichen Oberflächenkomponenten
 bleiben enthalten.
 
@@ -19,9 +22,9 @@ NLBinder → Waffenicons**. Der Button **Waffenicons-Ordner öffnen** im Binder
 2. [Technisches Verhalten, Prüfungen und Grenzen](../../docs/review/PRUEFUNG-DE.md)
 3. [Dateien im Vergleich zum Original](../../docs/review/DATEIVERGLEICH.md)
 4. [Herkunft und Abhängigkeiten](../../docs/review/DEPENDENCIES.md)
-5. [Programmänderungen als GitHub-Vergleich](https://github.com/Kobiro57/PerkysBinderChangelog/compare/build-dependencies-baseline...v0.1.1-r9)
+5. [Programmänderungen als GitHub-Vergleich](https://github.com/Kobiro57/PerkysBinderChangelog/compare/build-dependencies-baseline...v0.1.1-r10)
    oder als [kompakter Quellcode-Patch](../../docs/review/first-party-changes.patch)
-6. [Änderungen seit r8](https://github.com/Kobiro57/PerkysBinderChangelog/compare/v0.1.1-r8...v0.1.1-r9)
+6. [Änderungen seit r9](https://github.com/Kobiro57/PerkysBinderChangelog/compare/v0.1.1-r9...v0.1.1-r10)
 
 Der vollständige bearbeitete Code liegt in `src/`, `include/`, `res/`,
 `tests/`, `tools/` und `third_party/`. Die Übersicht verlinkt direkt zu den
@@ -45,17 +48,17 @@ die [aktuelle Build-Anleitung](../../docs/BUILD-README.md) beschreibt das Bauen 
 
 ## Geprüfte ASI
 
-- [Keybinder.asi herunterladen](../../dist/NLBinder-0.1.1-r9/Keybinder.asi)
-- [Komplettes ZIP-Paket herunterladen](../../dist/NLBinder-v0.1.1-KOBiRO-r9.zip)
-- [Installation und Bedienung](../../dist/NLBinder-0.1.1-r9/LIESMICH.md)
-- [Build- und Prüfangaben](../../dist/NLBinder-0.1.1-r9/BUILD-INFO.txt)
-- [Maschinenlesbarer Prüfnachweis](../../dist/NLBinder-0.1.1-r9/PRUEFBERICHT.json)
-- [SHA-256 der ausgelieferten ASI](../../dist/NLBinder-0.1.1-r9/SHA256SUMS.txt)
+- [Keybinder.asi herunterladen](../../dist/NLBinder-0.1.1-r10/Keybinder.asi)
+- [Komplettes ZIP-Paket herunterladen](../../dist/NLBinder-v0.1.1-KOBiRO-r10.zip)
+- [Installation und Bedienung](../../dist/NLBinder-0.1.1-r10/LIESMICH.md)
+- [Build- und Prüfangaben](../../dist/NLBinder-0.1.1-r10/BUILD-INFO.txt)
+- [Maschinenlesbarer Prüfnachweis](../../dist/NLBinder-0.1.1-r10/PRUEFBERICHT.json)
+- [SHA-256 der ausgelieferten ASI](../../dist/NLBinder-0.1.1-r10/SHA256SUMS.txt)
 
 Die Nachweise gehören zum jeweiligen Binärstand: automatisierte Gesamttests,
 Win32-Release-Build, PE-/Ressourcenvergleich und Reconnect-Helfertest mit
 harmlosen Testprozessen. Ein echter Ingame-Test mit dem konkreten Server und
-Launcher steht aus. Die [vorherige r8-Fassung](../../dist/NLBinder-0.1.1-r8/BUILD-INFO.txt)
+Launcher steht aus. Die [vorherige r9-Fassung](../../dist/NLBinder-0.1.1-r9/BUILD-INFO.txt)
 und ihre Prüfsumme bleiben zur Nachverfolgung erhalten.
 
 ## Weitere Updates

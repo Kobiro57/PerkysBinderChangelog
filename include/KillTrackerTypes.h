@@ -17,6 +17,11 @@ struct KillEvent {
     bool isSystem;
     float damageDealt;  // Total damage dealt to victim in this kill
     bool isServerStatsOnly = false;
+    bool isServerChatOnly = false;
+    bool victimKnown = true;
+    std::uint32_t chatNoticeFamily = 0;
+    std::uint64_t observationId = 0;
+    int victimId = -1;
 
     KillEvent()
         : weaponId(-1)

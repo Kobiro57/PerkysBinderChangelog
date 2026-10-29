@@ -42,11 +42,15 @@ constexpr std::size_t kMaxDirectCommands = 8;
 constexpr unsigned long kStartupMessageColor = 0xFFFFFFFF;
 constexpr int kTrackedIncomeMessageDelayFrames = 10;
 constexpr int kLocalDeathFallbackDelayFrames = 12;
-constexpr unsigned long kAutoEngineStartDelayMs = 1500;
+// A short entry guard gives an already queued server-addon start priority.
+// Stopped engines no longer wait for the full seating-confirmation window.
+constexpr unsigned long kAutoEngineStartDelayMs = 100;
+constexpr unsigned long kAutoEngineRunningConfirmationMs = 1500;
 constexpr unsigned long kAutoEngineStartHoldMs = 150;
 constexpr unsigned long kAutoEngineServerNoticeWindowMs = 1000;
 
 SAMPBridge* g_activeBridge = nullptr;
+thread_local bool g_emittingBinderLocalMessage = false;
 
 #ifndef KEYBINDER_TESTING
 constexpr std::size_t kVehicleGameNameLength = 8;
@@ -590,10 +594,50 @@ constexpr std::array<sampapi::CMDPROC, kMaxDirectCommands> kDispatchers = {
 };
 
 safetyhook::InlineHook* g_sendHook = nullptr;
+safetyhook::InlineHook* g_processInputHook = nullptr;
 bool g_bypassSendHook = false;
+
+void ClearManualInputText(sampapi::v03dl::CInput* input) {
+    if (!input) return;
+    input->m_szInput[0] = '\0';
+    input->m_szCurrentBuffer[0] = '\0';
+#ifndef KEYBINDER_TESTING
+    if (input->m_pEditbox) {
+        // DL-R1 CDXUTEditBox::SetTextA, also used by native ProcessInput.
+        using SetTextA = void(__thiscall*)(CDXUTEditBox*, const char*, bool);
+        reinterpret_cast<SetTextA>(sampapi::GetBase() + 0x85000)(input->m_pEditbox, "", false);
+    }
+#endif
+}
+
+void __fastcall HookedCInputProcessInput(sampapi::v03dl::CInput* input, void*) {
+    if (g_activeBridge && g_activeBridge->IsAwaitingManualTextInput(input)) {
+        std::string text;
+#ifdef KEYBINDER_TESTING
+        text = input->m_szInput;
+#else
+        if (input->m_pEditbox) {
+            // DL-R1 GetTextA returns an ACP buffer; copy it before clearing.
+            // It has NO stack argument (the native push 0x80 belongs to strncpy).
+            using GetTextA = const char*(__thiscall*)(CDXUTEditBox*);
+            const char* nativeText = reinterpret_cast<GetTextA>(sampapi::GetBase() + 0x850D0)(input->m_pEditbox);
+            if (nativeText) text.assign(nativeText);
+        }
+#endif
+        g_activeBridge->InterceptManualTextInput(text);
+        // Native ProcessInput dispatches normal chat and known local commands
+        // without CInput::Send. Never enter any of those routes for an answer.
+        return;
+    }
+    if (g_processInputHook) g_processInputHook->thiscall<void>(input);
+}
 
 // __fastcall simulates __thiscall on x86 MSVC: first arg in ECX (this), second ignored (EDX), rest on stack
 void __fastcall HookedCInputSend(sampapi::v03dl::CInput* pThis, void* /*edx*/, const char* szString) {
+    if (!g_bypassSendHook && g_activeBridge != nullptr && szString != nullptr
+        && g_activeBridge->InterceptManualTextInput(szString)) {
+        return;
+    }
     if (!g_bypassSendHook && g_activeBridge != nullptr && szString != nullptr && szString[0] == '/') {
         if (g_activeBridge->InterceptSlashCommand(szString)) {
             return;
@@ -721,6 +765,13 @@ bool SAMPBridge::InstallSendHook() {
 #ifdef KEYBINDER_TESTING
     return true;
 #else
+    if (g_processInputHook == nullptr) {
+        auto processHook = safetyhook::InlineHook::create(
+            reinterpret_cast<void*>(sampapi::GetBase() + 0x69410),
+            reinterpret_cast<void*>(&HookedCInputProcessInput));
+        if (processHook) g_processInputHook = new safetyhook::InlineHook(std::move(*processHook));
+        else Log("WARNING: Native chat input hook unavailable - manual bind input disabled.");
+    }
     if (g_sendHook != nullptr) {
         return true;
     }
@@ -746,6 +797,7 @@ void SAMPBridge::Shutdown() {
         return;
     }
     shutting_down_ = true;
+    CancelManualTextInput();
     if (statsDialogAdapter_) statsDialogAdapter_->Shutdown();
     statsDialogAdapter_.reset();
     ResetStartupStats();
@@ -759,6 +811,8 @@ void SAMPBridge::Shutdown() {
 
     delete g_sendHook;
     g_sendHook = nullptr;
+    delete g_processInputHook;
+    g_processInputHook = nullptr;
 
     ShutdownJobTracker();
 
@@ -805,7 +859,10 @@ bool SAMPBridge::SendLocalMessage(const std::string& text, unsigned long color) 
         return false;
     }
     const std::string encodedText = ConvertUtf8ToGameEncoding(text);
+    const bool previous = g_emittingBinderLocalMessage;
+    g_emittingBinderLocalMessage = true;
     AddMessageHook(chat, color, encodedText.c_str());
+    g_emittingBinderLocalMessage = previous;
     return true;
 }
 
@@ -865,6 +922,128 @@ bool SAMPBridge::IsChatOpen() const {
     return input != nullptr && input->m_bEnabled != FALSE;
 }
 
+bool SAMPBridge::BeginManualTextInput() {
+    if (!initialized_) return false;
+    auto* input = GetInput();
+    auto* connection = GetNetGame();
+    auto* player = GetLocalPlayer();
+    if (!input || IsChatOpen() || IsDialogOpen()
+        || !connection || connection->m_nGameState != sampapi::v03dl::CNetGame::GAME_MODE_CONNECTED
+        || !player || !player->m_bIsActive || player->m_bIsWasted
+        || manualInputOwner_ != nullptr) {
+        return false;
+    }
+#ifndef KEYBINDER_TESTING
+    // Capturing must work before we ever invite the player to enter private text.
+    if (!g_processInputHook || !input->m_pEditbox) return false;
+#endif
+    manualInputOwner_ = input;
+    manualInputConnection_ = connection;
+    manualInputValue_.clear();
+    manualInputStatus_ = keybinder::ManualTextInputStatus::Waiting;
+    ClearManualInputText(input);
+#ifdef KEYBINDER_TESTING
+    if (g_testingHooks.openChatInput) g_testingHooks.openChatInput(input);
+    else input->m_bEnabled = TRUE;
+#else
+    // Use SA-MP's own input lifecycle, including its cursor and game controls.
+    input->Close();
+    input->Open();
+#endif
+    if (!input->m_bEnabled) {
+        CancelManualTextInput();
+        return false;
+    }
+    SendLocalMessage("{33CCFF}[NL-BINDER]{FFFFFF} Gib hier deinen Input-Text ein: (Enter best\xC3\xA4tigt, Esc bricht ab)");
+    return true;
+}
+
+keybinder::ManualTextInputStatus SAMPBridge::PollManualTextInput(std::string& value) {
+    using Status = keybinder::ManualTextInputStatus;
+    if (!manualInputOwner_) return Status::Cancelled;
+    auto* connection = GetNetGame();
+    auto* player = GetLocalPlayer();
+    if (!initialized_ || GetInput() != manualInputOwner_ || connection != manualInputConnection_
+        || !connection || connection->m_nGameState != sampapi::v03dl::CNetGame::GAME_MODE_CONNECTED
+        || !player || !player->m_bIsActive || player->m_bIsWasted || IsDialogOpen()) {
+        CancelManualTextInput();
+        return Status::Cancelled;
+    }
+    if (manualInputStatus_ == Status::Submitted) {
+        value = std::move(manualInputValue_);
+        manualInputOwner_ = nullptr;
+        manualInputConnection_ = nullptr;
+        manualInputStatus_ = Status::Cancelled;
+        return Status::Submitted;
+    }
+    if (!manualInputOwner_->m_bEnabled) {
+        CancelManualTextInput(); // Escape, a server dialog or a native input close.
+        return Status::Cancelled;
+    }
+    return Status::Waiting;
+}
+
+void SAMPBridge::CancelManualTextInput() {
+    auto* owner = manualInputOwner_;
+    manualInputOwner_ = nullptr;
+    manualInputConnection_ = nullptr;
+    manualInputValue_.clear();
+    manualInputStatus_ = keybinder::ManualTextInputStatus::Cancelled;
+    if (owner && GetInput() == owner) {
+        ClearManualInputText(owner);
+        if (!owner->m_bEnabled) return;
+#ifdef KEYBINDER_TESTING
+        if (g_testingHooks.closeChatInput) g_testingHooks.closeChatInput(owner);
+        else owner->m_bEnabled = FALSE;
+#else
+        owner->Close();
+#endif
+    }
+}
+
+bool SAMPBridge::InterceptManualTextInput(const std::string& gameText) {
+    if (manualInputStatus_ != keybinder::ManualTextInputStatus::Waiting
+        || !manualInputOwner_ || GetInput() != manualInputOwner_ || !manualInputOwner_->m_bEnabled) {
+        return false;
+    }
+    if (gameText.find_first_not_of(" \t\r\n") == std::string::npos) {
+        CancelManualTextInput();
+        return true;
+    }
+    // Native chat uses the Windows game code page; action templates use UTF-8.
+    const int wideLength = MultiByteToWideChar(CP_ACP, 0, gameText.data(), static_cast<int>(gameText.size()), nullptr, 0);
+    std::wstring wide(static_cast<std::size_t>((std::max)(0, wideLength)), L'\0');
+    if (wideLength > 0) {
+        MultiByteToWideChar(CP_ACP, 0, gameText.data(), static_cast<int>(gameText.size()), wide.data(), wideLength);
+        const int utf8Length = WideCharToMultiByte(CP_UTF8, 0, wide.data(), wideLength, nullptr, 0, nullptr, nullptr);
+        manualInputValue_.resize(static_cast<std::size_t>((std::max)(0, utf8Length)));
+        if (utf8Length > 0) WideCharToMultiByte(CP_UTF8, 0, wide.data(), wideLength, manualInputValue_.data(), utf8Length, nullptr, nullptr);
+    }
+    // Keep a single message even if another local component supplied line breaks.
+    std::replace(manualInputValue_.begin(), manualInputValue_.end(), '\r', ' ');
+    std::replace(manualInputValue_.begin(), manualInputValue_.end(), '\n', ' ');
+    manualInputStatus_ = keybinder::ManualTextInputStatus::Submitted;
+    ClearManualInputText(manualInputOwner_);
+#ifdef KEYBINDER_TESTING
+    if (g_testingHooks.closeChatInput) g_testingHooks.closeChatInput(manualInputOwner_);
+    else manualInputOwner_->m_bEnabled = FALSE;
+#else
+    manualInputOwner_->Close();
+#endif
+    return true; // Never forward the answer itself as chat or as a command.
+}
+
+bool SAMPBridge::IsAwaitingManualTextInput(const sampapi::v03dl::CInput* input) const {
+    return input && input == manualInputOwner_ && input->m_bEnabled
+        && manualInputStatus_ == keybinder::ManualTextInputStatus::Waiting;
+}
+
+#ifdef KEYBINDER_TESTING
+void SAMPBridge::ProcessNativeChatInputForTesting(sampapi::v03dl::CInput* input) {
+    HookedCInputProcessInput(input, nullptr);
+}
+#endif
+
 bool SAMPBridge::IsDialogOpen() const {
     const auto* dialog = GetDialog();
     return dialog != nullptr && dialog->m_bIsActive != FALSE;
@@ -906,6 +1085,9 @@ void SAMPBridge::Update() {
     if (!jobTrackerInitialized_) {
         InitializeJobTracker();
     }
+    // Apply queued live combat confirmations before a same-frame /stats
+    // snapshot, so an already included kill cannot be counted a second time.
+    UpdateCombatChat(now);
     UpdateStartupStats(now);
     UpdateSpeedTicketFlow(now);
     UpdateStartupJobSkills(now);
@@ -945,11 +1127,11 @@ void SAMPBridge::Update() {
         }
     }
 
-    if (hudScaleFixPending_) {
+    if (hudScaleFixPending_ && manualInputOwner_ == nullptr) {
         if (hudScaleFixDelayFrames_ == 0) {
             auto* input = GetInput();
             if (input != nullptr) {
-                auto handler = RealGetCommandHandler(input, "hudscalefix");
+                auto handler = GetCommandHandlerHook(input, "hudscalefix");
                 if (handler != nullptr) {
                     handler("");
                     Log("Auto-executed /hudscalefix via direct handler call");
@@ -1437,6 +1619,7 @@ void SAMPBridge::InitializeJobTracker() {
 
     jobChatAdapter_->SetCallback([this](const jobs::JobChatEvent& event) {
         if (!event.hasPlayerPrefix) ObserveServerEngineStartMessage(event.normalizedLine);
+        if (!event.hasPlayerPrefix && !g_emittingBinderLocalMessage) QueueCombatChat(event.normalizedLine);
         NotifyIncomingChat(event.normalizedLine);
         if (jobTracker_ != nullptr) {
             const std::vector<jobs::JobEvent> recordedEvents = jobTracker_->HandleChatEvent(event);
@@ -1548,6 +1731,7 @@ void SAMPBridge::InitializeKillTracker() {
 }
 
 void SAMPBridge::ShutdownKillTracker() {
+    ResetCombatChat();
     if (!killTrackerInitialized_) {
         return;
     }
@@ -1562,6 +1746,7 @@ void SAMPBridge::ShutdownKillTracker() {
 }
 
 void SAMPBridge::UpdateKillTracker() {
+    UpdateCombatChat(RuntimeTickCount());
     if (!killTrackerInitialized_ || !killTracker_ || !killfeedAdapter_ || !killTracker_->IsEnabled()) {
         return;
     }
@@ -1837,14 +2022,20 @@ void SAMPBridge::UpdateAutoEngineStart(unsigned long now) {
     // setting cannot create another automatic press in the same entry.
     if (!autoEngineStartEnabled_ || autoEngineEntryConsumed_) return;
     if (!autoEngineStartPending_) {
-        // GTA can briefly set bEngineOn while seating the driver, before the
-        // server applies its manual engine state. Decide after the entry delay.
+        // Start as soon as the driver's seat is usable and the short server-
+        // addon guard elapsed. Transient engine-on states are observed below.
         autoEngineStartPending_ = true;
         autoEngineStartAt_ = now + kAutoEngineStartDelayMs;
         Log("Auto engine start: driver vehicle detected, id=" + std::to_string(vehicleId));
     }
     if (static_cast<long>(now - autoEngineStartAt_) < 0) return;
     if (engineOn) {
+        // GTA can briefly report engine-on during seating before the server
+        // applies manual engine-off. Observe that transition without delaying
+        // the fast path for a genuinely stopped engine. An addon confirmation
+        // consumes the entry immediately, even while this native flag lags.
+        if (static_cast<long>(now - (autoEngineStartAt_ - kAutoEngineStartDelayMs
+            + kAutoEngineRunningConfirmationMs)) < 0) return;
         // An already running engine completes this entry as well. A later
         // manual stop must not be undone by the binder.
         autoEngineEntryConsumed_ = true;
@@ -2062,6 +2253,8 @@ void SAMPBridge::RecordLocalPlayerDeath(const std::string& killer, int weaponId)
         " weapon=" + std::to_string(weaponId));
 
     lastLocalDeathTime_ = std::time(nullptr);
+    hasCombatChatDeath_ = true;
+    lastCombatChatDeathAt_ = RuntimeTickCount();
     SendLocalMessage("{33CCFF}[NL-BINDER]{FFFFFF} Du bist gestorben. Deine aktuelle Tode: " +
         std::to_string(killTracker_->GetTotalDeaths()));
 }
@@ -2077,7 +2270,9 @@ void SAMPBridge::UpdateLocalDeathFallback() {
             && static_cast<long>(RuntimeTickCount() - localDeathAwaitDeadline_) < 0) {
             return;
         }
+        const bool observedRespawn = localPlayerWasDead_;
         ResetKillTrackerDeathInferenceState();
+        if (observedRespawn) hasCombatChatDeath_ = false;
         return;
     }
 
@@ -2504,16 +2699,140 @@ void SAMPBridge::RefreshDamageTracking() {
 void SAMPBridge::HandleLocalKill(killtracker::KillEvent event) {
     if (!killTracker_ || !killTracker_->IsEnabled()) return;
     if (event.timestamp == 0) event.timestamp = std::time(nullptr);
-    if (!event.isServerStatsOnly && killTracker_->CompleteServerStatsKill(event)) {
-        Log("[SAMPBridge] Death feed confirmed the already counted server-stat kill");
+    if (event.isServerStatsOnly) event.victimKnown = false;
+    const unsigned long now = RuntimeTickCount();
+    const unsigned long noticeTick = processingCombatChat_ ? currentCombatNoticeTick_ : now;
+    const auto age = [now](unsigned long at) { return static_cast<long>(now - at) < 0 ? 0ul : now - at; };
+    combatKillObservations_.erase(std::remove_if(combatKillObservations_.begin(), combatKillObservations_.end(),
+        [&age](const CombatKillObservation& item) { return age(item.at) > 5000; }), combatKillObservations_.end());
+    CombatKillObservation* existing = nullptr;
+    const bool nativeEvent = !event.isServerStatsOnly && !event.isServerChatOnly;
+    const auto nativeConflict = [&](const CombatKillObservation& item) {
+        return nativeEvent && item.native
+            && ((item.victimId >= 0 && event.victimId >= 0 && item.victimId != event.victimId)
+                || (killtracker::IsValidWeaponId(item.nativeWeaponId) && killtracker::IsValidWeaponId(event.weaponId)
+                    && item.nativeWeaponId != event.weaponId));
+    };
+    if (!event.isServerStatsOnly) {
+        if (nativeEvent && event.victimId >= 0) {
+            for (auto it = combatKillObservations_.rbegin(); it != combatKillObservations_.rend(); ++it) {
+                if (!nativeConflict(*it) && it->native && it->victimId == event.victimId) { existing = &*it; break; }
+            }
+        }
+        // Prefer a named match. Distinct victims always remain distinct, even
+        // when multiple kills arrive during the same rendered frame.
+        if (!existing && event.victimKnown) {
+            for (auto it = combatKillObservations_.rbegin(); it != combatKillObservations_.rend(); ++it) {
+                if (!nativeConflict(*it) && it->victimKnown && killtracker::SameCombatPlayerName(it->victim, event.victim)) { existing = &*it; break; }
+            }
+            if (!existing) {
+                for (auto it = combatKillObservations_.rbegin(); it != combatKillObservations_.rend(); ++it) {
+                    if (!nativeConflict(*it) && !it->victimKnown && (!event.isServerChatOnly || !(it->families & event.chatNoticeFamily))) { existing = &*it; break; }
+                }
+            }
+        } else if (!existing && nativeEvent && event.victimId >= 0) {
+            for (auto it = combatKillObservations_.rbegin(); it != combatKillObservations_.rend(); ++it) {
+                if (!nativeConflict(*it) && it->native && it->victimId == event.victimId) { existing = &*it; break; }
+            }
+            if (!existing) {
+                for (auto it = combatKillObservations_.rbegin(); it != combatKillObservations_.rend(); ++it) {
+                    if (!it->native && !it->victimKnown) { existing = &*it; break; }
+                }
+            }
+        } else if (!existing && event.isServerChatOnly) {
+            // Different personal confirmation formats can describe one kill.
+            // Repeating the same format is another server-confirmed kill,
+            // including two kills delivered in the same frame. Do not invent a
+            // duplicate callback window that could discard an explosion kill.
+            for (auto it = combatKillObservations_.rbegin(); it != combatKillObservations_.rend(); ++it) {
+                if (age(it->at) > 1200) break;
+                if (!(it->families & event.chatNoticeFamily)) { existing = &*it; break; }
+            }
+        }
+    }
+    if (existing) {
+        killTracker_->EnrichKillObservation(existing->id, event);
+        if (event.victimKnown) { existing->victimKnown = true; existing->victim = event.victim; }
+        if (nativeEvent) {
+            existing->native = true;
+            if (killtracker::IsValidWeaponId(event.weaponId)) existing->nativeWeaponId = event.weaponId;
+        }
+        if (event.victimId >= 0) existing->victimId = event.victimId;
+        existing->families |= event.chatNoticeFamily;
+        existing->lastNoticeAt = noticeTick;
         return;
     }
+    event.observationId = nextCombatObservationId_++;
     if (!killTracker_->ProcessKillEvent(event)) return;
+    combatKillObservations_.push_back({event.observationId, now, noticeTick, event.victim, event.victimKnown,
+        nativeEvent, event.chatNoticeFamily, event.victimId,
+        nativeEvent && killtracker::IsValidWeaponId(event.weaponId) ? event.weaponId : -1});
+    if (combatKillObservations_.size() > 64) combatKillObservations_.erase(combatKillObservations_.begin());
     lastLocalKillTime_ = std::time(nullptr);
     if (killTrackerLocalKillMessageEnabled_) SendLocalMessage(FormatKillTrackerLocalKillMessage(event));
     if (killTrackerServerKillMessageEnabled_) SendKillTrackerServerMessage(FormatKillTrackerServerKillMessage(event));
     if (hitmarkerKillCallback_) hitmarkerKillCallback_(event);
     Log("[SAMPBridge] Local kill counted: " + event.victim);
+}
+
+void SAMPBridge::QueueCombatChat(const std::string& text) {
+    if (text.empty() || text.size() > 4096) return;
+    std::lock_guard<std::mutex> lock(combatChatMutex_);
+    if (pendingCombatChat_.size() >= 128) pendingCombatChat_.erase(pendingCombatChat_.begin());
+    pendingCombatChat_.push_back({text, RuntimeTickCount()});
+}
+
+void SAMPBridge::ResetCombatChat() {
+    { std::lock_guard<std::mutex> lock(combatChatMutex_); pendingCombatChat_.clear(); }
+    combatKillObservations_.clear();
+    combatChatConnected_ = false; combatChatPlayer_.clear();
+    hasCombatChatDeath_ = false; processingCombatChat_ = false;
+}
+
+void SAMPBridge::UpdateCombatChat(unsigned long now) {
+    std::vector<PendingCombatChat> lines;
+    { std::lock_guard<std::mutex> lock(combatChatMutex_); lines.swap(pendingCombatChat_); }
+    now = RuntimeTickCount();
+    auto* network = GetNetGame();
+    const bool connected = network && network->m_nGameState == sampapi::v03dl::CNetGame::GAME_MODE_CONNECTED;
+    const auto localName = GetLocalPlayerName();
+    if (!connected || !killTracker_ || !killTracker_->IsEnabled() || localName.empty()) {
+        if (combatChatConnected_) ResetCombatChat();
+        return;
+    }
+    if (combatChatConnected_ && !killtracker::SameCombatPlayerName(localName, combatChatPlayer_)) ResetCombatChat();
+    combatChatConnected_ = true; combatChatPlayer_ = localName;
+    for (const auto& line : lines) {
+        if (static_cast<long>(now - line.at) >= 0 && now - line.at > 5000) continue;
+        const auto notice = killtracker::ParseCombatChat(line.text, localName);
+        if (notice.kind == killtracker::CombatChatKind::Kill) {
+            killtracker::KillEvent event;
+            event.killer = localName;
+            event.victim = notice.victimKnown ? notice.victim : "Unbekannt";
+            event.victimKnown = notice.victimKnown;
+            event.isLocalPlayer = true; event.isServerChatOnly = true;
+            event.chatNoticeFamily = static_cast<std::uint32_t>(notice.family);
+            event.timestamp = std::time(nullptr);
+            processingCombatChat_ = true; currentCombatNoticeTick_ = line.at;
+            HandleLocalKill(std::move(event));
+            processingCombatChat_ = false;
+        } else if (notice.kind == killtracker::CombatChatKind::Death) {
+            // The RPC/native wasted state may lag a server chat notification.
+            // Keep the existing life guard, plus a short chat correlation window.
+            if (!localDeathHandledForCurrentLife_ && (!hasCombatChatDeath_ || now - lastCombatChatDeathAt_ > 5000)) {
+                RecordLocalPlayerDeath(notice.killer, -1);
+                hasCombatChatDeath_ = true; lastCombatChatDeathAt_ = now;
+            }
+        } else if (notice.kind == killtracker::CombatChatKind::KillCorroboration) {
+            // This line names the prisoner, not the killer. It may corroborate
+            // a known own kill but cannot independently establish attribution.
+            for (auto it = combatKillObservations_.rbegin(); it != combatKillObservations_.rend(); ++it) {
+                if (now - it->at <= 5000 && it->victimKnown && killtracker::SameCombatPlayerName(it->victim, notice.victim)) {
+                    it->families |= static_cast<std::uint32_t>(notice.family); break;
+                }
+            }
+        }
+    }
 }
 
 void SAMPBridge::HandleDeathMessage(const killtracker::DeathMessageEvent& event) {
@@ -2545,7 +2864,11 @@ void SAMPBridge::HandleDeathMessage(const killtracker::DeathMessageEvent& event)
         killtracker::KillEvent kill;
         kill.killer = GetLocalPlayerName();
         kill.victim = playerName(event.victimId);
-        if (kill.victim.empty()) kill.victim = "Player_" + std::to_string(event.victimId);
+        kill.victimId = event.victimId;
+        if (kill.victim.empty()) {
+            kill.victimKnown = false;
+            kill.victim = "Player_" + std::to_string(event.victimId);
+        }
         kill.weaponId = event.weaponId;
         kill.timestamp = event.timestamp;
         kill.isLocalPlayer = true;
