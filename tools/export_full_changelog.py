@@ -22,12 +22,12 @@ def main():
     source = root / "docs/review/CHANGELOG-DE.md"
     target = root / "docs/CHANGELOG-GESAMT.txt"
     text = source.read_text(encoding="utf-8")
-    required = {f"## {number}. " for number in range(1, 19)}
+    required = {f"## {number}. " for number in range(1, 20)}
     if not all(marker in text for marker in required):
-        raise ValueError("Complete change history sections 1–18 required")
+        raise ValueError("Complete change history sections 1–19 required")
     result = render(text)
     target.write_text(result, encoding="utf-8-sig", newline="\n")
-    print(f"Full changelog: {len(result.splitlines())} lines, sections 1–18, {target.name}")
+    print(f"Full changelog: {len(result.splitlines())} lines, sections 1–19, {target.name}")
 
 
 if __name__ == "__main__":

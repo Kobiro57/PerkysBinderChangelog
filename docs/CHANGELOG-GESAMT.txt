@@ -838,3 +838,80 @@ bereitgestellt. Vorhandene ältere Quellkopien werden vor einer Erneuerung
 gesichert. Alle bisherigen Änderungen bleiben im GitHub-Verlauf erreichbar.
 Die Paketnachweise gehören zum r12-Paket (../../dist/NLBinder-0.1.1-r12/BUILD-INFO.txt).
 Ein echter Ingame-Test auf dem konkreten Server steht aus.
+
+19. Nachtrag r13 – 30. Oktober 2026
+===================================
+
+Friedhofsmeldung als maßgebliche Todesquelle
+--------------------------------------------
+
+Die eigene Friedhofsmeldung löst wieder die Todeszählung aus. Ein nativer
+0-HP-Zustand erhöht den Todeszähler nicht mehr.
+Die lokale Todesbenachrichtigung und die Übernahme echter Gesamtstände aus
+der eigenen Serverstatistik bleiben erhalten. Diese Umstellung ersetzt die
+in r12 dokumentierte Entscheidung, die Friedhofsmeldung zu ignorieren.
+
+Wiederholte Friedhofsbestätigungen innerhalb von fünf Sekunden werden
+zusammengefasst. Ein bereits aus der eigenen Statistik übernommener neuer
+Gesamtstand wird bestätigt und nicht erneut erhöht. Beispielsweise bleibt
+213 → Statistik 214 → Friedhof bei 214. Dies gilt auch für die erste
+automatische Synchronisation nach dem Login.
+
+Quellen: CombatChatParser.cpp (../../src/CombatChatParser.cpp),
+SAMPBridge.cpp (../../src/SAMPBridge.cpp).
+Tests: CombatChatParserTests.cpp (../../tests/CombatChatParserTests.cpp),
+CombatChatBridgeTests.cpp (../../tests/CombatChatBridgeTests.cpp),
+SAMPBridgeTests.cpp (../../tests/SAMPBridgeTests.cpp).
+
+Echte Fall- und Explosionsereignisse im Damagelog
+-------------------------------------------------
+
+Der zusätzliche Schadenspfad liest echte eingehende TakeDamage-Ereignisse aus
+RPC 115. Das führende Bool true bedeutet eingehenden Schaden. Umweltschaden
+mit Angreifer 65535 bleibt gültig. Der im Payload enthaltene Betrag wird nicht
+nochmals skaliert. Der zusätzliche Pfad gilt für Umwelt-/Explosionsquellen;
+ausgehender Schaden wird dadurch nicht als eigener erlittener Treffer geloggt.
+
+Wenn native HP-/Westenwerte unmessbar sind, werden ersatzweise die wirklich
+vom Client gesendeten Werte aus Onfoot-, Fahrer- oder Passagier-Sync gelesen
+(Pakete 207, 200, 211). Nur die unmessbaren Werte werden ergänzt. Ein Paket
+muss zum selben Ped, Modus und gegebenenfalls Fahrzeug gehören und darf
+höchstens 500 ms alt sein. Ein geratener Schutzwert-Decoder wird nicht benutzt.
+
+Der Fallback-Betrag ist durch die bekannten verbleibenden HP-/Westenwerte
+begrenzt. Fehlen diese, wartet das Ereignis höchstens 1500 ms auf echte
+Sync-/Serverdaten; ohne verlässlichen Reststand entsteht keine unbestätigte
+Überkillzahl. Tatsächliche Serverwerte aus RPC 14/66 erneuern das Budget auch
+dann, wenn der sichtbare Stand gleich bleibt.
+Gemessene HP- und Westenanteile werden getrennt zugeordnet. Eine echte
+HP-Heilung entfernt alte HP-Zuordnungen in beiden Abgleichsrichtungen, damit
+ein neuer Fall nicht stumm bleibt. Eine reine Westenheilung erhält dagegen
+die noch ausstehende HP-Zuordnung eines Falls. Das gilt für native und
+serverseitig empfangene Heilwerte.
+
+Quellenbezogene Guthaben gleichen die verschiedenen Beobachtungen desselben
+Treffers ab. Vorheriger Gewehrschaden kann dadurch keinen gleich hohen Fall
+verschlucken. Der Abgleich verfällt erst nach mehr als 750 ms und mehr als
+drei tatsächlichen Zwischenpolls; ein einzelner 800-ms-Frame-Stillstand hebt
+die Zuordnung nicht sofort auf. Login, Pedwechsel, fehlender Ped und der
+Damagelog-Schalter verwerfen alte Zustände. Der Hitsound bleibt getrennt.
+
+Die End-to-End-Suite enthält zwölf bisherige und vierzehn zusätzliche Fälle für
+echte RPC-/Syncdaten, beide Beobachtungsreihenfolgen, neue Treffer nach Ablauf
+des Abgleichsfensters, Heilungen und die Schutzbedingungen. Die früheren r12-Prüfungen
+bleiben historische automatisierte Nachweise; sie belegen keinen erfolgreichen
+Live-Test auf dem Server. Das Präfix bleibt {33CCFF}[NL-BINDER].
+
+Quellen: SAMPBridge.cpp (../../src/SAMPBridge.cpp),
+DamageRPCAdapter.cpp (../../src/DamageRPCAdapter.cpp),
+IncomingDamageDetector.h (../../include/IncomingDamageDetector.h).
+Tests: DamageLogRegressionTests.cpp (../../tests/DamageLogRegressionTests.cpp).
+
+Die Ausgabe heißt weiterhin NLBinder.asi. Der vollständige TXT-Changelog
+enthält die Abschnitte 1–19. Die spätere Erneuerung des Desktop-Quellordners
+NLBinder-masterNEW bewahrt die vorhandene r12-Kopie als Sicherung.
+Persönliche Laufzeitdaten, Chatlogs, Konfigurationen und Zugangsdaten werden
+nicht veröffentlicht. Ältere GitHub-Stände und ursprüngliche Urheberhinweise
+bleiben erhalten. Die finalen Nachweise gehören zum
+r13-Paket (../../dist/NLBinder-0.1.1-r13/BUILD-INFO.txt).
+Ein echter Ingame-Test auf dem konkreten Server steht aus.

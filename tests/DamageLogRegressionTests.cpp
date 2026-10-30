@@ -3,6 +3,7 @@
 #include "../include/SAMPBridge.h"
 #include "../include/SettingsManager.h"
 #include "../include/RakHook/include/RakNet/BitStream.h"
+#include "../include/RakHook/include/RakNet/PacketEnumerations.h"
 
 #include <algorithm>
 #include <cstdio>
@@ -33,6 +34,9 @@ struct DamageFixture {
     int source = keybinder::damage_source::kFall;
     const void* ped = reinterpret_cast<const void*>(0x1000);
     bool available = true;
+    bool useNetworkVitals = false;
+    unsigned char syncMode = ID_PLAYER_SYNC;
+    unsigned short syncVehicle = 0xFFFF;
     int sounds = 0;
     unsigned long tick = 1000;
     std::vector<std::string> messages;
@@ -74,7 +78,9 @@ struct DamageFixture {
         hooks.getLocalPlayerId = [] { return 5; };
         hooks.getLocalPlayerName = [] { return std::string("DamagePlayer"); };
         hooks.readLocalDamageSample = [this](float& health, float& vest, int& weapon, const void*& identity) {
-            health = hp; vest = armour; weapon = source; identity = ped; return available;
+            health = hp; vest = armour; weapon = source; identity = ped;
+            if (useNetworkVitals) bridge.ApplyLocalSyncVitalsForTesting(health, vest, syncMode, syncVehicle, ped);
+            return available;
         };
         hooks.isStartupStatsReady = [] { return false; };
         hooks.isStartupJobSkillsReady = [] { return false; };
@@ -96,6 +102,37 @@ struct DamageFixture {
         payload.Write(value);
         const int offset = payload.GetReadOffset();
         bridge.ProcessScriptedHealthRpcForTesting(id, &payload);
+        return offset == payload.GetReadOffset();
+    }
+    bool TakeDamage(float amount, unsigned int weapon = 54, bool incoming = true) {
+        RakNet::BitStream payload;
+        payload.Write(incoming);
+        payload.Write(static_cast<unsigned short>(0xFFFF)); // No player attacker for a fall.
+        payload.Write(amount);
+        payload.Write(weapon);
+        payload.Write(static_cast<unsigned int>(3));
+        const int offset = payload.GetReadOffset();
+        bridge.ProcessDamageRpcForTesting(&payload);
+        return offset == payload.GetReadOffset();
+    }
+    bool Sync(unsigned char mode, unsigned char health, unsigned char vest, unsigned short vehicle = 0xFFFF) {
+        RakNet::BitStream payload;
+        payload.Write(mode);
+        if (mode == ID_PLAYER_SYNC) {
+            sampapi::v03dl::Synchronization::OnfootData data{};
+            data.m_nHealth = health; data.m_nArmor = vest;
+            payload.Write(data);
+        } else if (mode == ID_VEHICLE_SYNC) {
+            sampapi::v03dl::Synchronization::IncarData data{};
+            data.m_nVehicle = vehicle; data.m_nDriverHealth = health; data.m_nDriverArmor = vest;
+            payload.Write(data);
+        } else if (mode == ID_PASSENGER_SYNC) {
+            sampapi::v03dl::Synchronization::PassengerData data{};
+            data.m_nVehicleId = vehicle; data.m_nHealth = health; data.m_nArmor = vest;
+            payload.Write(data);
+        }
+        const int offset = payload.GetReadOffset();
+        bridge.ProcessLocalSyncPacketForTesting(&payload);
         return offset == payload.GetReadOffset();
     }
     bool Message(std::size_t index, const char* amount, const char* kind = "HP Schaden") const {
@@ -283,6 +320,194 @@ bool EnhancedHealthIsNotCappedAtOneHundred() {
     CHECK(f.messages.size() == 1 && f.Message(0, "150,0", "Weste + HP Schaden"));
     return true;
 }
+
+bool ActualTakeDamage54WithNoPersistentHpChangeLogsTheRealFall() {
+    DamageFixture f;
+    CHECK(f.ready && f.TakeDamage(20.0f));
+    f.Step();
+    CHECK(f.messages.size() == 1 && f.Message(0, "20,0"));
+    CHECK(f.TakeDamage(20.0f)); f.Step();
+    CHECK(f.messages.size() == 2 && f.Message(1, "20,0"));
+    CHECK(f.sounds == 0);
+    return true;
+}
+
+bool ActualFallRpcAndMeasuredHpAreDeduplicatedInEitherOrder() {
+    DamageFixture f;
+    CHECK(f.ready && f.TakeDamage(20.0f)); f.Step();
+    f.hp = 80.0f; f.Step();
+    CHECK(f.messages.size() == 1 && f.Message(0, "20,0"));
+    f.hp = 65.0f; f.Step();
+    CHECK(f.messages.size() == 2 && f.Message(1, "15,0"));
+    CHECK(f.TakeDamage(15.0f)); f.Step();
+    CHECK(f.messages.size() == 2);
+    CHECK(f.Rpc(14, 55.0f) && f.TakeDamage(10.0f));
+    f.hp = 55.0f; f.Step(); f.Step();
+    CHECK(f.messages.size() == 3 && f.Message(2, "10,0"));
+    return true;
+}
+
+bool GunDamageCannotHideAnUnrelatedRealFallWithTheSameAmount() {
+    DamageFixture f;
+    CHECK(f.ready);
+    f.source = 24; f.hp = 80.0f; f.Step();
+    CHECK(f.messages.size() == 1 && f.Message(0, "20,0"));
+    CHECK(f.TakeDamage(20.0f)); f.Step();
+    CHECK(f.messages.size() == 2 && f.Message(1, "20,0"));
+    return true;
+}
+
+bool SameValueAuthoritativeServerHealRefreshesTheRealDamageBudget() {
+    DamageFixture f(50.0f, 0.0f);
+    CHECK(f.ready && f.TakeDamage(20.0f)); f.Step();
+    CHECK(f.messages.size() == 1 && f.Message(0, "20,0"));
+    CHECK(f.Rpc(14, 50.0f)); f.Step(); // Real server event, not an identical frame poll.
+    CHECK(f.TakeDamage(40.0f)); f.Step();
+    CHECK(f.messages.size() == 2 && f.Message(1, "40,0"));
+    return true;
+}
+
+bool ActualFallRpcStillWorksWithPersistentlyUnmeasurableNativeHp() {
+    DamageFixture f(8000050.0f, 0.0f);
+    CHECK(f.ready);
+    for (int i = 0; i < 8; ++i) f.Step();
+    CHECK(f.TakeDamage(12.5f)); f.Step();
+    CHECK(f.messages.empty()); // Wait for a trustworthy rest value, not an invented cap.
+    f.useNetworkVitals = true;
+    CHECK(f.Sync(ID_PLAYER_SYNC, 50, 0)); f.Step();
+    CHECK(f.messages.size() == 1 && f.Message(0, "12,5"));
+    CHECK(f.sounds == 0);
+    return true;
+}
+
+bool UnknownExplosionAmountWaitsForActualSyncInsteadOfPrintingOverkill() {
+    DamageFixture f(8000050.0f, 0.0f);
+    f.source = 51; f.useNetworkVitals = true;
+    CHECK(f.ready && f.TakeDamage(50000.0f, 51)); f.Step();
+    CHECK(f.messages.empty());
+    CHECK(f.Sync(ID_PLAYER_SYNC, 50, 0)); f.Step();
+    CHECK(f.messages.size() == 1 && f.Message(0, "50,0"));
+    return true;
+}
+
+bool ALongFrameDoesNotTurnADelayedConfirmedReflectionIntoAnotherHit() {
+    DamageFixture f;
+    CHECK(f.ready && f.TakeDamage(20.0f)); f.Step();
+    CHECK(f.messages.size() == 1);
+    f.tick += 800; f.hp = 80.0f; f.Step();
+    CHECK(f.messages.size() == 1);
+    CHECK(f.TakeDamage(10.0f)); f.Step();
+    f.tick += 800; CHECK(f.Rpc(14, 70.0f)); f.hp = 70.0f; f.Step();
+    CHECK(f.messages.size() == 2 && f.Message(1, "10,0"));
+    return true;
+}
+
+bool OldUnreflectedCreditsExpireAfterActualInterveningPolls() {
+    DamageFixture f;
+    CHECK(f.ready && f.TakeDamage(20.0f)); f.Step();
+    CHECK(f.messages.size() == 1);
+    for (int i = 0; i < 5; ++i) f.Step();
+    f.tick += 800; f.Step();
+    f.hp = 80.0f; f.Step(); // A later true fall with no RPC must still be logged.
+    CHECK(f.messages.size() == 2 && f.Message(1, "20,0"));
+    return true;
+}
+
+bool ArmourHealingDoesNotEraseAHealthOnlyFallReflectionCredit() {
+    DamageFixture f(50.0f, 0.0f);
+    CHECK(f.ready && f.TakeDamage(20.0f)); f.Step();
+    CHECK(f.Rpc(66, 50.0f)); f.armour = 50.0f; f.Step();
+    f.hp = 30.0f; f.Step();
+    CHECK(f.messages.size() == 1 && f.Message(0, "20,0"));
+    CHECK(f.TakeDamage(10.0f)); f.Step();
+    f.armour = 60.0f; f.Step(); // Native-only armour heal has the same pool boundary.
+    f.hp = 20.0f; f.Step();
+    CHECK(f.messages.size() == 2 && f.Message(1, "10,0"));
+    return true;
+}
+
+bool HealthHealingRetiresOldMeasuredCreditsBeforeANewRealFall() {
+    DamageFixture f;
+    CHECK(f.ready);
+    f.hp = 80.0f; f.Step();
+    f.hp = 100.0f; f.Step(); // New native health basis.
+    CHECK(f.TakeDamage(20.0f)); f.Step();
+    CHECK(f.messages.size() == 2 && f.Message(0, "20,0") && f.Message(1, "20,0"));
+    f.hp = 80.0f; f.Step(); // Reflection of the last RPC, not another hit.
+    f.hp = 60.0f; f.Step();
+    CHECK(f.messages.size() == 3);
+    CHECK(f.Rpc(14, 100.0f)); f.hp = 100.0f; f.Step(); // Explicit server heal basis.
+    CHECK(f.TakeDamage(20.0f)); f.Step();
+    CHECK(f.messages.size() == 4 && f.Message(3, "20,0"));
+    return true;
+}
+
+bool ActualSentSyncVitalsMakeProtectedNativeHealthMeasurable() {
+    DamageFixture f(8000050.0f, 0.0f);
+    f.useNetworkVitals = true;
+    CHECK(f.ready && f.Sync(ID_PLAYER_SYNC, 50, 0)); f.Step();
+    CHECK(f.messages.empty());
+    f.hp = 8000035.0f;
+    CHECK(f.Sync(ID_PLAYER_SYNC, 35, 0)); f.Step();
+    CHECK(f.messages.size() == 1 && f.Message(0, "15,0"));
+    CHECK(f.TakeDamage(15.0f)); f.Step();
+    CHECK(f.messages.size() == 1); // The real RPC is the same observed fall.
+    return true;
+}
+
+bool ExplosionRpcUsesFiniteRemainingSyncHpInsteadOfMillions() {
+    DamageFixture f(8000050.0f, 0.0f);
+    f.useNetworkVitals = true; f.source = 51;
+    CHECK(f.ready && f.Sync(ID_PLAYER_SYNC, 50, 0)); f.Step();
+    CHECK(f.TakeDamage(8000050.0f, 51)); f.Step();
+    CHECK(f.messages.size() == 1 && f.Message(0, "50,0"));
+    f.hp = 8000000.0f;
+    CHECK(f.Sync(ID_PLAYER_SYNC, 0, 0)); f.Step(); f.Step();
+    CHECK(f.messages.size() == 1);
+    return true;
+}
+
+bool LocalSyncFallbackRejectsOldWrongModeWrongVehicleAndWrongPed() {
+    DamageFixture f(8000050.0f, 8000025.0f);
+    CHECK(f.ready && f.Sync(ID_PLAYER_SYNC, 50, 25));
+    float hp = f.hp, armour = f.armour;
+    CHECK(f.bridge.ApplyLocalSyncVitalsForTesting(hp, armour, ID_PLAYER_SYNC, 0xFFFF, f.ped));
+    CHECK(hp == 50.0f && armour == 25.0f);
+    hp = f.hp; armour = f.armour;
+    CHECK(!f.bridge.ApplyLocalSyncVitalsForTesting(hp, armour, ID_PASSENGER_SYNC, 42, f.ped));
+    CHECK(!f.bridge.ApplyLocalSyncVitalsForTesting(hp, armour, ID_PLAYER_SYNC, 0xFFFF,
+        reinterpret_cast<const void*>(0x9999)));
+    f.tick += 501;
+    CHECK(!f.bridge.ApplyLocalSyncVitalsForTesting(hp, armour, ID_PLAYER_SYNC, 0xFFFF, f.ped));
+    CHECK(f.Sync(ID_VEHICLE_SYNC, 40, 20, 42));
+    CHECK(!f.bridge.ApplyLocalSyncVitalsForTesting(hp, armour, ID_VEHICLE_SYNC, 43, f.ped));
+    CHECK(f.bridge.ApplyLocalSyncVitalsForTesting(hp, armour, ID_VEHICLE_SYNC, 42, f.ped));
+    CHECK(hp == 40.0f && armour == 20.0f);
+    hp = f.hp; armour = f.armour;
+    CHECK(f.Sync(ID_PASSENGER_SYNC, 30, 10, 42));
+    CHECK(f.bridge.ApplyLocalSyncVitalsForTesting(hp, armour, ID_PASSENGER_SYNC, 42, f.ped));
+    CHECK(hp == 30.0f && armour == 10.0f);
+    hp = 5000.0f; armour = 500.0f;
+    CHECK(!f.bridge.ApplyLocalSyncVitalsForTesting(hp, armour, ID_PASSENGER_SYNC, 42, f.ped));
+    CHECK(hp == 5000.0f && armour == 500.0f);
+    return true;
+}
+
+bool IncomingRpcFallbackKeepsLoginToggleAndDirectionGuards() {
+    DamageFixture f;
+    CHECK(f.ready && f.TakeDamage(20.0f, 54, false)); f.Step();
+    CHECK(f.messages.empty()); // GiveDamage cannot be mistaken for self damage.
+    CHECK(f.TakeDamage(std::numeric_limits<float>::quiet_NaN())); f.Step();
+    CHECK(f.messages.empty());
+    f.local.get()->m_bDoesSpectating = TRUE; f.Step();
+    CHECK(f.TakeDamage(20.0f)); f.Step();
+    CHECK(f.messages.empty());
+    f.local.get()->m_bDoesSpectating = FALSE; f.Step();
+    f.settings.GetMutable().damage_log_enabled = false; f.Step();
+    CHECK(f.TakeDamage(20.0f)); f.Step();
+    CHECK(f.messages.empty());
+    return true;
+}
 } // namespace
 
 int RunDamageLogRegressionTests() {
@@ -302,6 +527,20 @@ int RunDamageLogRegressionTests() {
     RUN(LethalRpcBeforeNativeDeathNeverCountsTheRemainingHealthTwice);
     RUN(LoginToggleMissingPedAndPedReplacementDiscardOldDamage);
     RUN(EnhancedHealthIsNotCappedAtOneHundred);
+    RUN(ActualTakeDamage54WithNoPersistentHpChangeLogsTheRealFall);
+    RUN(ActualFallRpcAndMeasuredHpAreDeduplicatedInEitherOrder);
+    RUN(GunDamageCannotHideAnUnrelatedRealFallWithTheSameAmount);
+    RUN(SameValueAuthoritativeServerHealRefreshesTheRealDamageBudget);
+    RUN(ActualFallRpcStillWorksWithPersistentlyUnmeasurableNativeHp);
+    RUN(UnknownExplosionAmountWaitsForActualSyncInsteadOfPrintingOverkill);
+    RUN(ALongFrameDoesNotTurnADelayedConfirmedReflectionIntoAnotherHit);
+    RUN(OldUnreflectedCreditsExpireAfterActualInterveningPolls);
+    RUN(ArmourHealingDoesNotEraseAHealthOnlyFallReflectionCredit);
+    RUN(HealthHealingRetiresOldMeasuredCreditsBeforeANewRealFall);
+    RUN(ActualSentSyncVitalsMakeProtectedNativeHealthMeasurable);
+    RUN(ExplosionRpcUsesFiniteRemainingSyncHpInsteadOfMillions);
+    RUN(LocalSyncFallbackRejectsOldWrongModeWrongVehicleAndWrongPed);
+    RUN(IncomingRpcFallbackKeepsLoginToggleAndDirectionGuards);
 #undef RUN
     std::printf("DamageLogRegressionTests: %d checks, %d failures\n", checks, failed);
     return failed;

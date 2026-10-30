@@ -1,6 +1,108 @@
 # Hinweise zur Prüfung durch die Projektleitung
 
-## Aktueller Stand r12 – 30. Oktober 2026
+## Aktueller Stand r13 – 30. Oktober 2026
+
+Der aktuelle Stand ist **NLBinder v.0.1.1 by KOBiRO, r13**.
+[Bedienung](../NLBinder-0.1.1-r13-DE.md),
+[r13-Nachtrag](CHANGELOG-DE.md#19-nachtrag-r13--30-oktober-2026) und
+[vollständiger TXT-Changelog](../CHANGELOG-GESAMT.txt) dokumentieren diesen Stand.
+
+### Verhalten und prüfbarer Umfang
+
+Auf Wunsch des Benutzers wird die eigene Friedhofsmeldung wieder als
+maßgeblicher Auslöser der Todeszählung ausgewertet. Ein nativer 0-HP-Zustand
+erhöht den Todeszähler nicht mehr. Die lokale Todesbenachrichtigung
+bleibt an den erkannten eigenen Tod gebunden. Diese Änderung ersetzt das
+in r12 dokumentierte Verhalten, bei dem die Friedhofszeile ignoriert wurde.
+
+Wiederholte Friedhofsbestätigungen innerhalb von fünf Sekunden zählen nicht
+erneut. Ist der neue Gesamt-Todesstand bereits aus der eigenen Statistik
+übernommen, bestätigt die Friedhofszeile diesen Stand und erhöht ihn nicht
+noch einmal. Das gilt auch bei der ersten automatischen Synchronisation.
+
+Der Damagelog verarbeitet zusätzlich echte eingehende Umwelt-/Explosions-
+Ereignisse aus dem clientseitig gesendeten TakeDamage-RPC 115. Das führende
+Bool `true` kennzeichnet eingehenden Schaden; ein Angreiferwert 65535 ist bei
+Umweltschaden erlaubt. Der Schadenbetrag aus dem Payload wird unverändert
+verwendet und nicht nochmals skaliert. Normale ausgehende Treffer werden
+nicht als eigener erlittener Schaden ausgegeben.
+
+Sind native HP-/Westenwerte unmessbar, kann der Binder ersatzweise die
+wirklich vom Client gesendeten Werte aus Onfoot-/Fahrer-/Passagier-Sync
+(Pakete 207/200/211) lesen. Diese Ergänzung gilt nur für die unmessbaren
+Werte und verlangt denselben Ped, Modus und gegebenenfalls dasselbe Fahrzeug
+sowie ein höchstens 500 ms altes Paket. Es wird kein Schutzwert durch einen
+geratenen Zahlenoffset dekodiert.
+
+Der Fallback wird auf die bekannten verbleibenden HP-/Westenwerte begrenzt.
+Ohne vertrauenswürdigen Reststand wartet das Ereignis höchstens 1500 ms auf
+echte Sync-/Serverwerte; ohne diese Basis wird keine unbestätigte Überkillzahl
+ausgegeben. Echte Server-HP-/Westenwerte aus RPC 14/66 erneuern das Budget auch
+bei unverändertem sichtbarem Stand. Quellfamilien verhindern, dass vorheriger
+Gewehrschaden einen späteren Fall mit gleichem Betrag verschluckt.
+Gemessene HP- und Westenanteile werden getrennt zugeordnet. Eine echte
+HP-Heilung entfernt alte HP-Zuordnungen in beiden Abgleichsrichtungen;
+eine reine Westenheilung erhält eine ausstehende Fall-HP-Zuordnung.
+
+Native Messung, Serverwerte und TakeDamage-Ereignis werden im kurzen
+Abgleichsfenster zusammengeführt. Ein Guthaben verfällt erst nach mehr als
+750 ms und mehr als drei tatsächlichen Zwischenpolls. Ein einzelner langsamer
+Frame verliert dadurch nicht sofort die Zuordnung. Login, fehlender oder
+gewechselter Ped und deaktivierter Damagelog verwerfen fremde Altzustände.
+Die bestehenden Umweltfilter des Hitsounds bleiben unabhängig davon.
+
+Die End-to-End-Suite `DamageLogRegressionTests` enthält 26 Fälle: die zwölf
+bisherigen Fälle sowie vierzehn zusätzliche RPC-, Sync-, Abgleichs- und
+Schutzfälle, einschließlich nativer und serverseitiger Heilungen.
+Das ersetzt keinen echten Ingame-Test auf dem konkreten Server.
+
+### r13-Prüfpfade
+
+| Bereich | Implementierung | Tests / Nachweise |
+| --- | --- | --- |
+| Eigene Friedhofsmeldung und Todeszählung | [CombatChatParser.cpp](../../src/CombatChatParser.cpp), [SAMPBridge.cpp](../../src/SAMPBridge.cpp) | [CombatChatParserTests.cpp](../../tests/CombatChatParserTests.cpp), [CombatChatBridgeTests.cpp](../../tests/CombatChatBridgeTests.cpp), [SAMPBridgeTests.cpp](../../tests/SAMPBridgeTests.cpp) |
+| Damagelog für Fall und Explosion | [SAMPBridge.cpp](../../src/SAMPBridge.cpp), [IncomingDamageDetector.h](../../include/IncomingDamageDetector.h) | [DamageLogRegressionTests.cpp](../../tests/DamageLogRegressionTests.cpp) |
+| ASI und Paket | [verify_revision13_artifact.py](../../tools/verify_revision13_artifact.py), [package_revision13.ps1](../../tools/package_revision13.ps1) | PE32/x86, Ressource 300, ASI-/Paketprüfsummen |
+
+### Zugehörige finale Paketnachweise
+
+- [NLBinder.asi](../../dist/NLBinder-0.1.1-r13/NLBinder.asi)
+- [Vollständiges ZIP](../../dist/NLBinder-v0.1.1-KOBiRO-r13.zip)
+- [Gesamter TXT-Changelog](../../dist/NLBinder-0.1.1-r13/CHANGELOG-GESAMT.txt)
+- [SHA-256](../../dist/NLBinder-0.1.1-r13/SHA256SUMS.txt)
+- [Build- und Prüfangaben](../../dist/NLBinder-0.1.1-r13/BUILD-INFO.txt)
+- [PE-/Ressourcenprüfung](../../dist/NLBinder-0.1.1-r13/PRUEFBERICHT.json)
+- [Nativer Helfertest](../../dist/NLBinder-0.1.1-r13/RECONNECT-TEST.json)
+
+### Ausgeführte Prüfungen für r13
+
+Gesamttests und Win32-Release-Build endeten mit Exitcode 0.
+Erfolgreiche Prüfungen: DamageLogRegression: 152, ActionExecutor: 143, Reconnect: 116, SAMPBridge: 576, StartupStatsSync: 366, StatsDialogRPCAdapter: 727, JobSkillsImport: 17, CombatChatParser: 190, CombatChatBridge: 175, native_reconnect_helper: 83.
+
+Die Friedhofszeile ist der maßgebliche Auslöser der eigenen Todeszählung.
+Parser- und Integrationstests prüfen die Zuordnung sowie die lokale Meldung.
+Ein nativer 0-HP-Zustand erhöht den Todeszähler nicht mehr.
+Die Damagelog-Regressionssuite prüft Fallschaden und Explosionsübergänge
+getrennt von den Umweltfiltern des Hitsounds. Bestehende Statistik- und
+Jobskill-Abläufe werden weiterhin gemeinsam geprüft.
+Die Ausgabe des finalen Builds heißt NLBinder.asi. Die geprüfte Datei
+umfasst 18.510.848 Bytes; SHA-256:
+`674f86449f92c46f9d95fce05ae99b4ac561f0ac39d82d61b5518a41f38b89d2`.
+
+PE32/x86, Windows-Imports und Ressource 300 sind geprüft. Der
+eingebettete Reconnect-Helfer stimmt mit dem frisch geprüften Helfer
+überein. Die Helferprüfung nutzt harmlose Testprozesse; das echte Spiel
+und der installierte Launcher werden dabei nicht gestartet oder beendet.
+
+Der vollständige TXT-Changelog umfasst die Abschnitte 1–19 und wird
+zusammen mit der ASI ausgeliefert.
+Separater ASI-Stand und ZIP-Inhalt stimmen bytegleich überein. Ein
+unabhängiger Abgleich bestätigt alle Paketdateien, den vollständigen
+TXT-Changelog, 43 explizite leere Waffenordner und keine persönlichen PNGs.
+[Maschinenlesbare Ergebnisse](r13-validation.json) ergänzen die Paketnachweise.
+Ein echter Ingame-Test auf dem konkreten Server steht aus.
+
+## Historischer Prüfstand r12 – 30. Oktober 2026
 
 Der aktuelle Stand ist **NLBinder v.0.1.1 by KOBiRO, r12**.
 [Bedienung](../NLBinder-0.1.1-r12-DE.md),

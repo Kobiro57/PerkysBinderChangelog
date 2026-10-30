@@ -41,6 +41,15 @@ inline bool IsNonCombatDamageSource(int weaponType) {
     }
 }
 
+// RPC115 also reports environmental hits even when a server restores the ped's
+// HP before the next frame. Do not turn ordinary combat notifications into a
+// second damage source; their measured HP path already works reliably.
+inline bool IsEnvironmentalDamageRpcSource(int weaponType) {
+    return IsNonCombatDamageSource(weaponType)
+        || weaponType == 16 || weaponType == 18 || weaponType == 35
+        || weaponType == 36 || weaponType == 37 || weaponType == 39 || weaponType == 51;
+}
+
 struct IncomingDamageObservation {
     float damage = 0.0f;
     bool environmental = false;
@@ -216,6 +225,143 @@ private:
     bool armourInitialized_ = false;
     float lastHealth_ = 0.0f;
     float lastArmour_ = 0.0f;
+};
+
+// Reconcile two observations of one loss: actual HP changes and client-sent
+// TakeDamage notifications. Either can arrive first. Credits are consumed,
+// never compared only by timestamp/amount, so two real identical hits survive.
+class IncomingDamageRpcEvidence {
+public:
+    static constexpr unsigned long kReflectionWindowMs = 750;
+    void AdvanceFrame() { ++frame_; }
+    bool HasKnownVitalsForSource(int source) const {
+        const bool healthOnly = source == damage_source::kFall || source == damage_source::kDrowning;
+        return healthKnown_ && (healthOnly || armourKnown_);
+    }
+
+    void ObserveVitals(float health, float armour) {
+        if (IsMeasurablePlayerVital(health)) {
+            health = (std::max)(0.0f, health);
+            if (!healthKnown_ || health != lastHealth_) healthBudget_ = health;
+            if (healthKnown_ && health > lastHealth_) InvalidatePool(1);
+            lastHealth_ = health;
+            healthKnown_ = true;
+        }
+        if (IsMeasurablePlayerVital(armour)) {
+            armour = (std::max)(0.0f, armour);
+            if (!armourKnown_ || armour != lastArmour_) armourBudget_ = armour;
+            if (armourKnown_ && armour > lastArmour_) InvalidatePool(2);
+            lastArmour_ = armour;
+            armourKnown_ = true;
+        }
+    }
+
+    void ObserveServerVital(bool health, float value) {
+        if (!IsMeasurablePlayerVital(value)) return;
+        value = (std::max)(0.0f, value);
+        // An actual SetHealth RPC is a new authoritative sample even if the
+        // raw ped still shows the same protected value. A per-frame poll is not.
+        if (health) {
+            if (value > healthBudget_) InvalidatePool(1);
+            healthBudget_ = lastHealth_ = value;
+            healthKnown_ = true;
+        } else {
+            if (value > armourBudget_) InvalidatePool(2);
+            armourBudget_ = lastArmour_ = value;
+            armourKnown_ = true;
+        }
+    }
+
+    IncomingDamageLogEntry ObserveMeasured(IncomingDamageLogEntry damage, int source, unsigned long now) {
+        const int family = SourceFamily(source);
+        if (family < 0) return damage;
+        Expire(now);
+        const float covered = Consume(rpcCredits_, damage.Total(), family);
+        float remaining = covered;
+        const float fromHealth = (std::min)(damage.healthDamage, remaining);
+        damage.healthDamage -= fromHealth;
+        remaining -= fromHealth;
+        damage.armourDamage = (std::max)(0.0f, damage.armourDamage - remaining);
+        if (damage.HasDamage()) {
+            if (damage.healthDamage > 0.0f) Add(measuredCredits_, damage.healthDamage, family, 1, now);
+            if (damage.armourDamage > 0.0f) Add(measuredCredits_, damage.armourDamage, family, 2, now);
+        }
+        return damage;
+    }
+
+    IncomingDamageLogEntry ObserveRpc(float amount, int source, unsigned long now) {
+        if (!std::isfinite(amount) || amount < 1.0f || !IsEnvironmentalDamageRpcSource(source)) return {};
+        const int family = SourceFamily(source);
+        Expire(now);
+        amount -= Consume(measuredCredits_, amount, family);
+        if (amount < 1.0f) return {};
+        // Falling/drowning bypass armour. Explosions may consume both pools;
+        // the RPC supplies a total, so no unobserved armour split is printed.
+        const bool healthOnly = source == damage_source::kFall || source == damage_source::kDrowning;
+        const float available = healthBudget_ + (healthOnly ? 0.0f : armourBudget_);
+        if (!HasKnownVitalsForSource(source)) return {}; // Wait for an actual finite/sync vital sample.
+        amount = (std::min)(amount, available);
+        if (amount < 1.0f) return {};
+        float remaining = amount;
+        if (!healthOnly) {
+            const float armour = (std::min)(armourBudget_, remaining);
+            armourBudget_ -= armour;
+            remaining -= armour;
+        }
+        healthBudget_ = (std::max)(0.0f, healthBudget_ - remaining);
+        Add(rpcCredits_, amount, family, healthOnly ? 1 : 3, now);
+        return {amount, 0.0f};
+    }
+
+    void Reset() { *this = IncomingDamageRpcEvidence{}; }
+
+private:
+    struct Credit { float amount; int source; unsigned int pools; unsigned long at; unsigned long frame; };
+    static int SourceFamily(int source) {
+        if (source == damage_source::kFall || source == damage_source::kDrowning) return source;
+        if (source == damage_source::kRammedByCar || source == damage_source::kRunOverByCar) return 49;
+        return IsEnvironmentalDamageRpcSource(source) ? 51 : -1;
+    }
+    void Add(std::vector<Credit>& credits, float amount, int source, unsigned int pools, unsigned long now) {
+        if (credits.size() == 64) credits.erase(credits.begin());
+        credits.push_back({amount, source, pools, now, frame_});
+    }
+    void InvalidatePool(unsigned int pool) {
+        // Healing establishes a new basis in that pool in both directions:
+        // an old measured loss must not cover a fresh hit after a heal, and an
+        // armour-only heal must not erase a pending health-only fall reflection.
+        const auto affected = [pool](const Credit& credit) { return (credit.pools & pool) != 0; };
+        measuredCredits_.erase(std::remove_if(measuredCredits_.begin(), measuredCredits_.end(), affected), measuredCredits_.end());
+        rpcCredits_.erase(std::remove_if(rpcCredits_.begin(), rpcCredits_.end(), affected), rpcCredits_.end());
+    }
+    static float Consume(std::vector<Credit>& credits, float amount, int source) {
+        const float original = amount;
+        for (auto& credit : credits) {
+            if (credit.source != source) continue;
+            const float used = (std::min)(credit.amount, amount);
+            credit.amount -= used;
+            amount -= used;
+            if (amount <= 0.0f) break;
+        }
+        credits.erase(std::remove_if(credits.begin(), credits.end(),
+            [](const Credit& credit) { return credit.amount <= 0.001f; }), credits.end());
+        return original - amount;
+    }
+    void Expire(unsigned long now) {
+        const auto old = [this, now](const Credit& credit) {
+            // A slow frame is not evidence that a previously emitted hit was
+            // never reflected. Require actual intervening polls as well.
+            return static_cast<unsigned long>(now - credit.at) > kReflectionWindowMs
+                && static_cast<unsigned long>(frame_ - credit.frame) > 3;
+        };
+        measuredCredits_.erase(std::remove_if(measuredCredits_.begin(), measuredCredits_.end(), old), measuredCredits_.end());
+        rpcCredits_.erase(std::remove_if(rpcCredits_.begin(), rpcCredits_.end(), old), rpcCredits_.end());
+    }
+    std::vector<Credit> measuredCredits_, rpcCredits_;
+    bool healthKnown_ = false, armourKnown_ = false;
+    float lastHealth_ = 0.0f, lastArmour_ = 0.0f;
+    float healthBudget_ = 0.0f, armourBudget_ = 0.0f;
+    unsigned long frame_ = 0;
 };
 
 } // namespace keybinder

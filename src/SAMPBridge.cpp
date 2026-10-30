@@ -20,6 +20,7 @@
 #include "../include/LocationNames.h"
 
 #include "../include/RakHook/include/RakHook/rakhook.hpp"
+#include "../include/RakHook/include/RakNet/PacketEnumerations.h"
 #include "../include/SAMP-API/include/sampapi/sampapi.h"
 #ifndef KEYBINDER_TESTING
 #include "../include/plugin-sdk/plugin_sa/game_sa/CPlayerPed.h"
@@ -2238,7 +2239,7 @@ bool IsLocalLifeControllable() {
 void SAMPBridge::ResetKillTrackerDeathInferenceState() {
     const bool isDead = IsLocalPlayerDead();
     localPlayerWasDead_ = isDead;
-    localDeathHandledForCurrentLife_ = isDead;
+    localDeathHandledForCurrentLife_ = false;
     localDeathFallbackDelayFrames_ = 0;
     localDeathAwaitingNativeDead_ = false;
     localDeathAwaitDeadline_ = 0;
@@ -2257,7 +2258,12 @@ void SAMPBridge::RecordLocalPlayerDeath(const std::string& killer, int weaponId)
     }
 
     const bool countingDeaths = killTracker_->IsCountingDeaths();
+    const int totalBefore = killTracker_->GetTotalDeaths();
+    const bool alreadyInStats = pendingCemeteryStatsDeathTotal_ == totalBefore
+        && RuntimeTickCount() - pendingCemeteryStatsDeathAt_ <= 5000;
     killTracker_->RecordDeath(killer, weaponId);
+    if (alreadyInStats) killTracker_->ImportDeathCount(totalBefore);
+    pendingCemeteryStatsDeathTotal_ = -1;
     // A server death notification can precede the native wasted flag. Keep the
     // life guard through those alive frames, then reset on the observed respawn.
     localPlayerWasDead_ = IsLocalPlayerDead();
@@ -2329,9 +2335,9 @@ void SAMPBridge::UpdateLocalDeathFallback() {
             localAliveConfirmationFrames_ = confirmedAlive ? localAliveConfirmationFrames_ + 1 : 0;
             if (localAliveConfirmationFrames_ < 2) return;
         }
-        const bool observedRespawn = localPlayerWasDead_ || (localDeathHandledForCurrentLife_ && localAliveConfirmationFrames_ >= 2);
         ResetKillTrackerDeathInferenceState();
-        if (observedRespawn) hasCombatChatDeath_ = false;
+        // Cemetery callback deduplication uses its own short window; native
+        // respawn flags must not clear it or permanently gate a later message.
         return;
     }
 
@@ -2344,40 +2350,9 @@ void SAMPBridge::UpdateLocalDeathFallback() {
         }
     }
 
-    const std::vector<killtracker::DeathWindowEntry> deathWindowState = killfeedAdapter_->GetCurrentDeathWindowState();
-
-    if (!localDeathHandledForCurrentLife_) {
-        const std::string localPlayerName = GetLocalPlayerName();
-        if (!localPlayerName.empty()) {
-            for (const auto& entry : deathWindowState) {
-                if (!entry.valid || entry.victim != localPlayerName || !killTracker_->IsNewDeathWindowEntry(entry)) {
-                    continue;
-                }
-
-                std::string killerName = entry.killer;
-                if (killerName == localPlayerName) {
-                    killerName.clear();
-                }
-
-                RecordLocalPlayerDeath(killerName, entry.weaponId);
-                break;
-            }
-        }
-    }
-
-    killTracker_->UpdateDeathWindowState(deathWindowState);
-
-    if (localDeathHandledForCurrentLife_) {
-        return;
-    }
-
-    if (localDeathFallbackDelayFrames_ > 0) {
-        --localDeathFallbackDelayFrames_;
-    }
-
-    if (localDeathFallbackDelayFrames_ == 0) {
-        RecordLocalPlayerDeath("", -1);
-    }
+    // Native death/wasted and the killfeed only describe the life transition.
+    // A death is counted exclusively when the server admits us to the cemetery.
+    killTracker_->UpdateDeathWindowState(killfeedAdapter_->GetCurrentDeathWindowState());
 }
 
 void SAMPBridge::InstallScriptedHealthRpcHook() {
@@ -2409,7 +2384,7 @@ void SAMPBridge::InstallScriptedHealthRpcHook() {
         }
 
         auto state = weakState.lock();
-        if (!state || !state->active.load(std::memory_order_acquire)) {
+        if (!state || !state->spawned.load(std::memory_order_acquire)) {
             return true;
         }
 
@@ -2422,14 +2397,54 @@ void SAMPBridge::InstallScriptedHealthRpcHook() {
         return true; // Always pass through to SA-MP
     };
 
+    rakhook::on_send_packet += [weakState](RakNet::BitStream* payload,
+        PacketPriority&, PacketReliability&, char&) -> bool {
+        if (rakhook::initialized) {
+            if (auto state = weakState.lock()) CaptureLocalSyncPacket(state, payload, GetTickCount());
+        }
+        return true;
+    };
+
     keybinder::Logger::Info("[SAMPBridge] Scripted-health RPC hook installed (RPC 14/66).");
 #endif
+}
+
+void SAMPBridge::CaptureLocalSyncPacket(const std::shared_ptr<ScriptedHealthSuppressionState>& state,
+                                       RakNet::BitStream* payload, unsigned long now) {
+    if (!state || !state->spawned.load(std::memory_order_acquire) || !payload) return;
+    const int offset = payload->GetReadOffset();
+    unsigned char id = 0;
+    ScriptedHealthSuppressionState::SyncVitals sample;
+    if (payload->Read(id)) {
+        if (id == ID_PLAYER_SYNC) {
+            sampapi::v03dl::Synchronization::OnfootData data{};
+            if (payload->Read(data)) {
+                sample = {true, id, 0xFFFF, float(data.m_nHealth), float(data.m_nArmor), now};
+            }
+        } else if (id == ID_VEHICLE_SYNC) {
+            sampapi::v03dl::Synchronization::IncarData data{};
+            if (payload->Read(data)) {
+                sample = {true, id, data.m_nVehicle, float(data.m_nDriverHealth), float(data.m_nDriverArmor), now};
+            }
+        } else if (id == ID_PASSENGER_SYNC) {
+            sampapi::v03dl::Synchronization::PassengerData data{};
+            if (payload->Read(data)) {
+                sample = {true, id, data.m_nVehicleId, float(data.m_nHealth), float(data.m_nArmor), now};
+            }
+        }
+    }
+    payload->SetReadOffset(offset);
+    if (!sample.valid) return;
+    sample.pedIdentity = state->pedIdentity.load(std::memory_order_acquire);
+    if (!sample.pedIdentity) return;
+    std::lock_guard<std::mutex> lock(state->samplesMutex);
+    if (state->spawned.load(std::memory_order_acquire)) state->syncVitals = sample;
 }
 
 void SAMPBridge::CaptureScriptedHealthRpc(
     const std::shared_ptr<ScriptedHealthSuppressionState>& state,
     unsigned char rpcId, RakNet::BitStream* payload) {
-    if (!state || !state->active.load(std::memory_order_acquire) || payload == nullptr
+    if (!state || !state->spawned.load(std::memory_order_acquire) || payload == nullptr
         || (rpcId != 14 && rpcId != 66)) return;
     const int offset = payload->GetReadOffset();
     float value = 0.0f;
@@ -2439,13 +2454,14 @@ void SAMPBridge::CaptureScriptedHealthRpc(
     const bool health = rpcId == 14;
     const float baseline = health ? state->lastKnownHealth.load(std::memory_order_relaxed)
                                   : state->lastKnownArmour.load(std::memory_order_relaxed);
-    if (value < baseline - keybinder::IncomingDamageDetector::kDamageEpsilon)
+    if (state->active.load(std::memory_order_acquire)
+        && value < baseline - keybinder::IncomingDamageDetector::kDamageEpsilon)
         state->suppressionRequested.store(true, std::memory_order_release);
     // Preserve actual server HP/armour samples, including a decrease followed
     // by a heal between two game frames. Only the game thread writes the log.
     if (state->logEnabled.load(std::memory_order_acquire)) {
         std::lock_guard<std::mutex> lock(state->samplesMutex);
-        if (!state->active.load(std::memory_order_acquire)) return;
+        if (!state->spawned.load(std::memory_order_acquire)) return;
         if (state->samples.size() < 64) state->samples.push_back({health, value});
     }
 }
@@ -2464,26 +2480,35 @@ bool SAMPBridge::IsLocalCombatActive(bool allowFinalDeathSample) const {
         && localPlayer->m_classSelection.m_bWaitingForSpawnRequestReply == FALSE;
 }
 
-void SAMPBridge::ResetIncomingDamageState() {
+void SAMPBridge::ResetIncomingDamageState(bool keepSpawnStatus) {
+    if (!keepSpawnStatus) scriptedHealthState_->spawned.store(false, std::memory_order_release);
     scriptedHealthState_->active.store(false, std::memory_order_release);
     scriptedHealthState_->suppressionRequested.store(false, std::memory_order_release);
     scriptedHealthState_->lastKnownHealth.store(0.0f, std::memory_order_relaxed);
     scriptedHealthState_->lastKnownArmour.store(0.0f, std::memory_order_relaxed);
+    scriptedHealthState_->healthKnown.store(false, std::memory_order_relaxed);
+    scriptedHealthState_->armourKnown.store(false, std::memory_order_relaxed);
+    scriptedHealthState_->pedIdentity.store(nullptr, std::memory_order_release);
     incomingDamageDetector_.Reset();
     incomingDamageLog_.Reset();
+    incomingDamageRpcEvidence_.Reset();
     incomingDamagePed_ = nullptr;
     invalidDamageSampleFrames_ = 0;
     scriptedHealthReconciliation_ = {};
     scriptedArmourReconciliation_ = {};
     std::lock_guard<std::mutex> lock(scriptedHealthState_->samplesMutex);
     scriptedHealthState_->samples.clear();
+    scriptedHealthState_->incomingEnvironmentalDamage.clear();
+    scriptedHealthState_->syncVitals = {};
 }
 
 bool SAMPBridge::IsDamageLogEnabled() const {
     return settingsManager_ != nullptr && settingsManager_->Get().damage_log_enabled;
 }
 
-void SAMPBridge::LogIncomingDamage(const keybinder::IncomingDamageLogEntry& damage) {
+void SAMPBridge::LogIncomingDamage(const keybinder::IncomingDamageLogEntry& measuredDamage, bool fromDamageRpc, int damageSource) {
+    const auto damage = fromDamageRpc ? measuredDamage
+        : incomingDamageRpcEvidence_.ObserveMeasured(measuredDamage, damageSource, RuntimeTickCount());
     if (!damage.HasDamage()) return;
     char amount[48];
     const double rounded = std::round(static_cast<double>(damage.Total()) * 10.0) / 10.0;
@@ -2509,8 +2534,27 @@ bool SAMPBridge::ReadLocalDamageSample(float& health, float& armour, int& damage
     armour = ped->m_fArmour;
     damageSource = static_cast<int>(ped->m_nLastWeaponDamage);
     pedIdentity = ped;
+    const bool inVehicle = ped->bInVehicle && ped->m_pVehicle != nullptr;
+    const unsigned char mode = !inVehicle ? ID_PLAYER_SYNC
+        : (ped->m_pVehicle->m_pDriver == ped ? ID_VEHICLE_SYNC : ID_PASSENGER_SYNC);
+    ApplyLocalSyncVitals(health, armour, mode, inVehicle ? localPlayer->m_nCurrentVehicle : 0xFFFF, ped);
     return true;
 #endif
+}
+
+bool SAMPBridge::ApplyLocalSyncVitals(float& health, float& armour, unsigned char mode,
+                                     unsigned short vehicle, const void* pedIdentity) const {
+    // DL-R1 SendOnfootData reads the native float, converts to int and writes
+    // AL into the transmitted health/armour bytes. Use the actual packet the
+    // client emitted, never a guessed magic protection offset or modulo.
+    if (keybinder::IsMeasurablePlayerVital(health) && keybinder::IsMeasurablePlayerVital(armour)) return false;
+    std::lock_guard<std::mutex> lock(scriptedHealthState_->samplesMutex);
+    const auto& sample = scriptedHealthState_->syncVitals;
+    if (!sample.valid || sample.pedIdentity != pedIdentity || sample.mode != mode || sample.vehicle != vehicle
+        || static_cast<unsigned long>(RuntimeTickCount() - sample.at) > 500) return false;
+    if (!keybinder::IsMeasurablePlayerVital(health)) health = sample.health;
+    if (!keybinder::IsMeasurablePlayerVital(armour)) armour = sample.armour;
+    return true;
 }
 
 void SAMPBridge::PollLocalIncomingDamage() {
@@ -2522,29 +2566,36 @@ void SAMPBridge::PollLocalIncomingDamage() {
     scriptedHealthState_->logEnabled.store(logEnabled, std::memory_order_release);
     if (!logEnabled || logJustEnabled) {
         incomingDamageLog_.Reset();
+        incomingDamageRpcEvidence_.Reset();
         scriptedHealthReconciliation_ = {};
         scriptedArmourReconciliation_ = {};
         std::lock_guard<std::mutex> lock(scriptedHealthState_->samplesMutex);
         scriptedHealthState_->samples.clear();
+        scriptedHealthState_->incomingEnvironmentalDamage.clear();
     }
     const bool playing = IsLocalCombatActive();
-    const bool finalDeathSample = !playing && incomingDamagePed_ != nullptr && IsLocalCombatActive(true);
+    const bool finalDeathSample = !playing && (incomingDamagePed_ != nullptr
+        || scriptedHealthState_->spawned.load(std::memory_order_acquire)) && IsLocalCombatActive(true);
+    scriptedHealthState_->spawned.store(playing || finalDeathSample, std::memory_order_release);
     if ((!hitsoundIncomingCallback_ && !logEnabled) || (!playing && !finalDeathSample)) {
         ResetIncomingDamageState();
         return;
     }
+    incomingDamageRpcEvidence_.AdvanceFrame();
 
     float health = 0.0f;
     float armour = 0.0f;
     int damageSource = 0;
     const void* pedIdentity = nullptr;
     if (!ReadLocalDamageSample(health, armour, damageSource, pedIdentity) || pedIdentity == nullptr) {
-        ResetIncomingDamageState();
+        FlushIncomingEnvironmentalDamageRpcs();
+        ResetIncomingDamageState(playing);
         return;
     }
     if (pedIdentity != incomingDamagePed_) {
-        ResetIncomingDamageState();
+        ResetIncomingDamageState(true);
         incomingDamagePed_ = pedIdentity;
+        scriptedHealthState_->pedIdentity.store(pedIdentity, std::memory_order_release);
     }
     const bool healthValid = keybinder::IsMeasurablePlayerVital(health);
     const bool armourValid = keybinder::IsMeasurablePlayerVital(armour);
@@ -2554,8 +2605,11 @@ void SAMPBridge::PollLocalIncomingDamage() {
     if (!healthValid || !armourValid) {
         incomingDamageDetector_.Reset();
         if (++invalidDamageSampleFrames_ > kInvalidSampleFrameCap) {
-            ResetIncomingDamageState();
-            return;
+            // Retire the native-difference baseline, but keep real RPC115
+            // evidence and the last known finite vital values during a long
+            // server protection phase. Actual events must not depend on raw HP.
+            if (invalidDamageSampleFrames_ == kInvalidSampleFrameCap + 1) incomingDamageLog_.Reset();
+            invalidDamageSampleFrames_ = kInvalidSampleFrameCap + 1;
         }
     } else {
         invalidDamageSampleFrames_ = 0;
@@ -2574,7 +2628,7 @@ void SAMPBridge::PollLocalIncomingDamage() {
         keybinder::IncomingDamageLogEntry pendingDamage;
         bool groupedHealth = false, groupedArmour = false;
         auto flushDamage = [&]() {
-            LogIncomingDamage(pendingDamage);
+            LogIncomingDamage(pendingDamage, false, damageSource);
             pendingDamage = {};
             groupedHealth = groupedArmour = false;
         };
@@ -2585,6 +2639,7 @@ void SAMPBridge::PollLocalIncomingDamage() {
             auto& reconciliation = sample.health ? scriptedHealthReconciliation_ : scriptedArmourReconciliation_;
             const float previous = sample.health ? incomingDamageLog_.LastHealth() : incomingDamageLog_.LastArmour();
             const float value = (std::max)(0.0f, sample.value);
+            incomingDamageRpcEvidence_.ObserveServerVital(sample.health, value);
             const auto damage = incomingDamageLog_.Observe(value, value, sample.health, !sample.health);
             pendingDamage.healthDamage += damage.healthDamage;
             pendingDamage.armourDamage += damage.armourDamage;
@@ -2604,6 +2659,8 @@ void SAMPBridge::PollLocalIncomingDamage() {
             (sample.health ? serverHealthSeen : serverArmourSeen) = true;
             (sample.health ? scriptedHealthState_->lastKnownHealth : scriptedHealthState_->lastKnownArmour)
                 .store(value, std::memory_order_relaxed);
+            (sample.health ? scriptedHealthState_->healthKnown : scriptedHealthState_->armourKnown)
+                .store(true, std::memory_order_relaxed);
         }
         flushDamage();
     }
@@ -2640,10 +2697,16 @@ void SAMPBridge::PollLocalIncomingDamage() {
     const bool sampleHealth = acceptNative(healthValid, health, serverHealthSeen, scriptedHealthReconciliation_, true);
     const bool sampleArmour = acceptNative(armourValid, armour, serverArmourSeen, scriptedArmourReconciliation_, false);
     if (logEnabled)
-        LogIncomingDamage(incomingDamageLog_.Observe(health, armour, sampleHealth, sampleArmour));
+        LogIncomingDamage(incomingDamageLog_.Observe(health, armour, sampleHealth, sampleArmour), false, damageSource);
 
-    if (sampleHealth) scriptedHealthState_->lastKnownHealth.store(health, std::memory_order_relaxed);
-    if (sampleArmour) scriptedHealthState_->lastKnownArmour.store(armour, std::memory_order_relaxed);
+    if (sampleHealth) {
+        scriptedHealthState_->lastKnownHealth.store(health, std::memory_order_relaxed);
+        scriptedHealthState_->healthKnown.store(true, std::memory_order_relaxed);
+    }
+    if (sampleArmour) {
+        scriptedHealthState_->lastKnownArmour.store(armour, std::memory_order_relaxed);
+        scriptedHealthState_->armourKnown.store(true, std::memory_order_relaxed);
+    }
     const float knownHealth = scriptedHealthState_->lastKnownHealth.load(std::memory_order_relaxed);
     const bool awaitingLethalReflection = scriptedHealthReconciliation_.framesLeft != 0
         && scriptedHealthReconciliation_.target == 0.0f;
@@ -2657,10 +2720,53 @@ void SAMPBridge::PollLocalIncomingDamage() {
             && observation.damage > keybinder::IncomingDamageDetector::kDamageEpsilon && hitsoundIncomingCallback_)
             hitsoundIncomingCallback_();
     }
+    FlushIncomingEnvironmentalDamageRpcs();
     if (finalDeathSample || (healthValid && health == 0.0f)) ResetIncomingDamageState();
 }
 
+void SAMPBridge::FlushIncomingEnvironmentalDamageRpcs() {
+    std::vector<ScriptedHealthSuppressionState::EnvironmentalDamageSample> incoming;
+    {
+        std::lock_guard<std::mutex> lock(scriptedHealthState_->samplesMutex);
+        incoming.swap(scriptedHealthState_->incomingEnvironmentalDamage);
+    }
+    if (!IsDamageLogEnabled()) return;
+    incomingDamageRpcEvidence_.ObserveVitals(
+        scriptedHealthState_->healthKnown.load(std::memory_order_relaxed)
+            ? scriptedHealthState_->lastKnownHealth.load(std::memory_order_relaxed) : NAN,
+        scriptedHealthState_->armourKnown.load(std::memory_order_relaxed)
+            ? scriptedHealthState_->lastKnownArmour.load(std::memory_order_relaxed) : NAN);
+    const auto now = RuntimeTickCount();
+    for (const auto& sample : incoming) {
+        const auto& event = sample.event;
+        if (!incomingDamageRpcEvidence_.HasKnownVitalsForSource(event.weaponId)) {
+            // Do not print an unbounded overkill value while waiting for the
+            // first real outgoing sync/server sample of protected player HP.
+            if (static_cast<unsigned long>(now - sample.at) <= 1500) {
+                std::lock_guard<std::mutex> lock(scriptedHealthState_->samplesMutex);
+                if (scriptedHealthState_->incomingEnvironmentalDamage.size() < 64)
+                    scriptedHealthState_->incomingEnvironmentalDamage.push_back(sample);
+            }
+            continue;
+        }
+        const auto damage = incomingDamageRpcEvidence_.ObserveRpc(event.damage, event.weaponId, now);
+        LogIncomingDamage(damage, true);
+    }
+}
+
 void SAMPBridge::NotifyDamageFeedback(const killtracker::DamageEvent& event) {
+    if (!event.isOutgoing && keybinder::IsEnvironmentalDamageRpcSource(event.weaponId)
+        && std::isfinite(event.damage) && event.damage >= 1.0f
+        && scriptedHealthState_->spawned.load(std::memory_order_acquire)
+        && scriptedHealthState_->logEnabled.load(std::memory_order_acquire)) {
+        // RPC115 TakeDamage is client-sent, including fall54/attackerFFFF.
+        // Keep the real event even if health was restored between two polls.
+        // No game pointers or chat calls are touched from the RPC hook thread.
+        std::lock_guard<std::mutex> lock(scriptedHealthState_->samplesMutex);
+        if (scriptedHealthState_->spawned.load(std::memory_order_acquire)
+            && scriptedHealthState_->incomingEnvironmentalDamage.size() < 64)
+            scriptedHealthState_->incomingEnvironmentalDamage.push_back({event, RuntimeTickCount()});
+    }
     if (event.isOutgoing && hitsoundDamageCallback_ && IsLocalCombatActive()) {
         hitsoundDamageCallback_(event);
     }
@@ -2681,6 +2787,13 @@ void SAMPBridge::RequestScriptedHealthSuppressionForTesting() {
 }
 void SAMPBridge::ProcessScriptedHealthRpcForTesting(unsigned char rpcId, RakNet::BitStream* payload) {
     CaptureScriptedHealthRpc(scriptedHealthState_, rpcId, payload);
+}
+void SAMPBridge::ProcessLocalSyncPacketForTesting(RakNet::BitStream* payload) {
+    CaptureLocalSyncPacket(scriptedHealthState_, payload, RuntimeTickCount());
+}
+bool SAMPBridge::ApplyLocalSyncVitalsForTesting(float& health, float& armour, unsigned char mode,
+                                               unsigned short vehicle, const void* pedIdentity) const {
+    return ApplyLocalSyncVitals(health, armour, mode, vehicle, pedIdentity);
 }
 bool SAMPBridge::ProcessIncomingChatLineForTesting(const char* prefix, const char* text) {
     return jobChatAdapter_ ? jobChatAdapter_->DispatchLineForTesting(prefix, text) : true;
@@ -2938,6 +3051,7 @@ void SAMPBridge::ResetCombatChat() {
     combatKillObservations_.clear();
     combatChatConnected_ = false; combatChatPlayer_.clear();
     hasCombatChatDeath_ = false; processingCombatChat_ = false;
+    pendingCemeteryStatsDeathTotal_ = -1;
 }
 
 void SAMPBridge::UpdateCombatChat(unsigned long now) {
@@ -2967,10 +3081,11 @@ void SAMPBridge::UpdateCombatChat(unsigned long now) {
             processingCombatChat_ = true; currentCombatNoticeTick_ = line.at;
             HandleLocalKill(std::move(event));
             processingCombatChat_ = false;
-        } else if (notice.kind == killtracker::CombatChatKind::Death) {
-            // The RPC/native wasted state may lag a server chat notification.
-            // Keep the existing life guard, plus a short chat correlation window.
-            if (!localDeathHandledForCurrentLife_ && (!hasCombatChatDeath_ || now - lastCombatChatDeathAt_ > 5000)) {
+        } else if (notice.kind == killtracker::CombatChatKind::Death
+                   && notice.family == killtracker::CombatChatFamily::Cemetery) {
+            // The server may keep a healthy native ped throughout its funeral
+            // script. Only duplicate cemetery callbacks share this short guard.
+            if (!hasCombatChatDeath_ || now - lastCombatChatDeathAt_ > 5000) {
                 RecordLocalPlayerDeath(notice.killer, -1);
                 hasCombatChatDeath_ = true; lastCombatChatDeathAt_ = now;
             }
@@ -3008,9 +3123,6 @@ void SAMPBridge::HandleDeathMessage(const killtracker::DeathMessageEvent& event)
     if (pool) localId = pool->m_nLocalPlayerId;
 #endif
     if (localId < 0 || event.victimId < 0 || event.victimId >= 1004) return;
-    if (event.victimId == localId && !localDeathHandledForCurrentLife_) {
-        RecordLocalPlayerDeath(event.hasKiller && event.killerId != localId ? playerName(event.killerId) : "", event.weaponId);
-    }
     if (event.hasKiller && event.killerId == localId && event.victimId != localId) {
         killtracker::KillEvent kill;
         kill.killer = GetLocalPlayerName();
@@ -3082,17 +3194,13 @@ void SAMPBridge::ObserveServerCombatStats(const std::string& text) {
             kill.timestamp = now;
             HandleLocalKill(std::move(kill));
         }
-        if (!localDeathHandledForCurrentLife_ && deaths > lastServerDeathTotal_ && deaths - lastServerDeathTotal_ == 1
-            && deaths > tracker->GetTotalDeaths() && deaths - tracker->GetTotalDeaths() == 1) {
-            RecordLocalPlayerDeath("", -1);
-        }
     }
     // A delayed copy of the previous statistics can arrive after the killfeed.
     // Preserve a just-observed event until the newer server snapshot arrives.
     if (!serverCombatBaselineEstablished_ || kills >= tracker->GetTotalKills()
         || now - lastLocalKillTime_ > 5) tracker->ImportKillCount(kills);
     if (!serverCombatBaselineEstablished_ || deaths >= tracker->GetTotalDeaths()
-        || now - lastLocalDeathTime_ > 5) tracker->ImportDeathCount(deaths);
+        || now - lastLocalDeathTime_ > 5) ImportServerDeathCount(deaths);
     lastServerKillTotal_ = kills;
     lastServerDeathTotal_ = deaths;
     serverCombatBaselineEstablished_ = true;
@@ -3207,6 +3315,18 @@ void SAMPBridge::ImportDeathCount(int count) {
         killTracker_->SetEnabled(killTrackerEnabled_);
     }
     killTracker_->ImportDeathCount(count);
+}
+
+void SAMPBridge::ImportServerDeathCount(int count) {
+    // An actual server snapshot can precede the cemetery line even on the
+    // first login sync, when a persisted total has already been loaded.
+    // Settings/local imports never create this server-event credit.
+    const int previous = killTracker_ ? killTracker_->GetTotalDeaths() : 0;
+    if (count > previous && count - previous == 1) {
+        pendingCemeteryStatsDeathTotal_ = count;
+        pendingCemeteryStatsDeathAt_ = RuntimeTickCount();
+    }
+    ImportDeathCount(count);
 }
 static bool IsHexColorCodeChar(char ch) {
     return (ch >= '0' && ch <= '9') ||

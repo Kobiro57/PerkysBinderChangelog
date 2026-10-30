@@ -75,6 +75,12 @@ CombatChatNotice ParseCombatChat(const std::string& line, const std::string& loc
     if (std::regex_match(text, murder)) return Kill(CombatChatFamily::Murder, localName);
     if (std::regex_match(text, killed)) return Kill(CombatChatFamily::PlayerKilled, localName);
     if (std::regex_match(text, gangwar)) return Kill(CombatChatFamily::Gangwar, localName);
+    static const std::regex cemetery(R"(^Willkommen auf dem Friedhof\. Hier verweilst du, bis du entweder reanimiert wirst oder deine Zeit ablaeuft\.$)", flags);
+    if (std::regex_match(text, cemetery)) {
+        CombatChatNotice result;
+        result.kind = CombatChatKind::Death; result.family = CombatChatFamily::Cemetery;
+        result.victim = localName; result.victimKnown = true; return result;
+    }
     std::smatch match;
     static const std::regex criminal(R"(^<<\s*(\S{1,24}) hat den gesuchten Verbrecher (\S{1,24}) getoetet\.\s*>>$)", flags);
     if (std::regex_match(text, match, criminal) && ValidName(match[1]) && ValidName(match[2])) {

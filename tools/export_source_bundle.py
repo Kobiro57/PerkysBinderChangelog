@@ -1,4 +1,4 @@
-"""Export a verified r12 source snapshot, current ASI and complete changelog.
+"""Export a verified r13 source snapshot, current ASI and complete changelog.
 
 Reads Git blobs without changing Git or the game installation. The destination
 must not exist. Historical release binaries, Git metadata, local build outputs
@@ -13,8 +13,8 @@ import subprocess
 
 
 ROOT = Path(__file__).resolve().parents[1]
-RELEASE = "v0.1.1-r12"
-PACKAGE = "dist/NLBinder-0.1.1-r12"
+RELEASE = "v0.1.1-r13"
+PACKAGE = "dist/NLBinder-0.1.1-r13"
 PRIVATE_PARTS = {
     ".git", ".vs", ".aws", ".codex", ".agents", "__pycache__", "build",
     "output", "debug", "release", "obj", "cmakefiles", ".venv", "venv",
@@ -91,7 +91,7 @@ def main():
     parser.add_argument("--repository", type=Path, default=ROOT / "build/github-publication/repository")
     parser.add_argument("--revision", default="HEAD")
     parser.add_argument("--binary", type=Path, default=ROOT / "build/Release/NLBinder.asi")
-    parser.add_argument("--manifest", type=Path, default=ROOT / "build/source-export-r12.json")
+    parser.add_argument("--manifest", type=Path, default=ROOT / "build/source-export-r13.json")
     args = parser.parse_args()
     repo = args.repository.resolve(strict=True)
     destination = args.destination.resolve()
@@ -120,7 +120,7 @@ def main():
         "RECONNECT-TEST.json": PACKAGE + "/RECONNECT-TEST.json",
     }
     for source in extras.values():
-        require(source in entries, "Verified r12 publication file missing: " + source)
+        require(source in entries, "Verified r13 publication file missing: " + source)
     read_entries = dict(selected)
     read_entries.update({source: entries[source] for source in extras.values()})
     files = read_blobs(repo, read_entries)
@@ -132,7 +132,7 @@ def main():
     report = json.loads(exported["PRUEFBERICHT.json"].decode("utf-8-sig"))
     require(report.get("revision") == RELEASE and report.get("asi") == "NLBinder.asi" and report.get("sha256") == digest(binary)
             and report.get("bytes") == len(binary) and report.get("embedded_helper_matches") is True,
-            "r12 artifact verification is missing or stale")
+            "r13 artifact verification is missing or stale")
     require(exported["Keybinder.vcxproj"].count(b"<TargetName>NLBinder</TargetName>") == 2,
             "Release/Debug project names are not both NLBinder")
     folded = [relative.casefold() for relative in exported]

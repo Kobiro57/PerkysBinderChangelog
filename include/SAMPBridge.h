@@ -191,6 +191,9 @@ public:
     void ProcessDamageRpcForTesting(RakNet::BitStream* payload);
     void RequestScriptedHealthSuppressionForTesting();
     void ProcessScriptedHealthRpcForTesting(unsigned char rpcId, RakNet::BitStream* payload);
+    void ProcessLocalSyncPacketForTesting(RakNet::BitStream* payload);
+    bool ApplyLocalSyncVitalsForTesting(float& health, float& armour, unsigned char mode,
+                                       unsigned short vehicle, const void* pedIdentity) const;
     bool ProcessIncomingChatLineForTesting(const char* prefix, const char* text);
     void ProcessStatsDialogForTesting(const keybinder::StatsDialogEvent& event);
     bool ProcessStatsDialogRpcForTesting(RakNet::BitStream* payload);
@@ -200,6 +203,7 @@ private:
     void HandleDeathMessage(const killtracker::DeathMessageEvent& event);
     void HandleLocalKill(killtracker::KillEvent event);
     void ObserveServerCombatStats(const std::string& text);
+    void ImportServerDeathCount(int count);
     void QueueCombatChat(const std::string& text);
     void UpdateCombatChat(unsigned long now);
     void ResetCombatChat();
@@ -283,10 +287,14 @@ private:
     void RefreshDamageTracking();
     void PollLocalIncomingDamage();
     bool ReadLocalDamageSample(float& health, float& armour, int& damageSource, const void*& pedIdentity) const;
+    bool ApplyLocalSyncVitals(float& health, float& armour, unsigned char mode,
+                             unsigned short vehicle, const void* pedIdentity) const;
     bool IsLocalCombatActive(bool allowFinalDeathSample = false) const;
-    void ResetIncomingDamageState();
+    void ResetIncomingDamageState(bool keepSpawnStatus = false);
     void NotifyDamageFeedback(const killtracker::DamageEvent& event);
-    void LogIncomingDamage(const keybinder::IncomingDamageLogEntry& damage);
+    void LogIncomingDamage(const keybinder::IncomingDamageLogEntry& damage, bool fromDamageRpc = false,
+                           int damageSource = -1);
+    void FlushIncomingEnvironmentalDamageRpcs();
     bool IsDamageLogEnabled() const;
     void InstallScriptedHealthRpcHook();
 
@@ -299,16 +307,32 @@ private:
     // consumes to arm the detector's one-shot suppression window.
     struct ScriptedHealthSuppressionState {
         std::atomic<bool> active{false};
+        std::atomic<bool> spawned{false};
         std::atomic<float> lastKnownHealth{0.0f};
         std::atomic<float> lastKnownArmour{0.0f};
+        std::atomic<bool> healthKnown{false};
+        std::atomic<bool> armourKnown{false};
         std::atomic<bool> suppressionRequested{false};
         std::atomic<bool> logEnabled{false};
         struct VitalSample { bool health; float value; };
         std::mutex samplesMutex;
         std::vector<VitalSample> samples;
+        struct EnvironmentalDamageSample { killtracker::DamageEvent event; unsigned long at; };
+        std::vector<EnvironmentalDamageSample> incomingEnvironmentalDamage;
+        std::atomic<const void*> pedIdentity{nullptr};
+        struct SyncVitals {
+            bool valid = false;
+            unsigned char mode = 0;
+            unsigned short vehicle = 0xFFFF;
+            float health = 0.0f, armour = 0.0f;
+            unsigned long at = 0;
+            const void* pedIdentity = nullptr;
+        } syncVitals;
     };
     static void CaptureScriptedHealthRpc(const std::shared_ptr<ScriptedHealthSuppressionState>& state,
                                         unsigned char rpcId, RakNet::BitStream* payload);
+    static void CaptureLocalSyncPacket(const std::shared_ptr<ScriptedHealthSuppressionState>& state,
+                                       RakNet::BitStream* payload, unsigned long now);
     std::shared_ptr<ScriptedHealthSuppressionState> scriptedHealthState_;
     bool scriptedHealthHookInstalled_ = false;
 public:
@@ -396,6 +420,7 @@ private:
     std::function<void()> hitsoundIncomingCallback_;
     keybinder::IncomingDamageDetector incomingDamageDetector_;
     keybinder::IncomingDamageLog incomingDamageLog_;
+    keybinder::IncomingDamageRpcEvidence incomingDamageRpcEvidence_;
     bool incomingDamageLogEnabledLastFrame_ = false;
     const void* incomingDamagePed_ = nullptr;
     unsigned int invalidDamageSampleFrames_ = 0;
@@ -416,6 +441,8 @@ private:
     unsigned int localAliveConfirmationFrames_ = 0;
     bool localDeathSawInactive_ = false;
     const void* localDeathPed_ = nullptr;
+    int pendingCemeteryStatsDeathTotal_ = -1;
+    unsigned long pendingCemeteryStatsDeathAt_ = 0;
     bool jobTrackerInitialized_;
     
     std::function<bool(const std::string&)> slashCommandInterceptor_;

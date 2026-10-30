@@ -281,7 +281,7 @@ void SAMPBridge::CompleteStartupStats(unsigned long now) {
         if (manualKillsOverride || !serverCombatBaselineEstablished_ || *synchronizedStats_.kills >= tracker->GetTotalKills()
             || wallNow - lastLocalKillTime_ > 5) tracker->ImportKillCount(*synchronizedStats_.kills);
         if (manualDeathsOverride || !serverCombatBaselineEstablished_ || *synchronizedStats_.deaths >= tracker->GetTotalDeaths()
-            || wallNow - lastLocalDeathTime_ > 5) tracker->ImportDeathCount(*synchronizedStats_.deaths);
+            || wallNow - lastLocalDeathTime_ > 5) ImportServerDeathCount(*synchronizedStats_.deaths);
     }
     lastServerKillTotal_ = *synchronizedStats_.kills;
     lastServerDeathTotal_ = *synchronizedStats_.deaths;

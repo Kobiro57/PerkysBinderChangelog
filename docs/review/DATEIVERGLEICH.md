@@ -2,7 +2,7 @@
 
 Originalarchiv: `a328e78eea63420e9bfe9c084883100177fe0fd9c2d62c4fcaef38c0a44801e9`; Commitkennung im ZIP: `92ce21971bee2d166d830e23ad20950f1dc98921`.
 
-Aktueller Vergleich: `v0.1.1-r12`, ASI-SHA-256 `27add66ee5630b500025dcb8af5e975f5ddadfc994afa3148c3793cf6df1d21c`.
+Aktueller Vergleich: `v0.1.1-r13`, ASI-SHA-256 `674f86449f92c46f9d95fce05ae99b4ac561f0ac39d82d61b5518a41f38b89d2`.
 
 Alle Dateien einschließlich wiederhergestellter Abhängigkeiten stehen in [SOURCE-COMPARISON.json](SOURCE-COMPARISON.json).
 Die Vorher-Prüfsummen stammen aus dem unveränderten gefilterten ZIP-Snapshot.
@@ -43,6 +43,15 @@ Diese Liste zeigt Inhaltsänderungen außerhalb der Vendor-Verzeichnisse.
 | added | [dist/NLBinder-0.1.1-r12/PRUEFBERICHT.json](../../dist/NLBinder-0.1.1-r12/PRUEFBERICHT.json) |
 | added | [dist/NLBinder-0.1.1-r12/RECONNECT-TEST.json](../../dist/NLBinder-0.1.1-r12/RECONNECT-TEST.json) |
 | added | [dist/NLBinder-0.1.1-r12/SHA256SUMS.txt](../../dist/NLBinder-0.1.1-r12/SHA256SUMS.txt) |
+| added | [dist/NLBinder-0.1.1-r13/BUILD-INFO.txt](../../dist/NLBinder-0.1.1-r13/BUILD-INFO.txt) |
+| added | [dist/NLBinder-0.1.1-r13/CHANGELOG-GESAMT.txt](../../dist/NLBinder-0.1.1-r13/CHANGELOG-GESAMT.txt) |
+| added | [dist/NLBinder-0.1.1-r13/JOB-HINWEISE.md](../../dist/NLBinder-0.1.1-r13/JOB-HINWEISE.md) |
+| added | [dist/NLBinder-0.1.1-r13/LIESMICH.md](../../dist/NLBinder-0.1.1-r13/LIESMICH.md) |
+| added | [dist/NLBinder-0.1.1-r13/NLBinder.asi](../../dist/NLBinder-0.1.1-r13/NLBinder.asi) |
+| added | [dist/NLBinder-0.1.1-r13/NLBinder/Waffenicons/LIESMICH.md](../../dist/NLBinder-0.1.1-r13/NLBinder/Waffenicons/LIESMICH.md) |
+| added | [dist/NLBinder-0.1.1-r13/PRUEFBERICHT.json](../../dist/NLBinder-0.1.1-r13/PRUEFBERICHT.json) |
+| added | [dist/NLBinder-0.1.1-r13/RECONNECT-TEST.json](../../dist/NLBinder-0.1.1-r13/RECONNECT-TEST.json) |
+| added | [dist/NLBinder-0.1.1-r13/SHA256SUMS.txt](../../dist/NLBinder-0.1.1-r13/SHA256SUMS.txt) |
 | added | [dist/NLBinder-0.1.1-r3/BUILD-INFO.txt](../../dist/NLBinder-0.1.1-r3/BUILD-INFO.txt) |
 | added | [dist/NLBinder-0.1.1-r3/JOB-HINWEISE.md](../../dist/NLBinder-0.1.1-r3/JOB-HINWEISE.md) |
 | added | [dist/NLBinder-0.1.1-r3/Keybinder.asi](../../dist/NLBinder-0.1.1-r3/Keybinder.asi) |
@@ -98,6 +107,7 @@ Diese Liste zeigt Inhaltsänderungen außerhalb der Vendor-Verzeichnisse.
 | added | [dist/NLBinder-v0.1.1-KOBiRO-r10.zip](../../dist/NLBinder-v0.1.1-KOBiRO-r10.zip) |
 | added | [dist/NLBinder-v0.1.1-KOBiRO-r11.zip](../../dist/NLBinder-v0.1.1-KOBiRO-r11.zip) |
 | added | [dist/NLBinder-v0.1.1-KOBiRO-r12.zip](../../dist/NLBinder-v0.1.1-KOBiRO-r12.zip) |
+| added | [dist/NLBinder-v0.1.1-KOBiRO-r13.zip](../../dist/NLBinder-v0.1.1-KOBiRO-r13.zip) |
 | added | [dist/NLBinder-v0.1.1-KOBiRO-r4.zip](../../dist/NLBinder-v0.1.1-KOBiRO-r4.zip) |
 | added | [dist/NLBinder-v0.1.1-KOBiRO-r5.zip](../../dist/NLBinder-v0.1.1-KOBiRO-r5.zip) |
 | added | [dist/NLBinder-v0.1.1-KOBiRO-r6.zip](../../dist/NLBinder-v0.1.1-KOBiRO-r6.zip) |
@@ -110,6 +120,7 @@ Diese Liste zeigt Inhaltsänderungen außerhalb der Vendor-Verzeichnisse.
 | added | [docs/NLBinder-0.1.1-r10-DE.md](../../docs/NLBinder-0.1.1-r10-DE.md) |
 | added | [docs/NLBinder-0.1.1-r11-DE.md](../../docs/NLBinder-0.1.1-r11-DE.md) |
 | added | [docs/NLBinder-0.1.1-r12-DE.md](../../docs/NLBinder-0.1.1-r12-DE.md) |
+| added | [docs/NLBinder-0.1.1-r13-DE.md](../../docs/NLBinder-0.1.1-r13-DE.md) |
 | added | [docs/NLBinder-0.1.1-r2-DE.md](../../docs/NLBinder-0.1.1-r2-DE.md) |
 | added | [docs/NLBinder-0.1.1-r3-DE.md](../../docs/NLBinder-0.1.1-r3-DE.md) |
 | added | [docs/NLBinder-0.1.1-r4-DE.md](../../docs/NLBinder-0.1.1-r4-DE.md) |
@@ -130,6 +141,7 @@ Diese Liste zeigt Inhaltsänderungen außerhalb der Vendor-Verzeichnisse.
 | added | [docs/review/r10-validation.json](../../docs/review/r10-validation.json) |
 | added | [docs/review/r11-validation.json](../../docs/review/r11-validation.json) |
 | added | [docs/review/r12-validation.json](../../docs/review/r12-validation.json) |
+| added | [docs/review/r13-validation.json](../../docs/review/r13-validation.json) |
 | added | [docs/review/r4-validation.json](../../docs/review/r4-validation.json) |
 | added | [docs/review/r5-validation.json](../../docs/review/r5-validation.json) |
 | added | [docs/review/r6-validation.json](../../docs/review/r6-validation.json) |
@@ -260,6 +272,7 @@ Diese Liste zeigt Inhaltsänderungen außerhalb der Vendor-Verzeichnisse.
 | added | [tools/package_revision10.ps1](../../tools/package_revision10.ps1) |
 | added | [tools/package_revision11.ps1](../../tools/package_revision11.ps1) |
 | added | [tools/package_revision12.ps1](../../tools/package_revision12.ps1) |
+| added | [tools/package_revision13.ps1](../../tools/package_revision13.ps1) |
 | added | [tools/package_revision4.ps1](../../tools/package_revision4.ps1) |
 | added | [tools/package_revision5.ps1](../../tools/package_revision5.ps1) |
 | added | [tools/package_revision6.ps1](../../tools/package_revision6.ps1) |
@@ -274,6 +287,7 @@ Diese Liste zeigt Inhaltsänderungen außerhalb der Vendor-Verzeichnisse.
 | added | [tools/verify_revision10_artifact.py](../../tools/verify_revision10_artifact.py) |
 | added | [tools/verify_revision11_artifact.py](../../tools/verify_revision11_artifact.py) |
 | added | [tools/verify_revision12_artifact.py](../../tools/verify_revision12_artifact.py) |
+| added | [tools/verify_revision13_artifact.py](../../tools/verify_revision13_artifact.py) |
 | added | [tools/verify_revision4_artifact.py](../../tools/verify_revision4_artifact.py) |
 | added | [tools/verify_revision5_artifact.py](../../tools/verify_revision5_artifact.py) |
 | added | [tools/verify_revision6_artifact.py](../../tools/verify_revision6_artifact.py) |

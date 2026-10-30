@@ -806,10 +806,16 @@ void TestManualSyncPreservesRealEventsConfirmedAfterTheRequest() {
     bridge.Update();
     bridge.ProcessDeathMessageForTesting({5, 9, 31, std::time(nullptr), true});
     bridge.ProcessDeathMessageForTesting({8, 5, 31, std::time(nullptr), true});
+    CHECK(bridge.GetTotalKills() == 11 && bridge.GetTotalDeaths() == 3);
+    CHECK(bridge.GetKillTracker()->GetSessionDeaths() == 0); // Native victim RPCs do not count.
+    bridge.ProcessIncomingChatLineForTesting(nullptr,
+        "Willkommen auf dem Friedhof. Hier verweilst du, bis du entweder reanimiert wirst oder deine Zeit abl\xC3\xA4uft.");
+    bridge.Update(); // The cemetery line is the live death confirmed after this sync request.
     CHECK(bridge.GetTotalKills() == 11 && bridge.GetTotalDeaths() == 4);
     CHECK(bridge.GetKillTracker()->GetSessionKills() == 1 && bridge.GetKillTracker()->GetSessionDeaths() == 1);
     CHECK(CompleteFreshSyncDialogs(bridge, context, 10, 3, 21)); // Reply created before the real events.
     CHECK(bridge.GetTotalKills() == 11 && bridge.GetTotalDeaths() == 4);
+    CHECK(context.commands == (std::vector<std::string>{"/stats", "/jobskills", "/stats", "/jobskills"}));
     CHECK(ManualSyncSuccessNotices(context) == 1 && !bridge.IsManualStateSynchronizationPending());
     bridge.ProcessDeathMessageForTesting({5, 11, 31, std::time(nullptr), true});
     CHECK(bridge.GetTotalKills() == 12 && bridge.GetKillTracker()->GetSessionKills() == 2);

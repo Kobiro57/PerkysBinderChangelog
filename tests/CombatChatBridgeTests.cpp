@@ -1,6 +1,7 @@
 #include "../include/SAMPBridge.h"
 #include "../include/SettingsManager.h"
 #include "../include/RakHook/include/RakHook/samp.hpp"
+#include <algorithm>
 #include <cstdio>
 #include <cstring>
 #include <string>
@@ -99,7 +100,7 @@ std::string CemeteryCp1252(const std::string& text) {
     return result;
 }
 
-void TestCemeteryLinesNeverCreateCombatEvents() {
+void TestCemeteryFormsCountOnceAndLaterMessageWorksWithoutNativeDeath() {
     Context context;
     const auto localMessagesBefore = context.localMessages.size();
     const std::string cemetery = "Willkommen auf dem Friedhof. Hier verweilst du, bis du entweder reanimiert wirst oder deine Zeit abläuft.";
@@ -109,16 +110,20 @@ void TestCemeteryLinesNeverCreateCombatEvents() {
         CemeteryCp1252("INFO: " + cemetery)
     };
     for (const auto& text : forms) {
-        context.now += 10000; // Outlive every former death correlation timeout.
         context.Line(text);
         context.bridge.Update();
-        CHECK(context.bridge.GetTotalDeaths() == 3);
-        CHECK(context.bridge.GetKillTracker()->GetSessionDeaths() == 0);
+        CHECK(context.bridge.GetTotalDeaths() == 4);
+        CHECK(context.bridge.GetKillTracker()->GetSessionDeaths() == 1);
         CHECK(context.bridge.GetTotalKills() == 10);
         CHECK(context.bridge.GetKillTracker()->GetSessionKills() == 0);
-        CHECK(context.localMessages.size() == localMessagesBefore);
+        CHECK(context.localMessages.size() == localMessagesBefore + 1);
         CHECK(context.sent.empty());
     }
+    context.now += 6000;
+    context.Line(cemetery); context.bridge.Update();
+    CHECK(context.bridge.GetTotalDeaths() == 5);
+    CHECK(context.bridge.GetKillTracker()->GetSessionDeaths() == 2);
+    CHECK(context.localMessages.size() == localMessagesBefore + 2);
 }
 
 void TestAllFormsReachTheConfiguredChatChannelAndDynamicName() {
@@ -209,9 +214,11 @@ void TestTwoSameFramePersonalKillsAreNeverDropped() {
     CHECK(context.bridge.GetKillTracker()->GetWeaponStats(31)->killCount == 1);
 }
 
-void TestDeathVictimSlotAndNativeGuardIgnoreCemetery() {
+void TestOnlyCemeteryCountsAndOtherDeathSourcesDoNotRepeatIt() {
     Context context;
     context.Line("<< Enemy_One hat den gesuchten Verbrecher " + context.name + " getötet. >>");
+    context.bridge.Update();
+    CHECK(context.bridge.GetTotalDeaths() == 3 && context.localMessages.empty());
     context.Line("Willkommen auf dem Friedhof. Hier verweilst du, bis du entweder reanimiert wirst oder deine Zeit abläuft.");
     context.bridge.Update();
     CHECK(context.bridge.GetTotalDeaths() == 4 && context.bridge.GetTotalKills() == 10);
@@ -225,7 +232,11 @@ void TestDeathVictimSlotAndNativeGuardIgnoreCemetery() {
     context.bridge.Update();
     CHECK(context.bridge.GetTotalDeaths() == 4);
     CHECK(context.bridge.GetKillTracker()->GetSessionDeaths() == 1);
+    context.now += 6000;
     context.Line("<< Enemy_Two hat den gesuchten Verbrecher " + context.name + " getötet. >>");
+    context.bridge.Update();
+    CHECK(context.bridge.GetTotalDeaths() == 4);
+    context.Line("Willkommen auf dem Friedhof. Hier verweilst du, bis du entweder reanimiert wirst oder deine Zeit abläuft.");
     context.bridge.Update();
     CHECK(context.bridge.GetTotalDeaths() == 5);
 }
@@ -264,7 +275,7 @@ void TestDialogStatsBeforeAndAfterChatDoNotRepeatOrUndoLiveEvent() {
     CHECK(context.bridge.GetTotalKills() == 12 && context.bridge.GetKillTracker()->GetSessionKills() == 2);
     context.Line("Willkommen auf dem Friedhof. Hier verweilst du, bis du entweder reanimiert wirst oder deine Zeit abläuft.");
     context.bridge.Update();
-    CHECK(context.bridge.GetTotalDeaths() == 3 && context.bridge.GetKillTracker()->GetSessionDeaths() == 0);
+    CHECK(context.bridge.GetTotalDeaths() == 4 && context.bridge.GetKillTracker()->GetSessionDeaths() == 1);
     context.bridge.ProcessDeathMessageForTesting({7, 5, 24, std::time(nullptr), true});
     context.StatsDialog(12, 3);
     CHECK(context.bridge.GetTotalDeaths() == 4 && context.bridge.GetKillTracker()->GetSessionDeaths() == 1);
@@ -324,6 +335,85 @@ void TestNativeVictimIdentityAndUnavailableNameCanBeEnriched() {
         CHECK(context.bridge.GetKillTracker()->GetWeaponStats(-1) == nullptr);
     }
 }
+
+void TestStatsBeforeAndAfterCemeteryKeepOneAbsoluteDeathAndOneNotice() {
+    const std::string cemetery = "Willkommen auf dem Friedhof. Hier verweilst du, bis du entweder reanimiert wirst oder deine Zeit abläuft.";
+    for (bool dialog : {false, true}) {
+        Context context;
+        auto stats = [&](int deaths) {
+            if (dialog) context.StatsDialog(10, deaths);
+            else context.Stats(10, deaths);
+        };
+        stats(3);
+        stats(4); // The absolute server snapshot can arrive before its admission line.
+        CHECK(context.bridge.GetTotalDeaths() == 4);
+        CHECK(context.bridge.GetKillTracker()->GetSessionDeaths() == 0);
+        const auto before = context.localMessages.size();
+        context.Line(cemetery); context.bridge.Update();
+        CHECK(context.bridge.GetTotalDeaths() == 4);
+        CHECK(context.bridge.GetKillTracker()->GetSessionDeaths() == 1);
+        CHECK(context.localMessages.size() == before + 1);
+        CHECK(context.localMessages.back().find("Tode: 4") != std::string::npos);
+        stats(4);
+        context.Line(cemetery); context.bridge.Update();
+        CHECK(context.bridge.GetTotalDeaths() == 4);
+        CHECK(context.bridge.GetKillTracker()->GetSessionDeaths() == 1);
+        CHECK(context.localMessages.size() == before + 1);
+        context.now += 6000;
+        context.Line(cemetery); context.bridge.Update();
+        CHECK(context.bridge.GetTotalDeaths() == 5);
+        stats(5); // A matching later snapshot does not replay the death notice.
+        CHECK(context.bridge.GetTotalDeaths() == 5);
+        CHECK(context.bridge.GetKillTracker()->GetSessionDeaths() == 2);
+        CHECK(context.localMessages.size() == before + 2);
+        CHECK(context.sent == (dialog ? std::vector<std::string>{"/stats"} : std::vector<std::string>{}));
+    }
+}
+
+void TestFirstAutomaticStatsSyncCreditsPersistedDeathBeforeCemetery() {
+    const std::string cemetery = "Willkommen auf dem Friedhof. Hier verweilst du, bis du entweder reanimiert wirst oder deine Zeit abläuft.";
+    for (bool dialog : {false, true}) {
+        Context context;
+        context.bridge.ImportDeathCount(213); // The saved count is loaded before the first server response.
+        CHECK(!context.bridge.AreStatsSynchronized());
+        context.statsReady = true;
+        context.bridge.Update();
+        CHECK(std::find(context.sent.begin(), context.sent.end(), "/stats") != context.sent.end());
+        if (dialog) {
+            context.dialog.get()->m_nId = 401;
+            context.dialog.get()->m_nType = 0;
+            context.dialog.get()->m_bIsActive = TRUE;
+            std::strcpy(context.dialog.get()->m_szCaption, "Statistiken");
+            // Reply to the automatic request, without observing a manual /stats command.
+            context.bridge.ProcessStatsDialogForTesting({401, 0, "Statistiken", "Kills: 10\nTode: 214"});
+        } else {
+            context.Stats(10, 214);
+        }
+        context.bridge.Update();
+        CHECK(context.bridge.AreStatsSynchronized());
+        CHECK(context.bridge.GetTotalDeaths() == 214);
+        CHECK(context.bridge.GetKillTracker()->GetSessionDeaths() == 0);
+        auto notices = [&]() {
+            return std::count_if(context.localMessages.begin(), context.localMessages.end(), [](const std::string& value) {
+                return value.find("Du bist gestorben.") != std::string::npos;
+            });
+        };
+        CHECK(notices() == 0);
+        context.Line(cemetery); context.bridge.Update();
+        CHECK(context.bridge.GetTotalDeaths() == 214);
+        CHECK(context.bridge.GetKillTracker()->GetSessionDeaths() == 1);
+        CHECK(notices() == 1);
+        context.Line(cemetery); context.bridge.Update();
+        CHECK(context.bridge.GetTotalDeaths() == 214);
+        CHECK(context.bridge.GetKillTracker()->GetSessionDeaths() == 1);
+        CHECK(notices() == 1);
+    }
+    Context localImport;
+    localImport.bridge.ImportDeathCount(4); // A local/settings edit is not a server death response.
+    localImport.Line(cemetery); localImport.bridge.Update();
+    CHECK(localImport.bridge.GetTotalDeaths() == 5);
+    CHECK(localImport.bridge.GetKillTracker()->GetSessionDeaths() == 1);
+}
 }
 
 int RunCombatChatBridgeTests() {
@@ -332,11 +422,13 @@ int RunCombatChatBridgeTests() {
     TestPersonalNamedRpcAndStatsCorrelateWithoutRepeatingBind();
     TestRpcNewerThanQueuedChatAndDistinctRapidVictims();
     TestTwoSameFramePersonalKillsAreNeverDropped();
-    TestCemeteryLinesNeverCreateCombatEvents();
-    TestDeathVictimSlotAndNativeGuardIgnoreCemetery();
+    TestCemeteryFormsCountOnceAndLaterMessageWorksWithoutNativeDeath();
+    TestOnlyCemeteryCountsAndOtherDeathSourcesDoNotRepeatIt();
     TestSpoofingUnrelatedPrisonAndLocalBinderEchoDoNotCount();
     TestDialogStatsBeforeAndAfterChatDoNotRepeatOrUndoLiveEvent();
     TestNativeVictimIdentityAndUnavailableNameCanBeEnriched();
+    TestStatsBeforeAndAfterCemeteryKeepOneAbsoluteDeathAndOneNotice();
+    TestFirstAutomaticStatsSyncCreditsPersistedDeathBeforeCemetery();
     std::printf("CombatChatBridgeTests: %d checks, %d failures\n", checks, failures);
     return failures;
 }

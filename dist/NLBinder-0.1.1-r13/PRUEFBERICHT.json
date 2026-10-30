@@ -1,0 +1,22 @@
+{
+  "revision": "v0.1.1-r13",
+  "asi": "NLBinder.asi",
+  "bytes": 18510848,
+  "format": "PE32 x86 DLL",
+  "sha256": "674f86449f92c46f9d95fce05ae99b4ac561f0ac39d82d61b5518a41f38b89d2",
+  "imports": [
+    "ADVAPI32.dll",
+    "IMM32.dll",
+    "KERNEL32.dll",
+    "ntdll.dll",
+    "ole32.dll",
+    "SHELL32.dll",
+    "USER32.dll",
+    "WINHTTP.dll",
+    "WS2_32.dll"
+  ],
+  "embedded_helper_id": 300,
+  "embedded_helper_bytes": 127488,
+  "helper_sha256": "4af12b9698ea42d5fabb7bbd254782a6a9e761c2095a8f7c41ef9ddf8adbd310",
+  "embedded_helper_matches": true
+}
