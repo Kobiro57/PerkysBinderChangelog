@@ -181,6 +181,8 @@ public:
         std::function<void(sampapi::v03dl::CInput*)> closeChatInput;
         std::function<bool()> isLocalPlayerControllable;
         std::function<int()> getLocalNativePedState;
+        // Raw native memory adapter; unlike readLocalDamageSample this includes the protection offset.
+        std::function<bool(float&, float&, int&, const void*&)> readRawLocalDamageSample;
     };
 
     static void SetTestingHooks(const TestingHooks& hooks);
@@ -281,7 +283,9 @@ public:
 
     bool IsLocalPlayerDead() const;
     void ResetKillTrackerDeathInferenceState();
-    void RecordLocalPlayerDeath(const std::string& killer, int weaponId);
+    void RecordLocalPlayerDeath(const std::string& killer, int weaponId, bool totalAlreadySynchronized = false);
+    void BeginProtectedDeathVerification(unsigned long now);
+    void UpdateProtectedDeathVerification(unsigned long now);
     void UpdateLocalDeathFallback();
     void InstallLocalDeathNotificationHook();
     struct LocalDeathNotificationState {
@@ -302,9 +306,7 @@ private:
     bool IsLocalCombatActive(bool allowFinalDeathSample = false) const;
     void ResetIncomingDamageState(bool keepSpawnStatus = false);
     void NotifyDamageFeedback(const killtracker::DamageEvent& event);
-    void LogIncomingDamage(const keybinder::IncomingDamageLogEntry& damage, bool fromDamageRpc = false,
-                           int damageSource = -1);
-    void FlushIncomingEnvironmentalDamageRpcs();
+    void LogIncomingDamage(const keybinder::IncomingDamageLogEntry& damage);
     bool IsDamageLogEnabled() const;
     void InstallScriptedHealthRpcHook();
 
@@ -327,8 +329,6 @@ private:
         struct VitalSample { bool health; float value; };
         std::mutex samplesMutex;
         std::vector<VitalSample> samples;
-        struct EnvironmentalDamageSample { killtracker::DamageEvent event; unsigned long at; };
-        std::vector<EnvironmentalDamageSample> incomingEnvironmentalDamage;
         std::atomic<const void*> pedIdentity{nullptr};
         struct SyncVitals {
             bool valid = false;
@@ -430,7 +430,6 @@ private:
     std::function<void()> hitsoundIncomingCallback_;
     keybinder::IncomingDamageDetector incomingDamageDetector_;
     keybinder::IncomingDamageLog incomingDamageLog_;
-    keybinder::IncomingDamageRpcEvidence incomingDamageRpcEvidence_;
     bool incomingDamageLogEnabledLastFrame_ = false;
     const void* incomingDamagePed_ = nullptr;
     unsigned int invalidDamageSampleFrames_ = 0;
@@ -457,6 +456,12 @@ private:
     std::string localDeathConnectionIdentity_;
     int pendingServerDeathTotal_ = -1;
     unsigned long pendingServerDeathAt_ = 0;
+    bool protectedHealthObserved_ = false;
+    bool protectedDeathPending_ = false;
+    int protectedDeathBaseline_ = 0;
+    unsigned long protectedDeathAt_ = 0;
+    unsigned int protectedDeathStatsAttempts_ = 0;
+    bool quietDeathStatsRefresh_ = false;
     bool jobTrackerInitialized_;
     
     std::function<bool(const std::string&)> slashCommandInterceptor_;

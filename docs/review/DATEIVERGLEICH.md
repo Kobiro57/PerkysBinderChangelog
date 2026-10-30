@@ -2,7 +2,7 @@
 
 Originalarchiv: `a328e78eea63420e9bfe9c084883100177fe0fd9c2d62c4fcaef38c0a44801e9`; Commitkennung im ZIP: `92ce21971bee2d166d830e23ad20950f1dc98921`.
 
-Aktueller Vergleich: `v0.1.1-r14`, ASI-SHA-256 `91b1b816e67acec1993e06c03ba8e98216535169293eeae543a054c564a393ab`.
+Aktueller Vergleich: `v0.1.1-r15`, ASI-SHA-256 `9d2139f9889fe5368030f505e515575ef0acbb83d374046d42dddd3aff929018`.
 
 Alle Dateien einschließlich wiederhergestellter Abhängigkeiten stehen in [SOURCE-COMPARISON.json](SOURCE-COMPARISON.json).
 Die Vorher-Prüfsummen stammen aus dem unveränderten gefilterten ZIP-Snapshot.
@@ -61,6 +61,15 @@ Diese Liste zeigt Inhaltsänderungen außerhalb der Vendor-Verzeichnisse.
 | added | [dist/NLBinder-0.1.1-r14/PRUEFBERICHT.json](../../dist/NLBinder-0.1.1-r14/PRUEFBERICHT.json) |
 | added | [dist/NLBinder-0.1.1-r14/RECONNECT-TEST.json](../../dist/NLBinder-0.1.1-r14/RECONNECT-TEST.json) |
 | added | [dist/NLBinder-0.1.1-r14/SHA256SUMS.txt](../../dist/NLBinder-0.1.1-r14/SHA256SUMS.txt) |
+| added | [dist/NLBinder-0.1.1-r15/BUILD-INFO.txt](../../dist/NLBinder-0.1.1-r15/BUILD-INFO.txt) |
+| added | [dist/NLBinder-0.1.1-r15/CHANGELOG-GESAMT.txt](../../dist/NLBinder-0.1.1-r15/CHANGELOG-GESAMT.txt) |
+| added | [dist/NLBinder-0.1.1-r15/JOB-HINWEISE.md](../../dist/NLBinder-0.1.1-r15/JOB-HINWEISE.md) |
+| added | [dist/NLBinder-0.1.1-r15/LIESMICH.md](../../dist/NLBinder-0.1.1-r15/LIESMICH.md) |
+| added | [dist/NLBinder-0.1.1-r15/NLBinder.asi](../../dist/NLBinder-0.1.1-r15/NLBinder.asi) |
+| added | [dist/NLBinder-0.1.1-r15/NLBinder/Waffenicons/LIESMICH.md](../../dist/NLBinder-0.1.1-r15/NLBinder/Waffenicons/LIESMICH.md) |
+| added | [dist/NLBinder-0.1.1-r15/PRUEFBERICHT.json](../../dist/NLBinder-0.1.1-r15/PRUEFBERICHT.json) |
+| added | [dist/NLBinder-0.1.1-r15/RECONNECT-TEST.json](../../dist/NLBinder-0.1.1-r15/RECONNECT-TEST.json) |
+| added | [dist/NLBinder-0.1.1-r15/SHA256SUMS.txt](../../dist/NLBinder-0.1.1-r15/SHA256SUMS.txt) |
 | added | [dist/NLBinder-0.1.1-r3/BUILD-INFO.txt](../../dist/NLBinder-0.1.1-r3/BUILD-INFO.txt) |
 | added | [dist/NLBinder-0.1.1-r3/JOB-HINWEISE.md](../../dist/NLBinder-0.1.1-r3/JOB-HINWEISE.md) |
 | added | [dist/NLBinder-0.1.1-r3/Keybinder.asi](../../dist/NLBinder-0.1.1-r3/Keybinder.asi) |
@@ -118,6 +127,7 @@ Diese Liste zeigt Inhaltsänderungen außerhalb der Vendor-Verzeichnisse.
 | added | [dist/NLBinder-v0.1.1-KOBiRO-r12.zip](../../dist/NLBinder-v0.1.1-KOBiRO-r12.zip) |
 | added | [dist/NLBinder-v0.1.1-KOBiRO-r13.zip](../../dist/NLBinder-v0.1.1-KOBiRO-r13.zip) |
 | added | [dist/NLBinder-v0.1.1-KOBiRO-r14.zip](../../dist/NLBinder-v0.1.1-KOBiRO-r14.zip) |
+| added | [dist/NLBinder-v0.1.1-KOBiRO-r15.zip](../../dist/NLBinder-v0.1.1-KOBiRO-r15.zip) |
 | added | [dist/NLBinder-v0.1.1-KOBiRO-r4.zip](../../dist/NLBinder-v0.1.1-KOBiRO-r4.zip) |
 | added | [dist/NLBinder-v0.1.1-KOBiRO-r5.zip](../../dist/NLBinder-v0.1.1-KOBiRO-r5.zip) |
 | added | [dist/NLBinder-v0.1.1-KOBiRO-r6.zip](../../dist/NLBinder-v0.1.1-KOBiRO-r6.zip) |
@@ -132,6 +142,7 @@ Diese Liste zeigt Inhaltsänderungen außerhalb der Vendor-Verzeichnisse.
 | added | [docs/NLBinder-0.1.1-r12-DE.md](../../docs/NLBinder-0.1.1-r12-DE.md) |
 | added | [docs/NLBinder-0.1.1-r13-DE.md](../../docs/NLBinder-0.1.1-r13-DE.md) |
 | added | [docs/NLBinder-0.1.1-r14-DE.md](../../docs/NLBinder-0.1.1-r14-DE.md) |
+| added | [docs/NLBinder-0.1.1-r15-DE.md](../../docs/NLBinder-0.1.1-r15-DE.md) |
 | added | [docs/NLBinder-0.1.1-r2-DE.md](../../docs/NLBinder-0.1.1-r2-DE.md) |
 | added | [docs/NLBinder-0.1.1-r3-DE.md](../../docs/NLBinder-0.1.1-r3-DE.md) |
 | added | [docs/NLBinder-0.1.1-r4-DE.md](../../docs/NLBinder-0.1.1-r4-DE.md) |
@@ -154,6 +165,8 @@ Diese Liste zeigt Inhaltsänderungen außerhalb der Vendor-Verzeichnisse.
 | added | [docs/review/r12-validation.json](../../docs/review/r12-validation.json) |
 | added | [docs/review/r13-validation.json](../../docs/review/r13-validation.json) |
 | added | [docs/review/r14-validation.json](../../docs/review/r14-validation.json) |
+| added | [docs/review/r15-live-validation.json](../../docs/review/r15-live-validation.json) |
+| added | [docs/review/r15-validation.json](../../docs/review/r15-validation.json) |
 | added | [docs/review/r4-validation.json](../../docs/review/r4-validation.json) |
 | added | [docs/review/r5-validation.json](../../docs/review/r5-validation.json) |
 | added | [docs/review/r6-validation.json](../../docs/review/r6-validation.json) |
@@ -184,6 +197,7 @@ Diese Liste zeigt Inhaltsänderungen außerhalb der Vendor-Verzeichnisse.
 | added | [include/MessageVariables.h](../../include/MessageVariables.h) |
 | added | [include/MessageVariablesUI.h](../../include/MessageVariablesUI.h) |
 | added | [include/NativeHudEditor.h](../../include/NativeHudEditor.h) |
+| added | [include/NativePlayerHealth.h](../../include/NativePlayerHealth.h) |
 | added | [include/NovaReconnectFlow.h](../../include/NovaReconnectFlow.h) |
 | modified | [include/OnlineDataManager.h](../../include/OnlineDataManager.h) |
 | modified | [include/OnlineOverlayController.h](../../include/OnlineOverlayController.h) |
@@ -287,6 +301,7 @@ Diese Liste zeigt Inhaltsänderungen außerhalb der Vendor-Verzeichnisse.
 | added | [tools/package_revision12.ps1](../../tools/package_revision12.ps1) |
 | added | [tools/package_revision13.ps1](../../tools/package_revision13.ps1) |
 | added | [tools/package_revision14.ps1](../../tools/package_revision14.ps1) |
+| added | [tools/package_revision15.ps1](../../tools/package_revision15.ps1) |
 | added | [tools/package_revision4.ps1](../../tools/package_revision4.ps1) |
 | added | [tools/package_revision5.ps1](../../tools/package_revision5.ps1) |
 | added | [tools/package_revision6.ps1](../../tools/package_revision6.ps1) |
@@ -303,6 +318,7 @@ Diese Liste zeigt Inhaltsänderungen außerhalb der Vendor-Verzeichnisse.
 | added | [tools/verify_revision12_artifact.py](../../tools/verify_revision12_artifact.py) |
 | added | [tools/verify_revision13_artifact.py](../../tools/verify_revision13_artifact.py) |
 | added | [tools/verify_revision14_artifact.py](../../tools/verify_revision14_artifact.py) |
+| added | [tools/verify_revision15_artifact.py](../../tools/verify_revision15_artifact.py) |
 | added | [tools/verify_revision4_artifact.py](../../tools/verify_revision4_artifact.py) |
 | added | [tools/verify_revision5_artifact.py](../../tools/verify_revision5_artifact.py) |
 | added | [tools/verify_revision6_artifact.py](../../tools/verify_revision6_artifact.py) |

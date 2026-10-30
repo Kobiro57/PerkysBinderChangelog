@@ -1,3 +1,4 @@
+#include "../include/NativePlayerHealth.h"
 #include "../include/SAMPBridge.h"
 
 #include <algorithm>
@@ -2244,17 +2245,19 @@ void SAMPBridge::ResetKillTrackerDeathInferenceState() {
     localDeathNotificationState_->pending.store(false, std::memory_order_release);
     localDeathConnectionIdentity_.clear();
     pendingServerDeathTotal_ = -1;
+    protectedHealthObserved_ = protectedDeathPending_ = false;
+    protectedDeathStatsAttempts_ = 0;
     if (killTracker_) killTracker_->UpdateDeathWindowState({});
 }
 
-void SAMPBridge::RecordLocalPlayerDeath(const std::string& killer, int weaponId) {
+void SAMPBridge::RecordLocalPlayerDeath(const std::string& killer, int weaponId, bool totalAlreadySynchronized) {
     if (!killTracker_) return;
     const bool countingDeaths = killTracker_->IsCountingDeaths();
     const int totalBefore = killTracker_->GetTotalDeaths();
     const bool alreadyInStats = pendingServerDeathTotal_ == totalBefore
         && RuntimeTickCount() - pendingServerDeathAt_ <= 5000;
     killTracker_->RecordDeath(killer, weaponId);
-    if (alreadyInStats) killTracker_->ImportDeathCount(totalBefore);
+    if (totalAlreadySynchronized || alreadyInStats) killTracker_->ImportDeathCount(totalBefore);
     pendingServerDeathTotal_ = -1;
     if (!countingDeaths) return;
     lastLocalDeathTime_ = std::time(nullptr);
@@ -2332,9 +2335,15 @@ void SAMPBridge::UpdateLocalDeathFallback() {
     bool sample = false;
 #ifdef KEYBINDER_TESTING
     const auto& hooks = GetTestingHooks();
-    sample = hooks.readLocalDamageSample && hooks.readLocalDamageSample(rawHealth, armour, source, ped);
+    sample = hooks.readRawLocalDamageSample
+        ? hooks.readRawLocalDamageSample(rawHealth, armour, source, ped)
+        : (hooks.readLocalDamageSample && hooks.readLocalDamageSample(rawHealth, armour, source, ped));
+    // The existing test seam supplies logical values. The raw seam replays
+    // real memory observations through the same decoder as the live client.
+    const bool decodeNative = static_cast<bool>(hooks.readRawLocalDamageSample);
     if (hooks.getLocalNativePedState) nativeState = hooks.getLocalNativePedState();
 #else
+    const bool decodeNative = true;
     const auto* gamePed = FindPlayerPed(0);
     if (gamePed && player->m_pPed->m_pGamePed == gamePed) {
         ped = gamePed;
@@ -2343,11 +2352,17 @@ void SAMPBridge::UpdateLocalDeathFallback() {
         sample = true;
     }
 #endif
+    const auto decoded = decodeNative ? keybinder::DecodeNativePlayerHealth(rawHealth)
+        : keybinder::NativePlayerHealth{rawHealth, false};
+    if (sample && decoded.protectedEncoding && !protectedHealthObserved_) {
+        protectedHealthObserved_ = true;
+        keybinder::Logger::Info("[CombatVitals] Native HP protection offset detected: 8000000");
+    }
     const bool nativeDeath = player->m_bIsWasted != FALSE || nativeState == 54 || nativeState == 55 || nativeState == 56;
     if (nativeDeath && localDeathLifecycle_.ObserveDeathNotification()) counted = true;
     const bool dead = nativeDeath
-        || (sample && std::isfinite(rawHealth) && rawHealth <= 0.0f);
-    float aliveHealth = rawHealth;
+        || (sample && std::isfinite(decoded.value) && decoded.value <= 0.0f);
+    float aliveHealth = decoded.value;
     if (sample && !keybinder::IsMeasurablePlayerVital(aliveHealth)) {
         const void* measuredPed = nullptr;
         float measuredArmour = 0.0f, measuredHealth = 0.0f;
@@ -2361,8 +2376,10 @@ void SAMPBridge::UpdateLocalDeathFallback() {
         IsLocalLifeControllable(), healthy, dead, ped, RuntimeTickCount());
     counted = counted || observedDeath;
     localDeathNotificationState_->armed.store(localDeathLifecycle_.IsArmed(), std::memory_order_release);
-    if (counted) RecordLocalPlayerDeath("", -1);
-    else if (previous != localDeathLifecycle_.GetPhase()) {
+    if (counted) {
+        if (protectedHealthObserved_) BeginProtectedDeathVerification(RuntimeTickCount());
+        else RecordLocalPlayerDeath("", -1);
+    } else if (previous != localDeathLifecycle_.GetPhase()) {
         Log(localDeathLifecycle_.IsArmed() ? "[SAMPBridge] Own life: alive/respawn armed"
             : "[SAMPBridge] Own life: already-dead baseline, no death counted");
     }
@@ -2464,8 +2481,9 @@ void SAMPBridge::CaptureScriptedHealthRpc(
     float value = 0.0f;
     const bool read = payload->Read(value);
     payload->SetReadOffset(offset);
-    if (!read || !keybinder::IsMeasurablePlayerVital(value)) return;
     const bool health = rpcId == 14;
+    if (health) value = keybinder::DecodeNativePlayerHealth(value).value;
+    if (!read || !keybinder::IsMeasurablePlayerVital(value)) return;
     const float baseline = health ? state->lastKnownHealth.load(std::memory_order_relaxed)
                                   : state->lastKnownArmour.load(std::memory_order_relaxed);
     if (state->active.load(std::memory_order_acquire)
@@ -2505,14 +2523,12 @@ void SAMPBridge::ResetIncomingDamageState(bool keepSpawnStatus) {
     scriptedHealthState_->pedIdentity.store(nullptr, std::memory_order_release);
     incomingDamageDetector_.Reset();
     incomingDamageLog_.Reset();
-    incomingDamageRpcEvidence_.Reset();
     incomingDamagePed_ = nullptr;
     invalidDamageSampleFrames_ = 0;
     scriptedHealthReconciliation_ = {};
     scriptedArmourReconciliation_ = {};
     std::lock_guard<std::mutex> lock(scriptedHealthState_->samplesMutex);
     scriptedHealthState_->samples.clear();
-    scriptedHealthState_->incomingEnvironmentalDamage.clear();
     scriptedHealthState_->syncVitals = {};
 }
 
@@ -2520,9 +2536,10 @@ bool SAMPBridge::IsDamageLogEnabled() const {
     return settingsManager_ != nullptr && settingsManager_->Get().damage_log_enabled;
 }
 
-void SAMPBridge::LogIncomingDamage(const keybinder::IncomingDamageLogEntry& measuredDamage, bool fromDamageRpc, int damageSource) {
-    const auto damage = fromDamageRpc ? measuredDamage
-        : incomingDamageRpcEvidence_.ObserveMeasured(measuredDamage, damageSource, RuntimeTickCount());
+void SAMPBridge::LogIncomingDamage(const keybinder::IncomingDamageLogEntry& measuredDamage) {
+    // TakeDamage amounts are requests/overkill, not a second HP loss. Actual
+    // logical HP/armour deltas are the sole source of displayed damage.
+    const auto& damage = measuredDamage;
     if (!damage.HasDamage()) return;
     char amount[48];
     const double rounded = std::round(static_cast<double>(damage.Total()) * 10.0) / 10.0;
@@ -2536,6 +2553,11 @@ void SAMPBridge::LogIncomingDamage(const keybinder::IncomingDamageLogEntry& meas
 bool SAMPBridge::ReadLocalDamageSample(float& health, float& armour, int& damageSource, const void*& pedIdentity) const {
 #ifdef KEYBINDER_TESTING
     const auto& hooks = GetTestingHooks();
+    if (hooks.readRawLocalDamageSample) {
+        if (!hooks.readRawLocalDamageSample(health, armour, damageSource, pedIdentity)) return false;
+        health = keybinder::DecodeNativePlayerHealth(health).value;
+        return true;
+    }
     return hooks.readLocalDamageSample && hooks.readLocalDamageSample(health, armour, damageSource, pedIdentity);
 #else
     CPlayerPed* ped = FindPlayerPed(0);
@@ -2544,7 +2566,7 @@ bool SAMPBridge::ReadLocalDamageSample(float& health, float& armour, int& damage
         || localPlayer->m_pPed->m_pGamePed != ped) return false;
     // DL-R1 CPed::GetHealth/GetArmour return these exact native fields
     // (RVA AB970/AB9B0). They do not decode protection/sentinel values.
-    health = ped->m_fHealth;
+    health = keybinder::DecodeNativePlayerHealth(ped->m_fHealth).value;
     armour = ped->m_fArmour;
     damageSource = static_cast<int>(ped->m_nLastWeaponDamage);
     pedIdentity = ped;
@@ -2558,15 +2580,14 @@ bool SAMPBridge::ReadLocalDamageSample(float& health, float& armour, int& damage
 
 bool SAMPBridge::ApplyLocalSyncVitals(float& health, float& armour, unsigned char mode,
                                      unsigned short vehicle, const void* pedIdentity) const {
-    // DL-R1 SendOnfootData reads the native float, converts to int and writes
-    // AL into the transmitted health/armour bytes. Use the actual packet the
-    // client emitted, never a guessed magic protection offset or modulo.
-    if (keybinder::IsMeasurablePlayerVital(health) && keybinder::IsMeasurablePlayerVital(armour)) return false;
+    // The transmitted uint8 HP wraps a negative protected value (e.g. -8
+    // becomes 248). It must never seed health or a damage budget. Preserve
+    // only the guarded armour fallback; native float health is decoded above.
+    if (keybinder::IsMeasurablePlayerVital(armour)) return false;
     std::lock_guard<std::mutex> lock(scriptedHealthState_->samplesMutex);
     const auto& sample = scriptedHealthState_->syncVitals;
     if (!sample.valid || sample.pedIdentity != pedIdentity || sample.mode != mode || sample.vehicle != vehicle
         || static_cast<unsigned long>(RuntimeTickCount() - sample.at) > 500) return false;
-    if (!keybinder::IsMeasurablePlayerVital(health)) health = sample.health;
     if (!keybinder::IsMeasurablePlayerVital(armour)) armour = sample.armour;
     return true;
 }
@@ -2580,12 +2601,10 @@ void SAMPBridge::PollLocalIncomingDamage() {
     scriptedHealthState_->logEnabled.store(logEnabled, std::memory_order_release);
     if (!logEnabled || logJustEnabled) {
         incomingDamageLog_.Reset();
-        incomingDamageRpcEvidence_.Reset();
         scriptedHealthReconciliation_ = {};
         scriptedArmourReconciliation_ = {};
         std::lock_guard<std::mutex> lock(scriptedHealthState_->samplesMutex);
         scriptedHealthState_->samples.clear();
-        scriptedHealthState_->incomingEnvironmentalDamage.clear();
     }
     const bool playing = IsLocalCombatActive();
     const bool finalDeathSample = !playing && (incomingDamagePed_ != nullptr
@@ -2595,14 +2614,12 @@ void SAMPBridge::PollLocalIncomingDamage() {
         ResetIncomingDamageState();
         return;
     }
-    incomingDamageRpcEvidence_.AdvanceFrame();
 
     float health = 0.0f;
     float armour = 0.0f;
     int damageSource = 0;
     const void* pedIdentity = nullptr;
     if (!ReadLocalDamageSample(health, armour, damageSource, pedIdentity) || pedIdentity == nullptr) {
-        FlushIncomingEnvironmentalDamageRpcs();
         ResetIncomingDamageState(playing);
         return;
     }
@@ -2642,7 +2659,7 @@ void SAMPBridge::PollLocalIncomingDamage() {
         keybinder::IncomingDamageLogEntry pendingDamage;
         bool groupedHealth = false, groupedArmour = false;
         auto flushDamage = [&]() {
-            LogIncomingDamage(pendingDamage, false, damageSource);
+            LogIncomingDamage(pendingDamage);
             pendingDamage = {};
             groupedHealth = groupedArmour = false;
         };
@@ -2653,7 +2670,6 @@ void SAMPBridge::PollLocalIncomingDamage() {
             auto& reconciliation = sample.health ? scriptedHealthReconciliation_ : scriptedArmourReconciliation_;
             const float previous = sample.health ? incomingDamageLog_.LastHealth() : incomingDamageLog_.LastArmour();
             const float value = (std::max)(0.0f, sample.value);
-            incomingDamageRpcEvidence_.ObserveServerVital(sample.health, value);
             const auto damage = incomingDamageLog_.Observe(value, value, sample.health, !sample.health);
             pendingDamage.healthDamage += damage.healthDamage;
             pendingDamage.armourDamage += damage.armourDamage;
@@ -2711,7 +2727,7 @@ void SAMPBridge::PollLocalIncomingDamage() {
     const bool sampleHealth = acceptNative(healthValid, health, serverHealthSeen, scriptedHealthReconciliation_, true);
     const bool sampleArmour = acceptNative(armourValid, armour, serverArmourSeen, scriptedArmourReconciliation_, false);
     if (logEnabled)
-        LogIncomingDamage(incomingDamageLog_.Observe(health, armour, sampleHealth, sampleArmour), false, damageSource);
+        LogIncomingDamage(incomingDamageLog_.Observe(health, armour, sampleHealth, sampleArmour));
 
     if (sampleHealth) {
         scriptedHealthState_->lastKnownHealth.store(health, std::memory_order_relaxed);
@@ -2734,53 +2750,10 @@ void SAMPBridge::PollLocalIncomingDamage() {
             && observation.damage > keybinder::IncomingDamageDetector::kDamageEpsilon && hitsoundIncomingCallback_)
             hitsoundIncomingCallback_();
     }
-    FlushIncomingEnvironmentalDamageRpcs();
     if (finalDeathSample || (healthValid && health == 0.0f)) ResetIncomingDamageState();
 }
 
-void SAMPBridge::FlushIncomingEnvironmentalDamageRpcs() {
-    std::vector<ScriptedHealthSuppressionState::EnvironmentalDamageSample> incoming;
-    {
-        std::lock_guard<std::mutex> lock(scriptedHealthState_->samplesMutex);
-        incoming.swap(scriptedHealthState_->incomingEnvironmentalDamage);
-    }
-    if (!IsDamageLogEnabled()) return;
-    incomingDamageRpcEvidence_.ObserveVitals(
-        scriptedHealthState_->healthKnown.load(std::memory_order_relaxed)
-            ? scriptedHealthState_->lastKnownHealth.load(std::memory_order_relaxed) : NAN,
-        scriptedHealthState_->armourKnown.load(std::memory_order_relaxed)
-            ? scriptedHealthState_->lastKnownArmour.load(std::memory_order_relaxed) : NAN);
-    const auto now = RuntimeTickCount();
-    for (const auto& sample : incoming) {
-        const auto& event = sample.event;
-        if (!incomingDamageRpcEvidence_.HasKnownVitalsForSource(event.weaponId)) {
-            // Do not print an unbounded overkill value while waiting for the
-            // first real outgoing sync/server sample of protected player HP.
-            if (static_cast<unsigned long>(now - sample.at) <= 1500) {
-                std::lock_guard<std::mutex> lock(scriptedHealthState_->samplesMutex);
-                if (scriptedHealthState_->incomingEnvironmentalDamage.size() < 64)
-                    scriptedHealthState_->incomingEnvironmentalDamage.push_back(sample);
-            }
-            continue;
-        }
-        const auto damage = incomingDamageRpcEvidence_.ObserveRpc(event.damage, event.weaponId, now);
-        LogIncomingDamage(damage, true);
-    }
-}
-
 void SAMPBridge::NotifyDamageFeedback(const killtracker::DamageEvent& event) {
-    if (!event.isOutgoing && keybinder::IsEnvironmentalDamageRpcSource(event.weaponId)
-        && std::isfinite(event.damage) && event.damage >= 1.0f
-        && scriptedHealthState_->spawned.load(std::memory_order_acquire)
-        && scriptedHealthState_->logEnabled.load(std::memory_order_acquire)) {
-        // RPC115 TakeDamage is client-sent, including fall54/attackerFFFF.
-        // Keep the real event even if health was restored between two polls.
-        // No game pointers or chat calls are touched from the RPC hook thread.
-        std::lock_guard<std::mutex> lock(scriptedHealthState_->samplesMutex);
-        if (scriptedHealthState_->spawned.load(std::memory_order_acquire)
-            && scriptedHealthState_->incomingEnvironmentalDamage.size() < 64)
-            scriptedHealthState_->incomingEnvironmentalDamage.push_back({event, RuntimeTickCount()});
-    }
     if (event.isOutgoing && hitsoundDamageCallback_ && IsLocalCombatActive()) {
         hitsoundDamageCallback_(event);
     }
@@ -3328,7 +3301,7 @@ void SAMPBridge::ImportServerDeathCount(int count) {
     // confirmed living life. Initial login snapshots are baselines, not events.
     // Settings/local imports never create this server-event credit.
     const int previous = killTracker_ ? killTracker_->GetTotalDeaths() : 0;
-    if (localDeathLifecycle_.IsArmed() && count > previous && count - previous == 1) {
+    if (serverCombatBaselineEstablished_ && localDeathLifecycle_.IsArmed() && count > previous && count - previous == 1) {
         pendingServerDeathTotal_ = count;
         pendingServerDeathAt_ = RuntimeTickCount();
     }

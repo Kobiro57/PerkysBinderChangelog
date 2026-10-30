@@ -1,0 +1,22 @@
+{
+  "revision": "v0.1.1-r15",
+  "date": "2026-10-30",
+  "asi_sha256": "9d2139f9889fe5368030f505e515575ef0acbb83d374046d42dddd3aff929018",
+  "game_started_and_test_actions_performed_by_user": true,
+  "installed_asi_hash_verified": true,
+  "new_runtime_protected_health_decoder_activation_logged": true,
+  "explosion": {
+    "native_death_candidate_logged": true,
+    "own_server_death_count_increment": 1,
+    "verified_death_logged": true,
+    "user_confirmed_exactly_one_correct_local_death_notification": true
+  },
+  "cemetery_relog": {
+    "own_server_death_count_increment": 0,
+    "user_confirmed_no_duplicate": true
+  },
+  "live_gun_death_test_performed": false,
+  "live_fall_death_test_performed": false,
+  "gun_and_fall_automated_regressions_passed": true,
+  "privacy": "Only aggregate results; no account identities, absolute account totals, chatlogs or process addresses"
+}

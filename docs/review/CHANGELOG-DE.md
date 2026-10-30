@@ -920,3 +920,47 @@ nicht veröffentlicht. Frühere GitHub-Stände und ursprüngliche Urheberhinweis
 bleiben erhalten. Die finalen Nachweise gehören zum
 [r14-Paket](../../dist/NLBinder-0.1.1-r14/BUILD-INFO.txt).
 Ein echter Ingame-Test auf dem konkreten Server steht aus.
+
+## 21. Nachtrag r15 – 30. Oktober 2026
+
+Die fehlenden Todesmeldungen und falschen Schadensbeträge wurden diesmal
+anhand einer lesenden Aufzeichnung im laufenden Spiel untersucht.
+
+- Tatsächliche Ursache: native HP enthalten einen Schutzaufschlag von
+  8.000.000. Beim beobachteten Explosionstod blieben die gewöhnlichen
+  GTA-/SA-MP-Todesflags unverändert. Die bisherige Auswertung war dafür ungeeignet.
+- Neue gemeinsame Dekodierung der nativen HP und entsprechenden serverseitigen
+  HP-RPC-Werte. Negative logische HP werden auf null begrenzt; normale und
+  erhöhte ungeschützte HP behalten ihren tatsächlichen Wert.
+- Geschützte eigene Alive-zu-Dead-Übergänge werden mit einem neuen eigenen
+  serverseitigen Todesstand bestätigt. Der absolute Stand wird übernommen;
+  Sessioneintrag und lokale Meldung erfolgen einmalig ohne erneutes Addieren.
+- Ein sofortiger eigener Statistikabruf und höchstens ein weiterer nach vier
+  Sekunden berücksichtigen verzögerte serverseitige Todesverarbeitung.
+  Keine zusätzliche Jobskills-Abfrage und keine doppelte Synchronisationsmeldung.
+- Friedhofs-Chat bleibt vollständig ohne Todeszählung. Erneutes Einloggen oder
+  ein unveränderter Statistikstand erzeugen keinen neuen Todesfall. Die
+  Erkennung eines späteren echten Todes benötigt keine dreiminütige Wartezeit.
+- Der erste Serverstand bleibt auch bei verzögerter Antwort ein Ausgangswert;
+  eine Korrektur alter gespeicherter Werte gilt nicht als neues Todesereignis.
+- Damagelog auf tatsächlich beobachtete logische HP-/Westenverluste umgestellt.
+  Zusätzliche Rohbeträge aus Schadensmeldungen werden nicht mehr addiert.
+  Überkill wird auf vorhandene Restwerte begrenzt; wiederholte negative
+  Restwerte erzeugen keine weiteren Schadenszeilen.
+- 8-Bit-HP als Ersatz entfernt: Unterlauf konnte minus acht als 248 darstellen
+  und anschließend einen erfundenen 248-HP-Verlust erzeugen.
+- Fallschaden und Explosionen bleiben über die bereinigten Werte erkennbar.
+  Farbe des Damagelog-Präfixes bleibt `{33CCFF}`.
+- Tests mit dem anonymisierten echten Explosionsablauf sowie Beschuss,
+  Fallschaden, Überkill, verzögerten/einmaligen Statistikantworten, bereits
+  importierten Zählern, kaltem Login und erneutem Friedhofseintritt ergänzt.
+- Ausgabe weiterhin als `NLBinder.asi`, vollständiger TXT-Changelog und
+  Quellordner `NLBinder-masterNEW`; GitHub-Historie wird um r15 ergänzt.
+
+Die lesende Ursachendiagnose lief mit der installierten r14-ASI. Die
+automatisierten Wiederholungen dieses Ablaufs prüfen r15. Zusätzlich wurde
+die neue r15-ASI im Spiel getestet: Der Nutzer bestätigte genau eine korrekte
+Todesmeldung nach einer Explosion und keinen weiteren Tod nach dem Relog im
+Friedhof. Der eigene Serverstand erhöhte sich beim Tod um eins und blieb beim
+Relog gleich. Beschuss und Fallschaden wurden automatisiert geprüft; separate
+Live-Tests dieser beiden Todesursachen werden nicht behauptet.

@@ -72,6 +72,7 @@ void SAMPBridge::ResetStartupStats() {
     startupJobSkillsRequested_ = startupJobSkillsComplete_ = startupJobSkillsFailed_ = false;
     startupStatsSaved_ = startupSyncNotified_ = false;
     manualStateSyncCycle_ = manualStateSyncPending_ = false;
+    quietDeathStatsRefresh_ = false;
     manualStateSyncAcceptedAt_ = 0;
     manualStateSyncSessionKillsAtRequest_ = manualStateSyncSessionDeathsAtRequest_ = 0;
     jobSkillsRequestPending_ = false;
@@ -280,12 +281,24 @@ void SAMPBridge::CompleteStartupStats(unsigned long now) {
             && tracker->GetSessionDeaths() == manualStateSyncSessionDeathsAtRequest_;
         if (manualKillsOverride || !serverCombatBaselineEstablished_ || *synchronizedStats_.kills >= tracker->GetTotalKills()
             || wallNow - lastLocalKillTime_ > 5) tracker->ImportKillCount(*synchronizedStats_.kills);
-        if (manualDeathsOverride || !serverCombatBaselineEstablished_ || *synchronizedStats_.deaths >= tracker->GetTotalDeaths()
+        if (manualDeathsOverride || quietDeathStatsRefresh_ || !serverCombatBaselineEstablished_ || *synchronizedStats_.deaths >= tracker->GetTotalDeaths()
             || wallNow - lastLocalDeathTime_ > 5) ImportServerDeathCount(*synchronizedStats_.deaths);
     }
     lastServerKillTotal_ = *synchronizedStats_.kills;
     lastServerDeathTotal_ = *synchronizedStats_.deaths;
     serverCombatBaselineEstablished_ = true;
+    if (protectedDeathPending_ && *synchronizedStats_.deaths > protectedDeathBaseline_) {
+        // Import the authoritative absolute total, then record the session
+        // event without adding that same death to the total for a second time.
+        ImportDeathCount(*synchronizedStats_.deaths);
+        RecordLocalPlayerDeath("", -1, true);
+        keybinder::Logger::Info("[CombatVitals] Native death verified: server deaths %d -> %d",
+            protectedDeathBaseline_, *synchronizedStats_.deaths);
+        protectedDeathPending_ = false;
+    } else if (protectedDeathPending_ && quietDeathStatsRefresh_ && protectedDeathStatsAttempts_ >= 2) {
+        keybinder::Logger::Info("[CombatVitals] No new server death; native zero-HP transition discarded");
+        protectedDeathPending_ = false;
+    }
     startupStatsComplete_ = true;
     startupStatsFailed_ = false;
     if (firstCompletion) startupStatsCompletedAt_ = now;
@@ -298,12 +311,44 @@ void SAMPBridge::CompleteStartupStats(unsigned long now) {
     if (firstCompletion) {
         if (manualStateSyncPending_) {
             if (!saved) FailManualStateSynchronization("Die Statistikwerte konnten nicht gespeichert werden.");
-        } else if (!manualStateSyncCycle_) {
+        } else if (!manualStateSyncCycle_ && !quietDeathStatsRefresh_) {
             QueueLocalMessage(saved
                 ? "{33CCFF}[NL-BINDER]{FFFFFF} Statistik übernommen."
                 : "{FF6600}[NL-BINDER]{FFFFFF} Synchronisation gelesen, aber die Daten konnten nicht gespeichert werden.");
         }
     }
+    quietDeathStatsRefresh_ = false;
+}
+
+void SAMPBridge::BeginProtectedDeathVerification(unsigned long now) {
+    if (protectedDeathPending_ || !serverCombatBaselineEstablished_ || !killTracker_
+        || !killTracker_->IsCountingDeaths()) return;
+    protectedDeathPending_ = true;
+    protectedDeathAt_ = now;
+    protectedDeathStatsAttempts_ = 0;
+    protectedDeathBaseline_ = lastServerDeathTotal_;
+    if (pendingServerDeathTotal_ == protectedDeathBaseline_ && now - pendingServerDeathAt_ <= 5000)
+        --protectedDeathBaseline_;
+    keybinder::Logger::Info("[CombatVitals] Native death candidate; checking own statistics baseline=%d",
+        protectedDeathBaseline_);
+}
+
+void SAMPBridge::UpdateProtectedDeathVerification(unsigned long now) {
+    if (!protectedDeathPending_) return;
+    if (now - protectedDeathAt_ >= 10000) {
+        protectedDeathPending_ = false;
+        keybinder::Logger::Warning("[CombatVitals] Native death not verified: own statistics unavailable");
+        return;
+    }
+    if (!startupStatsComplete_ || manualStateSyncPending_ || IsChatOpen() || IsDialogOpen()
+        || IsCursorActive() || speedTicketFlow_.IsActive()) return;
+    // One immediate check, and at most one further check after the observed
+    // three-second server death transition. No polling loop or jobskills query.
+    if (protectedDeathStatsAttempts_ >= 2
+        || (protectedDeathStatsAttempts_ == 1 && now - protectedDeathAt_ < 4000)) return;
+    ++protectedDeathStatsAttempts_;
+    quietDeathStatsRefresh_ = true;
+    startupStatsRequested_ = startupStatsComplete_ = startupStatsFailed_ = false;
 }
 
 void SAMPBridge::UpdateStartupStats(unsigned long now) {
@@ -325,6 +370,7 @@ void SAMPBridge::UpdateStartupStats(unsigned long now) {
         serverCombatBaselineEstablished_ = false;
         ownStatsContext_ = false;
     }
+    UpdateProtectedDeathVerification(now);
     if (!startupStatsRequested_) {
         if (manualStateSyncPending_ && now - manualStateSyncAcceptedAt_ >= kStatsResponseTimeoutMs) {
             FailManualStateSynchronization("Der Statistikabruf konnte nicht gestartet werden.");
@@ -354,7 +400,7 @@ void SAMPBridge::UpdateStartupStats(unsigned long now) {
                 startupStatsPendingChat_ = false;
             }
             if (manualStateSyncPending_) FailManualStateSynchronization("Die Statistik konnte nicht abgefragt werden.");
-            else QueueLocalMessage("{FF6600}[NL-BINDER]{FFFFFF} Automatischer Statistikabruf fehlgeschlagen. Eigene /stats erneut öffnen.");
+            else if (!quietDeathStatsRefresh_) QueueLocalMessage("{FF6600}[NL-BINDER]{FFFFFF} Automatischer Statistikabruf fehlgeschlagen. Eigene /stats erneut öffnen.");
         }
     }
     if (ownStatsCommandObserved_.exchange(false, std::memory_order_acq_rel)) {
@@ -396,6 +442,6 @@ void SAMPBridge::UpdateStartupStats(unsigned long now) {
             startupStatsPendingChat_ = startupStatsHiddenChat_ = false;
         }
         if (manualStateSyncPending_) FailManualStateSynchronization("Keine eigenen Statistikwerte empfangen.");
-        else QueueLocalMessage("{FF6600}[NL-BINDER]{FFFFFF} Keine eigenen Zähler empfangen. Eigene /stats erneut öffnen, um die Werte zu übernehmen.");
+        else if (!quietDeathStatsRefresh_) QueueLocalMessage("{FF6600}[NL-BINDER]{FFFFFF} Keine eigenen Zähler empfangen. Eigene /stats erneut öffnen, um die Werte zu übernehmen.");
     }
 }

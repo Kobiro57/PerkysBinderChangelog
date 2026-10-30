@@ -1,0 +1,43 @@
+NLBinder v.0.1.1 by KOBiRO – Überarbeitung 14
+Erstellt: 30.10.2026 21:42:07 (Europe/Berlin)
+Datei: NLBinder.asi
+Format: Win32 Release, PE32/x86 DLL
+Größe: 18510848 Bytes
+SHA256: 9d2139f9889fe5368030f505e515575ef0acbb83d374046d42dddd3aff929018
+Eingebetteter Reconnect-Helfer: Ressource 300, 127488 Bytes
+Helfer-SHA256: 8ba614602a341477e906e20988a0bfbcb7e2ab00aaa3eabc85bcd94bdbfe732b
+
+Verifikation:
+- Vollständige automatisierte Tests: Exitcode 0
+- Release-Build: Exitcode 0
+- ASI-Format, Windows-Imports und eingebetteter Helfer geprüft
+- Eingebetteter Reconnect-Helfer stimmt mit dem geprüften Helfer überein
+- Nativer Reconnect-Helfer: 83 Prüfungen, 0 Fehler
+- Dafür ausschließlich harmlose Testprozesse verwendet
+- Die Helferprüfung startet/beendet kein echtes Spiel und keinen installierten Launcher
+- Live-Ursachendiagnose mit r14 belegt
+- Neue r15-ASI im Spiel bestätigt: Explosionstod genau einmal, Friedhofs-Relog ohne Doppelzählung
+
+Neue Änderungen:
+- Friedhofs-Chat löst keine eigene Todeszählung mehr aus
+- Ein echter eigener Alive-zu-Dead-Übergang zählt einmal
+- Login/Relog übernimmt eine Basis ohne rückwirkenden Zusatz-Tod
+- Belegter nativer HP-Schutzaufschlag von 8.000.000 wird vor der Auswertung entfernt
+- Geschützte Todesübergänge werden mit einem neuen eigenen Server-Todesstand bestätigt
+- Höchstens zwei eigene Statistikabrufe pro Todesprüfung; keine Jobskills-Abfrage
+- Damagelog nutzt tatsächliche HP-/Westenverluste; kein zusätzlicher TakeDamage-Rohschaden
+- Übergelaufene 8-Bit-HP werden nicht als HP-Ersatz verwendet
+- Damagelog-Präfix bleibt {33CCFF}; vorhandene Hitsound-Filter bleiben getrennt
+- Manuelle Stats-/Jobskills-Synchronisation und sämtliche bisherigen Anpassungen bleiben enthalten
+- Kompilierte Datei heißt weiterhin NLBinder.asi
+- Gesamter Changelog liegt als CHANGELOG-GESAMT.txt bei
+
+Die früheren Job-, Skilltree-, Fraktions-, Radar-, Tacho- und Reconnect-
+Anpassungen sind enthalten. Die ursprüngliche Oberfläche bleibt Grundlage.
+Der Reconnect-Helfer ist in der ASI enthalten.
+
+Grenzen: Die Synchronisation wartet auf eine echte Serverantwort. Bei ausschließlich nativer
+Messung können mehrere Verluste zwischen Messungen als Gesamtverlust erscheinen.
+Explosionstod und anschließender Friedhofs-Relog sind mit dieser ASI im Spiel bestätigt.
+Beschuss und Fallschaden sind automatisiert geprüft; der installierte Launcher wurde nicht separat getestet.
+Installation und weitere Hinweise stehen in LIESMICH.md.

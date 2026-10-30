@@ -1,6 +1,72 @@
 # Hinweise zur Prüfung durch die Projektleitung
 
-## Aktueller Stand r14 – 30. Oktober 2026
+## Aktueller Stand r15 – 30. Oktober 2026
+
+[Bedienung](../NLBinder-0.1.1-r15-DE.md),
+[r15-Nachtrag](CHANGELOG-DE.md#21-nachtrag-r15--30-oktober-2026) und
+[vollständiger TXT-Changelog](../CHANGELOG-GESAMT.txt) beschreiben den Stand.
+
+### Belegte Ursache und Korrektur
+
+Eine rein lesende Live-Aufzeichnung mit der installierten r14-ASI erfasste
+einen vom Nutzer ausgelösten Explosionstod. Native HP: 8.000.094 vor dem
+Ereignis, zuletzt 7.999.945 und 8.000.000, nach etwa drei Sekunden 8.000.100.
+Der native Pedzustand blieb 1, SA-MP Active blieb 1 und Wasted blieb 0.
+Diese Werte belegen den Schutzaufschlag und erklären das Ausbleiben der
+bisherigen Todeserkennung. Die frühere Annahme eines zwingenden normalen
+GTA-/SA-MP-Todesflags trifft auf diesen Serverablauf nicht zu.
+
+`NativePlayerHealth.h` dekodiert den belegten Bereich vor der weiteren
+Auswertung. Geschützte physische Todesübergänge benötigen anschließend
+einen neuen eigenen Server-Todesstand. Höchstens zwei eigene Statistikabrufe
+vermeiden eine dauerhafte Abfrageschleife. Die Gesamtzahl wird absolut
+importiert; Sessioneintrag und lokale Todesmeldung entstehen nur einmal.
+Kaltes Einloggen, Friedhofs-Relog und reine Korrekturen alter gespeicherter
+Werte sind keine neuen Ereignisse. Friedhofs-Chat wird nicht dafür ausgewertet.
+
+Der Damagelog verwendet gemessene logische HP-/Westenverluste und tatsächliche
+serverseitige HP-/Westenänderungen. TakeDamage-Rohbeträge sind kein zusätzlicher
+Verlust. Die übertragene uint8-HP kann unterlaufen und wird nicht als
+HP-Ersatz verwendet. Überkill wird pro Pool auf den vorherigen Rest begrenzt.
+
+Die Live-Aufzeichnung bleibt privat im lokalen Buildordner. Nur anonymisierte
+Messwerte und Reihenfolgen sind in Regressionstests enthalten; keine
+Spielerkennung, Prozessadressen, Sitzungschatlogs oder Kontodateien werden
+veröffentlicht. Der nachfolgende Live-Test der r15-ASI ist vom Ursachenbeleg mit r14 zu
+unterscheiden: Der Nutzer bestätigte einen korrekten Explosionstod mit einer
+lokalen Meldung, anschließend einen Friedhofs-Relog ohne Doppelzählung. Der
+eigene Serverstand erhöhte sich nur beim Tod um eins.
+[Datensparsamer Live-Prüfnachweis](r15-live-validation.json).
+
+### Ausgeführte Prüfungen für r15
+
+Gesamttests und Win32-Release-Build endeten mit Exitcode 0.
+Erfolgreiche Prüfungen: DamageLogRegression: 210, ActionExecutor: 143, Reconnect: 116, SAMPBridge: 563, StartupStatsSync: 367, StatsDialogRPCAdapter: 727, JobSkillsImport: 17, CombatChatParser: 190, CombatChatBridge: 238, native_reconnect_helper: 83.
+
+Die Friedhofszeile löst keine eigene Todeszählung mehr aus.
+Integrationstests prüfen echte Alive-zu-Dead-Übergänge, lokale Meldung
+und Baselineübernahme bei Login/Relog ohne rückwirkenden Zusatz-Tod.
+Die Damagelog-Regressionssuite prüft Fallschaden und Explosionsübergänge
+getrennt von den Umweltfiltern des Hitsounds. Bestehende Statistik- und
+Jobskill-Abläufe werden weiterhin gemeinsam geprüft.
+Die Ausgabe des finalen Builds heißt NLBinder.asi. Die geprüfte Datei
+umfasst 18.510.848 Bytes; SHA-256:
+`9d2139f9889fe5368030f505e515575ef0acbb83d374046d42dddd3aff929018`.
+
+PE32/x86, Windows-Imports und Ressource 300 sind geprüft. Der
+eingebettete Reconnect-Helfer stimmt mit dem frisch geprüften Helfer
+überein. Die Helferprüfung nutzt harmlose Testprozesse; das echte Spiel
+und der installierte Launcher werden dabei nicht gestartet oder beendet.
+
+Der vollständige TXT-Changelog umfasst die Abschnitte 1–21 und wird
+zusammen mit der ASI ausgeliefert.
+Separater ASI-Stand und ZIP-Inhalt stimmen bytegleich überein. Ein
+unabhängiger Abgleich bestätigt alle Paketdateien, den vollständigen
+TXT-Changelog, 43 explizite leere Waffenordner und keine persönlichen PNGs.
+[Maschinenlesbare Ergebnisse](r15-validation.json) ergänzen die Paketnachweise.
+Die neue r15-ASI wurde zusätzlich im Spiel geprüft: Explosionstod mit genau einer bestätigten Todesmeldung und einem zusätzlichen Server-Tod, anschließend Friedhofs-Relog ohne weitere Zählung. Der Nutzer führte die Spielaktionen aus und bestätigte beide Ergebnisse. Beschuss und Fallschaden wurden automatisiert geprüft; ein separater Live-Test dieser beiden Ursachen wird nicht behauptet.
+
+## Historischer Prüfstand r14 – 30. Oktober 2026
 
 Der aktuelle Stand ist **NLBinder v.0.1.1 by KOBiRO, r14**.
 [Bedienung](../NLBinder-0.1.1-r14-DE.md),

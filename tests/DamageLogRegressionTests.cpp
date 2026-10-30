@@ -2,6 +2,7 @@
 #include "../include/RakHook/include/RakHook/samp.hpp"
 #include "../include/SAMPBridge.h"
 #include "../include/SettingsManager.h"
+#include "../include/NativePlayerHealth.h"
 #include "../include/RakHook/include/RakNet/BitStream.h"
 #include "../include/RakHook/include/RakNet/PacketEnumerations.h"
 
@@ -39,12 +40,15 @@ struct DamageFixture {
     unsigned short syncVehicle = 0xFFFF;
     int sounds = 0;
     unsigned long tick = 1000;
-    std::vector<std::string> messages;
+    std::vector<std::string> messages, localMessages, commands;
+    std::string name = "DamagePlayer";
+    bool statsReady = false;
+    int closed = 0;
     keybinder::SettingsManager settings;
     SAMPBridge bridge;
     bool ready = false;
 
-    explicit DamageFixture(float initialHp = 100.0f, float initialArmour = 0.0f)
+    explicit DamageFixture(float initialHp = 100.0f, float initialArmour = 0.0f, bool rawNative = false)
         : hp(initialHp), armour(initialArmour) {
         net.get()->m_nGameState = sampapi::v03dl::CNetGame::GAME_MODE_CONNECTED;
         local.get()->m_pPed = reinterpret_cast<sampapi::v03dl::CPed*>(0x2000);
@@ -62,9 +66,10 @@ struct DamageFixture {
         hooks.getNetGame = [this] { return net.get(); };
         hooks.getLocalPlayer = [this] { return local.get(); };
         hooks.getTickCount = [this] { return tick; };
-        hooks.sendInput = [](sampapi::v03dl::CInput*, const char*) {};
+        hooks.sendInput = [this](sampapi::v03dl::CInput*, const char* text) { commands.emplace_back(text); };
         hooks.sendChat = [](sampapi::v03dl::CLocalPlayer*, const char*) {};
         hooks.addMessage = [this](sampapi::v03dl::CChat*, unsigned long, const char* text) {
+            if (text) localMessages.emplace_back(text);
             if (text && std::string(text).find(" HP {FFFFFF}Schaden (") != std::string::npos)
                 messages.emplace_back(text);
         };
@@ -76,13 +81,19 @@ struct DamageFixture {
         hooks.installIncomingChatInterceptor = [](const auto&) {};
         hooks.logSink = [](const std::string&) {};
         hooks.getLocalPlayerId = [] { return 5; };
-        hooks.getLocalPlayerName = [] { return std::string("DamagePlayer"); };
+        hooks.getLocalPlayerName = [this] { return name; };
         hooks.readLocalDamageSample = [this](float& health, float& vest, int& weapon, const void*& identity) {
             health = hp; vest = armour; weapon = source; identity = ped;
             if (useNetworkVitals) bridge.ApplyLocalSyncVitalsForTesting(health, vest, syncMode, syncVehicle, ped);
             return available;
         };
-        hooks.isStartupStatsReady = [] { return false; };
+        if (rawNative) hooks.readRawLocalDamageSample = [this](float& health, float& vest, int& weapon, const void*& identity) {
+            health = hp; vest = armour; weapon = source; identity = ped; return available;
+        };
+        hooks.getLocalNativePedState = [] { return 1; };
+        hooks.isLocalPlayerControllable = [] { return true; };
+        hooks.closeStatsDialog = [this](int) { ++closed; dialog.get()->m_bIsActive = FALSE; };
+        hooks.isStartupStatsReady = [this] { return statsReady; };
         hooks.isStartupJobSkillsReady = [] { return false; };
         SAMPBridge::SetTestingHooks(hooks);
         settings.GetMutable().damage_log_enabled = true;
@@ -97,6 +108,29 @@ struct DamageFixture {
     }
     ~DamageFixture() { bridge.Shutdown(); SAMPBridge::ResetTestingHooks(); }
     void Step() { tick += 16; bridge.Update(); }
+    void ArmLife() { for (int i = 0; i < 3; ++i) { tick += 400; Step(); } }
+    void ReplyStats(int deaths) {
+        const std::string caption = "Statistiken \xBB " + name;
+        dialog.get()->m_bIsActive = TRUE;
+        dialog.get()->m_nId = 499; dialog.get()->m_nType = 0;
+        std::strcpy(dialog.get()->m_szCaption, caption.c_str());
+        dialog.get()->m_szText = nullptr;
+        bridge.ProcessStatsDialogForTesting({499, 0, caption,
+            "Name: " + name + "\nKills: 65\nTode: " + std::to_string(deaths)});
+        Step();
+    }
+    bool EnableVerifiedDeaths(int baseline = 214) {
+        statsReady = true;
+        settings.GetMutable().kill_tracker_count_deaths = true;
+        bridge.SetKillTrackerEnabled(true);
+        Step(); ReplyStats(baseline); ArmLife();
+        return bridge.AreStatsSynchronized() && bridge.GetTotalDeaths() == baseline;
+    }
+    int DeathMessages() const {
+        return static_cast<int>(std::count_if(localMessages.begin(), localMessages.end(), [](const auto& text) {
+            return text.find("Du bist gestorben. Deine aktuelle Tode:") != std::string::npos;
+        }));
+    }
     bool Rpc(unsigned char id, float value) {
         RakNet::BitStream payload;
         payload.Write(value);
@@ -321,14 +355,13 @@ bool EnhancedHealthIsNotCappedAtOneHundred() {
     return true;
 }
 
-bool ActualTakeDamage54WithNoPersistentHpChangeLogsTheRealFall() {
-    DamageFixture f;
-    CHECK(f.ready && f.TakeDamage(20.0f));
-    f.Step();
-    CHECK(f.messages.size() == 1 && f.Message(0, "20,0"));
-    CHECK(f.TakeDamage(20.0f)); f.Step();
-    CHECK(f.messages.size() == 2 && f.Message(1, "20,0"));
-    CHECK(f.sounds == 0);
+bool DamageRequestWithoutMeasuredLossDoesNotInventFallDamage() {
+    DamageFixture f; CHECK(f.ready && f.TakeDamage(20.0f)); f.Step();
+    CHECK(f.messages.empty());
+    f.hp = 82.5f; f.Step();
+    CHECK(f.messages.size() == 1 && f.Message(0, "17,5"));
+    CHECK(f.TakeDamage(8000050.0f, 51)); f.Step();
+    CHECK(f.messages.size() == 1 && f.sounds == 0);
     return true;
 }
 
@@ -347,103 +380,81 @@ bool ActualFallRpcAndMeasuredHpAreDeduplicatedInEitherOrder() {
     return true;
 }
 
-bool GunDamageCannotHideAnUnrelatedRealFallWithTheSameAmount() {
-    DamageFixture f;
-    CHECK(f.ready);
+bool GunAndFallDeltasAreBothLogged() {
+    DamageFixture f; CHECK(f.ready);
     f.source = 24; f.hp = 80.0f; f.Step();
     CHECK(f.messages.size() == 1 && f.Message(0, "20,0"));
-    CHECK(f.TakeDamage(20.0f)); f.Step();
+    CHECK(f.TakeDamage(20.0f)); f.source = 54; f.hp = 60.0f; f.Step();
     CHECK(f.messages.size() == 2 && f.Message(1, "20,0"));
     return true;
 }
 
-bool SameValueAuthoritativeServerHealRefreshesTheRealDamageBudget() {
-    DamageFixture f(50.0f, 0.0f);
-    CHECK(f.ready && f.TakeDamage(20.0f)); f.Step();
-    CHECK(f.messages.size() == 1 && f.Message(0, "20,0"));
-    CHECK(f.Rpc(14, 50.0f)); f.Step(); // Real server event, not an identical frame poll.
-    CHECK(f.TakeDamage(40.0f)); f.Step();
+bool AuthoritativeHealThenMeasuredFallUsesNewBasis() {
+    DamageFixture f(50.0f, 0.0f); CHECK(f.ready);
+    f.hp = 30.0f; f.Step(); CHECK(f.messages.size() == 1 && f.Message(0, "20,0"));
+    CHECK(f.Rpc(14, 50.0f)); f.hp = 50.0f; f.Step();
+    CHECK(f.TakeDamage(40.0f)); f.hp = 10.0f; f.Step();
     CHECK(f.messages.size() == 2 && f.Message(1, "40,0"));
     return true;
 }
 
-bool ActualFallRpcStillWorksWithPersistentlyUnmeasurableNativeHp() {
-    DamageFixture f(8000050.0f, 0.0f);
-    CHECK(f.ready);
-    for (int i = 0; i < 8; ++i) f.Step();
-    CHECK(f.TakeDamage(12.5f)); f.Step();
-    CHECK(f.messages.empty()); // Wait for a trustworthy rest value, not an invented cap.
-    f.useNetworkVitals = true;
-    CHECK(f.Sync(ID_PLAYER_SYNC, 50, 0)); f.Step();
-    CHECK(f.messages.size() == 1 && f.Message(0, "12,5"));
-    CHECK(f.sounds == 0);
+bool UnmeasurableVitalsDoNotInventDamageFromAnRpc() {
+    DamageFixture f(100.0f, 0.0f); CHECK(f.ready);
+    f.hp = std::numeric_limits<float>::quiet_NaN(); f.useNetworkVitals = true;
+    CHECK(f.Sync(ID_PLAYER_SYNC, 248, 0)); CHECK(f.TakeDamage(12.5f)); f.Step();
+    CHECK(f.messages.empty());
+    CHECK(f.Sync(ID_PLAYER_SYNC, 0, 0)); f.Step(); CHECK(f.messages.empty());
+    f.hp = 85.0f; f.Step();
+    CHECK(f.messages.size() == 1 && f.Message(0, "15,0"));
     return true;
 }
 
-bool UnknownExplosionAmountWaitsForActualSyncInsteadOfPrintingOverkill() {
-    DamageFixture f(8000050.0f, 0.0f);
-    f.source = 51; f.useNetworkVitals = true;
-    CHECK(f.ready && f.TakeDamage(50000.0f, 51)); f.Step();
-    CHECK(f.messages.empty());
-    CHECK(f.Sync(ID_PLAYER_SYNC, 50, 0)); f.Step();
+bool OverkillRequestCannotSpendAnUnchangedHealthPool() {
+    DamageFixture f(8000050.0f, 0.0f, true); f.source = 51;
+    CHECK(f.ready && f.TakeDamage(50000.0f, 51)); f.Step(); CHECK(f.messages.empty());
+    CHECK(f.Sync(ID_PLAYER_SYNC, 248, 0)); f.Step(); CHECK(f.messages.empty());
+    f.hp = 8000000.0f; f.Step();
     CHECK(f.messages.size() == 1 && f.Message(0, "50,0"));
     return true;
 }
 
-bool ALongFrameDoesNotTurnADelayedConfirmedReflectionIntoAnotherHit() {
-    DamageFixture f;
-    CHECK(f.ready && f.TakeDamage(20.0f)); f.Step();
-    CHECK(f.messages.size() == 1);
-    f.tick += 800; f.hp = 80.0f; f.Step();
-    CHECK(f.messages.size() == 1);
+bool DelayedNativeLossIsLoggedOnceAfterAnEarlierDamageRequest() {
+    DamageFixture f; CHECK(f.ready && f.TakeDamage(20.0f)); f.Step(); CHECK(f.messages.empty());
+    f.tick += 800; f.hp = 80.0f; f.Step(); CHECK(f.messages.size() == 1 && f.Message(0, "20,0"));
     CHECK(f.TakeDamage(10.0f)); f.Step();
     f.tick += 800; CHECK(f.Rpc(14, 70.0f)); f.hp = 70.0f; f.Step();
     CHECK(f.messages.size() == 2 && f.Message(1, "10,0"));
     return true;
 }
 
-bool OldUnreflectedCreditsExpireAfterActualInterveningPolls() {
-    DamageFixture f;
-    CHECK(f.ready && f.TakeDamage(20.0f)); f.Step();
-    CHECK(f.messages.size() == 1);
+bool EarlierDamageRequestDoesNotConsumeALaterRealFall() {
+    DamageFixture f; CHECK(f.ready && f.TakeDamage(20.0f)); f.Step(); CHECK(f.messages.empty());
     for (int i = 0; i < 5; ++i) f.Step();
-    f.tick += 800; f.Step();
-    f.hp = 80.0f; f.Step(); // A later true fall with no RPC must still be logged.
-    CHECK(f.messages.size() == 2 && f.Message(1, "20,0"));
+    f.tick += 800; f.hp = 80.0f; f.Step(); CHECK(f.messages.size() == 1 && f.Message(0, "20,0"));
     return true;
 }
 
-bool ArmourHealingDoesNotEraseAHealthOnlyFallReflectionCredit() {
-    DamageFixture f(50.0f, 0.0f);
-    CHECK(f.ready && f.TakeDamage(20.0f)); f.Step();
+bool ArmourHealingDoesNotCreateOrHideHealthDamage() {
+    DamageFixture f(50.0f, 0.0f); CHECK(f.ready && f.TakeDamage(20.0f)); f.Step();
     CHECK(f.Rpc(66, 50.0f)); f.armour = 50.0f; f.Step();
-    f.hp = 30.0f; f.Step();
-    CHECK(f.messages.size() == 1 && f.Message(0, "20,0"));
-    CHECK(f.TakeDamage(10.0f)); f.Step();
-    f.armour = 60.0f; f.Step(); // Native-only armour heal has the same pool boundary.
-    f.hp = 20.0f; f.Step();
+    f.hp = 30.0f; f.Step(); CHECK(f.messages.size() == 1 && f.Message(0, "20,0"));
+    CHECK(f.TakeDamage(10.0f)); f.armour = 60.0f; f.Step(); f.hp = 20.0f; f.Step();
     CHECK(f.messages.size() == 2 && f.Message(1, "10,0"));
     return true;
 }
 
-bool HealthHealingRetiresOldMeasuredCreditsBeforeANewRealFall() {
-    DamageFixture f;
-    CHECK(f.ready);
-    f.hp = 80.0f; f.Step();
-    f.hp = 100.0f; f.Step(); // New native health basis.
-    CHECK(f.TakeDamage(20.0f)); f.Step();
-    CHECK(f.messages.size() == 2 && f.Message(0, "20,0") && f.Message(1, "20,0"));
-    f.hp = 80.0f; f.Step(); // Reflection of the last RPC, not another hit.
-    f.hp = 60.0f; f.Step();
-    CHECK(f.messages.size() == 3);
-    CHECK(f.Rpc(14, 100.0f)); f.hp = 100.0f; f.Step(); // Explicit server heal basis.
-    CHECK(f.TakeDamage(20.0f)); f.Step();
+bool HealthHealingAndRepeatedFallsUseTheirActualMeasuredLoss() {
+    DamageFixture f; CHECK(f.ready); f.hp = 80.0f; f.Step(); f.hp = 100.0f; f.Step();
+    CHECK(f.TakeDamage(20.0f)); f.Step(); CHECK(f.messages.size() == 1);
+    f.hp = 80.0f; f.Step(); f.hp = 60.0f; f.Step(); CHECK(f.messages.size() == 3);
+    CHECK(f.Rpc(14, 100.0f)); f.hp = 100.0f; f.Step();
+    CHECK(f.TakeDamage(20.0f)); f.hp = 80.0f; f.Step();
     CHECK(f.messages.size() == 4 && f.Message(3, "20,0"));
     return true;
 }
 
 bool ActualSentSyncVitalsMakeProtectedNativeHealthMeasurable() {
-    DamageFixture f(8000050.0f, 0.0f);
+    DamageFixture f(8000050.0f, 0.0f, true);
     f.useNetworkVitals = true;
     CHECK(f.ready && f.Sync(ID_PLAYER_SYNC, 50, 0)); f.Step();
     CHECK(f.messages.empty());
@@ -455,15 +466,12 @@ bool ActualSentSyncVitalsMakeProtectedNativeHealthMeasurable() {
     return true;
 }
 
-bool ExplosionRpcUsesFiniteRemainingSyncHpInsteadOfMillions() {
-    DamageFixture f(8000050.0f, 0.0f);
-    f.useNetworkVitals = true; f.source = 51;
+bool ExplosionDamageRequestWaitsForTheActualZeroHealthTransition() {
+    DamageFixture f(8000050.0f, 0.0f, true); f.useNetworkVitals = true; f.source = 51;
     CHECK(f.ready && f.Sync(ID_PLAYER_SYNC, 50, 0)); f.Step();
-    CHECK(f.TakeDamage(8000050.0f, 51)); f.Step();
+    CHECK(f.TakeDamage(8000050.0f, 51)); f.Step(); CHECK(f.messages.empty());
+    f.hp = 8000000.0f; CHECK(f.Sync(ID_PLAYER_SYNC, 0, 0)); f.Step(); f.Step();
     CHECK(f.messages.size() == 1 && f.Message(0, "50,0"));
-    f.hp = 8000000.0f;
-    CHECK(f.Sync(ID_PLAYER_SYNC, 0, 0)); f.Step(); f.Step();
-    CHECK(f.messages.size() == 1);
     return true;
 }
 
@@ -472,7 +480,7 @@ bool LocalSyncFallbackRejectsOldWrongModeWrongVehicleAndWrongPed() {
     CHECK(f.ready && f.Sync(ID_PLAYER_SYNC, 50, 25));
     float hp = f.hp, armour = f.armour;
     CHECK(f.bridge.ApplyLocalSyncVitalsForTesting(hp, armour, ID_PLAYER_SYNC, 0xFFFF, f.ped));
-    CHECK(hp == 50.0f && armour == 25.0f);
+    CHECK(hp == 8000050.0f && armour == 25.0f);
     hp = f.hp; armour = f.armour;
     CHECK(!f.bridge.ApplyLocalSyncVitalsForTesting(hp, armour, ID_PASSENGER_SYNC, 42, f.ped));
     CHECK(!f.bridge.ApplyLocalSyncVitalsForTesting(hp, armour, ID_PLAYER_SYNC, 0xFFFF,
@@ -482,11 +490,11 @@ bool LocalSyncFallbackRejectsOldWrongModeWrongVehicleAndWrongPed() {
     CHECK(f.Sync(ID_VEHICLE_SYNC, 40, 20, 42));
     CHECK(!f.bridge.ApplyLocalSyncVitalsForTesting(hp, armour, ID_VEHICLE_SYNC, 43, f.ped));
     CHECK(f.bridge.ApplyLocalSyncVitalsForTesting(hp, armour, ID_VEHICLE_SYNC, 42, f.ped));
-    CHECK(hp == 40.0f && armour == 20.0f);
+    CHECK(hp == 8000050.0f && armour == 20.0f);
     hp = f.hp; armour = f.armour;
     CHECK(f.Sync(ID_PASSENGER_SYNC, 30, 10, 42));
     CHECK(f.bridge.ApplyLocalSyncVitalsForTesting(hp, armour, ID_PASSENGER_SYNC, 42, f.ped));
-    CHECK(hp == 30.0f && armour == 10.0f);
+    CHECK(hp == 8000050.0f && armour == 10.0f);
     hp = 5000.0f; armour = 500.0f;
     CHECK(!f.bridge.ApplyLocalSyncVitalsForTesting(hp, armour, ID_PASSENGER_SYNC, 42, f.ped));
     CHECK(hp == 5000.0f && armour == 500.0f);
@@ -508,6 +516,152 @@ bool IncomingRpcFallbackKeepsLoginToggleAndDirectionGuards() {
     CHECK(f.messages.empty());
     return true;
 }
+
+// Anonymized values and relative ordering from the actual live explosion.
+// No process identifiers, memory addresses, screenshots or account files.
+bool LiveExplosionTraceDecodesProtectedHealthWithoutNativeDeathFlags() {
+    DamageFixture f(8000094.0f, 100.0f, true);
+    CHECK(f.ready && f.EnableVerifiedDeaths());
+    f.source = 51;
+    f.hp = 8000091.5f; f.Step();
+    f.hp = 8000092.0f; f.Step();
+    f.armour = 17.5f; f.Step();
+    f.armour = 18.0f; f.Step();
+    CHECK(f.TakeDamage(139.5f, 51));
+    f.hp = 7999945.0f; f.armour = 0.0f; f.Step();
+    f.hp = 8000000.0f; f.Step();
+    f.hp = 7999969.5f; f.Step();
+    f.hp = 8000000.0f; f.Step();
+    CHECK(f.messages.size() == 3);
+    CHECK(f.Message(0, "2,5") && f.Message(1, "82,5", "Weste getroffen"));
+    CHECK(f.Message(2, "110,0", "Weste + HP Schaden"));
+    CHECK(f.local.get()->m_bIsActive && !f.local.get()->m_bIsWasted);
+    CHECK(f.DeathMessages() == 0);
+    f.ReplyStats(215); f.Step();
+    CHECK(f.bridge.GetTotalDeaths() == 215 && f.bridge.GetKillTracker()->GetSessionDeaths() == 1);
+    CHECK(f.DeathMessages() == 1 && f.closed == 2);
+    CHECK(f.commands == std::vector<std::string>({"/stats", "/stats"}));
+    f.hp = 8000100.0f; f.tick += 3000; f.ArmLife();
+    f.bridge.ProcessIncomingChatLineForTesting("", "Willkommen auf dem Friedhof. Hier verweilst du, bis du entweder reanimiert wirst oder deine Zeit abläuft.");
+    f.Step();
+    CHECK(f.DeathMessages() == 1 && f.bridge.GetTotalDeaths() == 215);
+    return true;
+}
+
+bool LiveGunDeathCannotWrapMinusEightHpInto248Damage() {
+    DamageFixture f(8000042.0f, 0.0f, true);
+    CHECK(f.ready && f.EnableVerifiedDeaths());
+    f.source = 24;
+    for (float hp : {8000034.0f, 8000026.0f, 8000018.0f, 8000009.0f, 8000001.0f, 7999992.0f}) {
+        f.hp = hp; f.Step();
+    }
+    f.local.get()->m_onfootData.m_nHealth = 248; f.Step();
+    CHECK(f.messages.size() == 6 && f.Message(5, "1,0"));
+    for (const auto& text : f.messages) CHECK(text.find("248,0") == std::string::npos);
+    f.ReplyStats(215); f.Step();
+    CHECK(f.DeathMessages() == 1 && f.bridge.GetTotalDeaths() == 215);
+    return true;
+}
+
+bool ProtectedFallsUseFloatHpWithoutAnySyncPacketOrDamageRpc() {
+    DamageFixture f(8000100.0f, 0.0f, true); CHECK(f.ready);
+    f.hp = 8000082.5f; f.Step();
+    f.hp = 8000070.0f; f.Step();
+    CHECK(f.messages.size() == 2 && f.Message(0, "17,5") && f.Message(1, "12,5"));
+    CHECK(f.sounds == 0 && f.commands.empty());
+    return true;
+}
+
+bool DelayedServerDeathIsVerifiedOnceAfterTheObservedGraveTransition() {
+    DamageFixture f(8000050.0f, 0.0f, true); CHECK(f.EnableVerifiedDeaths());
+    f.hp = 8000000.0f; f.Step(); f.Step(); f.ReplyStats(214);
+    CHECK(f.DeathMessages() == 0 && f.bridge.GetTotalDeaths() == 214);
+    f.hp = 8000100.0f; f.tick += 3000; f.Step();
+    CHECK(f.commands.size() == 2);
+    f.tick += 1000; f.Step(); f.ReplyStats(215); f.Step();
+    CHECK(f.commands.size() == 3 && f.DeathMessages() == 1);
+    CHECK(f.bridge.GetTotalDeaths() == 215 && f.bridge.GetKillTracker()->GetSessionDeaths() == 1);
+    return true;
+}
+
+bool GraveRelogAndUnchangedStatsNeverInventAnotherDeath() {
+    DamageFixture f(8000050.0f, 0.0f, true); CHECK(f.EnableVerifiedDeaths());
+    f.hp = 8000000.0f; f.Step(); f.Step(); f.ReplyStats(215);
+    CHECK(f.DeathMessages() == 1);
+    f.net.get()->m_nGameState = sampapi::v03dl::CNetGame::GAME_MODE_WAITCONNECT; f.Step();
+    f.name = "Different_GravePlayer";
+    f.net.get()->m_nGameState = sampapi::v03dl::CNetGame::GAME_MODE_CONNECTED;
+    f.Step(); f.ReplyStats(215);
+    CHECK(f.DeathMessages() == 1 && f.bridge.GetTotalDeaths() == 215);
+    f.hp = 8000100.0f; f.ArmLife(); // Funeral also restores HP and controls.
+    f.hp = 8000000.0f; f.Step(); f.Step(); f.ReplyStats(215);
+    f.tick += 4000; f.Step(); f.ReplyStats(215);
+    CHECK(f.DeathMessages() == 1 && f.bridge.GetTotalDeaths() == 215);
+    // A later actual death must still work; no fixed three-minute cooldown.
+    f.hp = 8000100.0f; f.ArmLife();
+    f.hp = 8000000.0f; f.Step(); f.Step(); f.ReplyStats(216);
+    CHECK(f.DeathMessages() == 2 && f.bridge.GetTotalDeaths() == 216);
+    return true;
+}
+
+bool InitiallyDeadLoginAndMissingStatsDoNotCreateASessionDeath() {
+    DamageFixture f(8000000.0f, 0.0f, true); CHECK(f.EnableVerifiedDeaths());
+    CHECK(f.DeathMessages() == 0 && f.bridge.GetKillTracker()->GetSessionDeaths() == 0);
+    f.hp = 8000100.0f; f.ArmLife(); f.hp = 8000000.0f; f.Step(); f.Step();
+    f.tick += 10001; f.Step();
+    CHECK(f.DeathMessages() == 0 && f.bridge.GetTotalDeaths() == 214);
+    return true;
+}
+
+bool AlreadyImportedDeathTotalIsNotIncrementedAgain() {
+    DamageFixture f(8000050.0f, 0.0f, true); CHECK(f.EnableVerifiedDeaths());
+    f.bridge.ObserveStatsCommand("/stats"); f.ReplyStats(215);
+    f.dialog.get()->m_bIsActive = FALSE; // A manually opened window stays open by design.
+    CHECK(f.DeathMessages() == 0 && f.bridge.GetTotalDeaths() == 215);
+    f.hp = 8000000.0f; f.Step(); f.Step(); f.ReplyStats(215);
+    CHECK(f.DeathMessages() == 1 && f.bridge.GetTotalDeaths() == 215);
+    CHECK(f.bridge.GetKillTracker()->GetSessionDeaths() == 1);
+    return true;
+}
+
+bool ProtectedServerHealthRpcsAndNativeFloatAreNotTwoDamageEvents() {
+    DamageFixture f(8000050.0f, 25.0f, true); CHECK(f.ready);
+    CHECK(f.Rpc(14, 8000030.0f)); f.Step();
+    f.hp = 8000030.0f; f.Step();
+    CHECK(f.messages.size() == 1 && f.Message(0, "20,0"));
+    CHECK(f.Rpc(14, 7999945.0f) && f.Rpc(66, 0.0f));
+    f.hp = 7999945.0f; f.armour = 0.0f; f.Step(); f.Step();
+    CHECK(f.messages.size() == 2 && f.Message(1, "55,0", "Weste + HP Schaden"));
+    return true;
+}
+
+bool ProtectedExtendedHpKeepsTheActualAmountWithoutA100HpCap() {
+    DamageFixture f(8005000.0f, 500.0f, true); CHECK(f.ready);
+    f.hp = 8004900.0f; f.armour = 450.0f; f.Step();
+    CHECK(f.messages.size() == 1 && f.Message(0, "150,0", "Weste + HP Schaden"));
+    CHECK(keybinder::DecodeNativePlayerHealth(7999992.0f).value == 0.0f);
+    CHECK(keybinder::DecodeNativePlayerHealth(8000000.0f).value == 0.0f);
+    CHECK(keybinder::DecodeNativePlayerHealth(8000094.0f).value == 94.0f);
+    CHECK(keybinder::DecodeNativePlayerHealth(5000.0f).value == 5000.0f);
+    CHECK(!keybinder::DecodeNativePlayerHealth(5000.0f).protectedEncoding);
+    return true;
+}
+
+bool DelayedInitialStatsCorrectionIsABaselineNotADeathCredit() {
+    DamageFixture f(8000100.0f, 0.0f, true); CHECK(f.ready);
+    f.bridge.ImportDeathCount(213);
+    f.settings.GetMutable().kill_tracker_count_deaths = true;
+    f.statsReady = true; f.bridge.SetKillTrackerEnabled(true);
+    f.Step(); f.ArmLife(); // Initial server reply arrives after life is armed.
+    f.ReplyStats(214);
+    CHECK(f.bridge.GetTotalDeaths() == 214 && f.DeathMessages() == 0);
+    f.hp = 8000000.0f; f.Step(); f.Step(); f.ReplyStats(214);
+    f.tick += 4000; f.Step(); f.ReplyStats(214);
+    CHECK(f.bridge.GetTotalDeaths() == 214 && f.DeathMessages() == 0);
+    CHECK(f.bridge.GetKillTracker()->GetSessionDeaths() == 0);
+    return true;
+}
+
 } // namespace
 
 int RunDamageLogRegressionTests() {
@@ -527,20 +681,30 @@ int RunDamageLogRegressionTests() {
     RUN(LethalRpcBeforeNativeDeathNeverCountsTheRemainingHealthTwice);
     RUN(LoginToggleMissingPedAndPedReplacementDiscardOldDamage);
     RUN(EnhancedHealthIsNotCappedAtOneHundred);
-    RUN(ActualTakeDamage54WithNoPersistentHpChangeLogsTheRealFall);
+    RUN(DamageRequestWithoutMeasuredLossDoesNotInventFallDamage);
     RUN(ActualFallRpcAndMeasuredHpAreDeduplicatedInEitherOrder);
-    RUN(GunDamageCannotHideAnUnrelatedRealFallWithTheSameAmount);
-    RUN(SameValueAuthoritativeServerHealRefreshesTheRealDamageBudget);
-    RUN(ActualFallRpcStillWorksWithPersistentlyUnmeasurableNativeHp);
-    RUN(UnknownExplosionAmountWaitsForActualSyncInsteadOfPrintingOverkill);
-    RUN(ALongFrameDoesNotTurnADelayedConfirmedReflectionIntoAnotherHit);
-    RUN(OldUnreflectedCreditsExpireAfterActualInterveningPolls);
-    RUN(ArmourHealingDoesNotEraseAHealthOnlyFallReflectionCredit);
-    RUN(HealthHealingRetiresOldMeasuredCreditsBeforeANewRealFall);
+    RUN(GunAndFallDeltasAreBothLogged);
+    RUN(AuthoritativeHealThenMeasuredFallUsesNewBasis);
+    RUN(UnmeasurableVitalsDoNotInventDamageFromAnRpc);
+    RUN(OverkillRequestCannotSpendAnUnchangedHealthPool);
+    RUN(DelayedNativeLossIsLoggedOnceAfterAnEarlierDamageRequest);
+    RUN(EarlierDamageRequestDoesNotConsumeALaterRealFall);
+    RUN(ArmourHealingDoesNotCreateOrHideHealthDamage);
+    RUN(HealthHealingAndRepeatedFallsUseTheirActualMeasuredLoss);
     RUN(ActualSentSyncVitalsMakeProtectedNativeHealthMeasurable);
-    RUN(ExplosionRpcUsesFiniteRemainingSyncHpInsteadOfMillions);
+    RUN(ExplosionDamageRequestWaitsForTheActualZeroHealthTransition);
     RUN(LocalSyncFallbackRejectsOldWrongModeWrongVehicleAndWrongPed);
     RUN(IncomingRpcFallbackKeepsLoginToggleAndDirectionGuards);
+    RUN(LiveExplosionTraceDecodesProtectedHealthWithoutNativeDeathFlags);
+    RUN(LiveGunDeathCannotWrapMinusEightHpInto248Damage);
+    RUN(ProtectedFallsUseFloatHpWithoutAnySyncPacketOrDamageRpc);
+    RUN(DelayedServerDeathIsVerifiedOnceAfterTheObservedGraveTransition);
+    RUN(GraveRelogAndUnchangedStatsNeverInventAnotherDeath);
+    RUN(InitiallyDeadLoginAndMissingStatsDoNotCreateASessionDeath);
+    RUN(AlreadyImportedDeathTotalIsNotIncrementedAgain);
+    RUN(ProtectedServerHealthRpcsAndNativeFloatAreNotTwoDamageEvents);
+    RUN(ProtectedExtendedHpKeepsTheActualAmountWithoutA100HpCap);
+    RUN(DelayedInitialStatsCorrectionIsABaselineNotADeathCredit);
 #undef RUN
     std::printf("DamageLogRegressionTests: %d checks, %d failures\n", checks, failed);
     return failed;

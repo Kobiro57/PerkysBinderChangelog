@@ -1,0 +1,19 @@
+README.md                            |  47 +++--
+ docs/CHANGELOG-GESAMT.txt            |  45 +++++
+ docs/NLBinder-0.1.1-r15-DE.md        | 131 +++++++++++++
+ docs/review/CHANGELOG-DE.md          |  44 +++++
+ docs/review/PRUEFUNG-DE.md           |  68 ++++++-
+ docs/review/PUBLICATION.json         |  10 +-
+ docs/review/README-GITHUB.md         |  47 +++--
+ docs/review/r15-live-validation.json |  22 +++
+ docs/review/r15-validation.json      |  52 ++++++
+ include/NativePlayerHealth.h         |  23 +++
+ include/SAMPBridge.h                 |  19 +-
+ src/SAMPBridge.cpp                   | 113 +++++------
+ src/StartupStatsSync.cpp             |  54 +++++-
+ tests/DamageLogRegressionTests.cpp   | 350 +++++++++++++++++++++++++----------
+ tools/export_full_changelog.py       |   6 +-
+ tools/export_source_bundle.py        |  12 +-
+ tools/package_revision15.ps1         | 144 ++++++++++++++
+ tools/verify_revision15_artifact.py  | 115 ++++++++++++
+ 18 files changed, 1061 insertions(+), 241 deletions(-)

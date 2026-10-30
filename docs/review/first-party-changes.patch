@@ -133,10 +133,10 @@ index 41dbd9f..ec17ff5 100644
    <ImportGroup Label="ExtensionTargets" />
  </Project>
 diff --git a/README.md b/README.md
-index 92c4598..8fe1d35 100644
+index 92c4598..5da7363 100644
 --- a/README.md
 +++ b/README.md
-@@ -1,121 +1,77 @@
+@@ -1,121 +1,72 @@
 -# NLBinder
 -
 -Advanced keybinder and combat-assist plugin for GTA San Andreas Multiplayer (SA-MP) 0.3.DL.
@@ -262,22 +262,14 @@ index 92c4598..8fe1d35 100644
 +
 +Vollständiger Prüfstand der Änderungen am **Perkys / NLBinder**, angepasst für
 +KOBiRO. Grundlage und ursprüngliche Urheberschaft bleiben beim Originalprojekt.
-+Der Stand lautet **NLBinder v.0.1.1 by KOBiRO, r14**.
-+Der Todeszähler verwendet tatsächliche eigene Todesübergänge nach einer
-+bestätigten lebendigen Spielphase. Friedhofs-Chat zählt nicht mehr.
-+Login und Relog eines bereits toten Spielers erzeugen keinen neuen
-+Todeszähler-Eintrag. Native Todeszustände und die echte eigene
-+Client-Todesmeldung werden zentral abgeglichen. Die Datei heißt
-+weiterhin **NLBinder.asi**; der vollständige Verlauf liegt auch als TXT bei.
-+
-+Der Damagelog nutzt zusätzlich echte eingehende Umwelt-/Explosionsereignisse
-+aus TakeDamage-RPC 115. Bei unmessbaren nativen HP-/Westenwerten können die
-+tatsächlich gesendeten Client-Syncwerte als Ersatz dienen, gebunden an Ped,
-+Modus, Fahrzeug und ein Alter von höchstens 500 ms. Die Ausgabe wird auf die
-+bekannten Restwerte begrenzt. Fehlende Restwerte führen zu höchstens 1500 ms
-+Wartezeit und keiner unbestätigten Überkillzahl. Ein Abgleich nach Quelle,
-+Zeit und beobachteten Frames verbindet die verschiedenen Meldungen eines
-+Treffers. Ein echter Ingame-Test auf dem konkreten Server steht aus.
++Der Stand lautet **NLBinder v.0.1.1 by KOBiRO, r15**.
++Die live beobachteten eigenen HP enthalten einen Schutzaufschlag von
++8.000.000. r15 bereinigt diesen Wert und bestätigt geschützte Todesübergänge
++mit einem neuen eigenen Server-Todesstand. Friedhofs-Chat und Relog zählen
++keinen zusätzlichen Tod. Der Damagelog zeigt bereinigte HP-/Westenverluste;
++Rohschaden und übergelaufene 8-Bit-HP werden nicht zusätzlich eingerechnet.
++Die Datei heißt weiterhin **NLBinder.asi**. Alle Änderungen liegen auch als
++vollständiger TXT-Changelog und nachvollziehbarer Quellcode vor.
 +
 +Eigene Waffenbilder liegen unter **Dokumente → GTA San Andreas User Files →
 +NLBinder → Waffenicons**. Der Button **Waffenicons-Ordner öffnen** im Binder
@@ -289,9 +281,9 @@ index 92c4598..8fe1d35 100644
 +2. [Technisches Verhalten, Prüfungen und Grenzen](docs/review/PRUEFUNG-DE.md)
 +3. [Dateien im Vergleich zum Original](docs/review/DATEIVERGLEICH.md)
 +4. [Herkunft und Abhängigkeiten](docs/review/DEPENDENCIES.md)
-+5. [Programmänderungen als GitHub-Vergleich](https://github.com/Kobiro57/PerkysBinderChangelog/compare/build-dependencies-baseline...v0.1.1-r14)
++5. [Programmänderungen als GitHub-Vergleich](https://github.com/Kobiro57/PerkysBinderChangelog/compare/build-dependencies-baseline...v0.1.1-r15)
 +   oder als [kompakter Quellcode-Patch](docs/review/first-party-changes.patch)
-+6. [Änderungen seit r13](https://github.com/Kobiro57/PerkysBinderChangelog/compare/v0.1.1-r13...v0.1.1-r14)
++6. [Änderungen seit r14](https://github.com/Kobiro57/PerkysBinderChangelog/compare/v0.1.1-r14...v0.1.1-r15)
 +
 +Der vollständige bearbeitete Code liegt in `src/`, `include/`, `res/`,
 +`tests/`, `tools/` und `third_party/`. Die Übersicht verlinkt direkt zu den
@@ -315,18 +307,21 @@ index 92c4598..8fe1d35 100644
 +
 +## Geprüfte ASI
 +
-+- [NLBinder.asi herunterladen](dist/NLBinder-0.1.1-r14/NLBinder.asi)
++- [NLBinder.asi herunterladen](dist/NLBinder-0.1.1-r15/NLBinder.asi)
 +- [Gesamter Changelog als TXT](docs/CHANGELOG-GESAMT.txt)
-+- [Komplettes ZIP-Paket herunterladen](dist/NLBinder-v0.1.1-KOBiRO-r14.zip)
-+- [Installation und Bedienung](dist/NLBinder-0.1.1-r14/LIESMICH.md)
-+- [Build- und Prüfangaben](dist/NLBinder-0.1.1-r14/BUILD-INFO.txt)
-+- [Maschinenlesbarer Prüfnachweis](dist/NLBinder-0.1.1-r14/PRUEFBERICHT.json)
-+- [SHA-256 der ausgelieferten ASI](dist/NLBinder-0.1.1-r14/SHA256SUMS.txt)
++- [Komplettes ZIP-Paket herunterladen](dist/NLBinder-v0.1.1-KOBiRO-r15.zip)
++- [Installation und Bedienung](dist/NLBinder-0.1.1-r15/LIESMICH.md)
++- [Build- und Prüfangaben](dist/NLBinder-0.1.1-r15/BUILD-INFO.txt)
++- [Maschinenlesbarer Prüfnachweis](dist/NLBinder-0.1.1-r15/PRUEFBERICHT.json)
++- [SHA-256 der ausgelieferten ASI](dist/NLBinder-0.1.1-r15/SHA256SUMS.txt)
 +
 +Die Nachweise gehören zum jeweiligen Binärstand: automatisierte Gesamttests,
 +Win32-Release-Build, PE-/Ressourcenvergleich und Reconnect-Helfertest mit
-+harmlosen Testprozessen. Ein echter Ingame-Test mit dem konkreten Server und
-+Launcher steht aus. Die [vorherige r13-Fassung](dist/NLBinder-0.1.1-r13/BUILD-INFO.txt)
++harmlosen Testprozessen. Die Ursache wurde lesend im laufenden Spiel mit r14 belegt.
++Die neue r15-ASI ist zusätzlich im Spiel bestätigt: ein Explosionstod mit
++einer lokalen Todesmeldung und einem zusätzlichen Server-Tod, danach
++Friedhofs-Relog ohne Doppelzählung. Beschuss und Fallschaden sind automatisiert
++geprüft. [Live-Prüfumfang](docs/review/r15-live-validation.json). Die [vorherige r14-Fassung](dist/NLBinder-0.1.1-r14/BUILD-INFO.txt)
 +und ihre Prüfsumme bleiben zur Nachverfolgung erhalten.
 +
 +## Weitere Updates
@@ -468,10 +463,10 @@ index 0000000..d7daf66
 +This project is provided as-is for educational purposes.
 diff --git a/docs/CHANGELOG-GESAMT.txt b/docs/CHANGELOG-GESAMT.txt
 new file mode 100644
-index 0000000..d891569
+index 0000000..ad38308
 --- /dev/null
 +++ b/docs/CHANGELOG-GESAMT.txt
-@@ -0,0 +1,981 @@
+@@ -0,0 +1,1026 @@
 +﻿Änderungen am Perkys Binder – NLBinder v.0.1.1 by KOBiRO
 +========================================================
 +
@@ -1453,6 +1448,51 @@ index 0000000..d891569
 +bleiben erhalten. Die finalen Nachweise gehören zum
 +r14-Paket (../../dist/NLBinder-0.1.1-r14/BUILD-INFO.txt).
 +Ein echter Ingame-Test auf dem konkreten Server steht aus.
++
++21. Nachtrag r15 – 30. Oktober 2026
++===================================
++
++Die fehlenden Todesmeldungen und falschen Schadensbeträge wurden diesmal
++anhand einer lesenden Aufzeichnung im laufenden Spiel untersucht.
++
++- Tatsächliche Ursache: native HP enthalten einen Schutzaufschlag von
++  8.000.000. Beim beobachteten Explosionstod blieben die gewöhnlichen
++  GTA-/SA-MP-Todesflags unverändert. Die bisherige Auswertung war dafür ungeeignet.
++- Neue gemeinsame Dekodierung der nativen HP und entsprechenden serverseitigen
++  HP-RPC-Werte. Negative logische HP werden auf null begrenzt; normale und
++  erhöhte ungeschützte HP behalten ihren tatsächlichen Wert.
++- Geschützte eigene Alive-zu-Dead-Übergänge werden mit einem neuen eigenen
++  serverseitigen Todesstand bestätigt. Der absolute Stand wird übernommen;
++  Sessioneintrag und lokale Meldung erfolgen einmalig ohne erneutes Addieren.
++- Ein sofortiger eigener Statistikabruf und höchstens ein weiterer nach vier
++  Sekunden berücksichtigen verzögerte serverseitige Todesverarbeitung.
++  Keine zusätzliche Jobskills-Abfrage und keine doppelte Synchronisationsmeldung.
++- Friedhofs-Chat bleibt vollständig ohne Todeszählung. Erneutes Einloggen oder
++  ein unveränderter Statistikstand erzeugen keinen neuen Todesfall. Die
++  Erkennung eines späteren echten Todes benötigt keine dreiminütige Wartezeit.
++- Der erste Serverstand bleibt auch bei verzögerter Antwort ein Ausgangswert;
++  eine Korrektur alter gespeicherter Werte gilt nicht als neues Todesereignis.
++- Damagelog auf tatsächlich beobachtete logische HP-/Westenverluste umgestellt.
++  Zusätzliche Rohbeträge aus Schadensmeldungen werden nicht mehr addiert.
++  Überkill wird auf vorhandene Restwerte begrenzt; wiederholte negative
++  Restwerte erzeugen keine weiteren Schadenszeilen.
++- 8-Bit-HP als Ersatz entfernt: Unterlauf konnte minus acht als 248 darstellen
++  und anschließend einen erfundenen 248-HP-Verlust erzeugen.
++- Fallschaden und Explosionen bleiben über die bereinigten Werte erkennbar.
++  Farbe des Damagelog-Präfixes bleibt {33CCFF}.
++- Tests mit dem anonymisierten echten Explosionsablauf sowie Beschuss,
++  Fallschaden, Überkill, verzögerten/einmaligen Statistikantworten, bereits
++  importierten Zählern, kaltem Login und erneutem Friedhofseintritt ergänzt.
++- Ausgabe weiterhin als NLBinder.asi, vollständiger TXT-Changelog und
++  Quellordner NLBinder-masterNEW; GitHub-Historie wird um r15 ergänzt.
++
++Die lesende Ursachendiagnose lief mit der installierten r14-ASI. Die
++automatisierten Wiederholungen dieses Ablaufs prüfen r15. Zusätzlich wurde
++die neue r15-ASI im Spiel getestet: Der Nutzer bestätigte genau eine korrekte
++Todesmeldung nach einer Explosion und keinen weiteren Tod nach dem Relog im
++Friedhof. Der eigene Serverstand erhöhte sich beim Tod um eins und blieb beim
++Relog gleich. Beschuss und Fallschaden wurden automatisiert geprüft; separate
++Live-Tests dieser beiden Todesursachen werden nicht behauptet.
 diff --git a/docs/NLBinder-0.1.1-DE.md b/docs/NLBinder-0.1.1-DE.md
 new file mode 100644
 index 0000000..44a581f
@@ -2074,6 +2114,143 @@ index 0000000..980fcb9
 +**Aktuellen Spielstand synchronisieren** unter Tacho kann die aktuellen
 +Server-Gesamtstände erneut übernehmen. Der Binder zieht keinen Tod pauschal
 +ab; der persönliche Gesamtstand wird aus der eigenen Serverstatistik gelesen.
++
++## Vollständiger Quellordner und Changelog
++
++Der angeforderte Desktop-Ordner **NLBinder-masterNEW** enthält den gesamten
++Quellcode einschließlich der benötigten Abhängigkeiten, die fertige
++**NLBinder.asi** und **CHANGELOG-GESAMT.txt**. Die Projektdateien heißen
++weiterhin **Keybinder.sln** und **Keybinder.vcxproj**; der Release-Build
++erzeugt **NLBinder.asi**.
++
++Die Textdatei beschreibt den gesamten dokumentierten Änderungsverlauf,
++einschließlich der früheren Job-, Overlay-, Tacho-, Kill-/Todes-, Reconnect-,
++Interface-, Waffenicon- und Textvariablen-Anpassungen. Sie liegt auch
++diesem Paket bei. Persönliche Laufzeitkonfigurationen, Zugangsdaten und
++Compiler-Zwischendateien gehören nicht zur Quellcode-Weitergabe.
++
++Der Quellordner enthält die aktuelle ASI. Frühere Binärpakete bleiben über
++die GitHub-Historie erreichbar und werden dort nicht als zusätzliche alte
++Binder-Kopien beigelegt. Die **README.md** im Quellordner beschreibt das
++Bauen des Projekts; die Übersicht für die Projektleitung liegt zusätzlich
++unter **docs/review/README-GITHUB.md**.
++
++## Prüfung und frühere Funktionen
++
++Die Paketnachweise stehen in **BUILD-INFO.txt**, **SHA256SUMS.txt** und
++**PRUEFBERICHT.json**. Der Reconnect-Helfer bleibt in der ASI enthalten.
++Automatisierte Helfertests verwenden ausschließlich harmlose Testprozesse;
++der installierte Nova Launcher und das echte Spiel werden dafür nicht
++gestartet oder beendet. Ein echter Ingame-Test steht aus.
++
++Jobs und Skilltrees, Fraktionen, getrennte Freunde-/Feinde-Overlays,
++Damagelog, Kill-/Todeszähler, frei gewählte Killtexte, `/speed ID`, der
++Nova-/OpenMP-Reconnect, Waffenicons, die vier Interface-Bereiche und
++`{input}` für manuelle Textbindungen bleiben enthalten. Die Bedienung
++dieser früheren Änderungen steht im vollständigen Changelog.
++
++Quellcode und Prüfstand werden im
++[GitHub-Prüfrepository](https://github.com/Kobiro57/PerkysBinderChangelog)
++bereitgestellt. Frühere Stände und ursprüngliche Urheberhinweise bleiben
++erhalten.
+diff --git a/docs/NLBinder-0.1.1-r15-DE.md b/docs/NLBinder-0.1.1-r15-DE.md
+new file mode 100644
+index 0000000..8aa258d
+--- /dev/null
++++ b/docs/NLBinder-0.1.1-r15-DE.md
+@@ -0,0 +1,131 @@
++# NLBinder v.0.1.1 by KOBiRO – Überarbeitung 14
++
++Stand: 30. Oktober 2026. Der Todeszähler nutzt echte eigene Todesübergänge
++und die direkte Client-Todesmeldung. Friedhofs-Chat erzeugt keinen weiteren
++Tod beim Relog. Die Ausgabe heißt weiterhin **NLBinder.asi**.
++
++## Installation
++
++1. GTA/SA-MP schließen und die bisherige Binder-ASI sichern.
++2. Die bisherige **Keybinder.asi** durch **NLBinder.asi** am bisherigen
++   Installationsort ersetzen. Die alte ASI aus dem Ladeordner entfernen,
++   damit nur eine Binder-Fassung geladen wird.
++3. GTA San Andreas 1.0 US mit SA-MP 0.3.DL-R1 normal starten und einloggen.
++
++Der vorhandene ASI-Loader bleibt erforderlich. Eigene Einstellungen und
++Waffenbilder bleiben im bisherigen NLBinder-Ordner unter
++**Dokumente → GTA San Andreas User Files → NLBinder**. Die mitgelieferte
++leere Waffenicon-Ordnerstruktur kann dort zusammengeführt werden.
++
++## Aktuellen Spielstand manuell synchronisieren
++
++Unter **Einstellungen**, direkt unter **Tacho**, auf
++**Aktuellen Spielstand synchronisieren** klicken. Der Binder liest die
++eigenen `/stats` und danach `/jobskills` erneut ein. Die empfangenen
++Gesamtstände und Skillpunkte werden direkt für die bisherigen Anzeigen,
++Skill-Feeds und Textvariablen übernommen und gespeichert.
++Das Bindermenü schließt sich für den Abruf.
++
++Nach erfolgreichem Abschluss beider Abrufe erscheint nur lokal:
++
++`[NL-BINDER] Du hast deinen Spielestand manuell synchronisiert. Deine Werte sind jetzt im aktuellsten Stand.`
++
++Eine laufende Synchronisation wird nicht nochmals gestartet. Fehlende oder
++unpassende Antworten führen nicht zu einer Erfolgsmeldung. Der Abruf
++benötigt echte Serverantworten; wie beim Einloggen schließt der Binder die
++zugehörigen eigenen Dialoge nach dem Lesen. Die automatische Synchronisation
++beim Einloggen bleibt bestehen.
++
++## Lokale Killmeldung
++
++Die eigene lokale Killmeldung lautet nun
++`[NL-BINDER] Du hast einen Kill gemacht! Aktuell hast du: {kills} Kills.`.
++Anstelle von `{kills}` erscheint der aktuelle Gesamt-Killstand. Der
++frei eingestellte Killbind für den Server bleibt erhalten und wird nicht
++zusätzlich als lokaler Hinweis wiederholt. Bestehende lokale Altvorlagen
++werden einmalig auf den neuen Text umgestellt.
++
++## Todeszählung und Damagelog
++
++Eine lesende Live-Aufzeichnung hat den Fehler belegt: Der verwendete Client
++speichert die eigenen HP mit einem Schutzaufschlag von 8.000.000. Beispielsweise
++bedeutet 8.000.094 tatsächlich 94 HP. Beim beobachteten Explosionstod waren
++7.999.945 anschließend 8.000.000 gespeichert, während GTA-/SA-MP-Todesflags
++unverändert blieben. r14 konnte diesen Tod deshalb nicht erkennen.
++
++r15 entfernt den belegten Aufschlag vor der Auswertung. Negative logische HP
++werden auf null begrenzt. Nach einer bestätigten lebendigen Spielphase löst
++ein solcher Übergang die Prüfung der eigenen Statistik aus. Erst ein neuer
++serverseitiger Todesstand bestätigt das Ereignis. Der absolute Gesamtstand
++wird übernommen und genau eine lokale Todesmeldung erzeugt. Ein schon
++übernommener Tod wird nicht noch einmal zum Gesamtstand addiert.
++
++Es gibt einen sofortigen Statistikabruf und bei noch unverändertem Stand
++höchstens einen weiteren nach vier Sekunden. Das berücksichtigt den beobachteten
++dreisekündigen serverseitigen Todesübergang. Es werden dabei keine Jobskills
++angefordert und keine zusätzlichen Synchronisations-Erfolgsmeldungen erzeugt.
++Die eigenen zugehörigen Statistikdialoge schließen nach dem Lesen. Ohne
++verifizierbare Antwort wird kein zusätzlicher Tod erfunden.
++
++Die Friedhofs-Chatmeldung ist kein Todesauslöser. Login und Relog übernehmen
++einen Ausgangszustand. Auch wenn das Friedhofsscript HP und Steuerung wieder
++herstellt, reicht ein weiterer Null-HP-Zustand ohne neuen Server-Todesstand
++nicht zum Zählen. Es gibt keine pauschale dreiminütige Sperre für echte neue
++Todesfälle. Normale native Todeszustände bleiben für ungeschützte HP unterstützt.
++
++Der Damagelog verwendet die tatsächlichen bereinigten HP-/Westenverluste sowie
++die eigenen serverseitigen HP-/Westenänderungen. Rohbeträge aus TakeDamage
++werden nicht zusätzlich ausgegeben. Überkill verbraucht nur die zuvor
++vorhandenen HP und die Weste. Wiederholte negative Werte erzeugen keinen
++weiteren Verlust. Die übertragenen 8-Bit-HP werden nicht als Ersatz verwendet:
++Sie können beispielsweise aus minus acht fälschlich 248 machen.
++Fallschaden bleibt enthalten. Der Präfix verwendet weiterhin `{33CCFF}`.
++
++Regressionstests spielen den anonymisierten echten Explosionsablauf nach und
++prüfen Beschuss mit negativem logischem Restwert, Fallschaden, verzögerte
++Statistikantworten, bereits importierte Zähler und Friedhofs-Relog.
++Die neue r15-ASI wurde danach direkt im Spiel geprüft: Der Nutzer bestätigte
++einen korrekten Explosionstod mit einer lokalen Todesmeldung und anschließend
++den Friedhofs-Relog ohne Doppelzählung. Der Serverstand stieg beim Tod um eins
++und blieb beim Relog gleich. Beschuss und Fallschaden bestehen die
++automatisierten Tests; ein separater Live-Test dieser beiden Ursachen wurde
++nicht durchgeführt. Der Prüfnachweis trennt diese Prüfarten ausdrücklich.
 +
 +## Vollständiger Quellordner und Changelog
 +
@@ -3185,10 +3362,10 @@ index 0000000..f99992a
 +evidence. Add verified messages to `res/jobs_registry.json` when they are available.
 diff --git a/docs/review/CHANGELOG-DE.md b/docs/review/CHANGELOG-DE.md
 new file mode 100644
-index 0000000..3c53da7
+index 0000000..7367fe4
 --- /dev/null
 +++ b/docs/review/CHANGELOG-DE.md
-@@ -0,0 +1,922 @@
+@@ -0,0 +1,966 @@
 +# Änderungen am Perkys Binder – NLBinder v.0.1.1 by KOBiRO
 +
 +Stand: 29. Oktober 2026, Arbeitsfassung **r11 mit manueller Spielstandsynchronisation und NLBinder.asi**. Die Abschnitte 1 bis 16 dokumentieren die früheren Stände; Abschnitt 17 ergänzt r11.
@@ -4111,6 +4288,50 @@ index 0000000..3c53da7
 +bleiben erhalten. Die finalen Nachweise gehören zum
 +[r14-Paket](../../dist/NLBinder-0.1.1-r14/BUILD-INFO.txt).
 +Ein echter Ingame-Test auf dem konkreten Server steht aus.
++
++## 21. Nachtrag r15 – 30. Oktober 2026
++
++Die fehlenden Todesmeldungen und falschen Schadensbeträge wurden diesmal
++anhand einer lesenden Aufzeichnung im laufenden Spiel untersucht.
++
++- Tatsächliche Ursache: native HP enthalten einen Schutzaufschlag von
++  8.000.000. Beim beobachteten Explosionstod blieben die gewöhnlichen
++  GTA-/SA-MP-Todesflags unverändert. Die bisherige Auswertung war dafür ungeeignet.
++- Neue gemeinsame Dekodierung der nativen HP und entsprechenden serverseitigen
++  HP-RPC-Werte. Negative logische HP werden auf null begrenzt; normale und
++  erhöhte ungeschützte HP behalten ihren tatsächlichen Wert.
++- Geschützte eigene Alive-zu-Dead-Übergänge werden mit einem neuen eigenen
++  serverseitigen Todesstand bestätigt. Der absolute Stand wird übernommen;
++  Sessioneintrag und lokale Meldung erfolgen einmalig ohne erneutes Addieren.
++- Ein sofortiger eigener Statistikabruf und höchstens ein weiterer nach vier
++  Sekunden berücksichtigen verzögerte serverseitige Todesverarbeitung.
++  Keine zusätzliche Jobskills-Abfrage und keine doppelte Synchronisationsmeldung.
++- Friedhofs-Chat bleibt vollständig ohne Todeszählung. Erneutes Einloggen oder
++  ein unveränderter Statistikstand erzeugen keinen neuen Todesfall. Die
++  Erkennung eines späteren echten Todes benötigt keine dreiminütige Wartezeit.
++- Der erste Serverstand bleibt auch bei verzögerter Antwort ein Ausgangswert;
++  eine Korrektur alter gespeicherter Werte gilt nicht als neues Todesereignis.
++- Damagelog auf tatsächlich beobachtete logische HP-/Westenverluste umgestellt.
++  Zusätzliche Rohbeträge aus Schadensmeldungen werden nicht mehr addiert.
++  Überkill wird auf vorhandene Restwerte begrenzt; wiederholte negative
++  Restwerte erzeugen keine weiteren Schadenszeilen.
++- 8-Bit-HP als Ersatz entfernt: Unterlauf konnte minus acht als 248 darstellen
++  und anschließend einen erfundenen 248-HP-Verlust erzeugen.
++- Fallschaden und Explosionen bleiben über die bereinigten Werte erkennbar.
++  Farbe des Damagelog-Präfixes bleibt `{33CCFF}`.
++- Tests mit dem anonymisierten echten Explosionsablauf sowie Beschuss,
++  Fallschaden, Überkill, verzögerten/einmaligen Statistikantworten, bereits
++  importierten Zählern, kaltem Login und erneutem Friedhofseintritt ergänzt.
++- Ausgabe weiterhin als `NLBinder.asi`, vollständiger TXT-Changelog und
++  Quellordner `NLBinder-masterNEW`; GitHub-Historie wird um r15 ergänzt.
++
++Die lesende Ursachendiagnose lief mit der installierten r14-ASI. Die
++automatisierten Wiederholungen dieses Ablaufs prüfen r15. Zusätzlich wurde
++die neue r15-ASI im Spiel getestet: Der Nutzer bestätigte genau eine korrekte
++Todesmeldung nach einer Explosion und keinen weiteren Tod nach dem Relog im
++Friedhof. Der eigene Serverstand erhöhte sich beim Tod um eins und blieb beim
++Relog gleich. Beschuss und Fallschaden wurden automatisiert geprüft; separate
++Live-Tests dieser beiden Todesursachen werden nicht behauptet.
 diff --git a/docs/review/DEPENDENCIES.md b/docs/review/DEPENDENCIES.md
 new file mode 100644
 index 0000000..88f82ce
@@ -4197,13 +4418,79 @@ index 0000000..88f82ce
 +nicht zum veröffentlichten Quellstand.
 diff --git a/docs/review/PRUEFUNG-DE.md b/docs/review/PRUEFUNG-DE.md
 new file mode 100644
-index 0000000..1821569
+index 0000000..82b81c6
 --- /dev/null
 +++ b/docs/review/PRUEFUNG-DE.md
-@@ -0,0 +1,1187 @@
+@@ -0,0 +1,1253 @@
 +# Hinweise zur Prüfung durch die Projektleitung
 +
-+## Aktueller Stand r14 – 30. Oktober 2026
++## Aktueller Stand r15 – 30. Oktober 2026
++
++[Bedienung](../NLBinder-0.1.1-r15-DE.md),
++[r15-Nachtrag](CHANGELOG-DE.md#21-nachtrag-r15--30-oktober-2026) und
++[vollständiger TXT-Changelog](../CHANGELOG-GESAMT.txt) beschreiben den Stand.
++
++### Belegte Ursache und Korrektur
++
++Eine rein lesende Live-Aufzeichnung mit der installierten r14-ASI erfasste
++einen vom Nutzer ausgelösten Explosionstod. Native HP: 8.000.094 vor dem
++Ereignis, zuletzt 7.999.945 und 8.000.000, nach etwa drei Sekunden 8.000.100.
++Der native Pedzustand blieb 1, SA-MP Active blieb 1 und Wasted blieb 0.
++Diese Werte belegen den Schutzaufschlag und erklären das Ausbleiben der
++bisherigen Todeserkennung. Die frühere Annahme eines zwingenden normalen
++GTA-/SA-MP-Todesflags trifft auf diesen Serverablauf nicht zu.
++
++`NativePlayerHealth.h` dekodiert den belegten Bereich vor der weiteren
++Auswertung. Geschützte physische Todesübergänge benötigen anschließend
++einen neuen eigenen Server-Todesstand. Höchstens zwei eigene Statistikabrufe
++vermeiden eine dauerhafte Abfrageschleife. Die Gesamtzahl wird absolut
++importiert; Sessioneintrag und lokale Todesmeldung entstehen nur einmal.
++Kaltes Einloggen, Friedhofs-Relog und reine Korrekturen alter gespeicherter
++Werte sind keine neuen Ereignisse. Friedhofs-Chat wird nicht dafür ausgewertet.
++
++Der Damagelog verwendet gemessene logische HP-/Westenverluste und tatsächliche
++serverseitige HP-/Westenänderungen. TakeDamage-Rohbeträge sind kein zusätzlicher
++Verlust. Die übertragene uint8-HP kann unterlaufen und wird nicht als
++HP-Ersatz verwendet. Überkill wird pro Pool auf den vorherigen Rest begrenzt.
++
++Die Live-Aufzeichnung bleibt privat im lokalen Buildordner. Nur anonymisierte
++Messwerte und Reihenfolgen sind in Regressionstests enthalten; keine
++Spielerkennung, Prozessadressen, Sitzungschatlogs oder Kontodateien werden
++veröffentlicht. Der nachfolgende Live-Test der r15-ASI ist vom Ursachenbeleg mit r14 zu
++unterscheiden: Der Nutzer bestätigte einen korrekten Explosionstod mit einer
++lokalen Meldung, anschließend einen Friedhofs-Relog ohne Doppelzählung. Der
++eigene Serverstand erhöhte sich nur beim Tod um eins.
++[Datensparsamer Live-Prüfnachweis](r15-live-validation.json).
++
++### Ausgeführte Prüfungen für r15
++
++Gesamttests und Win32-Release-Build endeten mit Exitcode 0.
++Erfolgreiche Prüfungen: DamageLogRegression: 210, ActionExecutor: 143, Reconnect: 116, SAMPBridge: 563, StartupStatsSync: 367, StatsDialogRPCAdapter: 727, JobSkillsImport: 17, CombatChatParser: 190, CombatChatBridge: 238, native_reconnect_helper: 83.
++
++Die Friedhofszeile löst keine eigene Todeszählung mehr aus.
++Integrationstests prüfen echte Alive-zu-Dead-Übergänge, lokale Meldung
++und Baselineübernahme bei Login/Relog ohne rückwirkenden Zusatz-Tod.
++Die Damagelog-Regressionssuite prüft Fallschaden und Explosionsübergänge
++getrennt von den Umweltfiltern des Hitsounds. Bestehende Statistik- und
++Jobskill-Abläufe werden weiterhin gemeinsam geprüft.
++Die Ausgabe des finalen Builds heißt NLBinder.asi. Die geprüfte Datei
++umfasst 18.510.848 Bytes; SHA-256:
++`9d2139f9889fe5368030f505e515575ef0acbb83d374046d42dddd3aff929018`.
++
++PE32/x86, Windows-Imports und Ressource 300 sind geprüft. Der
++eingebettete Reconnect-Helfer stimmt mit dem frisch geprüften Helfer
++überein. Die Helferprüfung nutzt harmlose Testprozesse; das echte Spiel
++und der installierte Launcher werden dabei nicht gestartet oder beendet.
++
++Der vollständige TXT-Changelog umfasst die Abschnitte 1–21 und wird
++zusammen mit der ASI ausgeliefert.
++Separater ASI-Stand und ZIP-Inhalt stimmen bytegleich überein. Ein
++unabhängiger Abgleich bestätigt alle Paketdateien, den vollständigen
++TXT-Changelog, 43 explizite leere Waffenordner und keine persönlichen PNGs.
++[Maschinenlesbare Ergebnisse](r15-validation.json) ergänzen die Paketnachweise.
++Die neue r15-ASI wurde zusätzlich im Spiel geprüft: Explosionstod mit genau einer bestätigten Todesmeldung und einem zusätzlichen Server-Tod, anschließend Friedhofs-Relog ohne weitere Zählung. Der Nutzer führte die Spielaktionen aus und bestätigte beide Ergebnisse. Beschuss und Fallschaden wurden automatisiert geprüft; ein separater Live-Test dieser beiden Ursachen wird nicht behauptet.
++
++## Historischer Prüfstand r14 – 30. Oktober 2026
 +
 +Der aktuelle Stand ist **NLBinder v.0.1.1 by KOBiRO, r14**.
 +[Bedienung](../NLBinder-0.1.1-r14-DE.md),
@@ -5390,7 +5677,7 @@ index 0000000..1821569
 +Spätere Erweiterungen sollten mit ihrem jeweiligen Quellcommit, angepasster Änderungsübersicht, Testnachweisen und neuer ASI-Prüfsumme veröffentlicht werden. Ein neuer Build sollte nicht unter der Prüfsumme dieser r3-Fassung beschrieben werden.
 diff --git a/docs/review/PUBLICATION.json b/docs/review/PUBLICATION.json
 new file mode 100644
-index 0000000..2796cef
+index 0000000..1cd96e4
 --- /dev/null
 +++ b/docs/review/PUBLICATION.json
 @@ -0,0 +1,13 @@
@@ -5399,13 +5686,13 @@ index 0000000..2796cef
 +  "baseline_import_commit": "2da75e6c54a098243bf00ab48d86c5e3ee3cd261",
 +  "baseline_tag": "original-archive-92ce219",
 +  "original_archive_commit_comment": "92ce21971bee2d166d830e23ad20950f1dc98921",
-+  "history_note": "Original archive and pinned-dependency imports remain intact. r14 is a subsequent Binder update; no previous history is rewritten.",
-+  "asi_sha256": "91b1b816e67acec1993e06c03ba8e98216535169293eeae543a054c564a393ab",
++  "history_note": "Original archive and pinned-dependency imports remain intact. r15 is a subsequent Binder update; no previous history is rewritten.",
++  "asi_sha256": "9d2139f9889fe5368030f505e515575ef0acbb83d374046d42dddd3aff929018",
 +  "dependencies_import_commit": "3c8e11a76bc8d94962da0ce447a8d1a8b7c3eb83",
 +  "dependencies_tag": "build-dependencies-baseline",
-+  "release": "v0.1.1-r14",
-+  "previous_release": "v0.1.1-r13",
-+  "previous_published_commit": "5a84af361bd036d1119a80adffb872b543f18448"
++  "release": "v0.1.1-r15",
++  "previous_release": "v0.1.1-r14",
++  "previous_published_commit": "95b7477850f16da0055029c54d4243c1b2c79122"
 +}
 diff --git a/docs/review/PUBLISHING-DE.md b/docs/review/PUBLISHING-DE.md
 new file mode 100644
@@ -5449,30 +5736,22 @@ index 0000000..33b07ac
 +geändert.
 diff --git a/docs/review/README-GITHUB.md b/docs/review/README-GITHUB.md
 new file mode 100644
-index 0000000..1e296c4
+index 0000000..d4096e0
 --- /dev/null
 +++ b/docs/review/README-GITHUB.md
-@@ -0,0 +1,77 @@
+@@ -0,0 +1,72 @@
 +# PerkysBinderChangelog
 +
 +Vollständiger Prüfstand der Änderungen am **Perkys / NLBinder**, angepasst für
 +KOBiRO. Grundlage und ursprüngliche Urheberschaft bleiben beim Originalprojekt.
-+Der Stand lautet **NLBinder v.0.1.1 by KOBiRO, r14**.
-+Der Todeszähler verwendet tatsächliche eigene Todesübergänge nach einer
-+bestätigten lebendigen Spielphase. Friedhofs-Chat zählt nicht mehr.
-+Login und Relog eines bereits toten Spielers erzeugen keinen neuen
-+Todeszähler-Eintrag. Native Todeszustände und die echte eigene
-+Client-Todesmeldung werden zentral abgeglichen. Die Datei heißt
-+weiterhin **NLBinder.asi**; der vollständige Verlauf liegt auch als TXT bei.
-+
-+Der Damagelog nutzt zusätzlich echte eingehende Umwelt-/Explosionsereignisse
-+aus TakeDamage-RPC 115. Bei unmessbaren nativen HP-/Westenwerten können die
-+tatsächlich gesendeten Client-Syncwerte als Ersatz dienen, gebunden an Ped,
-+Modus, Fahrzeug und ein Alter von höchstens 500 ms. Die Ausgabe wird auf die
-+bekannten Restwerte begrenzt. Fehlende Restwerte führen zu höchstens 1500 ms
-+Wartezeit und keiner unbestätigten Überkillzahl. Ein Abgleich nach Quelle,
-+Zeit und beobachteten Frames verbindet die verschiedenen Meldungen eines
-+Treffers. Ein echter Ingame-Test auf dem konkreten Server steht aus.
++Der Stand lautet **NLBinder v.0.1.1 by KOBiRO, r15**.
++Die live beobachteten eigenen HP enthalten einen Schutzaufschlag von
++8.000.000. r15 bereinigt diesen Wert und bestätigt geschützte Todesübergänge
++mit einem neuen eigenen Server-Todesstand. Friedhofs-Chat und Relog zählen
++keinen zusätzlichen Tod. Der Damagelog zeigt bereinigte HP-/Westenverluste;
++Rohschaden und übergelaufene 8-Bit-HP werden nicht zusätzlich eingerechnet.
++Die Datei heißt weiterhin **NLBinder.asi**. Alle Änderungen liegen auch als
++vollständiger TXT-Changelog und nachvollziehbarer Quellcode vor.
 +
 +Eigene Waffenbilder liegen unter **Dokumente → GTA San Andreas User Files →
 +NLBinder → Waffenicons**. Der Button **Waffenicons-Ordner öffnen** im Binder
@@ -5484,9 +5763,9 @@ index 0000000..1e296c4
 +2. [Technisches Verhalten, Prüfungen und Grenzen](../../docs/review/PRUEFUNG-DE.md)
 +3. [Dateien im Vergleich zum Original](../../docs/review/DATEIVERGLEICH.md)
 +4. [Herkunft und Abhängigkeiten](../../docs/review/DEPENDENCIES.md)
-+5. [Programmänderungen als GitHub-Vergleich](https://github.com/Kobiro57/PerkysBinderChangelog/compare/build-dependencies-baseline...v0.1.1-r14)
++5. [Programmänderungen als GitHub-Vergleich](https://github.com/Kobiro57/PerkysBinderChangelog/compare/build-dependencies-baseline...v0.1.1-r15)
 +   oder als [kompakter Quellcode-Patch](../../docs/review/first-party-changes.patch)
-+6. [Änderungen seit r13](https://github.com/Kobiro57/PerkysBinderChangelog/compare/v0.1.1-r13...v0.1.1-r14)
++6. [Änderungen seit r14](https://github.com/Kobiro57/PerkysBinderChangelog/compare/v0.1.1-r14...v0.1.1-r15)
 +
 +Der vollständige bearbeitete Code liegt in `src/`, `include/`, `res/`,
 +`tests/`, `tools/` und `third_party/`. Die Übersicht verlinkt direkt zu den
@@ -5510,18 +5789,21 @@ index 0000000..1e296c4
 +
 +## Geprüfte ASI
 +
-+- [NLBinder.asi herunterladen](../../dist/NLBinder-0.1.1-r14/NLBinder.asi)
++- [NLBinder.asi herunterladen](../../dist/NLBinder-0.1.1-r15/NLBinder.asi)
 +- [Gesamter Changelog als TXT](../../docs/CHANGELOG-GESAMT.txt)
-+- [Komplettes ZIP-Paket herunterladen](../../dist/NLBinder-v0.1.1-KOBiRO-r14.zip)
-+- [Installation und Bedienung](../../dist/NLBinder-0.1.1-r14/LIESMICH.md)
-+- [Build- und Prüfangaben](../../dist/NLBinder-0.1.1-r14/BUILD-INFO.txt)
-+- [Maschinenlesbarer Prüfnachweis](../../dist/NLBinder-0.1.1-r14/PRUEFBERICHT.json)
-+- [SHA-256 der ausgelieferten ASI](../../dist/NLBinder-0.1.1-r14/SHA256SUMS.txt)
++- [Komplettes ZIP-Paket herunterladen](../../dist/NLBinder-v0.1.1-KOBiRO-r15.zip)
++- [Installation und Bedienung](../../dist/NLBinder-0.1.1-r15/LIESMICH.md)
++- [Build- und Prüfangaben](../../dist/NLBinder-0.1.1-r15/BUILD-INFO.txt)
++- [Maschinenlesbarer Prüfnachweis](../../dist/NLBinder-0.1.1-r15/PRUEFBERICHT.json)
++- [SHA-256 der ausgelieferten ASI](../../dist/NLBinder-0.1.1-r15/SHA256SUMS.txt)
 +
 +Die Nachweise gehören zum jeweiligen Binärstand: automatisierte Gesamttests,
 +Win32-Release-Build, PE-/Ressourcenvergleich und Reconnect-Helfertest mit
-+harmlosen Testprozessen. Ein echter Ingame-Test mit dem konkreten Server und
-+Launcher steht aus. Die [vorherige r13-Fassung](../../dist/NLBinder-0.1.1-r13/BUILD-INFO.txt)
++harmlosen Testprozessen. Die Ursache wurde lesend im laufenden Spiel mit r14 belegt.
++Die neue r15-ASI ist zusätzlich im Spiel bestätigt: ein Explosionstod mit
++einer lokalen Todesmeldung und einem zusätzlichen Server-Tod, danach
++Friedhofs-Relog ohne Doppelzählung. Beschuss und Fallschaden sind automatisiert
++geprüft. [Live-Prüfumfang](../../docs/review/r15-live-validation.json). Die [vorherige r14-Fassung](../../dist/NLBinder-0.1.1-r14/BUILD-INFO.txt)
 +und ihre Prüfsumme bleiben zur Nachverfolgung erhalten.
 +
 +## Weitere Updates
@@ -5769,6 +6051,92 @@ index 0000000..0e8d530
 +  "installed_nova_launcher_executed_for_verification": false,
 +  "archive_bytes": 10589229,
 +  "archive_sha256": "b17d097d84e547dc7224a943d9e8d981f4b0d7aab041d0d61f716e1cec3e82f0",
++  "verified_package_files": 9,
++  "personal_pngs_in_archive": 0
++}
+diff --git a/docs/review/r15-live-validation.json b/docs/review/r15-live-validation.json
+new file mode 100644
+index 0000000..a3e9450
+--- /dev/null
++++ b/docs/review/r15-live-validation.json
+@@ -0,0 +1,22 @@
++{
++  "revision": "v0.1.1-r15",
++  "date": "2026-10-30",
++  "asi_sha256": "9d2139f9889fe5368030f505e515575ef0acbb83d374046d42dddd3aff929018",
++  "game_started_and_test_actions_performed_by_user": true,
++  "installed_asi_hash_verified": true,
++  "new_runtime_protected_health_decoder_activation_logged": true,
++  "explosion": {
++    "native_death_candidate_logged": true,
++    "own_server_death_count_increment": 1,
++    "verified_death_logged": true,
++    "user_confirmed_exactly_one_correct_local_death_notification": true
++  },
++  "cemetery_relog": {
++    "own_server_death_count_increment": 0,
++    "user_confirmed_no_duplicate": true
++  },
++  "live_gun_death_test_performed": false,
++  "live_fall_death_test_performed": false,
++  "gun_and_fall_automated_regressions_passed": true,
++  "privacy": "Only aggregate results; no account identities, absolute account totals, chatlogs or process addresses"
++}
+diff --git a/docs/review/r15-validation.json b/docs/review/r15-validation.json
+new file mode 100644
+index 0000000..b969012
+--- /dev/null
++++ b/docs/review/r15-validation.json
+@@ -0,0 +1,52 @@
++{
++  "revision": "v0.1.1-r15",
++  "date": "2026-10-30",
++  "asi_filename": "NLBinder.asi",
++  "asi_bytes": 18510848,
++  "asi_sha256": "9d2139f9889fe5368030f505e515575ef0acbb83d374046d42dddd3aff929018",
++  "full_test_suite_exit_code": 0,
++  "release_build_exit_code": 0,
++  "focused_checks": {
++    "DamageLogRegression": 210,
++    "ActionExecutor": 143,
++    "Reconnect": 116,
++    "SAMPBridge": 563,
++    "StartupStatsSync": 367,
++    "StatsDialogRPCAdapter": 727,
++    "JobSkillsImport": 17,
++    "CombatChatParser": 190,
++    "CombatChatBridge": 238,
++    "native_reconnect_helper": 83
++  },
++  "failures": 0,
++  "cemetery_chat_is_a_live_death_source": false,
++  "native_alive_to_dead_lifecycle_counting_enabled": true,
++  "login_and_relog_seed_a_death_baseline": true,
++  "damage_log_environmental_sources_are_independent_from_hitsounds": true,
++  "native_health_offset": 8000000,
++  "negative_logical_health_clamped_to_zero": true,
++  "packed_uint8_health_used_for_damage": false,
++  "raw_take_damage_amount_added_to_log": false,
++  "protected_death_requires_own_server_count_increment": true,
++  "r14_live_read_only_explosion_trace_replayed": true,
++  "pe32_x86_dll": true,
++  "embedded_helper_matches": true,
++  "fresh_native_helper_checks": 83,
++  "nova_fixture_cases": 6,
++  "full_changelog_bytes": 66118,
++  "full_changelog_sha256": "75d77a031671e28f53b93209c7441c7daf5eedf9f149ff1a9e51da16f6391f9f",
++  "full_changelog_sections": 21,
++  "archive_asi_matches": true,
++  "weapon_template_directories": 43,
++  "live_game_test_performed": true,
++  "live_game_confirmed_cases": [
++    "protected_explosion_death",
++    "cemetery_relog_without_duplicate"
++  ],
++  "live_gun_or_fall_death_test_performed": false,
++  "installed_nova_launcher_executed_for_verification": false,
++  "archive_bytes": 10589403,
++  "archive_sha256": "5cb9b18ebdbb260ff5a7a6697ae59269941c8c9c98290504b563689737a1fb66",
 +  "verified_package_files": 9,
 +  "personal_pngs_in_archive": 0
 +}
@@ -7333,6 +7701,35 @@ index 0000000..f6eed3c
 +};
 +
 +} // namespace keybinder
+diff --git a/include/NativePlayerHealth.h b/include/NativePlayerHealth.h
+new file mode 100644
+index 0000000..5822aa7
+--- /dev/null
++++ b/include/NativePlayerHealth.h
+@@ -0,0 +1,23 @@
++#pragma once
++
++#include <cmath>
++
++namespace keybinder {
++
++struct NativePlayerHealth {
++    float value;
++    bool protectedEncoding;
++};
++
++// Observed in the running Nova client: 8,000,094 means 94 HP;
++// 7,999,945 is lethal overkill and 8,000,000 means zero HP. The GTA
++// ped and SA-MP active/wasted flags remain alive during this scripted death.
++// Decode BEFORE any uint8 sync conversion, which wraps negative HP to 248 etc.
++inline NativePlayerHealth DecodeNativePlayerHealth(float raw) {
++    constexpr float offset = 8000000.0f;
++    const bool encoded = std::isfinite(raw) && raw >= offset - 65536.0f && raw <= offset + 65536.0f;
++    const float logical = encoded ? raw - offset : raw;
++    return {std::isfinite(logical) && logical < 0.0f ? 0.0f : logical, encoded};
++}
++
++} // namespace keybinder
 diff --git a/include/NovaReconnectFlow.h b/include/NovaReconnectFlow.h
 new file mode 100644
 index 0000000..3030bce
@@ -7682,7 +8079,7 @@ index ab1cdf6..1306be6 100644
  #define IDR_IMAGE_NL_LOGO 103
  #define IDR_GTASA_MAP 104
 diff --git a/include/SAMPBridge.h b/include/SAMPBridge.h
-index dc6b025..95a0061 100644
+index dc6b025..155bac7 100644
 --- a/include/SAMPBridge.h
 +++ b/include/SAMPBridge.h
 @@ -2,6 +2,7 @@
@@ -7744,7 +8141,7 @@ index dc6b025..95a0061 100644
  
      // Incoming chat line callback for external consumers (e.g. OnlineEventDetector)
      using IncomingChatCallback = std::function<void(const std::string&)>;
-@@ -139,15 +162,72 @@ public:
+@@ -139,15 +162,74 @@ public:
          std::function<void(sampapi::v03dl::CInput*, sampapi::CMDPROC)> setDefaultCommand;
          std::function<void(const std::function<void(sampapi::v03dl::CChat*, const char*, unsigned long, const char*)>&)> installIncomingChatInterceptor;
          std::function<void(const std::string&)> logSink;
@@ -7767,6 +8164,8 @@ index dc6b025..95a0061 100644
 +        std::function<void(sampapi::v03dl::CInput*)> closeChatInput;
 +        std::function<bool()> isLocalPlayerControllable;
 +        std::function<int()> getLocalNativePedState;
++        // Raw native memory adapter; unlike readLocalDamageSample this includes the protection offset.
++        std::function<bool(float&, float&, int&, const void*&)> readRawLocalDamageSample;
      };
  
      static void SetTestingHooks(const TestingHooks& hooks);
@@ -7817,7 +8216,7 @@ index dc6b025..95a0061 100644
      struct CommandRegistration {
          std::string name;
          CommandCallback callback;
-@@ -161,7 +241,6 @@ private:
+@@ -161,7 +243,6 @@ private:
      bool TryRegisterDirect(CommandRegistration& registration);
      bool InstallFallbackInterceptor();
      bool InstallSendHook();
@@ -7825,7 +8224,7 @@ index dc6b025..95a0061 100644
      bool HasCommandRouting() const;
      void RestoreFallbackInterceptor();
      bool SendStartupMessage() const;
-@@ -195,6 +274,8 @@ public:
+@@ -195,19 +276,38 @@ public:
      float GetPlayerArmour() const override;
      float GetVehicleHP() const override;
      std::string GetVehicleName() const override;
@@ -7834,9 +8233,12 @@ index dc6b025..95a0061 100644
      int GetTotalKills() const override;
      int GetTotalDeaths() const override;
  
-@@ -202,12 +283,29 @@ public:
+     bool IsLocalPlayerDead() const;
      void ResetKillTrackerDeathInferenceState();
-     void RecordLocalPlayerDeath(const std::string& killer, int weaponId);
+-    void RecordLocalPlayerDeath(const std::string& killer, int weaponId);
++    void RecordLocalPlayerDeath(const std::string& killer, int weaponId, bool totalAlreadySynchronized = false);
++    void BeginProtectedDeathVerification(unsigned long now);
++    void UpdateProtectedDeathVerification(unsigned long now);
      void UpdateLocalDeathFallback();
 +    void InstallLocalDeathNotificationHook();
 +    struct LocalDeathNotificationState {
@@ -7857,14 +8259,12 @@ index dc6b025..95a0061 100644
 +    bool IsLocalCombatActive(bool allowFinalDeathSample = false) const;
 +    void ResetIncomingDamageState(bool keepSpawnStatus = false);
 +    void NotifyDamageFeedback(const killtracker::DamageEvent& event);
-+    void LogIncomingDamage(const keybinder::IncomingDamageLogEntry& damage, bool fromDamageRpc = false,
-+                           int damageSource = -1);
-+    void FlushIncomingEnvironmentalDamageRpcs();
++    void LogIncomingDamage(const keybinder::IncomingDamageLogEntry& damage);
 +    bool IsDamageLogEnabled() const;
      void InstallScriptedHealthRpcHook();
  
      // Shared state between SAMPBridge and the ScrSetPlayerHealth/Armour RPC
-@@ -218,10 +316,33 @@ private:
+@@ -218,10 +318,31 @@ private:
      // value is a decrease, sets an atomic request that the game thread
      // consumes to arm the detector's one-shot suppression window.
      struct ScriptedHealthSuppressionState {
@@ -7879,8 +8279,6 @@ index dc6b025..95a0061 100644
 +        struct VitalSample { bool health; float value; };
 +        std::mutex samplesMutex;
 +        std::vector<VitalSample> samples;
-+        struct EnvironmentalDamageSample { killtracker::DamageEvent event; unsigned long at; };
-+        std::vector<EnvironmentalDamageSample> incomingEnvironmentalDamage;
 +        std::atomic<const void*> pedIdentity{nullptr};
 +        struct SyncVitals {
 +            bool valid = false;
@@ -7937,12 +8335,11 @@ index dc6b025..95a0061 100644
  
      bool killTrackerEnabled_;
      bool killTrackerLocalKillMessageEnabled_;
-@@ -300,13 +429,114 @@ private:
+@@ -300,13 +429,119 @@ private:
      std::function<void(const killtracker::KillEvent&)> hitmarkerKillCallback_;
      std::function<void()> hitsoundIncomingCallback_;
      keybinder::IncomingDamageDetector incomingDamageDetector_;
 +    keybinder::IncomingDamageLog incomingDamageLog_;
-+    keybinder::IncomingDamageRpcEvidence incomingDamageRpcEvidence_;
 +    bool incomingDamageLogEnabledLastFrame_ = false;
 +    const void* incomingDamagePed_ = nullptr;
 +    unsigned int invalidDamageSampleFrames_ = 0;
@@ -7969,6 +8366,12 @@ index dc6b025..95a0061 100644
 +    std::string localDeathConnectionIdentity_;
 +    int pendingServerDeathTotal_ = -1;
 +    unsigned long pendingServerDeathAt_ = 0;
++    bool protectedHealthObserved_ = false;
++    bool protectedDeathPending_ = false;
++    int protectedDeathBaseline_ = 0;
++    unsigned long protectedDeathAt_ = 0;
++    unsigned int protectedDeathStatsAttempts_ = 0;
++    bool quietDeathStatsRefresh_ = false;
      bool jobTrackerInitialized_;
      
      std::function<bool(const std::string&)> slashCommandInterceptor_;
@@ -13127,10 +13530,15 @@ index 0000000..67d55a3
 +
 +} // namespace keybinder
 diff --git a/src/SAMPBridge.cpp b/src/SAMPBridge.cpp
-index 72ce0e7..055a830 100644
+index 72ce0e7..7f6b5df 100644
 --- a/src/SAMPBridge.cpp
 +++ b/src/SAMPBridge.cpp
-@@ -5,7 +5,10 @@
+@@ -1,3 +1,4 @@
++#include "../include/NativePlayerHealth.h"
+ #include "../include/SAMPBridge.h"
+ 
+ #include <algorithm>
+@@ -5,7 +6,10 @@
  #include <atomic>
  #include <cctype>
  #include <cmath>
@@ -13141,7 +13549,7 @@ index 72ce0e7..055a830 100644
  #include <unordered_map>
  
  #include "../include/Logger.h"
-@@ -13,27 +16,27 @@
+@@ -13,27 +17,27 @@
  #include "../include/SettingsManager.h"
  #include "../include/WeaponNames.h"
  #include "../include/DeathMessageRPCAdapter.h"
@@ -13174,7 +13582,7 @@ index 72ce0e7..055a830 100644
  
  namespace {
  constexpr std::size_t kInvalidDispatcherIndex = static_cast<std::size_t>(-1);
-@@ -41,14 +44,15 @@ constexpr std::size_t kMaxDirectCommands = 8;
+@@ -41,14 +45,15 @@ constexpr std::size_t kMaxDirectCommands = 8;
  constexpr unsigned long kStartupMessageColor = 0xFFFFFFFF;
  constexpr int kTrackedIncomeMessageDelayFrames = 10;
  constexpr int kLocalDeathFallbackDelayFrames = 12;
@@ -13195,7 +13603,7 @@ index 72ce0e7..055a830 100644
  
  #ifndef KEYBINDER_TESTING
  constexpr std::size_t kVehicleGameNameLength = 8;
-@@ -98,183 +102,6 @@ const char* TranslateVehicleGameNameKey(const std::string& gameNameKey)
+@@ -98,183 +103,6 @@ const char* TranslateVehicleGameNameKey(const std::string& gameNameKey)
  }
  #endif
  
@@ -13379,7 +13787,7 @@ index 72ce0e7..055a830 100644
  std::string ConvertUtf8ToGameEncoding(const std::string& text) {
      if (text.empty()) {
          return text;
-@@ -579,6 +406,13 @@ void RealSetDefaultCommand(sampapi::v03dl::CInput* input, sampapi::CMDPROC handl
+@@ -579,6 +407,13 @@ void RealSetDefaultCommand(sampapi::v03dl::CInput* input, sampapi::CMDPROC handl
  SAMPBridge::TestingHooks g_testingHooks;
  #endif
  
@@ -13393,7 +13801,7 @@ index 72ce0e7..055a830 100644
  HMODULE GetModuleHandleHook(const char* moduleName) {
  #ifdef KEYBINDER_TESTING
      if (g_testingHooks.getModuleHandle) {
-@@ -708,11 +542,6 @@ void AddMessageHook(sampapi::v03dl::CChat* chat, unsigned long color, const char
+@@ -708,11 +543,6 @@ void AddMessageHook(sampapi::v03dl::CChat* chat, unsigned long color, const char
  #endif
      RealAddMessage(chat, color, text);
  
@@ -13405,7 +13813,7 @@ index 72ce0e7..055a830 100644
  }
  
  sampapi::CMDPROC GetCommandHandlerHook(sampapi::v03dl::CInput* input, const char* name) {
-@@ -767,14 +596,55 @@ constexpr std::array<sampapi::CMDPROC, kMaxDirectCommands> kDispatchers = {
+@@ -767,14 +597,55 @@ constexpr std::array<sampapi::CMDPROC, kMaxDirectCommands> kDispatchers = {
  };
  
  safetyhook::InlineHook* g_sendHook = nullptr;
@@ -13461,7 +13869,7 @@ index 72ce0e7..055a830 100644
      }
      if (g_sendHook != nullptr) {
          g_sendHook->thiscall<void>(pThis, szString);
-@@ -790,7 +660,6 @@ SAMPBridge::SAMPBridge()
+@@ -790,7 +661,6 @@ SAMPBridge::SAMPBridge()
        fallbackInstalled_(false),
        missingModuleLogged_(false),
        unsupportedVersionLogged_(false),
@@ -13469,7 +13877,7 @@ index 72ce0e7..055a830 100644
        originalDefaultCommand_(nullptr),
        startupMessagePending_(false),
        startupMessageDelayFrames_(0),
-@@ -799,13 +668,8 @@ SAMPBridge::SAMPBridge()
+@@ -799,13 +669,8 @@ SAMPBridge::SAMPBridge()
        hudScaleFixEnabled_(false),
        autoEngineStartEnabled_(false),
        autoEngineStartPending_(false),
@@ -13484,7 +13892,7 @@ index 72ce0e7..055a830 100644
        autoEngineStartReleasePending_(false),
        killTrackerEnabled_(false),
        killTrackerLocalKillMessageEnabled_(true),
-@@ -813,10 +677,10 @@ SAMPBridge::SAMPBridge()
+@@ -813,10 +678,10 @@ SAMPBridge::SAMPBridge()
        killTrackerServerKillMessageEnabled_(false),
        killTrackerServerDeathMessageEnabled_(false),
        killTrackerTrackDamage_(true),
@@ -13499,7 +13907,7 @@ index 72ce0e7..055a830 100644
        killTrackerInitialized_(false),
        localPlayerWasDead_(false),
        localDeathHandledForCurrentLife_(false),
-@@ -861,7 +725,6 @@ bool SAMPBridge::Initialize() {
+@@ -861,7 +726,6 @@ bool SAMPBridge::Initialize() {
  
      g_activeBridge = this;
      EnsureKillTrackerRpcAdaptersRegistered();
@@ -13507,7 +13915,7 @@ index 72ce0e7..055a830 100644
  
      if (!InitializeRakHook()) {
          if (g_activeBridge == this) {
-@@ -878,8 +741,11 @@ bool SAMPBridge::Initialize() {
+@@ -878,8 +742,11 @@ bool SAMPBridge::Initialize() {
      // side SetPlayerHealth/SetPlayerArmour RPCs can arm suppression windows
      // and prevent false incoming hitsounds on script-driven HP changes.
      InstallScriptedHealthRpcHook();
@@ -13519,7 +13927,7 @@ index 72ce0e7..055a830 100644
      keybinder::Logger::Info("[SAMPBridge] Attached to SA-MP %s.", VersionToString(version_));
      
      if (killTrackerEnabled_) {
-@@ -901,6 +767,13 @@ bool SAMPBridge::InstallSendHook() {
+@@ -901,6 +768,13 @@ bool SAMPBridge::InstallSendHook() {
  #ifdef KEYBINDER_TESTING
      return true;
  #else
@@ -13533,7 +13941,7 @@ index 72ce0e7..055a830 100644
      if (g_sendHook != nullptr) {
          return true;
      }
-@@ -918,75 +791,6 @@ bool SAMPBridge::InstallSendHook() {
+@@ -918,75 +792,6 @@ bool SAMPBridge::InstallSendHook() {
  #endif
  }
  
@@ -13609,7 +14017,7 @@ index 72ce0e7..055a830 100644
  void SAMPBridge::Shutdown() {
      // Guard against double-cleanup during shutdown (can be called from both
      // shutdownRwEvent and destructor)
-@@ -995,15 +799,28 @@ void SAMPBridge::Shutdown() {
+@@ -995,15 +800,28 @@ void SAMPBridge::Shutdown() {
          return;
      }
      shutting_down_ = true;
@@ -13638,7 +14046,7 @@ index 72ce0e7..055a830 100644
  
      RestoreFallbackInterceptor();
  
-@@ -1044,7 +861,10 @@ bool SAMPBridge::SendLocalMessage(const std::string& text, unsigned long color)
+@@ -1044,7 +862,10 @@ bool SAMPBridge::SendLocalMessage(const std::string& text, unsigned long color)
          return false;
      }
      const std::string encodedText = ConvertUtf8ToGameEncoding(text);
@@ -13649,7 +14057,7 @@ index 72ce0e7..055a830 100644
      return true;
  }
  
-@@ -1073,7 +893,7 @@ bool SAMPBridge::SendCommand(const std::string& cmd) const {
+@@ -1073,7 +894,7 @@ bool SAMPBridge::SendCommand(const std::string& cmd) const {
      }
  
      const std::string encodedText = ConvertUtf8ToGameEncoding(normalized);
@@ -13658,7 +14066,7 @@ index 72ce0e7..055a830 100644
      g_bypassSendHook = true;
      SendInputHook(input, encodedText.c_str());
      g_bypassSendHook = false;
-@@ -1090,11 +910,142 @@ void SAMPBridge::SendKillTrackerServerMessage(const std::string& message) const
+@@ -1090,11 +911,142 @@ void SAMPBridge::SendKillTrackerServerMessage(const std::string& message) const
      }
  }
  
@@ -13801,7 +14209,7 @@ index 72ce0e7..055a830 100644
  bool SAMPBridge::IsDialogOpen() const {
      const auto* dialog = GetDialog();
      return dialog != nullptr && dialog->m_bIsActive != FALSE;
-@@ -1118,6 +1069,14 @@ bool SAMPBridge::IsCursorActive() const {
+@@ -1118,6 +1070,14 @@ bool SAMPBridge::IsCursorActive() const {
  
  void SAMPBridge::SetSettingsManager(const keybinder::SettingsManager* manager) {
      settingsManager_ = manager;
@@ -13816,7 +14224,7 @@ index 72ce0e7..055a830 100644
  }
  
  void SAMPBridge::Update() {
-@@ -1125,11 +1084,17 @@ void SAMPBridge::Update() {
+@@ -1125,11 +1085,17 @@ void SAMPBridge::Update() {
          return;
      }
  
@@ -13835,7 +14243,7 @@ index 72ce0e7..055a830 100644
  
      if (!HasCommandRouting()) {
          RegisterPendingCommands();
-@@ -1142,19 +1107,6 @@ void SAMPBridge::Update() {
+@@ -1142,19 +1108,6 @@ void SAMPBridge::Update() {
          hudScaleFixDelayFrames_--;
      }
  
@@ -13855,7 +14263,7 @@ index 72ce0e7..055a830 100644
      if (startupMessagePending_) {
          if (startupMessageDelayFrames_ == 0 && GetChat() != nullptr) {
              if (SendStartupMessage()) {
-@@ -1179,11 +1131,11 @@ void SAMPBridge::Update() {
+@@ -1179,11 +1132,11 @@ void SAMPBridge::Update() {
          }
      }
  
@@ -13869,7 +14277,7 @@ index 72ce0e7..055a830 100644
                  if (handler != nullptr) {
                      handler("");
                      Log("Auto-executed /hudscalefix via direct handler call");
-@@ -1203,72 +1155,7 @@ void SAMPBridge::Update() {
+@@ -1203,72 +1156,7 @@ void SAMPBridge::Update() {
          }
      }
  
@@ -13943,7 +14351,7 @@ index 72ce0e7..055a830 100644
  
      PollLocalIncomingDamage();
      UpdateKillTracker();
-@@ -1552,7 +1439,7 @@ bool SAMPBridge::SendStartupMessage() const {
+@@ -1552,7 +1440,7 @@ bool SAMPBridge::SendStartupMessage() const {
          return false;
      }
  
@@ -13952,7 +14360,7 @@ index 72ce0e7..055a830 100644
      const std::string encodedLine1 = ConvertUtf8ToGameEncoding(line1);
      AddMessageHook(chat, kStartupMessageColor, encodedLine1.c_str());
  
-@@ -1735,6 +1622,9 @@ void SAMPBridge::InitializeJobTracker() {
+@@ -1735,6 +1623,9 @@ void SAMPBridge::InitializeJobTracker() {
      }
  
      jobChatAdapter_->SetCallback([this](const jobs::JobChatEvent& event) {
@@ -13962,7 +14370,7 @@ index 72ce0e7..055a830 100644
          if (jobTracker_ != nullptr) {
              const std::vector<jobs::JobEvent> recordedEvents = jobTracker_->HandleChatEvent(event);
              for (const jobs::JobEvent& recordedEvent : recordedEvents) {
-@@ -1751,6 +1641,9 @@ void SAMPBridge::InitializeJobTracker() {
+@@ -1751,6 +1642,9 @@ void SAMPBridge::InitializeJobTracker() {
              }
          }
      });
@@ -13972,7 +14380,7 @@ index 72ce0e7..055a830 100644
  
      if (!jobChatAdapter_->Initialize()) {
          keybinder::Logger::Warning("[SAMPBridge] Failed to initialize Job Chat Adapter; jobs chat pipeline will retry on the next bridge update.");
-@@ -1842,19 +1735,13 @@ void SAMPBridge::InitializeKillTracker() {
+@@ -1842,19 +1736,13 @@ void SAMPBridge::InitializeKillTracker() {
  }
  
  void SAMPBridge::ShutdownKillTracker() {
@@ -13993,7 +14401,7 @@ index 72ce0e7..055a830 100644
      ResetKillTrackerDeathInferenceState();
      killfeedAdapter_.reset();
  
-@@ -1863,6 +1750,7 @@ void SAMPBridge::ShutdownKillTracker() {
+@@ -1863,6 +1751,7 @@ void SAMPBridge::ShutdownKillTracker() {
  }
  
  void SAMPBridge::UpdateKillTracker() {
@@ -14001,7 +14409,7 @@ index 72ce0e7..055a830 100644
      if (!killTrackerInitialized_ || !killTracker_ || !killfeedAdapter_ || !killTracker_->IsEnabled()) {
          return;
      }
-@@ -1870,17 +1758,7 @@ void SAMPBridge::UpdateKillTracker() {
+@@ -1870,17 +1759,7 @@ void SAMPBridge::UpdateKillTracker() {
      auto newKills = killfeedAdapter_->PollForNewKills();
  
      for (const auto& kill : newKills) {
@@ -14020,7 +14428,7 @@ index 72ce0e7..055a830 100644
      }
  
      UpdateLocalDeathFallback();
-@@ -1898,6 +1776,10 @@ void SAMPBridge::SetKillTrackerEnabled(bool enabled) {
+@@ -1898,6 +1777,10 @@ void SAMPBridge::SetKillTrackerEnabled(bool enabled) {
      }
  
      killTracker_->SetEnabled(enabled);
@@ -14031,7 +14439,7 @@ index 72ce0e7..055a830 100644
  
      Log("SetKillTrackerEnabled(" + std::to_string(enabled) +
          ") initialized=" + std::to_string(initialized_));
-@@ -1936,7 +1818,7 @@ void SAMPBridge::SetKillTrackerTrackDamage(bool enabled) {
+@@ -1936,7 +1819,7 @@ void SAMPBridge::SetKillTrackerTrackDamage(bool enabled) {
          killTracker_->SetEnabled(killTrackerEnabled_);
      }
  
@@ -14040,7 +14448,7 @@ index 72ce0e7..055a830 100644
          RefreshDamageTracking();
      }
  }
-@@ -1959,7 +1841,7 @@ void SAMPBridge::SetHitmarkerKillCallback(std::function<void(const killtracker::
+@@ -1959,7 +1842,7 @@ void SAMPBridge::SetHitmarkerKillCallback(std::function<void(const killtracker::
  
  void SAMPBridge::SetKillTrackerLocalKillMessageTemplate(const std::string& messageTemplate) {
      if (messageTemplate.empty()) {
@@ -14049,7 +14457,7 @@ index 72ce0e7..055a830 100644
          return;
      }
      killTrackerLocalKillMessageTemplate_ = messageTemplate;
-@@ -1967,23 +1849,19 @@ void SAMPBridge::SetKillTrackerLocalKillMessageTemplate(const std::string& messa
+@@ -1967,23 +1850,19 @@ void SAMPBridge::SetKillTrackerLocalKillMessageTemplate(const std::string& messa
  
  void SAMPBridge::SetKillTrackerLocalDeathMessageTemplate(const std::string& messageTemplate) {
      if (messageTemplate.empty()) {
@@ -14075,7 +14483,7 @@ index 72ce0e7..055a830 100644
          return;
      }
      killTrackerServerDeathMessageTemplate_ = messageTemplate;
-@@ -1999,24 +1877,184 @@ void SAMPBridge::SetAutoHudScaleFix(bool enabled) {
+@@ -1999,24 +1878,184 @@ void SAMPBridge::SetAutoHudScaleFix(bool enabled) {
  }
  
  void SAMPBridge::SetAutoEngineStart(bool enabled) {
@@ -14128,8 +14536,7 @@ index 72ce0e7..055a830 100644
 +    vehicleId = local->m_nCurrentVehicle;
 +    engineOn = ped->m_pVehicle->bEngineOn;
 +    return true;
- #endif
--        autoEngineStartInjectedVk_ = 0;
++#endif
 +}
 +
 +bool SAMPBridge::IsEngineInputAvailable() const {
@@ -14140,7 +14547,8 @@ index 72ce0e7..055a830 100644
 +    DWORD foregroundProcess = 0;
 +    GetWindowThreadProcessId(GetForegroundWindow(), &foregroundProcess);
 +    return foregroundProcess == GetCurrentProcessId() && !IsChatOpen() && !IsDialogOpen() && !IsCursorActive();
-+#endif
+ #endif
+-        autoEngineStartInjectedVk_ = 0;
 +}
 +
 +void SAMPBridge::SetEngineStartKeyDown(bool down) {
@@ -14268,15 +14676,15 @@ index 72ce0e7..055a830 100644
  }
  
  killtracker::KillTracker* SAMPBridge::GetKillTracker() const {
-@@ -2045,10 +2083,25 @@ std::string SAMPBridge::GetCurrentZone() const {
+@@ -2045,10 +2084,25 @@ std::string SAMPBridge::GetCurrentZone() const {
      }
      return std::string(name);
  #else
 -    return "Unknown";
 +    return g_testingHooks.getDistrictName ? g_testingHooks.getDistrictName() : "Unknown";
-+#endif
-+}
-+
+ #endif
+ }
+ 
 +std::string SAMPBridge::GetCityName() const {
 +#ifndef KEYBINDER_TESTING
 +    CPlayerPed* player = FindPlayerPed(0);
@@ -14285,9 +14693,9 @@ index 72ce0e7..055a830 100644
 +    return keybinder::CityNameFromGtaLevel(static_cast<int>(CTheZones::GetLevelFromPosition(&position)));
 +#else
 +    return g_testingHooks.getCityLevel ? keybinder::CityNameFromGtaLevel(g_testingHooks.getCityLevel()) : "Unknown";
- #endif
- }
- 
++#endif
++}
++
 +std::string SAMPBridge::GetDistrictName() const {
 +    return GetCurrentZone();
 +}
@@ -14295,7 +14703,7 @@ index 72ce0e7..055a830 100644
  std::string SAMPBridge::GetLocalPlayerName() const {
  #ifndef KEYBINDER_TESTING
      auto* netGame = GetNetGame();
-@@ -2068,53 +2121,27 @@ std::string SAMPBridge::GetLocalPlayerName() const {
+@@ -2068,53 +2122,27 @@ std::string SAMPBridge::GetLocalPlayerName() const {
  
      return std::string(localName);
  #else
@@ -14343,24 +14751,24 @@ index 72ce0e7..055a830 100644
 -
 -    if (lp->m_onfootData.m_nHealth > 0 || lp->m_onfootData.m_nArmor > 0) {
 -        return static_cast<float>(lp->m_onfootData.m_nArmor);
-+    float health = 0.0f, armour = 0.0f;
-+    int source = 0;
-+    const void* ped = nullptr;
-+    if (ReadLocalDamageSample(health, armour, source, ped) && ped && std::isfinite(armour)) {
-+        return (std::max)(0.0f, armour);
-     }
+-    }
 -
 -    if (lp->m_pPed) {
 -        const float armour = lp->m_pPed->GetArmour();
 -        if (std::isfinite(armour)) {
 -            return static_cast<float>(std::lround(armour));
 -        }
--    }
++    float health = 0.0f, armour = 0.0f;
++    int source = 0;
++    const void* ped = nullptr;
++    if (ReadLocalDamageSample(health, armour, source, ped) && ped && std::isfinite(armour)) {
++        return (std::max)(0.0f, armour);
+     }
 -#endif
      return 0.0f;
  }
  
-@@ -2186,6 +2213,12 @@ bool SAMPBridge::IsLocalPlayerDead() const {
+@@ -2186,6 +2214,12 @@ bool SAMPBridge::IsLocalPlayerDead() const {
          return true;
      }
  
@@ -14373,7 +14781,7 @@ index 72ce0e7..055a830 100644
  #ifdef KEYBINDER_TESTING
      return false;
  #else
-@@ -2193,91 +2226,147 @@ bool SAMPBridge::IsLocalPlayerDead() const {
+@@ -2193,91 +2227,163 @@ bool SAMPBridge::IsLocalPlayerDead() const {
  #endif
  }
  
@@ -14382,6 +14790,10 @@ index 72ce0e7..055a830 100644
 -    localPlayerWasDead_ = isDead;
 -    localDeathHandledForCurrentLife_ = isDead;
 -    localDeathFallbackDelayFrames_ = 0;
+-
+-    if (killTracker_ != nullptr) {
+-        killTracker_->UpdateDeathWindowState({});
+-    }
 +namespace {
 +bool IsLocalLifeControllable() {
 +#ifdef KEYBINDER_TESTING
@@ -14392,25 +14804,25 @@ index 72ce0e7..055a830 100644
 +    return pad && pad->DisablePlayerControls == 0;
 +#endif
 +}
-+}
+ }
  
--    if (killTracker_ != nullptr) {
--        killTracker_->UpdateDeathWindowState({});
+-void SAMPBridge::RecordLocalPlayerDeath(const std::string& killer, int weaponId) {
+-    if (!killTracker_) {
+-        return;
 -    }
+-
 +void SAMPBridge::ResetKillTrackerDeathInferenceState() {
 +    localDeathLifecycle_.Reset();
 +    localDeathNotificationState_->armed.store(false, std::memory_order_release);
 +    localDeathNotificationState_->pending.store(false, std::memory_order_release);
 +    localDeathConnectionIdentity_.clear();
 +    pendingServerDeathTotal_ = -1;
++    protectedHealthObserved_ = protectedDeathPending_ = false;
++    protectedDeathStatsAttempts_ = 0;
 +    if (killTracker_) killTracker_->UpdateDeathWindowState({});
- }
- 
- void SAMPBridge::RecordLocalPlayerDeath(const std::string& killer, int weaponId) {
--    if (!killTracker_) {
--        return;
--    }
--
++}
++
++void SAMPBridge::RecordLocalPlayerDeath(const std::string& killer, int weaponId, bool totalAlreadySynchronized) {
 +    if (!killTracker_) return;
 +    const bool countingDeaths = killTracker_->IsCountingDeaths();
 +    const int totalBefore = killTracker_->GetTotalDeaths();
@@ -14424,7 +14836,7 @@ index 72ce0e7..055a830 100644
 -    Log("[SAMPBridge] Local player death recorded: killer=" +
 -        (killer.empty() ? std::string("<none>") : killer) +
 -        " weapon=" + std::to_string(weaponId));
-+    if (alreadyInStats) killTracker_->ImportDeathCount(totalBefore);
++    if (totalAlreadySynchronized || alreadyInStats) killTracker_->ImportDeathCount(totalBefore);
 +    pendingServerDeathTotal_ = -1;
 +    if (!countingDeaths) return;
 +    lastLocalDeathTime_ = std::time(nullptr);
@@ -14553,9 +14965,15 @@ index 72ce0e7..055a830 100644
 +    bool sample = false;
 +#ifdef KEYBINDER_TESTING
 +    const auto& hooks = GetTestingHooks();
-+    sample = hooks.readLocalDamageSample && hooks.readLocalDamageSample(rawHealth, armour, source, ped);
++    sample = hooks.readRawLocalDamageSample
++        ? hooks.readRawLocalDamageSample(rawHealth, armour, source, ped)
++        : (hooks.readLocalDamageSample && hooks.readLocalDamageSample(rawHealth, armour, source, ped));
++    // The existing test seam supplies logical values. The raw seam replays
++    // real memory observations through the same decoder as the live client.
++    const bool decodeNative = static_cast<bool>(hooks.readRawLocalDamageSample);
 +    if (hooks.getLocalNativePedState) nativeState = hooks.getLocalNativePedState();
 +#else
++    const bool decodeNative = true;
 +    const auto* gamePed = FindPlayerPed(0);
 +    if (gamePed && player->m_pPed->m_pGamePed == gamePed) {
 +        ped = gamePed;
@@ -14564,11 +14982,17 @@ index 72ce0e7..055a830 100644
 +        sample = true;
      }
 +#endif
++    const auto decoded = decodeNative ? keybinder::DecodeNativePlayerHealth(rawHealth)
++        : keybinder::NativePlayerHealth{rawHealth, false};
++    if (sample && decoded.protectedEncoding && !protectedHealthObserved_) {
++        protectedHealthObserved_ = true;
++        keybinder::Logger::Info("[CombatVitals] Native HP protection offset detected: 8000000");
++    }
 +    const bool nativeDeath = player->m_bIsWasted != FALSE || nativeState == 54 || nativeState == 55 || nativeState == 56;
 +    if (nativeDeath && localDeathLifecycle_.ObserveDeathNotification()) counted = true;
 +    const bool dead = nativeDeath
-+        || (sample && std::isfinite(rawHealth) && rawHealth <= 0.0f);
-+    float aliveHealth = rawHealth;
++        || (sample && std::isfinite(decoded.value) && decoded.value <= 0.0f);
++    float aliveHealth = decoded.value;
 +    if (sample && !keybinder::IsMeasurablePlayerVital(aliveHealth)) {
 +        const void* measuredPed = nullptr;
 +        float measuredArmour = 0.0f, measuredHealth = 0.0f;
@@ -14582,8 +15006,10 @@ index 72ce0e7..055a830 100644
 +        IsLocalLifeControllable(), healthy, dead, ped, RuntimeTickCount());
 +    counted = counted || observedDeath;
 +    localDeathNotificationState_->armed.store(localDeathLifecycle_.IsArmed(), std::memory_order_release);
-+    if (counted) RecordLocalPlayerDeath("", -1);
-+    else if (previous != localDeathLifecycle_.GetPhase()) {
++    if (counted) {
++        if (protectedHealthObserved_) BeginProtectedDeathVerification(RuntimeTickCount());
++        else RecordLocalPlayerDeath("", -1);
++    } else if (previous != localDeathLifecycle_.GetPhase()) {
 +        Log(localDeathLifecycle_.IsArmed() ? "[SAMPBridge] Own life: alive/respawn armed"
 +            : "[SAMPBridge] Own life: already-dead baseline, no death counted");
 +    }
@@ -14591,7 +15017,7 @@ index 72ce0e7..055a830 100644
  }
  
  void SAMPBridge::InstallScriptedHealthRpcHook() {
-@@ -2309,7 +2398,7 @@ void SAMPBridge::InstallScriptedHealthRpcHook() {
+@@ -2309,7 +2415,7 @@ void SAMPBridge::InstallScriptedHealthRpcHook() {
          }
  
          auto state = weakState.lock();
@@ -14600,7 +15026,7 @@ index 72ce0e7..055a830 100644
              return true;
          }
  
-@@ -2317,98 +2406,414 @@ void SAMPBridge::InstallScriptedHealthRpcHook() {
+@@ -2317,98 +2423,370 @@ void SAMPBridge::InstallScriptedHealthRpcHook() {
              return true;
          }
  
@@ -14697,8 +15123,9 @@ index 72ce0e7..055a830 100644
 +    float value = 0.0f;
 +    const bool read = payload->Read(value);
 +    payload->SetReadOffset(offset);
-+    if (!read || !keybinder::IsMeasurablePlayerVital(value)) return;
 +    const bool health = rpcId == 14;
++    if (health) value = keybinder::DecodeNativePlayerHealth(value).value;
++    if (!read || !keybinder::IsMeasurablePlayerVital(value)) return;
 +    const float baseline = health ? state->lastKnownHealth.load(std::memory_order_relaxed)
 +                                  : state->lastKnownArmour.load(std::memory_order_relaxed);
 +    if (state->active.load(std::memory_order_acquire)
@@ -14738,14 +15165,12 @@ index 72ce0e7..055a830 100644
 +    scriptedHealthState_->pedIdentity.store(nullptr, std::memory_order_release);
 +    incomingDamageDetector_.Reset();
 +    incomingDamageLog_.Reset();
-+    incomingDamageRpcEvidence_.Reset();
 +    incomingDamagePed_ = nullptr;
 +    invalidDamageSampleFrames_ = 0;
 +    scriptedHealthReconciliation_ = {};
 +    scriptedArmourReconciliation_ = {};
 +    std::lock_guard<std::mutex> lock(scriptedHealthState_->samplesMutex);
 +    scriptedHealthState_->samples.clear();
-+    scriptedHealthState_->incomingEnvironmentalDamage.clear();
 +    scriptedHealthState_->syncVitals = {};
 +}
 +
@@ -14753,9 +15178,10 @@ index 72ce0e7..055a830 100644
 +    return settingsManager_ != nullptr && settingsManager_->Get().damage_log_enabled;
 +}
 +
-+void SAMPBridge::LogIncomingDamage(const keybinder::IncomingDamageLogEntry& measuredDamage, bool fromDamageRpc, int damageSource) {
-+    const auto damage = fromDamageRpc ? measuredDamage
-+        : incomingDamageRpcEvidence_.ObserveMeasured(measuredDamage, damageSource, RuntimeTickCount());
++void SAMPBridge::LogIncomingDamage(const keybinder::IncomingDamageLogEntry& measuredDamage) {
++    // TakeDamage amounts are requests/overkill, not a second HP loss. Actual
++    // logical HP/armour deltas are the sole source of displayed damage.
++    const auto& damage = measuredDamage;
 +    if (!damage.HasDamage()) return;
 +    char amount[48];
 +    const double rounded = std::round(static_cast<double>(damage.Total()) * 10.0) / 10.0;
@@ -14769,6 +15195,11 @@ index 72ce0e7..055a830 100644
 +bool SAMPBridge::ReadLocalDamageSample(float& health, float& armour, int& damageSource, const void*& pedIdentity) const {
 +#ifdef KEYBINDER_TESTING
 +    const auto& hooks = GetTestingHooks();
++    if (hooks.readRawLocalDamageSample) {
++        if (!hooks.readRawLocalDamageSample(health, armour, damageSource, pedIdentity)) return false;
++        health = keybinder::DecodeNativePlayerHealth(health).value;
++        return true;
++    }
 +    return hooks.readLocalDamageSample && hooks.readLocalDamageSample(health, armour, damageSource, pedIdentity);
 +#else
 +    CPlayerPed* ped = FindPlayerPed(0);
@@ -14777,7 +15208,7 @@ index 72ce0e7..055a830 100644
 +        || localPlayer->m_pPed->m_pGamePed != ped) return false;
 +    // DL-R1 CPed::GetHealth/GetArmour return these exact native fields
 +    // (RVA AB970/AB9B0). They do not decode protection/sentinel values.
-+    health = ped->m_fHealth;
++    health = keybinder::DecodeNativePlayerHealth(ped->m_fHealth).value;
 +    armour = ped->m_fArmour;
 +    damageSource = static_cast<int>(ped->m_nLastWeaponDamage);
 +    pedIdentity = ped;
@@ -14791,15 +15222,14 @@ index 72ce0e7..055a830 100644
 +
 +bool SAMPBridge::ApplyLocalSyncVitals(float& health, float& armour, unsigned char mode,
 +                                     unsigned short vehicle, const void* pedIdentity) const {
-+    // DL-R1 SendOnfootData reads the native float, converts to int and writes
-+    // AL into the transmitted health/armour bytes. Use the actual packet the
-+    // client emitted, never a guessed magic protection offset or modulo.
-+    if (keybinder::IsMeasurablePlayerVital(health) && keybinder::IsMeasurablePlayerVital(armour)) return false;
++    // The transmitted uint8 HP wraps a negative protected value (e.g. -8
++    // becomes 248). It must never seed health or a damage budget. Preserve
++    // only the guarded armour fallback; native float health is decoded above.
++    if (keybinder::IsMeasurablePlayerVital(armour)) return false;
 +    std::lock_guard<std::mutex> lock(scriptedHealthState_->samplesMutex);
 +    const auto& sample = scriptedHealthState_->syncVitals;
 +    if (!sample.valid || sample.pedIdentity != pedIdentity || sample.mode != mode || sample.vehicle != vehicle
 +        || static_cast<unsigned long>(RuntimeTickCount() - sample.at) > 500) return false;
-+    if (!keybinder::IsMeasurablePlayerVital(health)) health = sample.health;
 +    if (!keybinder::IsMeasurablePlayerVital(armour)) armour = sample.armour;
 +    return true;
 +}
@@ -14814,12 +15244,10 @@ index 72ce0e7..055a830 100644
 +    scriptedHealthState_->logEnabled.store(logEnabled, std::memory_order_release);
 +    if (!logEnabled || logJustEnabled) {
 +        incomingDamageLog_.Reset();
-+        incomingDamageRpcEvidence_.Reset();
 +        scriptedHealthReconciliation_ = {};
 +        scriptedArmourReconciliation_ = {};
 +        std::lock_guard<std::mutex> lock(scriptedHealthState_->samplesMutex);
 +        scriptedHealthState_->samples.clear();
-+        scriptedHealthState_->incomingEnvironmentalDamage.clear();
 +    }
 +    const bool playing = IsLocalCombatActive();
 +    const bool finalDeathSample = !playing && (incomingDamagePed_ != nullptr
@@ -14829,7 +15257,6 @@ index 72ce0e7..055a830 100644
 +        ResetIncomingDamageState();
          return;
      }
-+    incomingDamageRpcEvidence_.AdvanceFrame();
  
 -#ifndef KEYBINDER_TESTING
 -    // Drive the incoming hitsound from the local player's health+armour
@@ -14870,7 +15297,6 @@ index 72ce0e7..055a830 100644
 +    int damageSource = 0;
 +    const void* pedIdentity = nullptr;
 +    if (!ReadLocalDamageSample(health, armour, damageSource, pedIdentity) || pedIdentity == nullptr) {
-+        FlushIncomingEnvironmentalDamageRpcs();
 +        ResetIncomingDamageState(playing);
 +        return;
 +    }
@@ -14910,7 +15336,7 @@ index 72ce0e7..055a830 100644
 +        keybinder::IncomingDamageLogEntry pendingDamage;
 +        bool groupedHealth = false, groupedArmour = false;
 +        auto flushDamage = [&]() {
-+            LogIncomingDamage(pendingDamage, false, damageSource);
++            LogIncomingDamage(pendingDamage);
 +            pendingDamage = {};
 +            groupedHealth = groupedArmour = false;
 +        };
@@ -14921,7 +15347,6 @@ index 72ce0e7..055a830 100644
 +            auto& reconciliation = sample.health ? scriptedHealthReconciliation_ : scriptedArmourReconciliation_;
 +            const float previous = sample.health ? incomingDamageLog_.LastHealth() : incomingDamageLog_.LastArmour();
 +            const float value = (std::max)(0.0f, sample.value);
-+            incomingDamageRpcEvidence_.ObserveServerVital(sample.health, value);
 +            const auto damage = incomingDamageLog_.Observe(value, value, sample.health, !sample.health);
 +            pendingDamage.healthDamage += damage.healthDamage;
 +            pendingDamage.armourDamage += damage.armourDamage;
@@ -14979,7 +15404,7 @@ index 72ce0e7..055a830 100644
 +    const bool sampleHealth = acceptNative(healthValid, health, serverHealthSeen, scriptedHealthReconciliation_, true);
 +    const bool sampleArmour = acceptNative(armourValid, armour, serverArmourSeen, scriptedArmourReconciliation_, false);
 +    if (logEnabled)
-+        LogIncomingDamage(incomingDamageLog_.Observe(health, armour, sampleHealth, sampleArmour), false, damageSource);
++        LogIncomingDamage(incomingDamageLog_.Observe(health, armour, sampleHealth, sampleArmour));
 +
 +    if (sampleHealth) {
 +        scriptedHealthState_->lastKnownHealth.store(health, std::memory_order_relaxed);
@@ -15002,64 +15427,21 @@ index 72ce0e7..055a830 100644
 +            && observation.damage > keybinder::IncomingDamageDetector::kDamageEpsilon && hitsoundIncomingCallback_)
 +            hitsoundIncomingCallback_();
      }
-+    FlushIncomingEnvironmentalDamageRpcs();
 +    if (finalDeathSample || (healthValid && health == 0.0f)) ResetIncomingDamageState();
 +}
  
 -    if (incomingDamageDetector_.Observe(alive, combinedHp, environmental)) {
 -        hitsoundIncomingCallback_();
-+void SAMPBridge::FlushIncomingEnvironmentalDamageRpcs() {
-+    std::vector<ScriptedHealthSuppressionState::EnvironmentalDamageSample> incoming;
-+    {
-+        std::lock_guard<std::mutex> lock(scriptedHealthState_->samplesMutex);
-+        incoming.swap(scriptedHealthState_->incomingEnvironmentalDamage);
-+    }
-+    if (!IsDamageLogEnabled()) return;
-+    incomingDamageRpcEvidence_.ObserveVitals(
-+        scriptedHealthState_->healthKnown.load(std::memory_order_relaxed)
-+            ? scriptedHealthState_->lastKnownHealth.load(std::memory_order_relaxed) : NAN,
-+        scriptedHealthState_->armourKnown.load(std::memory_order_relaxed)
-+            ? scriptedHealthState_->lastKnownArmour.load(std::memory_order_relaxed) : NAN);
-+    const auto now = RuntimeTickCount();
-+    for (const auto& sample : incoming) {
-+        const auto& event = sample.event;
-+        if (!incomingDamageRpcEvidence_.HasKnownVitalsForSource(event.weaponId)) {
-+            // Do not print an unbounded overkill value while waiting for the
-+            // first real outgoing sync/server sample of protected player HP.
-+            if (static_cast<unsigned long>(now - sample.at) <= 1500) {
-+                std::lock_guard<std::mutex> lock(scriptedHealthState_->samplesMutex);
-+                if (scriptedHealthState_->incomingEnvironmentalDamage.size() < 64)
-+                    scriptedHealthState_->incomingEnvironmentalDamage.push_back(sample);
-+            }
-+            continue;
-+        }
-+        const auto damage = incomingDamageRpcEvidence_.ObserveRpc(event.damage, event.weaponId, now);
-+        LogIncomingDamage(damage, true);
-     }
--#endif
- }
- 
 +void SAMPBridge::NotifyDamageFeedback(const killtracker::DamageEvent& event) {
-+    if (!event.isOutgoing && keybinder::IsEnvironmentalDamageRpcSource(event.weaponId)
-+        && std::isfinite(event.damage) && event.damage >= 1.0f
-+        && scriptedHealthState_->spawned.load(std::memory_order_acquire)
-+        && scriptedHealthState_->logEnabled.load(std::memory_order_acquire)) {
-+        // RPC115 TakeDamage is client-sent, including fall54/attackerFFFF.
-+        // Keep the real event even if health was restored between two polls.
-+        // No game pointers or chat calls are touched from the RPC hook thread.
-+        std::lock_guard<std::mutex> lock(scriptedHealthState_->samplesMutex);
-+        if (scriptedHealthState_->spawned.load(std::memory_order_acquire)
-+            && scriptedHealthState_->incomingEnvironmentalDamage.size() < 64)
-+            scriptedHealthState_->incomingEnvironmentalDamage.push_back({event, RuntimeTickCount()});
-+    }
 +    if (event.isOutgoing && hitsoundDamageCallback_ && IsLocalCombatActive()) {
 +        hitsoundDamageCallback_(event);
 +    }
 +    if (event.isOutgoing && hitmarkerDamageCallback_) {
 +        hitmarkerDamageCallback_(event);
-+    }
-+}
-+
+     }
+-#endif
+ }
+ 
 +#ifdef KEYBINDER_TESTING
 +void SAMPBridge::ProcessDamageFeedbackForTesting(const killtracker::DamageEvent& event) {
 +    NotifyDamageFeedback(event);
@@ -15088,7 +15470,7 @@ index 72ce0e7..055a830 100644
  static std::string ReplaceAll(std::string str, const std::string& from, const std::string& to) {
      size_t pos = 0;
      while ((pos = str.find(from, pos)) != std::string::npos) {
-@@ -2427,30 +2832,52 @@ std::string SAMPBridge::ExpandMessageVars(const std::string& tmpl,
+@@ -2427,30 +2805,52 @@ std::string SAMPBridge::ExpandMessageVars(const std::string& tmpl,
                                             const std::string& weapon) const {
      std::string msg = tmpl;
  
@@ -15161,7 +15543,7 @@ index 72ce0e7..055a830 100644
  
          std::string kd;
          if (totalDeaths == 0) {
-@@ -2462,6 +2889,7 @@ std::string SAMPBridge::ExpandMessageVars(const std::string& tmpl,
+@@ -2462,6 +2862,7 @@ std::string SAMPBridge::ExpandMessageVars(const std::string& tmpl,
              kd = buf;
          }
          msg = ReplaceAll(msg, "{KD}", kd);
@@ -15169,7 +15551,7 @@ index 72ce0e7..055a830 100644
      }
  
      if (msg.size() > 144) {
-@@ -2475,28 +2903,28 @@ std::string SAMPBridge::FormatKillTrackerLocalKillMessage(const killtracker::Kil
+@@ -2475,28 +2876,28 @@ std::string SAMPBridge::FormatKillTrackerLocalKillMessage(const killtracker::Kil
      return ExpandMessageVars(killTrackerLocalKillMessageTemplate_,
                               kill.victim,
                               kill.killer,
@@ -15202,7 +15584,7 @@ index 72ce0e7..055a830 100644
  }
  
  void SAMPBridge::EnsureKillTrackerRpcAdaptersRegistered() {
-@@ -2512,27 +2940,10 @@ void SAMPBridge::EnsureKillTrackerRpcAdaptersRegistered() {
+@@ -2512,27 +2913,10 @@ void SAMPBridge::EnsureKillTrackerRpcAdaptersRegistered() {
  }
  
  void SAMPBridge::RefreshDamageTracking() {
@@ -15231,7 +15613,7 @@ index 72ce0e7..055a830 100644
              killTracker_->ProcessDamageEvent(event);
  
  #ifndef KEYBINDER_TESTING
-@@ -2555,89 +2966,252 @@ void SAMPBridge::RefreshDamageTracking() {
+@@ -2555,89 +2939,252 @@ void SAMPBridge::RefreshDamageTracking() {
          // Outgoing combat hits drive the outgoing hitsound. Incoming damage is
          // detected by PollLocalIncomingDamage() (local health monitoring), so
          // the unreliable take-damage RPC is no longer relied on here.
@@ -15553,7 +15935,7 @@ index 72ce0e7..055a830 100644
  std::vector<std::tuple<int, float, int>> SAMPBridge::ExportWeaponStats() const {
      std::vector<std::tuple<int, float, int>> result;
      if (killTracker_) {
-@@ -2748,6 +3322,18 @@ void SAMPBridge::ImportDeathCount(int count) {
+@@ -2748,6 +3295,18 @@ void SAMPBridge::ImportDeathCount(int count) {
      }
      killTracker_->ImportDeathCount(count);
  }
@@ -15563,7 +15945,7 @@ index 72ce0e7..055a830 100644
 +    // confirmed living life. Initial login snapshots are baselines, not events.
 +    // Settings/local imports never create this server-event credit.
 +    const int previous = killTracker_ ? killTracker_->GetTotalDeaths() : 0;
-+    if (localDeathLifecycle_.IsArmed() && count > previous && count - previous == 1) {
++    if (serverCombatBaselineEstablished_ && localDeathLifecycle_.IsArmed() && count > previous && count - previous == 1) {
 +        pendingServerDeathTotal_ = count;
 +        pendingServerDeathAt_ = RuntimeTickCount();
 +    }
@@ -15572,7 +15954,7 @@ index 72ce0e7..055a830 100644
  static bool IsHexColorCodeChar(char ch) {
      return (ch >= '0' && ch <= '9') ||
             (ch >= 'a' && ch <= 'f') ||
-@@ -2785,6 +3371,10 @@ void SAMPBridge::SetIncomingChatCallback(IncomingChatCallback callback) {
+@@ -2785,6 +3344,10 @@ void SAMPBridge::SetIncomingChatCallback(IncomingChatCallback callback) {
  }
  
  void SAMPBridge::NotifyIncomingChat(const std::string& text) {
@@ -16651,10 +17033,10 @@ index 170bd4a..ac6af10 100644
  
 diff --git a/src/StartupStatsSync.cpp b/src/StartupStatsSync.cpp
 new file mode 100644
-index 0000000..0fb4b78
+index 0000000..ea5ea5c
 --- /dev/null
 +++ b/src/StartupStatsSync.cpp
-@@ -0,0 +1,401 @@
+@@ -0,0 +1,447 @@
 +#include "../include/SAMPBridge.h"
 +#include "../include/SettingsManager.h"
 +#include "../include/Logger.h"
@@ -16729,6 +17111,7 @@ index 0000000..0fb4b78
 +    startupJobSkillsRequested_ = startupJobSkillsComplete_ = startupJobSkillsFailed_ = false;
 +    startupStatsSaved_ = startupSyncNotified_ = false;
 +    manualStateSyncCycle_ = manualStateSyncPending_ = false;
++    quietDeathStatsRefresh_ = false;
 +    manualStateSyncAcceptedAt_ = 0;
 +    manualStateSyncSessionKillsAtRequest_ = manualStateSyncSessionDeathsAtRequest_ = 0;
 +    jobSkillsRequestPending_ = false;
@@ -16937,12 +17320,24 @@ index 0000000..0fb4b78
 +            && tracker->GetSessionDeaths() == manualStateSyncSessionDeathsAtRequest_;
 +        if (manualKillsOverride || !serverCombatBaselineEstablished_ || *synchronizedStats_.kills >= tracker->GetTotalKills()
 +            || wallNow - lastLocalKillTime_ > 5) tracker->ImportKillCount(*synchronizedStats_.kills);
-+        if (manualDeathsOverride || !serverCombatBaselineEstablished_ || *synchronizedStats_.deaths >= tracker->GetTotalDeaths()
++        if (manualDeathsOverride || quietDeathStatsRefresh_ || !serverCombatBaselineEstablished_ || *synchronizedStats_.deaths >= tracker->GetTotalDeaths()
 +            || wallNow - lastLocalDeathTime_ > 5) ImportServerDeathCount(*synchronizedStats_.deaths);
 +    }
 +    lastServerKillTotal_ = *synchronizedStats_.kills;
 +    lastServerDeathTotal_ = *synchronizedStats_.deaths;
 +    serverCombatBaselineEstablished_ = true;
++    if (protectedDeathPending_ && *synchronizedStats_.deaths > protectedDeathBaseline_) {
++        // Import the authoritative absolute total, then record the session
++        // event without adding that same death to the total for a second time.
++        ImportDeathCount(*synchronizedStats_.deaths);
++        RecordLocalPlayerDeath("", -1, true);
++        keybinder::Logger::Info("[CombatVitals] Native death verified: server deaths %d -> %d",
++            protectedDeathBaseline_, *synchronizedStats_.deaths);
++        protectedDeathPending_ = false;
++    } else if (protectedDeathPending_ && quietDeathStatsRefresh_ && protectedDeathStatsAttempts_ >= 2) {
++        keybinder::Logger::Info("[CombatVitals] No new server death; native zero-HP transition discarded");
++        protectedDeathPending_ = false;
++    }
 +    startupStatsComplete_ = true;
 +    startupStatsFailed_ = false;
 +    if (firstCompletion) startupStatsCompletedAt_ = now;
@@ -16955,12 +17350,44 @@ index 0000000..0fb4b78
 +    if (firstCompletion) {
 +        if (manualStateSyncPending_) {
 +            if (!saved) FailManualStateSynchronization("Die Statistikwerte konnten nicht gespeichert werden.");
-+        } else if (!manualStateSyncCycle_) {
++        } else if (!manualStateSyncCycle_ && !quietDeathStatsRefresh_) {
 +            QueueLocalMessage(saved
 +                ? "{33CCFF}[NL-BINDER]{FFFFFF} Statistik übernommen."
 +                : "{FF6600}[NL-BINDER]{FFFFFF} Synchronisation gelesen, aber die Daten konnten nicht gespeichert werden.");
 +        }
 +    }
++    quietDeathStatsRefresh_ = false;
++}
++
++void SAMPBridge::BeginProtectedDeathVerification(unsigned long now) {
++    if (protectedDeathPending_ || !serverCombatBaselineEstablished_ || !killTracker_
++        || !killTracker_->IsCountingDeaths()) return;
++    protectedDeathPending_ = true;
++    protectedDeathAt_ = now;
++    protectedDeathStatsAttempts_ = 0;
++    protectedDeathBaseline_ = lastServerDeathTotal_;
++    if (pendingServerDeathTotal_ == protectedDeathBaseline_ && now - pendingServerDeathAt_ <= 5000)
++        --protectedDeathBaseline_;
++    keybinder::Logger::Info("[CombatVitals] Native death candidate; checking own statistics baseline=%d",
++        protectedDeathBaseline_);
++}
++
++void SAMPBridge::UpdateProtectedDeathVerification(unsigned long now) {
++    if (!protectedDeathPending_) return;
++    if (now - protectedDeathAt_ >= 10000) {
++        protectedDeathPending_ = false;
++        keybinder::Logger::Warning("[CombatVitals] Native death not verified: own statistics unavailable");
++        return;
++    }
++    if (!startupStatsComplete_ || manualStateSyncPending_ || IsChatOpen() || IsDialogOpen()
++        || IsCursorActive() || speedTicketFlow_.IsActive()) return;
++    // One immediate check, and at most one further check after the observed
++    // three-second server death transition. No polling loop or jobskills query.
++    if (protectedDeathStatsAttempts_ >= 2
++        || (protectedDeathStatsAttempts_ == 1 && now - protectedDeathAt_ < 4000)) return;
++    ++protectedDeathStatsAttempts_;
++    quietDeathStatsRefresh_ = true;
++    startupStatsRequested_ = startupStatsComplete_ = startupStatsFailed_ = false;
 +}
 +
 +void SAMPBridge::UpdateStartupStats(unsigned long now) {
@@ -16982,6 +17409,7 @@ index 0000000..0fb4b78
 +        serverCombatBaselineEstablished_ = false;
 +        ownStatsContext_ = false;
 +    }
++    UpdateProtectedDeathVerification(now);
 +    if (!startupStatsRequested_) {
 +        if (manualStateSyncPending_ && now - manualStateSyncAcceptedAt_ >= kStatsResponseTimeoutMs) {
 +            FailManualStateSynchronization("Der Statistikabruf konnte nicht gestartet werden.");
@@ -17011,7 +17439,7 @@ index 0000000..0fb4b78
 +                startupStatsPendingChat_ = false;
 +            }
 +            if (manualStateSyncPending_) FailManualStateSynchronization("Die Statistik konnte nicht abgefragt werden.");
-+            else QueueLocalMessage("{FF6600}[NL-BINDER]{FFFFFF} Automatischer Statistikabruf fehlgeschlagen. Eigene /stats erneut öffnen.");
++            else if (!quietDeathStatsRefresh_) QueueLocalMessage("{FF6600}[NL-BINDER]{FFFFFF} Automatischer Statistikabruf fehlgeschlagen. Eigene /stats erneut öffnen.");
 +        }
 +    }
 +    if (ownStatsCommandObserved_.exchange(false, std::memory_order_acq_rel)) {
@@ -17053,7 +17481,7 @@ index 0000000..0fb4b78
 +            startupStatsPendingChat_ = startupStatsHiddenChat_ = false;
 +        }
 +        if (manualStateSyncPending_) FailManualStateSynchronization("Keine eigenen Statistikwerte empfangen.");
-+        else QueueLocalMessage("{FF6600}[NL-BINDER]{FFFFFF} Keine eigenen Zähler empfangen. Eigene /stats erneut öffnen, um die Werte zu übernehmen.");
++        else if (!quietDeathStatsRefresh_) QueueLocalMessage("{FF6600}[NL-BINDER]{FFFFFF} Keine eigenen Zähler empfangen. Eigene /stats erneut öffnen, um die Werte zu übernehmen.");
 +    }
 +}
 diff --git a/src/StatsDialogRPCAdapter.cpp b/src/StatsDialogRPCAdapter.cpp
@@ -18901,14 +19329,15 @@ index 0000000..874fba5
 +}
 diff --git a/tests/DamageLogRegressionTests.cpp b/tests/DamageLogRegressionTests.cpp
 new file mode 100644
-index 0000000..6db7e2f
+index 0000000..a3fb7d2
 --- /dev/null
 +++ b/tests/DamageLogRegressionTests.cpp
-@@ -0,0 +1,547 @@
+@@ -0,0 +1,711 @@
 +#define KEYBINDER_TESTING
 +#include "../include/RakHook/include/RakHook/samp.hpp"
 +#include "../include/SAMPBridge.h"
 +#include "../include/SettingsManager.h"
++#include "../include/NativePlayerHealth.h"
 +#include "../include/RakHook/include/RakNet/BitStream.h"
 +#include "../include/RakHook/include/RakNet/PacketEnumerations.h"
 +
@@ -18946,12 +19375,15 @@ index 0000000..6db7e2f
 +    unsigned short syncVehicle = 0xFFFF;
 +    int sounds = 0;
 +    unsigned long tick = 1000;
-+    std::vector<std::string> messages;
++    std::vector<std::string> messages, localMessages, commands;
++    std::string name = "DamagePlayer";
++    bool statsReady = false;
++    int closed = 0;
 +    keybinder::SettingsManager settings;
 +    SAMPBridge bridge;
 +    bool ready = false;
 +
-+    explicit DamageFixture(float initialHp = 100.0f, float initialArmour = 0.0f)
++    explicit DamageFixture(float initialHp = 100.0f, float initialArmour = 0.0f, bool rawNative = false)
 +        : hp(initialHp), armour(initialArmour) {
 +        net.get()->m_nGameState = sampapi::v03dl::CNetGame::GAME_MODE_CONNECTED;
 +        local.get()->m_pPed = reinterpret_cast<sampapi::v03dl::CPed*>(0x2000);
@@ -18969,9 +19401,10 @@ index 0000000..6db7e2f
 +        hooks.getNetGame = [this] { return net.get(); };
 +        hooks.getLocalPlayer = [this] { return local.get(); };
 +        hooks.getTickCount = [this] { return tick; };
-+        hooks.sendInput = [](sampapi::v03dl::CInput*, const char*) {};
++        hooks.sendInput = [this](sampapi::v03dl::CInput*, const char* text) { commands.emplace_back(text); };
 +        hooks.sendChat = [](sampapi::v03dl::CLocalPlayer*, const char*) {};
 +        hooks.addMessage = [this](sampapi::v03dl::CChat*, unsigned long, const char* text) {
++            if (text) localMessages.emplace_back(text);
 +            if (text && std::string(text).find(" HP {FFFFFF}Schaden (") != std::string::npos)
 +                messages.emplace_back(text);
 +        };
@@ -18983,13 +19416,19 @@ index 0000000..6db7e2f
 +        hooks.installIncomingChatInterceptor = [](const auto&) {};
 +        hooks.logSink = [](const std::string&) {};
 +        hooks.getLocalPlayerId = [] { return 5; };
-+        hooks.getLocalPlayerName = [] { return std::string("DamagePlayer"); };
++        hooks.getLocalPlayerName = [this] { return name; };
 +        hooks.readLocalDamageSample = [this](float& health, float& vest, int& weapon, const void*& identity) {
 +            health = hp; vest = armour; weapon = source; identity = ped;
 +            if (useNetworkVitals) bridge.ApplyLocalSyncVitalsForTesting(health, vest, syncMode, syncVehicle, ped);
 +            return available;
 +        };
-+        hooks.isStartupStatsReady = [] { return false; };
++        if (rawNative) hooks.readRawLocalDamageSample = [this](float& health, float& vest, int& weapon, const void*& identity) {
++            health = hp; vest = armour; weapon = source; identity = ped; return available;
++        };
++        hooks.getLocalNativePedState = [] { return 1; };
++        hooks.isLocalPlayerControllable = [] { return true; };
++        hooks.closeStatsDialog = [this](int) { ++closed; dialog.get()->m_bIsActive = FALSE; };
++        hooks.isStartupStatsReady = [this] { return statsReady; };
 +        hooks.isStartupJobSkillsReady = [] { return false; };
 +        SAMPBridge::SetTestingHooks(hooks);
 +        settings.GetMutable().damage_log_enabled = true;
@@ -19004,6 +19443,29 @@ index 0000000..6db7e2f
 +    }
 +    ~DamageFixture() { bridge.Shutdown(); SAMPBridge::ResetTestingHooks(); }
 +    void Step() { tick += 16; bridge.Update(); }
++    void ArmLife() { for (int i = 0; i < 3; ++i) { tick += 400; Step(); } }
++    void ReplyStats(int deaths) {
++        const std::string caption = "Statistiken \xBB " + name;
++        dialog.get()->m_bIsActive = TRUE;
++        dialog.get()->m_nId = 499; dialog.get()->m_nType = 0;
++        std::strcpy(dialog.get()->m_szCaption, caption.c_str());
++        dialog.get()->m_szText = nullptr;
++        bridge.ProcessStatsDialogForTesting({499, 0, caption,
++            "Name: " + name + "\nKills: 65\nTode: " + std::to_string(deaths)});
++        Step();
++    }
++    bool EnableVerifiedDeaths(int baseline = 214) {
++        statsReady = true;
++        settings.GetMutable().kill_tracker_count_deaths = true;
++        bridge.SetKillTrackerEnabled(true);
++        Step(); ReplyStats(baseline); ArmLife();
++        return bridge.AreStatsSynchronized() && bridge.GetTotalDeaths() == baseline;
++    }
++    int DeathMessages() const {
++        return static_cast<int>(std::count_if(localMessages.begin(), localMessages.end(), [](const auto& text) {
++            return text.find("Du bist gestorben. Deine aktuelle Tode:") != std::string::npos;
++        }));
++    }
 +    bool Rpc(unsigned char id, float value) {
 +        RakNet::BitStream payload;
 +        payload.Write(value);
@@ -19228,14 +19690,13 @@ index 0000000..6db7e2f
 +    return true;
 +}
 +
-+bool ActualTakeDamage54WithNoPersistentHpChangeLogsTheRealFall() {
-+    DamageFixture f;
-+    CHECK(f.ready && f.TakeDamage(20.0f));
-+    f.Step();
-+    CHECK(f.messages.size() == 1 && f.Message(0, "20,0"));
-+    CHECK(f.TakeDamage(20.0f)); f.Step();
-+    CHECK(f.messages.size() == 2 && f.Message(1, "20,0"));
-+    CHECK(f.sounds == 0);
++bool DamageRequestWithoutMeasuredLossDoesNotInventFallDamage() {
++    DamageFixture f; CHECK(f.ready && f.TakeDamage(20.0f)); f.Step();
++    CHECK(f.messages.empty());
++    f.hp = 82.5f; f.Step();
++    CHECK(f.messages.size() == 1 && f.Message(0, "17,5"));
++    CHECK(f.TakeDamage(8000050.0f, 51)); f.Step();
++    CHECK(f.messages.size() == 1 && f.sounds == 0);
 +    return true;
 +}
 +
@@ -19254,103 +19715,81 @@ index 0000000..6db7e2f
 +    return true;
 +}
 +
-+bool GunDamageCannotHideAnUnrelatedRealFallWithTheSameAmount() {
-+    DamageFixture f;
-+    CHECK(f.ready);
++bool GunAndFallDeltasAreBothLogged() {
++    DamageFixture f; CHECK(f.ready);
 +    f.source = 24; f.hp = 80.0f; f.Step();
 +    CHECK(f.messages.size() == 1 && f.Message(0, "20,0"));
-+    CHECK(f.TakeDamage(20.0f)); f.Step();
++    CHECK(f.TakeDamage(20.0f)); f.source = 54; f.hp = 60.0f; f.Step();
 +    CHECK(f.messages.size() == 2 && f.Message(1, "20,0"));
 +    return true;
 +}
 +
-+bool SameValueAuthoritativeServerHealRefreshesTheRealDamageBudget() {
-+    DamageFixture f(50.0f, 0.0f);
-+    CHECK(f.ready && f.TakeDamage(20.0f)); f.Step();
-+    CHECK(f.messages.size() == 1 && f.Message(0, "20,0"));
-+    CHECK(f.Rpc(14, 50.0f)); f.Step(); // Real server event, not an identical frame poll.
-+    CHECK(f.TakeDamage(40.0f)); f.Step();
++bool AuthoritativeHealThenMeasuredFallUsesNewBasis() {
++    DamageFixture f(50.0f, 0.0f); CHECK(f.ready);
++    f.hp = 30.0f; f.Step(); CHECK(f.messages.size() == 1 && f.Message(0, "20,0"));
++    CHECK(f.Rpc(14, 50.0f)); f.hp = 50.0f; f.Step();
++    CHECK(f.TakeDamage(40.0f)); f.hp = 10.0f; f.Step();
 +    CHECK(f.messages.size() == 2 && f.Message(1, "40,0"));
 +    return true;
 +}
 +
-+bool ActualFallRpcStillWorksWithPersistentlyUnmeasurableNativeHp() {
-+    DamageFixture f(8000050.0f, 0.0f);
-+    CHECK(f.ready);
-+    for (int i = 0; i < 8; ++i) f.Step();
-+    CHECK(f.TakeDamage(12.5f)); f.Step();
-+    CHECK(f.messages.empty()); // Wait for a trustworthy rest value, not an invented cap.
-+    f.useNetworkVitals = true;
-+    CHECK(f.Sync(ID_PLAYER_SYNC, 50, 0)); f.Step();
-+    CHECK(f.messages.size() == 1 && f.Message(0, "12,5"));
-+    CHECK(f.sounds == 0);
++bool UnmeasurableVitalsDoNotInventDamageFromAnRpc() {
++    DamageFixture f(100.0f, 0.0f); CHECK(f.ready);
++    f.hp = std::numeric_limits<float>::quiet_NaN(); f.useNetworkVitals = true;
++    CHECK(f.Sync(ID_PLAYER_SYNC, 248, 0)); CHECK(f.TakeDamage(12.5f)); f.Step();
++    CHECK(f.messages.empty());
++    CHECK(f.Sync(ID_PLAYER_SYNC, 0, 0)); f.Step(); CHECK(f.messages.empty());
++    f.hp = 85.0f; f.Step();
++    CHECK(f.messages.size() == 1 && f.Message(0, "15,0"));
 +    return true;
 +}
 +
-+bool UnknownExplosionAmountWaitsForActualSyncInsteadOfPrintingOverkill() {
-+    DamageFixture f(8000050.0f, 0.0f);
-+    f.source = 51; f.useNetworkVitals = true;
-+    CHECK(f.ready && f.TakeDamage(50000.0f, 51)); f.Step();
-+    CHECK(f.messages.empty());
-+    CHECK(f.Sync(ID_PLAYER_SYNC, 50, 0)); f.Step();
++bool OverkillRequestCannotSpendAnUnchangedHealthPool() {
++    DamageFixture f(8000050.0f, 0.0f, true); f.source = 51;
++    CHECK(f.ready && f.TakeDamage(50000.0f, 51)); f.Step(); CHECK(f.messages.empty());
++    CHECK(f.Sync(ID_PLAYER_SYNC, 248, 0)); f.Step(); CHECK(f.messages.empty());
++    f.hp = 8000000.0f; f.Step();
 +    CHECK(f.messages.size() == 1 && f.Message(0, "50,0"));
 +    return true;
 +}
 +
-+bool ALongFrameDoesNotTurnADelayedConfirmedReflectionIntoAnotherHit() {
-+    DamageFixture f;
-+    CHECK(f.ready && f.TakeDamage(20.0f)); f.Step();
-+    CHECK(f.messages.size() == 1);
-+    f.tick += 800; f.hp = 80.0f; f.Step();
-+    CHECK(f.messages.size() == 1);
++bool DelayedNativeLossIsLoggedOnceAfterAnEarlierDamageRequest() {
++    DamageFixture f; CHECK(f.ready && f.TakeDamage(20.0f)); f.Step(); CHECK(f.messages.empty());
++    f.tick += 800; f.hp = 80.0f; f.Step(); CHECK(f.messages.size() == 1 && f.Message(0, "20,0"));
 +    CHECK(f.TakeDamage(10.0f)); f.Step();
 +    f.tick += 800; CHECK(f.Rpc(14, 70.0f)); f.hp = 70.0f; f.Step();
 +    CHECK(f.messages.size() == 2 && f.Message(1, "10,0"));
 +    return true;
 +}
 +
-+bool OldUnreflectedCreditsExpireAfterActualInterveningPolls() {
-+    DamageFixture f;
-+    CHECK(f.ready && f.TakeDamage(20.0f)); f.Step();
-+    CHECK(f.messages.size() == 1);
++bool EarlierDamageRequestDoesNotConsumeALaterRealFall() {
++    DamageFixture f; CHECK(f.ready && f.TakeDamage(20.0f)); f.Step(); CHECK(f.messages.empty());
 +    for (int i = 0; i < 5; ++i) f.Step();
-+    f.tick += 800; f.Step();
-+    f.hp = 80.0f; f.Step(); // A later true fall with no RPC must still be logged.
-+    CHECK(f.messages.size() == 2 && f.Message(1, "20,0"));
++    f.tick += 800; f.hp = 80.0f; f.Step(); CHECK(f.messages.size() == 1 && f.Message(0, "20,0"));
 +    return true;
 +}
 +
-+bool ArmourHealingDoesNotEraseAHealthOnlyFallReflectionCredit() {
-+    DamageFixture f(50.0f, 0.0f);
-+    CHECK(f.ready && f.TakeDamage(20.0f)); f.Step();
++bool ArmourHealingDoesNotCreateOrHideHealthDamage() {
++    DamageFixture f(50.0f, 0.0f); CHECK(f.ready && f.TakeDamage(20.0f)); f.Step();
 +    CHECK(f.Rpc(66, 50.0f)); f.armour = 50.0f; f.Step();
-+    f.hp = 30.0f; f.Step();
-+    CHECK(f.messages.size() == 1 && f.Message(0, "20,0"));
-+    CHECK(f.TakeDamage(10.0f)); f.Step();
-+    f.armour = 60.0f; f.Step(); // Native-only armour heal has the same pool boundary.
-+    f.hp = 20.0f; f.Step();
++    f.hp = 30.0f; f.Step(); CHECK(f.messages.size() == 1 && f.Message(0, "20,0"));
++    CHECK(f.TakeDamage(10.0f)); f.armour = 60.0f; f.Step(); f.hp = 20.0f; f.Step();
 +    CHECK(f.messages.size() == 2 && f.Message(1, "10,0"));
 +    return true;
 +}
 +
-+bool HealthHealingRetiresOldMeasuredCreditsBeforeANewRealFall() {
-+    DamageFixture f;
-+    CHECK(f.ready);
-+    f.hp = 80.0f; f.Step();
-+    f.hp = 100.0f; f.Step(); // New native health basis.
-+    CHECK(f.TakeDamage(20.0f)); f.Step();
-+    CHECK(f.messages.size() == 2 && f.Message(0, "20,0") && f.Message(1, "20,0"));
-+    f.hp = 80.0f; f.Step(); // Reflection of the last RPC, not another hit.
-+    f.hp = 60.0f; f.Step();
-+    CHECK(f.messages.size() == 3);
-+    CHECK(f.Rpc(14, 100.0f)); f.hp = 100.0f; f.Step(); // Explicit server heal basis.
-+    CHECK(f.TakeDamage(20.0f)); f.Step();
++bool HealthHealingAndRepeatedFallsUseTheirActualMeasuredLoss() {
++    DamageFixture f; CHECK(f.ready); f.hp = 80.0f; f.Step(); f.hp = 100.0f; f.Step();
++    CHECK(f.TakeDamage(20.0f)); f.Step(); CHECK(f.messages.size() == 1);
++    f.hp = 80.0f; f.Step(); f.hp = 60.0f; f.Step(); CHECK(f.messages.size() == 3);
++    CHECK(f.Rpc(14, 100.0f)); f.hp = 100.0f; f.Step();
++    CHECK(f.TakeDamage(20.0f)); f.hp = 80.0f; f.Step();
 +    CHECK(f.messages.size() == 4 && f.Message(3, "20,0"));
 +    return true;
 +}
 +
 +bool ActualSentSyncVitalsMakeProtectedNativeHealthMeasurable() {
-+    DamageFixture f(8000050.0f, 0.0f);
++    DamageFixture f(8000050.0f, 0.0f, true);
 +    f.useNetworkVitals = true;
 +    CHECK(f.ready && f.Sync(ID_PLAYER_SYNC, 50, 0)); f.Step();
 +    CHECK(f.messages.empty());
@@ -19362,15 +19801,12 @@ index 0000000..6db7e2f
 +    return true;
 +}
 +
-+bool ExplosionRpcUsesFiniteRemainingSyncHpInsteadOfMillions() {
-+    DamageFixture f(8000050.0f, 0.0f);
-+    f.useNetworkVitals = true; f.source = 51;
++bool ExplosionDamageRequestWaitsForTheActualZeroHealthTransition() {
++    DamageFixture f(8000050.0f, 0.0f, true); f.useNetworkVitals = true; f.source = 51;
 +    CHECK(f.ready && f.Sync(ID_PLAYER_SYNC, 50, 0)); f.Step();
-+    CHECK(f.TakeDamage(8000050.0f, 51)); f.Step();
++    CHECK(f.TakeDamage(8000050.0f, 51)); f.Step(); CHECK(f.messages.empty());
++    f.hp = 8000000.0f; CHECK(f.Sync(ID_PLAYER_SYNC, 0, 0)); f.Step(); f.Step();
 +    CHECK(f.messages.size() == 1 && f.Message(0, "50,0"));
-+    f.hp = 8000000.0f;
-+    CHECK(f.Sync(ID_PLAYER_SYNC, 0, 0)); f.Step(); f.Step();
-+    CHECK(f.messages.size() == 1);
 +    return true;
 +}
 +
@@ -19379,7 +19815,7 @@ index 0000000..6db7e2f
 +    CHECK(f.ready && f.Sync(ID_PLAYER_SYNC, 50, 25));
 +    float hp = f.hp, armour = f.armour;
 +    CHECK(f.bridge.ApplyLocalSyncVitalsForTesting(hp, armour, ID_PLAYER_SYNC, 0xFFFF, f.ped));
-+    CHECK(hp == 50.0f && armour == 25.0f);
++    CHECK(hp == 8000050.0f && armour == 25.0f);
 +    hp = f.hp; armour = f.armour;
 +    CHECK(!f.bridge.ApplyLocalSyncVitalsForTesting(hp, armour, ID_PASSENGER_SYNC, 42, f.ped));
 +    CHECK(!f.bridge.ApplyLocalSyncVitalsForTesting(hp, armour, ID_PLAYER_SYNC, 0xFFFF,
@@ -19389,11 +19825,11 @@ index 0000000..6db7e2f
 +    CHECK(f.Sync(ID_VEHICLE_SYNC, 40, 20, 42));
 +    CHECK(!f.bridge.ApplyLocalSyncVitalsForTesting(hp, armour, ID_VEHICLE_SYNC, 43, f.ped));
 +    CHECK(f.bridge.ApplyLocalSyncVitalsForTesting(hp, armour, ID_VEHICLE_SYNC, 42, f.ped));
-+    CHECK(hp == 40.0f && armour == 20.0f);
++    CHECK(hp == 8000050.0f && armour == 20.0f);
 +    hp = f.hp; armour = f.armour;
 +    CHECK(f.Sync(ID_PASSENGER_SYNC, 30, 10, 42));
 +    CHECK(f.bridge.ApplyLocalSyncVitalsForTesting(hp, armour, ID_PASSENGER_SYNC, 42, f.ped));
-+    CHECK(hp == 30.0f && armour == 10.0f);
++    CHECK(hp == 8000050.0f && armour == 10.0f);
 +    hp = 5000.0f; armour = 500.0f;
 +    CHECK(!f.bridge.ApplyLocalSyncVitalsForTesting(hp, armour, ID_PASSENGER_SYNC, 42, f.ped));
 +    CHECK(hp == 5000.0f && armour == 500.0f);
@@ -19415,6 +19851,152 @@ index 0000000..6db7e2f
 +    CHECK(f.messages.empty());
 +    return true;
 +}
++
++// Anonymized values and relative ordering from the actual live explosion.
++// No process identifiers, memory addresses, screenshots or account files.
++bool LiveExplosionTraceDecodesProtectedHealthWithoutNativeDeathFlags() {
++    DamageFixture f(8000094.0f, 100.0f, true);
++    CHECK(f.ready && f.EnableVerifiedDeaths());
++    f.source = 51;
++    f.hp = 8000091.5f; f.Step();
++    f.hp = 8000092.0f; f.Step();
++    f.armour = 17.5f; f.Step();
++    f.armour = 18.0f; f.Step();
++    CHECK(f.TakeDamage(139.5f, 51));
++    f.hp = 7999945.0f; f.armour = 0.0f; f.Step();
++    f.hp = 8000000.0f; f.Step();
++    f.hp = 7999969.5f; f.Step();
++    f.hp = 8000000.0f; f.Step();
++    CHECK(f.messages.size() == 3);
++    CHECK(f.Message(0, "2,5") && f.Message(1, "82,5", "Weste getroffen"));
++    CHECK(f.Message(2, "110,0", "Weste + HP Schaden"));
++    CHECK(f.local.get()->m_bIsActive && !f.local.get()->m_bIsWasted);
++    CHECK(f.DeathMessages() == 0);
++    f.ReplyStats(215); f.Step();
++    CHECK(f.bridge.GetTotalDeaths() == 215 && f.bridge.GetKillTracker()->GetSessionDeaths() == 1);
++    CHECK(f.DeathMessages() == 1 && f.closed == 2);
++    CHECK(f.commands == std::vector<std::string>({"/stats", "/stats"}));
++    f.hp = 8000100.0f; f.tick += 3000; f.ArmLife();
++    f.bridge.ProcessIncomingChatLineForTesting("", "Willkommen auf dem Friedhof. Hier verweilst du, bis du entweder reanimiert wirst oder deine Zeit abläuft.");
++    f.Step();
++    CHECK(f.DeathMessages() == 1 && f.bridge.GetTotalDeaths() == 215);
++    return true;
++}
++
++bool LiveGunDeathCannotWrapMinusEightHpInto248Damage() {
++    DamageFixture f(8000042.0f, 0.0f, true);
++    CHECK(f.ready && f.EnableVerifiedDeaths());
++    f.source = 24;
++    for (float hp : {8000034.0f, 8000026.0f, 8000018.0f, 8000009.0f, 8000001.0f, 7999992.0f}) {
++        f.hp = hp; f.Step();
++    }
++    f.local.get()->m_onfootData.m_nHealth = 248; f.Step();
++    CHECK(f.messages.size() == 6 && f.Message(5, "1,0"));
++    for (const auto& text : f.messages) CHECK(text.find("248,0") == std::string::npos);
++    f.ReplyStats(215); f.Step();
++    CHECK(f.DeathMessages() == 1 && f.bridge.GetTotalDeaths() == 215);
++    return true;
++}
++
++bool ProtectedFallsUseFloatHpWithoutAnySyncPacketOrDamageRpc() {
++    DamageFixture f(8000100.0f, 0.0f, true); CHECK(f.ready);
++    f.hp = 8000082.5f; f.Step();
++    f.hp = 8000070.0f; f.Step();
++    CHECK(f.messages.size() == 2 && f.Message(0, "17,5") && f.Message(1, "12,5"));
++    CHECK(f.sounds == 0 && f.commands.empty());
++    return true;
++}
++
++bool DelayedServerDeathIsVerifiedOnceAfterTheObservedGraveTransition() {
++    DamageFixture f(8000050.0f, 0.0f, true); CHECK(f.EnableVerifiedDeaths());
++    f.hp = 8000000.0f; f.Step(); f.Step(); f.ReplyStats(214);
++    CHECK(f.DeathMessages() == 0 && f.bridge.GetTotalDeaths() == 214);
++    f.hp = 8000100.0f; f.tick += 3000; f.Step();
++    CHECK(f.commands.size() == 2);
++    f.tick += 1000; f.Step(); f.ReplyStats(215); f.Step();
++    CHECK(f.commands.size() == 3 && f.DeathMessages() == 1);
++    CHECK(f.bridge.GetTotalDeaths() == 215 && f.bridge.GetKillTracker()->GetSessionDeaths() == 1);
++    return true;
++}
++
++bool GraveRelogAndUnchangedStatsNeverInventAnotherDeath() {
++    DamageFixture f(8000050.0f, 0.0f, true); CHECK(f.EnableVerifiedDeaths());
++    f.hp = 8000000.0f; f.Step(); f.Step(); f.ReplyStats(215);
++    CHECK(f.DeathMessages() == 1);
++    f.net.get()->m_nGameState = sampapi::v03dl::CNetGame::GAME_MODE_WAITCONNECT; f.Step();
++    f.name = "Different_GravePlayer";
++    f.net.get()->m_nGameState = sampapi::v03dl::CNetGame::GAME_MODE_CONNECTED;
++    f.Step(); f.ReplyStats(215);
++    CHECK(f.DeathMessages() == 1 && f.bridge.GetTotalDeaths() == 215);
++    f.hp = 8000100.0f; f.ArmLife(); // Funeral also restores HP and controls.
++    f.hp = 8000000.0f; f.Step(); f.Step(); f.ReplyStats(215);
++    f.tick += 4000; f.Step(); f.ReplyStats(215);
++    CHECK(f.DeathMessages() == 1 && f.bridge.GetTotalDeaths() == 215);
++    // A later actual death must still work; no fixed three-minute cooldown.
++    f.hp = 8000100.0f; f.ArmLife();
++    f.hp = 8000000.0f; f.Step(); f.Step(); f.ReplyStats(216);
++    CHECK(f.DeathMessages() == 2 && f.bridge.GetTotalDeaths() == 216);
++    return true;
++}
++
++bool InitiallyDeadLoginAndMissingStatsDoNotCreateASessionDeath() {
++    DamageFixture f(8000000.0f, 0.0f, true); CHECK(f.EnableVerifiedDeaths());
++    CHECK(f.DeathMessages() == 0 && f.bridge.GetKillTracker()->GetSessionDeaths() == 0);
++    f.hp = 8000100.0f; f.ArmLife(); f.hp = 8000000.0f; f.Step(); f.Step();
++    f.tick += 10001; f.Step();
++    CHECK(f.DeathMessages() == 0 && f.bridge.GetTotalDeaths() == 214);
++    return true;
++}
++
++bool AlreadyImportedDeathTotalIsNotIncrementedAgain() {
++    DamageFixture f(8000050.0f, 0.0f, true); CHECK(f.EnableVerifiedDeaths());
++    f.bridge.ObserveStatsCommand("/stats"); f.ReplyStats(215);
++    f.dialog.get()->m_bIsActive = FALSE; // A manually opened window stays open by design.
++    CHECK(f.DeathMessages() == 0 && f.bridge.GetTotalDeaths() == 215);
++    f.hp = 8000000.0f; f.Step(); f.Step(); f.ReplyStats(215);
++    CHECK(f.DeathMessages() == 1 && f.bridge.GetTotalDeaths() == 215);
++    CHECK(f.bridge.GetKillTracker()->GetSessionDeaths() == 1);
++    return true;
++}
++
++bool ProtectedServerHealthRpcsAndNativeFloatAreNotTwoDamageEvents() {
++    DamageFixture f(8000050.0f, 25.0f, true); CHECK(f.ready);
++    CHECK(f.Rpc(14, 8000030.0f)); f.Step();
++    f.hp = 8000030.0f; f.Step();
++    CHECK(f.messages.size() == 1 && f.Message(0, "20,0"));
++    CHECK(f.Rpc(14, 7999945.0f) && f.Rpc(66, 0.0f));
++    f.hp = 7999945.0f; f.armour = 0.0f; f.Step(); f.Step();
++    CHECK(f.messages.size() == 2 && f.Message(1, "55,0", "Weste + HP Schaden"));
++    return true;
++}
++
++bool ProtectedExtendedHpKeepsTheActualAmountWithoutA100HpCap() {
++    DamageFixture f(8005000.0f, 500.0f, true); CHECK(f.ready);
++    f.hp = 8004900.0f; f.armour = 450.0f; f.Step();
++    CHECK(f.messages.size() == 1 && f.Message(0, "150,0", "Weste + HP Schaden"));
++    CHECK(keybinder::DecodeNativePlayerHealth(7999992.0f).value == 0.0f);
++    CHECK(keybinder::DecodeNativePlayerHealth(8000000.0f).value == 0.0f);
++    CHECK(keybinder::DecodeNativePlayerHealth(8000094.0f).value == 94.0f);
++    CHECK(keybinder::DecodeNativePlayerHealth(5000.0f).value == 5000.0f);
++    CHECK(!keybinder::DecodeNativePlayerHealth(5000.0f).protectedEncoding);
++    return true;
++}
++
++bool DelayedInitialStatsCorrectionIsABaselineNotADeathCredit() {
++    DamageFixture f(8000100.0f, 0.0f, true); CHECK(f.ready);
++    f.bridge.ImportDeathCount(213);
++    f.settings.GetMutable().kill_tracker_count_deaths = true;
++    f.statsReady = true; f.bridge.SetKillTrackerEnabled(true);
++    f.Step(); f.ArmLife(); // Initial server reply arrives after life is armed.
++    f.ReplyStats(214);
++    CHECK(f.bridge.GetTotalDeaths() == 214 && f.DeathMessages() == 0);
++    f.hp = 8000000.0f; f.Step(); f.Step(); f.ReplyStats(214);
++    f.tick += 4000; f.Step(); f.ReplyStats(214);
++    CHECK(f.bridge.GetTotalDeaths() == 214 && f.DeathMessages() == 0);
++    CHECK(f.bridge.GetKillTracker()->GetSessionDeaths() == 0);
++    return true;
++}
++
 +} // namespace
 +
 +int RunDamageLogRegressionTests() {
@@ -19434,20 +20016,30 @@ index 0000000..6db7e2f
 +    RUN(LethalRpcBeforeNativeDeathNeverCountsTheRemainingHealthTwice);
 +    RUN(LoginToggleMissingPedAndPedReplacementDiscardOldDamage);
 +    RUN(EnhancedHealthIsNotCappedAtOneHundred);
-+    RUN(ActualTakeDamage54WithNoPersistentHpChangeLogsTheRealFall);
++    RUN(DamageRequestWithoutMeasuredLossDoesNotInventFallDamage);
 +    RUN(ActualFallRpcAndMeasuredHpAreDeduplicatedInEitherOrder);
-+    RUN(GunDamageCannotHideAnUnrelatedRealFallWithTheSameAmount);
-+    RUN(SameValueAuthoritativeServerHealRefreshesTheRealDamageBudget);
-+    RUN(ActualFallRpcStillWorksWithPersistentlyUnmeasurableNativeHp);
-+    RUN(UnknownExplosionAmountWaitsForActualSyncInsteadOfPrintingOverkill);
-+    RUN(ALongFrameDoesNotTurnADelayedConfirmedReflectionIntoAnotherHit);
-+    RUN(OldUnreflectedCreditsExpireAfterActualInterveningPolls);
-+    RUN(ArmourHealingDoesNotEraseAHealthOnlyFallReflectionCredit);
-+    RUN(HealthHealingRetiresOldMeasuredCreditsBeforeANewRealFall);
++    RUN(GunAndFallDeltasAreBothLogged);
++    RUN(AuthoritativeHealThenMeasuredFallUsesNewBasis);
++    RUN(UnmeasurableVitalsDoNotInventDamageFromAnRpc);
++    RUN(OverkillRequestCannotSpendAnUnchangedHealthPool);
++    RUN(DelayedNativeLossIsLoggedOnceAfterAnEarlierDamageRequest);
++    RUN(EarlierDamageRequestDoesNotConsumeALaterRealFall);
++    RUN(ArmourHealingDoesNotCreateOrHideHealthDamage);
++    RUN(HealthHealingAndRepeatedFallsUseTheirActualMeasuredLoss);
 +    RUN(ActualSentSyncVitalsMakeProtectedNativeHealthMeasurable);
-+    RUN(ExplosionRpcUsesFiniteRemainingSyncHpInsteadOfMillions);
++    RUN(ExplosionDamageRequestWaitsForTheActualZeroHealthTransition);
 +    RUN(LocalSyncFallbackRejectsOldWrongModeWrongVehicleAndWrongPed);
 +    RUN(IncomingRpcFallbackKeepsLoginToggleAndDirectionGuards);
++    RUN(LiveExplosionTraceDecodesProtectedHealthWithoutNativeDeathFlags);
++    RUN(LiveGunDeathCannotWrapMinusEightHpInto248Damage);
++    RUN(ProtectedFallsUseFloatHpWithoutAnySyncPacketOrDamageRpc);
++    RUN(DelayedServerDeathIsVerifiedOnceAfterTheObservedGraveTransition);
++    RUN(GraveRelogAndUnchangedStatsNeverInventAnotherDeath);
++    RUN(InitiallyDeadLoginAndMissingStatsDoNotCreateASessionDeath);
++    RUN(AlreadyImportedDeathTotalIsNotIncrementedAgain);
++    RUN(ProtectedServerHealthRpcsAndNativeFloatAreNotTwoDamageEvents);
++    RUN(ProtectedExtendedHpKeepsTheActualAmountWithoutA100HpCap);
++    RUN(DelayedInitialStatsCorrectionIsABaselineNotADeathCredit);
 +#undef RUN
 +    std::printf("DamageLogRegressionTests: %d checks, %d failures\n", checks, failed);
 +    return failed;
@@ -26035,7 +26627,7 @@ index 0000000..1be8384
 +exit /b %ERRORLEVEL%
 diff --git a/tools/export_full_changelog.py b/tools/export_full_changelog.py
 new file mode 100644
-index 0000000..8821add
+index 0000000..ea43335
 --- /dev/null
 +++ b/tools/export_full_changelog.py
 @@ -0,0 +1,34 @@
@@ -26063,23 +26655,23 @@ index 0000000..8821add
 +    source = root / "docs/review/CHANGELOG-DE.md"
 +    target = root / "docs/CHANGELOG-GESAMT.txt"
 +    text = source.read_text(encoding="utf-8")
-+    required = {f"## {number}. " for number in range(1, 21)}
++    required = {f"## {number}. " for number in range(1, 22)}
 +    if not all(marker in text for marker in required):
-+        raise ValueError("Complete change history sections 1–20 required")
++        raise ValueError("Complete change history sections 1–21 required")
 +    result = render(text)
 +    target.write_text(result, encoding="utf-8-sig", newline="\n")
-+    print(f"Full changelog: {len(result.splitlines())} lines, sections 1–20, {target.name}")
++    print(f"Full changelog: {len(result.splitlines())} lines, sections 1–21, {target.name}")
 +
 +
 +if __name__ == "__main__":
 +    main()
 diff --git a/tools/export_source_bundle.py b/tools/export_source_bundle.py
 new file mode 100644
-index 0000000..b3adb7c
+index 0000000..46223b9
 --- /dev/null
 +++ b/tools/export_source_bundle.py
 @@ -0,0 +1,170 @@
-+"""Export a verified r14 source snapshot, current ASI and complete changelog.
++"""Export a verified r15 source snapshot, current ASI and complete changelog.
 +
 +Reads Git blobs without changing Git or the game installation. The destination
 +must not exist. Historical release binaries, Git metadata, local build outputs
@@ -26094,8 +26686,8 @@ index 0000000..b3adb7c
 +
 +
 +ROOT = Path(__file__).resolve().parents[1]
-+RELEASE = "v0.1.1-r14"
-+PACKAGE = "dist/NLBinder-0.1.1-r14"
++RELEASE = "v0.1.1-r15"
++PACKAGE = "dist/NLBinder-0.1.1-r15"
 +PRIVATE_PARTS = {
 +    ".git", ".vs", ".aws", ".codex", ".agents", "__pycache__", "build",
 +    "output", "debug", "release", "obj", "cmakefiles", ".venv", "venv",
@@ -26172,7 +26764,7 @@ index 0000000..b3adb7c
 +    parser.add_argument("--repository", type=Path, default=ROOT / "build/github-publication/repository")
 +    parser.add_argument("--revision", default="HEAD")
 +    parser.add_argument("--binary", type=Path, default=ROOT / "build/Release/NLBinder.asi")
-+    parser.add_argument("--manifest", type=Path, default=ROOT / "build/source-export-r14.json")
++    parser.add_argument("--manifest", type=Path, default=ROOT / "build/source-export-r15.json")
 +    args = parser.parse_args()
 +    repo = args.repository.resolve(strict=True)
 +    destination = args.destination.resolve()
@@ -26201,7 +26793,7 @@ index 0000000..b3adb7c
 +        "RECONNECT-TEST.json": PACKAGE + "/RECONNECT-TEST.json",
 +    }
 +    for source in extras.values():
-+        require(source in entries, "Verified r14 publication file missing: " + source)
++        require(source in entries, "Verified r15 publication file missing: " + source)
 +    read_entries = dict(selected)
 +    read_entries.update({source: entries[source] for source in extras.values()})
 +    files = read_blobs(repo, read_entries)
@@ -26213,7 +26805,7 @@ index 0000000..b3adb7c
 +    report = json.loads(exported["PRUEFBERICHT.json"].decode("utf-8-sig"))
 +    require(report.get("revision") == RELEASE and report.get("asi") == "NLBinder.asi" and report.get("sha256") == digest(binary)
 +            and report.get("bytes") == len(binary) and report.get("embedded_helper_matches") is True,
-+            "r14 artifact verification is missing or stale")
++            "r15 artifact verification is missing or stale")
 +    require(exported["Keybinder.vcxproj"].count(b"<TargetName>NLBinder</TargetName>") == 2,
 +            "Release/Debug project names are not both NLBinder")
 +    folded = [relative.casefold() for relative in exported]
@@ -26984,6 +27576,156 @@ index 0000000..67f69ca
 +try {
 +    foreach ($folderName in $weaponFolderNames) {
 +        $entryName = 'NLBinder-0.1.1-r14/NLBinder/Waffenicons/' + $folderName + '/'
++        if (-not $templateZip.GetEntry($entryName)) { $null = $templateZip.CreateEntry($entryName) }
++    }
++} finally { $templateZip.Dispose() }
++$zip = [System.IO.Compression.ZipFile]::OpenRead($archive)
++try {
++    $entry = $zip.Entries | Where-Object { $_.FullName -match '/NLBinder\.asi$' }
++    if (@($entry).Count -ne 1) { throw 'ASI fehlt im Archiv oder ist mehrfach enthalten.' }
++    $stream = $entry.Open()
++    $digest = [System.Security.Cryptography.SHA256]::Create()
++    try {
++        $zippedHash = [BitConverter]::ToString($digest.ComputeHash($stream)).Replace('-', '').ToLowerInvariant()
++        if ($zippedHash -ne $binaryHash) { throw 'ASI-Prüfsumme im Archiv stimmt nicht.' }
++    } finally { $stream.Dispose(); $digest.Dispose() }
++} finally { $zip.Dispose() }
++$stagedHash = (Get-FileHash -LiteralPath (Join-Path $packageDirectory 'NLBinder.asi') -Algorithm SHA256).Hash.ToLowerInvariant()
++if ($stagedHash -ne $binaryHash) { throw 'Kopierte ASI stimmt nicht überein.' }
++Get-Item -LiteralPath (Join-Path $packageDirectory 'NLBinder.asi'), $archive | Select-Object FullName,Length
++Write-Output "SHA256: $binaryHash"
+diff --git a/tools/package_revision15.ps1 b/tools/package_revision15.ps1
+new file mode 100644
+index 0000000..326165c
+--- /dev/null
++++ b/tools/package_revision15.ps1
+@@ -0,0 +1,144 @@
++$ErrorActionPreference = 'Stop'
++$projectRoot = Split-Path -Parent $PSScriptRoot
++$binary = Join-Path $projectRoot 'build\Release\NLBinder.asi'
++$reportPath = Join-Path $projectRoot 'build\revision15-artifact.json'
++$report = Get-Content -LiteralPath $reportPath -Raw | ConvertFrom-Json
++$binaryHash = (Get-FileHash -LiteralPath $binary -Algorithm SHA256).Hash.ToLowerInvariant()
++if ($report.revision -ne 'v0.1.1-r15' -or $binaryHash -ne $report.sha256 -or -not $report.embedded_helper_matches) {
++    throw 'Die ASI stimmt nicht mit dem finalen r15-Prüfbericht überein.'
++}
++$helperPath = Join-Path $projectRoot 'build\ReconnectHelper.exe'
++$helperHash = (Get-FileHash -LiteralPath $helperPath -Algorithm SHA256).Hash.ToLowerInvariant()
++if ($helperHash -ne $report.helper_sha256) { throw 'Der Reconnect-Helfer hat sich seit der Artefaktprüfung geändert.' }
++$workerPath = Join-Path $projectRoot 'build\reconnect-worker-tests\result.json'
++$workerResult = Get-Content -LiteralPath $workerPath -Raw | ConvertFrom-Json
++$validationPath = Join-Path $projectRoot 'docs\review\r15-validation.json'
++$finalValidation = Get-Content -LiteralPath $validationPath -Raw | ConvertFrom-Json
++$expectedWorkerChecks = [int]$finalValidation.focused_checks.native_reconnect_helper
++if ($finalValidation.revision -ne 'v0.1.1-r15' -or $finalValidation.asi_sha256 -ne $binaryHash -or $expectedWorkerChecks -lt 18) {
++    throw 'Finaler r15-Prüfnachweis fehlt oder stimmt nicht mit dem Build überein.'
++}
++if ($workerResult.failures -ne 0 -or $workerResult.checks -ne $expectedWorkerChecks) { throw 'Reconnect-Helfertest fehlgeschlagen oder stimmt nicht mit dem finalen Prüfnachweis überein.' }
++if ($workerResult.nova_cases -ne 6 -or $workerResult.nova_start_requires_spawn_confirmation -ne $true -or $workerResult.cancellation_after_readiness_checked -ne $true) {
++    throw 'Die neuen Nova-Start-, Beitritts- und Abbruchfälle sind im Helfertest nicht bestätigt.'
++}
++if ((Get-Item -LiteralPath $workerPath).LastWriteTimeUtc -lt (Get-Item -LiteralPath $helperPath).LastWriteTimeUtc) {
++    throw 'Den nativen Helfertest nach dem letzten Helfer-Build erneut ausführen.'
++}
++$testLog = Get-Content -LiteralPath (Join-Path $projectRoot 'build\revision15-tests.log') -Raw
++if ($testLog -notmatch '(?m)^Test exit code: 0\s*$' -or $testLog -match '\[FAIL\]') { throw 'Gesamttests nicht erfolgreich.' }
++$buildLog = Get-Content -LiteralPath (Join-Path $projectRoot 'build\revision15-build.log') -Raw
++if ($buildLog -notmatch '(?m)^RELEASE_BUILD_EXIT_CODE=0\s*$' -or $buildLog -notmatch 'Keybinder\.vcxproj -> .*NLBinder\.asi' -or $buildLog -match ': (fatal )?error [A-Z]+\d+:') {
++    throw 'Erfolgreicher finaler Release-Build nicht bestätigt.'
++}
++
++$packageDirectory = Join-Path $projectRoot 'dist\NLBinder-0.1.1-r15'
++$archive = Join-Path $projectRoot 'dist\NLBinder-v0.1.1-KOBiRO-r15.zip'
++if ((Test-Path -LiteralPath $packageDirectory) -or (Test-Path -LiteralPath $archive)) {
++    throw 'r15-Paket existiert bereits; nicht automatisch überschreiben.'
++}
++New-Item -ItemType Directory -Path $packageDirectory | Out-Null
++Copy-Item -LiteralPath $binary -Destination (Join-Path $packageDirectory 'NLBinder.asi')
++Copy-Item -LiteralPath (Join-Path $projectRoot 'docs\NLBinder-0.1.1-r15-DE.md') -Destination (Join-Path $packageDirectory 'LIESMICH.md')
++Copy-Item -LiteralPath (Join-Path $projectRoot 'docs\jobs-support.md') -Destination (Join-Path $packageDirectory 'JOB-HINWEISE.md')
++Copy-Item -LiteralPath $reportPath -Destination (Join-Path $packageDirectory 'PRUEFBERICHT.json')
++Copy-Item -LiteralPath $workerPath -Destination (Join-Path $packageDirectory 'RECONNECT-TEST.json')
++Copy-Item -LiteralPath (Join-Path $projectRoot 'docs\CHANGELOG-GESAMT.txt') -Destination (Join-Path $packageDirectory 'CHANGELOG-GESAMT.txt')
++
++# Ship only empty weapon folders and instructions, never personal PNG files.
++$catalogSource = Get-Content -LiteralPath (Join-Path $projectRoot 'include\WeaponIconCatalog.h') -Raw
++$weaponFolderNames = @([regex]::Matches($catalogSource, '\{\s*\d+,\s*"[^"]+",\s*"([^"]+)"\s*\}') | ForEach-Object { $_.Groups[1].Value })
++if ($weaponFolderNames.Count -ne 43 -or @($weaponFolderNames | Sort-Object -Unique).Count -ne 43) { throw 'Der Waffenordner-Katalog ist unvollständig oder doppelt.' }
++$templateRoot = Join-Path $packageDirectory 'NLBinder\Waffenicons'
++New-Item -ItemType Directory -Path $templateRoot | Out-Null
++foreach ($folderName in $weaponFolderNames) {
++    if ($folderName -notmatch '^[A-Za-z0-9 -]+$') { throw 'Ungültiger Waffenordner im Katalog.' }
++    New-Item -ItemType Directory -Path (Join-Path $templateRoot $folderName) | Out-Null
++}
++@'
++# Eigene Waffenicons
++
++Den Vorlagenordner NLBinder nach Dokumente/GTA San Andreas User Files kopieren
++und dort mit dem bestehenden NLBinder-Ordner zusammenführen. Vorhandene eigene
++Bilder beibehalten. Die Waffenbilder liegen unter:
++Dokumente/GTA San Andreas User Files/NLBinder/Waffenicons/<Waffe>/
++PNG-Dateien in den passenden Unterordner legen, z.B. Desert Eagle/mein-icon.png.
++Am einfachsten im Binder unter Mods / Waffenicons auf 'Waffenicons-Ordner öffnen'
++klicken: So wird auch ein verschobener Dokumente-Ordner, etwa unter OneDrive,
++korrekt geöffnet. Danach Waffenicons aktivieren und bei Bedarf neu einlesen.
++Mehrere PNGs pro Waffe sind möglich; ohne PNG bleibt das originale Waffenicon.
++Die Fist wird weiterhin unter Mods / Hud eingerichtet.
++'@ | Set-Content -LiteralPath (Join-Path $templateRoot 'LIESMICH.md') -Encoding utf8
++
++$buildInfo = @"
++NLBinder v.0.1.1 by KOBiRO – Überarbeitung 14
++Erstellt: $([System.TimeZoneInfo]::ConvertTimeBySystemTimeZoneId([DateTime]::UtcNow, 'W. Europe Standard Time').ToString('dd.MM.yyyy HH:mm:ss')) (Europe/Berlin)
++Datei: NLBinder.asi
++Format: Win32 Release, PE32/x86 DLL
++Größe: $($report.bytes) Bytes
++SHA256: $binaryHash
++Eingebetteter Reconnect-Helfer: Ressource 300, $($report.embedded_helper_bytes) Bytes
++Helfer-SHA256: $($report.helper_sha256)
++
++Verifikation:
++- Vollständige automatisierte Tests: Exitcode 0
++- Release-Build: Exitcode 0
++- ASI-Format, Windows-Imports und eingebetteter Helfer geprüft
++- Eingebetteter Reconnect-Helfer stimmt mit dem geprüften Helfer überein
++- Nativer Reconnect-Helfer: $($workerResult.checks) Prüfungen, 0 Fehler
++- Dafür ausschließlich harmlose Testprozesse verwendet
++- Die Helferprüfung startet/beendet kein echtes Spiel und keinen installierten Launcher
++- Live-Ursachendiagnose mit r14 belegt
++- Neue r15-ASI im Spiel bestätigt: Explosionstod genau einmal, Friedhofs-Relog ohne Doppelzählung
++
++Neue Änderungen:
++- Friedhofs-Chat löst keine eigene Todeszählung mehr aus
++- Ein echter eigener Alive-zu-Dead-Übergang zählt einmal
++- Login/Relog übernimmt eine Basis ohne rückwirkenden Zusatz-Tod
++- Belegter nativer HP-Schutzaufschlag von 8.000.000 wird vor der Auswertung entfernt
++- Geschützte Todesübergänge werden mit einem neuen eigenen Server-Todesstand bestätigt
++- Höchstens zwei eigene Statistikabrufe pro Todesprüfung; keine Jobskills-Abfrage
++- Damagelog nutzt tatsächliche HP-/Westenverluste; kein zusätzlicher TakeDamage-Rohschaden
++- Übergelaufene 8-Bit-HP werden nicht als HP-Ersatz verwendet
++- Damagelog-Präfix bleibt {33CCFF}; vorhandene Hitsound-Filter bleiben getrennt
++- Manuelle Stats-/Jobskills-Synchronisation und sämtliche bisherigen Anpassungen bleiben enthalten
++- Kompilierte Datei heißt weiterhin NLBinder.asi
++- Gesamter Changelog liegt als CHANGELOG-GESAMT.txt bei
++
++Die früheren Job-, Skilltree-, Fraktions-, Radar-, Tacho- und Reconnect-
++Anpassungen sind enthalten. Die ursprüngliche Oberfläche bleibt Grundlage.
++Der Reconnect-Helfer ist in der ASI enthalten.
++
++Grenzen: Die Synchronisation wartet auf eine echte Serverantwort. Bei ausschließlich nativer
++Messung können mehrere Verluste zwischen Messungen als Gesamtverlust erscheinen.
++Explosionstod und anschließender Friedhofs-Relog sind mit dieser ASI im Spiel bestätigt.
++Beschuss und Fallschaden sind automatisiert geprüft; der installierte Launcher wurde nicht separat getestet.
++Installation und weitere Hinweise stehen in LIESMICH.md.
++"@
++$buildInfo | Set-Content -LiteralPath (Join-Path $packageDirectory 'BUILD-INFO.txt') -Encoding utf8
++"$binaryHash  NLBinder.asi" | Set-Content -LiteralPath (Join-Path $packageDirectory 'SHA256SUMS.txt') -Encoding ascii
++Compress-Archive -LiteralPath $packageDirectory -DestinationPath $archive -CompressionLevel Optimal
++
++Add-Type -AssemblyName System.IO.Compression.FileSystem
++$templateZip = [System.IO.Compression.ZipFile]::Open($archive, [System.IO.Compression.ZipArchiveMode]::Update)
++try {
++    foreach ($folderName in $weaponFolderNames) {
++        $entryName = 'NLBinder-0.1.1-r15/NLBinder/Waffenicons/' + $folderName + '/'
 +        if (-not $templateZip.GetEntry($entryName)) { $null = $templateZip.CreateEntry($entryName) }
 +    }
 +} finally { $templateZip.Dispose() }
@@ -28857,6 +29599,127 @@ index 0000000..c12542a
 +    }
 +    report = json.dumps(result, indent=2)
 +    (root / "build/revision14-artifact.json").write_text(report + "\n", encoding="utf-8")
++    print(report)
++
++
++if __name__ == "__main__":
++    main()
+diff --git a/tools/verify_revision15_artifact.py b/tools/verify_revision15_artifact.py
+new file mode 100644
+index 0000000..7daaf37
+--- /dev/null
++++ b/tools/verify_revision15_artifact.py
+@@ -0,0 +1,115 @@
++"""Read-only r15 PE/artifact verification; never loads or executes binaries."""
++import hashlib
++import json
++from pathlib import Path
++import struct
++import sys
++
++
++def require(condition, message):
++    if not condition:
++        raise ValueError(message)
++
++
++class PE:
++    def __init__(self, path):
++        self.path = Path(path)
++        self.data = self.path.read_bytes()
++        require(self.data[:2] == b"MZ", "Missing DOS header")
++        start = self.u32(0x3C)
++        require(self.data[start:start + 4] == b"PE\0\0", "Missing PE signature")
++        self.machine = self.u16(start + 4)
++        count = self.u16(start + 6)
++        self.characteristics = self.u16(start + 22)
++        self.optional = start + 24
++        require(self.u16(self.optional) == 0x10B, "Expected PE32")
++        self.sections = []
++        table = self.optional + self.u16(start + 20)
++        for index in range(count):
++            row = table + index * 40
++            virtual_size, rva, size, raw = struct.unpack_from("<IIII", self.data, row + 8)
++            self.sections.append((rva, max(virtual_size, size), raw, size))
++
++    def u16(self, offset):
++        return struct.unpack_from("<H", self.data, offset)[0]
++
++    def u32(self, offset):
++        return struct.unpack_from("<I", self.data, offset)[0]
++
++    def offset(self, rva):
++        for start, span, raw, size in self.sections:
++            if start <= rva < start + span:
++                require(rva - start < size, "RVA has no raw file data")
++                return raw + rva - start
++        raise ValueError(f"Unmapped RVA: {rva:#x}")
++
++    def imports(self):
++        directory = self.u32(self.optional + 96 + 8)
++        if not directory:
++            return []
++        row = self.offset(directory)
++        result = []
++        while any(struct.unpack_from("<IIIII", self.data, row)):
++            name = self.offset(self.u32(row + 12))
++            end = self.data.index(0, name)
++            result.append(self.data[name:end].decode("ascii"))
++            row += 20
++        return sorted(result, key=str.lower)
++
++    def resource(self, type_id, resource_id):
++        base = self.offset(self.u32(self.optional + 96 + 16))
++
++        def entries(relative):
++            head = base + relative
++            total = self.u16(head + 12) + self.u16(head + 14)
++            return [struct.unpack_from("<II", self.data, head + 16 + i * 8) for i in range(total)]
++
++        directory = 0
++        for expected in (type_id, resource_id):
++            candidates = [value for name, value in entries(directory) if name == expected]
++            require(len(candidates) == 1, f"Resource ID {expected} missing or ambiguous")
++            require(candidates[0] & 0x80000000, "Expected resource directory")
++            directory = candidates[0] & 0x7FFFFFFF
++        languages = entries(directory)
++        require(len(languages) == 1, "Expected one embedded worker language")
++        leaf = languages[0][1]
++        require(not leaf & 0x80000000, "Expected resource data entry")
++        rva, size = struct.unpack_from("<II", self.data, base + leaf)
++        start = self.offset(rva)
++        return self.data[start:start + size]
++
++
++def main():
++    root = Path(__file__).resolve().parents[1]
++    asi = PE(sys.argv[1] if len(sys.argv) > 1 else root / "build/Release/NLBinder.asi")
++    helper = PE(root / "build/ReconnectHelper.exe")
++    require(asi.machine == helper.machine == 0x14C, "Expected both binaries to be x86")
++    require(asi.characteristics & 0x2000, "ASI must be a DLL")
++    require(not helper.characteristics & 0x2000, "Worker must be an executable")
++    require(asi.resource(10, 300) == helper.data, "Embedded helper differs from built helper")
++    imports = asi.imports()
++    require(not any(name.lower().startswith(("vcruntime", "msvcp", "ucrtbased")) for name in imports),
++            "Unexpected external C++ runtime dependency")
++    try:
++        display_path = asi.path.resolve().relative_to(root).as_posix()
++    except ValueError:
++        display_path = asi.path.name
++    result = {
++        "revision": "v0.1.1-r15",
++        "asi": display_path,
++        "bytes": len(asi.data),
++        "format": "PE32 x86 DLL",
++        "sha256": hashlib.sha256(asi.data).hexdigest(),
++        "imports": imports,
++        "embedded_helper_id": 300,
++        "embedded_helper_bytes": len(helper.data),
++        "helper_sha256": hashlib.sha256(helper.data).hexdigest(),
++        "embedded_helper_matches": True,
++    }
++    report = json.dumps(result, indent=2)
++    (root / "build/revision15-artifact.json").write_text(report + "\n", encoding="utf-8")
 +    print(report)
 +
 +

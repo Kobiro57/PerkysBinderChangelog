@@ -2,15 +2,16 @@
  .gitignore                             |   14 +
  Keybinder.rc                           |    2 +
  Keybinder.vcxproj                      |   24 +-
- README.md                              |  198 ++--
- docs/BUILD-README.md                   |  125 ++
- docs/CHANGELOG-GESAMT.txt              |  981 ++++++++++++++++
+ README.md                              |  193 ++--
+ docs/BUILD-README.md                   |  125 +++
+ docs/CHANGELOG-GESAMT.txt              | 1026 +++++++++++++++++
  docs/NLBinder-0.1.1-DE.md              |   71 ++
  docs/NLBinder-0.1.1-r10-DE.md          |  104 ++
  docs/NLBinder-0.1.1-r11-DE.md          |   93 ++
  docs/NLBinder-0.1.1-r12-DE.md          |  112 ++
  docs/NLBinder-0.1.1-r13-DE.md          |  116 ++
  docs/NLBinder-0.1.1-r14-DE.md          |  128 +++
+ docs/NLBinder-0.1.1-r15-DE.md          |  131 +++
  docs/NLBinder-0.1.1-r2-DE.md           |  128 +++
  docs/NLBinder-0.1.1-r3-DE.md           |  133 +++
  docs/NLBinder-0.1.1-r4-DE.md           |  165 +++
@@ -22,17 +23,19 @@
  docs/ORIGINAL-README.md                |  121 ++
  docs/build-dependencies.md             |   24 +
  docs/jobs-support.md                   |   38 +
- docs/review/CHANGELOG-DE.md            |  922 +++++++++++++++
+ docs/review/CHANGELOG-DE.md            |  966 ++++++++++++++++
  docs/review/DEPENDENCIES.md            |   78 ++
- docs/review/PRUEFUNG-DE.md             | 1187 +++++++++++++++++++
+ docs/review/PRUEFUNG-DE.md             | 1253 +++++++++++++++++++++
  docs/review/PUBLICATION.json           |   13 +
  docs/review/PUBLISHING-DE.md           |   34 +
- docs/review/README-GITHUB.md           |   77 ++
+ docs/review/README-GITHUB.md           |   72 ++
  docs/review/r10-validation.json        |   55 +
  docs/review/r11-validation.json        |   36 +
  docs/review/r12-validation.json        |   40 +
  docs/review/r13-validation.json        |   40 +
  docs/review/r14-validation.json        |   41 +
+ docs/review/r15-live-validation.json   |   22 +
+ docs/review/r15-validation.json        |   52 +
  docs/review/r4-validation.json         |   21 +
  docs/review/r5-validation.json         |   20 +
  docs/review/r6-validation.json         |   29 +
@@ -63,6 +66,7 @@
  include/MessageVariables.h             |   40 +
  include/MessageVariablesUI.h           |   48 +
  include/NativeHudEditor.h              |   39 +
+ include/NativePlayerHealth.h           |   23 +
  include/NovaReconnectFlow.h            |   56 +
  include/OnlineDataManager.h            |    2 +-
  include/OnlineOverlayController.h      |   46 +
@@ -71,7 +75,7 @@
  include/PersistentPaths.h              |    1 +
  include/ReconnectManager.h             |   80 ++
  include/ResourceIds.h                  |    1 +
- include/SAMPBridge.h                   |  246 +++-
+ include/SAMPBridge.h                   |  253 ++++-
  include/ServerStatsSnapshot.h          |  369 ++++++
  include/SettingsManager.h              |   54 +-
  include/SpeedTicketFlow.h              |   50 +
@@ -108,14 +112,14 @@
  src/OnlineUI.cpp                       |  145 ++-
  src/PersistentPaths.cpp                |   21 +
  src/ReconnectManager.cpp               |  371 ++++++
- src/SAMPBridge.cpp                     | 1958 +++++++++++++++++++++-----------
+ src/SAMPBridge.cpp                     | 1935 +++++++++++++++++++++-----------
  src/SettingsManager.cpp                |  348 +++++-
  src/SpeedTicketBridge.cpp              |  128 +++
  src/SpeedTicketFlow.cpp                |  203 ++++
  src/SpeedometerManager.cpp             |  104 +-
  src/SpeedometerUI.cpp                  |   24 +-
  src/SquareMap.cpp                      |    2 +-
- src/StartupStatsSync.cpp               |  401 +++++++
+ src/StartupStatsSync.cpp               |  447 ++++++++
  src/StatsDialogRPCAdapter.cpp          |  117 ++
  src/TextDrawAdapter.cpp                |  168 +--
  src/WeaponIconManager.cpp              |  269 +++++
@@ -123,7 +127,7 @@
  tests/ActionExecutorTests.cpp          |  239 ++++
  tests/CombatChatBridgeTests.cpp        |  639 +++++++++++
  tests/CombatChatParserTests.cpp        |   84 ++
- tests/DamageLogRegressionTests.cpp     |  547 +++++++++
+ tests/DamageLogRegressionTests.cpp     |  711 ++++++++++++
  tests/ImGuiOverlayTests.cpp            |  104 ++
  tests/InterfaceEditorTests.cpp         |  157 +++
  tests/InterfaceLayoutSettingsTests.cpp |  114 ++
@@ -144,7 +148,7 @@
  tests/ReconnectManagerTests.cpp        |  256 +++++
  tests/ReconnectWorkerFixture.cpp       |  100 ++
  tests/RegressionTests.cpp              |   35 +-
- tests/SAMPBridgeTests.cpp              | 1818 ++++++++++++++++++++++++++++-
+ tests/SAMPBridgeTests.cpp              | 1818 +++++++++++++++++++++++++++++-
  tests/ServerStatsParserTests.cpp       |  220 ++++
  tests/SourceContractTests.cpp          |   22 +-
  tests/SpeedTicketFlowTests.cpp         |  180 +++
@@ -166,26 +170,28 @@
  tools/package_revision12.ps1           |  138 +++
  tools/package_revision13.ps1           |  137 +++
  tools/package_revision14.ps1           |  138 +++
+ tools/package_revision15.ps1           |  144 +++
  tools/package_revision4.ps1            |   97 ++
  tools/package_revision5.ps1            |   96 ++
  tools/package_revision6.ps1            |   93 ++
- tools/package_revision7.ps1            |  126 ++
- tools/package_revision8.ps1            |  126 ++
- tools/package_revision9.ps1            |  126 ++
+ tools/package_revision7.ps1            |  126 +++
+ tools/package_revision8.ps1            |  126 +++
+ tools/package_revision9.ps1            |  126 +++
  tools/premium_ui_qa.ps1                |    4 +-
  tools/prepare_github_review.py         |  135 +++
  tools/run_tests.bat                    |   48 +-
  tools/setup_msvc.bat                   |   16 +
- tools/test_reconnect_worker.py         |  250 ++++
+ tools/test_reconnect_worker.py         |  250 +++++
  tools/verify_revision10_artifact.py    |  115 ++
  tools/verify_revision11_artifact.py    |  115 ++
  tools/verify_revision12_artifact.py    |  115 ++
  tools/verify_revision13_artifact.py    |  115 ++
  tools/verify_revision14_artifact.py    |  115 ++
+ tools/verify_revision15_artifact.py    |  115 ++
  tools/verify_revision4_artifact.py     |  115 ++
  tools/verify_revision5_artifact.py     |  115 ++
  tools/verify_revision6_artifact.py     |  115 ++
  tools/verify_revision7_artifact.py     |  115 ++
  tools/verify_revision8_artifact.py     |  115 ++
  tools/verify_revision9_artifact.py     |  115 ++
- 190 files changed, 23599 insertions(+), 1584 deletions(-)
+ 196 files changed, 24422 insertions(+), 1587 deletions(-)
