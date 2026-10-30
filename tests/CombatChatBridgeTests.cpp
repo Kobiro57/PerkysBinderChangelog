@@ -89,6 +89,38 @@ struct Context {
     }
 };
 
+std::string CemeteryCp1252(const std::string& text) {
+    const int count = MultiByteToWideChar(CP_UTF8, 0, text.data(), static_cast<int>(text.size()), nullptr, 0);
+    std::wstring wide(count, L'\0');
+    MultiByteToWideChar(CP_UTF8, 0, text.data(), static_cast<int>(text.size()), wide.data(), count);
+    const int bytes = WideCharToMultiByte(1252, 0, wide.data(), count, nullptr, 0, nullptr, nullptr);
+    std::string result(bytes, '\0');
+    WideCharToMultiByte(1252, 0, wide.data(), count, result.data(), bytes, nullptr, nullptr);
+    return result;
+}
+
+void TestCemeteryLinesNeverCreateCombatEvents() {
+    Context context;
+    const auto localMessagesBefore = context.localMessages.size();
+    const std::string cemetery = "Willkommen auf dem Friedhof. Hier verweilst du, bis du entweder reanimiert wirst oder deine Zeit abläuft.";
+    const std::vector<std::string> forms = {
+        cemetery, CemeteryCp1252(cemetery), "[23:57:06] " + cemetery,
+        "{33CCFF}[23:57:06] {FFFFFF}" + cemetery,
+        CemeteryCp1252("INFO: " + cemetery)
+    };
+    for (const auto& text : forms) {
+        context.now += 10000; // Outlive every former death correlation timeout.
+        context.Line(text);
+        context.bridge.Update();
+        CHECK(context.bridge.GetTotalDeaths() == 3);
+        CHECK(context.bridge.GetKillTracker()->GetSessionDeaths() == 0);
+        CHECK(context.bridge.GetTotalKills() == 10);
+        CHECK(context.bridge.GetKillTracker()->GetSessionKills() == 0);
+        CHECK(context.localMessages.size() == localMessagesBefore);
+        CHECK(context.sent.empty());
+    }
+}
+
 void TestAllFormsReachTheConfiguredChatChannelAndDynamicName() {
     Context context;
     const std::vector<std::string> forms = {
@@ -177,7 +209,7 @@ void TestTwoSameFramePersonalKillsAreNeverDropped() {
     CHECK(context.bridge.GetKillTracker()->GetWeaponStats(31)->killCount == 1);
 }
 
-void TestDeathVictimSlotCemeteryAndNativeGuard() {
+void TestDeathVictimSlotAndNativeGuardIgnoreCemetery() {
     Context context;
     context.Line("<< Enemy_One hat den gesuchten Verbrecher " + context.name + " getötet. >>");
     context.Line("Willkommen auf dem Friedhof. Hier verweilst du, bis du entweder reanimiert wirst oder deine Zeit abläuft.");
@@ -190,6 +222,10 @@ void TestDeathVictimSlotCemeteryAndNativeGuard() {
     context.local.get()->m_bIsWasted = TRUE; context.bridge.Update();
     context.local.get()->m_bIsWasted = FALSE; context.bridge.Update();
     context.Line("Willkommen auf dem Friedhof. Hier verweilst du, bis du entweder reanimiert wirst oder deine Zeit abläuft.");
+    context.bridge.Update();
+    CHECK(context.bridge.GetTotalDeaths() == 4);
+    CHECK(context.bridge.GetKillTracker()->GetSessionDeaths() == 1);
+    context.Line("<< Enemy_Two hat den gesuchten Verbrecher " + context.name + " getötet. >>");
     context.bridge.Update();
     CHECK(context.bridge.GetTotalDeaths() == 5);
 }
@@ -228,6 +264,8 @@ void TestDialogStatsBeforeAndAfterChatDoNotRepeatOrUndoLiveEvent() {
     CHECK(context.bridge.GetTotalKills() == 12 && context.bridge.GetKillTracker()->GetSessionKills() == 2);
     context.Line("Willkommen auf dem Friedhof. Hier verweilst du, bis du entweder reanimiert wirst oder deine Zeit abläuft.");
     context.bridge.Update();
+    CHECK(context.bridge.GetTotalDeaths() == 3 && context.bridge.GetKillTracker()->GetSessionDeaths() == 0);
+    context.bridge.ProcessDeathMessageForTesting({7, 5, 24, std::time(nullptr), true});
     context.StatsDialog(12, 3);
     CHECK(context.bridge.GetTotalDeaths() == 4 && context.bridge.GetKillTracker()->GetSessionDeaths() == 1);
     context.StatsDialog(12, 4);
@@ -294,7 +332,8 @@ int RunCombatChatBridgeTests() {
     TestPersonalNamedRpcAndStatsCorrelateWithoutRepeatingBind();
     TestRpcNewerThanQueuedChatAndDistinctRapidVictims();
     TestTwoSameFramePersonalKillsAreNeverDropped();
-    TestDeathVictimSlotCemeteryAndNativeGuard();
+    TestCemeteryLinesNeverCreateCombatEvents();
+    TestDeathVictimSlotAndNativeGuardIgnoreCemetery();
     TestSpoofingUnrelatedPrisonAndLocalBinderEchoDoNotCount();
     TestDialogStatsBeforeAndAfterChatDoNotRepeatOrUndoLiveEvent();
     TestNativeVictimIdentityAndUnavailableNameCanBeEnriched();

@@ -2,17 +2,17 @@
 
 Vollständiger Prüfstand der Änderungen am **Perkys / NLBinder**, angepasst für
 KOBiRO. Grundlage und ursprüngliche Urheberschaft bleiben beim Originalprojekt.
-Der Stand lautet **NLBinder v.0.1.1 by KOBiRO, r11**. Unter Einstellungen
-ergänzt **Aktuellen Spielstand synchronisieren** den erneuten Abruf von
-Stats und Jobskills. Die kompilierte Datei heißt jetzt **NLBinder.asi**.
-Der vollständige Änderungsverlauf liegt zusätzlich als TXT vor.
-Der lokale Killhinweis zeigt den Gesamt-Killstand in einem einheitlichen
-Text; der frei gewählte Server-Killbind bleibt getrennt davon erhalten.
-Eine Korrektur führt native Todeserkennung und Friedhofsbestätigung für
-denselben Tod zusammen. Explosionen und ungültige Lebenswertübergänge
-verursachen keine Millionen-Schadensmeldungen im Damagelog.
-Frühere Binder-Anpassungen und die ursprünglichen Oberflächenkomponenten
-bleiben enthalten.
+Der Stand lautet **NLBinder v.0.1.1 by KOBiRO, r12**. Die Friedhofsmeldung
+ist als Todesauslöser entfernt; die native 0-HP-Erkennung bleibt bestehen.
+Fallschaden und messbare Explosionsverluste bleiben im Damagelog enthalten,
+unabhängig von der Umweltschaden-Unterdrückung des Hitsounds. Die Datei
+heißt weiterhin **NLBinder.asi**; der vollständige Änderungsverlauf liegt
+auch als TXT bei. Frühere Binder-Anpassungen bleiben enthalten.
+
+Der Damagelog erhält den letzten gültigen HP-/Westenstand über kurze
+unplausible Zwischenwerte desselben Peds hinweg. Er verarbeitet auch
+serverseitige Änderungen zwischen Messungen und gleicht sie mit dem
+nachfolgenden nativen Stand ab, um doppelte Meldungen zu vermeiden.
 
 Eigene Waffenbilder liegen unter **Dokumente → GTA San Andreas User Files →
 NLBinder → Waffenicons**. Der Button **Waffenicons-Ordner öffnen** im Binder
@@ -24,9 +24,9 @@ NLBinder → Waffenicons**. Der Button **Waffenicons-Ordner öffnen** im Binder
 2. [Technisches Verhalten, Prüfungen und Grenzen](../../docs/review/PRUEFUNG-DE.md)
 3. [Dateien im Vergleich zum Original](../../docs/review/DATEIVERGLEICH.md)
 4. [Herkunft und Abhängigkeiten](../../docs/review/DEPENDENCIES.md)
-5. [Programmänderungen als GitHub-Vergleich](https://github.com/Kobiro57/PerkysBinderChangelog/compare/build-dependencies-baseline...v0.1.1-r11)
+5. [Programmänderungen als GitHub-Vergleich](https://github.com/Kobiro57/PerkysBinderChangelog/compare/build-dependencies-baseline...v0.1.1-r12)
    oder als [kompakter Quellcode-Patch](../../docs/review/first-party-changes.patch)
-6. [Änderungen seit r10](https://github.com/Kobiro57/PerkysBinderChangelog/compare/v0.1.1-r10...v0.1.1-r11)
+6. [Änderungen seit r11](https://github.com/Kobiro57/PerkysBinderChangelog/compare/v0.1.1-r11...v0.1.1-r12)
 
 Der vollständige bearbeitete Code liegt in `src/`, `include/`, `res/`,
 `tests/`, `tools/` und `third_party/`. Die Übersicht verlinkt direkt zu den
@@ -50,18 +50,18 @@ die [aktuelle Build-Anleitung](../../docs/BUILD-README.md) beschreibt das Bauen 
 
 ## Geprüfte ASI
 
-- [NLBinder.asi herunterladen](../../dist/NLBinder-0.1.1-r11/NLBinder.asi)
+- [NLBinder.asi herunterladen](../../dist/NLBinder-0.1.1-r12/NLBinder.asi)
 - [Gesamter Changelog als TXT](../../docs/CHANGELOG-GESAMT.txt)
-- [Komplettes ZIP-Paket herunterladen](../../dist/NLBinder-v0.1.1-KOBiRO-r11.zip)
-- [Installation und Bedienung](../../dist/NLBinder-0.1.1-r11/LIESMICH.md)
-- [Build- und Prüfangaben](../../dist/NLBinder-0.1.1-r11/BUILD-INFO.txt)
-- [Maschinenlesbarer Prüfnachweis](../../dist/NLBinder-0.1.1-r11/PRUEFBERICHT.json)
-- [SHA-256 der ausgelieferten ASI](../../dist/NLBinder-0.1.1-r11/SHA256SUMS.txt)
+- [Komplettes ZIP-Paket herunterladen](../../dist/NLBinder-v0.1.1-KOBiRO-r12.zip)
+- [Installation und Bedienung](../../dist/NLBinder-0.1.1-r12/LIESMICH.md)
+- [Build- und Prüfangaben](../../dist/NLBinder-0.1.1-r12/BUILD-INFO.txt)
+- [Maschinenlesbarer Prüfnachweis](../../dist/NLBinder-0.1.1-r12/PRUEFBERICHT.json)
+- [SHA-256 der ausgelieferten ASI](../../dist/NLBinder-0.1.1-r12/SHA256SUMS.txt)
 
 Die Nachweise gehören zum jeweiligen Binärstand: automatisierte Gesamttests,
 Win32-Release-Build, PE-/Ressourcenvergleich und Reconnect-Helfertest mit
 harmlosen Testprozessen. Ein echter Ingame-Test mit dem konkreten Server und
-Launcher steht aus. Die [vorherige r10-Fassung](../../dist/NLBinder-0.1.1-r10/BUILD-INFO.txt)
+Launcher steht aus. Die [vorherige r11-Fassung](../../dist/NLBinder-0.1.1-r11/BUILD-INFO.txt)
 und ihre Prüfsumme bleiben zur Nachverfolgung erhalten.
 
 ## Weitere Updates

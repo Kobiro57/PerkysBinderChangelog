@@ -190,6 +190,7 @@ public:
     void ProcessDamageFeedbackForTesting(const killtracker::DamageEvent& event);
     void ProcessDamageRpcForTesting(RakNet::BitStream* payload);
     void RequestScriptedHealthSuppressionForTesting();
+    void ProcessScriptedHealthRpcForTesting(unsigned char rpcId, RakNet::BitStream* payload);
     bool ProcessIncomingChatLineForTesting(const char* prefix, const char* text);
     void ProcessStatsDialogForTesting(const keybinder::StatsDialogEvent& event);
     bool ProcessStatsDialogRpcForTesting(RakNet::BitStream* payload);
@@ -301,7 +302,13 @@ private:
         std::atomic<float> lastKnownHealth{0.0f};
         std::atomic<float> lastKnownArmour{0.0f};
         std::atomic<bool> suppressionRequested{false};
+        std::atomic<bool> logEnabled{false};
+        struct VitalSample { bool health; float value; };
+        std::mutex samplesMutex;
+        std::vector<VitalSample> samples;
     };
+    static void CaptureScriptedHealthRpc(const std::shared_ptr<ScriptedHealthSuppressionState>& state,
+                                        unsigned char rpcId, RakNet::BitStream* payload);
     std::shared_ptr<ScriptedHealthSuppressionState> scriptedHealthState_;
     bool scriptedHealthHookInstalled_ = false;
 public:
@@ -391,6 +398,15 @@ private:
     keybinder::IncomingDamageLog incomingDamageLog_;
     bool incomingDamageLogEnabledLastFrame_ = false;
     const void* incomingDamagePed_ = nullptr;
+    unsigned int invalidDamageSampleFrames_ = 0;
+    struct ScriptedVitalReconciliation {
+        float target = 0.0f;
+        float nativeBeforeRpc = 0.0f;
+        bool decreasing = false;
+        unsigned int framesLeft = 0;
+    };
+    ScriptedVitalReconciliation scriptedHealthReconciliation_;
+    ScriptedVitalReconciliation scriptedArmourReconciliation_;
     bool killTrackerInitialized_;
     bool localPlayerWasDead_;
     bool localDeathHandledForCurrentLife_;

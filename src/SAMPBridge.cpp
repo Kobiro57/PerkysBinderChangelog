@@ -2417,48 +2417,37 @@ void SAMPBridge::InstallScriptedHealthRpcHook() {
             return true;
         }
 
-        // Non-mutating read: save and restore the read offset so SA-MP's own
-        // RPC handler still sees the full, unconsumed BitStream.
-        int originalReadOffset = bs->GetReadOffset();
-
-        float newValue;
-        if (!bs->Read(newValue)) {
-            bs->SetReadOffset(originalReadOffset);
-            return true;
-        }
-
-        bs->SetReadOffset(originalReadOffset);
-
-        // Compare the incoming RPC value against the last-polled ped HP/armour
-        // (the pre-RPC baseline published by PollLocalIncomingDamage). Only arm
-        // suppression when the RPC carries a strictly lower value -- a heal or
-        // no-op must not arm suppression, otherwise a real combat hit right
-        // after a heal RPC could be muted.
-        //
-        // Best-effort tradeoff: the baseline is last-polled HP, not current ped
-        // HP, because reading ped memory from the RakNet receive thread is
-        // unsafe (data race). A real combat hit landing in the same inter-poll
-        // gap as a heal/no-op SetHealth RPC can make newValue < baseline and arm
-        // suppression, which may then mute that real hit's drop at the next
-        // poll. This is a false-negative window bounded by the one-shot TTL
-        // (kScriptedSuppressionFrameCap frames); it cannot mute more than one
-        // hit. The TTL is kept small (3 frames) to minimize this window.
-        const bool isHealth = (rpcId == kRpcScrSetPlayerHealth);
-        const float baseline = isHealth
-            ? state->lastKnownHealth.load(std::memory_order_relaxed)
-            : state->lastKnownArmour.load(std::memory_order_relaxed);
-        if (newValue < baseline - keybinder::IncomingDamageDetector::kDamageEpsilon) {
-            // Request the game thread to arm the one-shot suppression. store
-            // (not exchange) because multiple RPCs in the same gap are
-            // idempotent -- a single armed window suppresses the next drop.
-            state->suppressionRequested.store(true, std::memory_order_release);
-        }
+        CaptureScriptedHealthRpc(state, rpcId, bs);
 
         return true; // Always pass through to SA-MP
     };
 
     keybinder::Logger::Info("[SAMPBridge] Scripted-health RPC hook installed (RPC 14/66).");
 #endif
+}
+
+void SAMPBridge::CaptureScriptedHealthRpc(
+    const std::shared_ptr<ScriptedHealthSuppressionState>& state,
+    unsigned char rpcId, RakNet::BitStream* payload) {
+    if (!state || !state->active.load(std::memory_order_acquire) || payload == nullptr
+        || (rpcId != 14 && rpcId != 66)) return;
+    const int offset = payload->GetReadOffset();
+    float value = 0.0f;
+    const bool read = payload->Read(value);
+    payload->SetReadOffset(offset);
+    if (!read || !keybinder::IsMeasurablePlayerVital(value)) return;
+    const bool health = rpcId == 14;
+    const float baseline = health ? state->lastKnownHealth.load(std::memory_order_relaxed)
+                                  : state->lastKnownArmour.load(std::memory_order_relaxed);
+    if (value < baseline - keybinder::IncomingDamageDetector::kDamageEpsilon)
+        state->suppressionRequested.store(true, std::memory_order_release);
+    // Preserve actual server HP/armour samples, including a decrease followed
+    // by a heal between two game frames. Only the game thread writes the log.
+    if (state->logEnabled.load(std::memory_order_acquire)) {
+        std::lock_guard<std::mutex> lock(state->samplesMutex);
+        if (!state->active.load(std::memory_order_acquire)) return;
+        if (state->samples.size() < 64) state->samples.push_back({health, value});
+    }
 }
 
 bool SAMPBridge::IsLocalCombatActive(bool allowFinalDeathSample) const {
@@ -2483,6 +2472,11 @@ void SAMPBridge::ResetIncomingDamageState() {
     incomingDamageDetector_.Reset();
     incomingDamageLog_.Reset();
     incomingDamagePed_ = nullptr;
+    invalidDamageSampleFrames_ = 0;
+    scriptedHealthReconciliation_ = {};
+    scriptedArmourReconciliation_ = {};
+    std::lock_guard<std::mutex> lock(scriptedHealthState_->samplesMutex);
+    scriptedHealthState_->samples.clear();
 }
 
 bool SAMPBridge::IsDamageLogEnabled() const {
@@ -2509,6 +2503,8 @@ bool SAMPBridge::ReadLocalDamageSample(float& health, float& armour, int& damage
     const auto* localPlayer = GetLocalPlayer();
     if (ped == nullptr || localPlayer == nullptr || localPlayer->m_pPed == nullptr
         || localPlayer->m_pPed->m_pGamePed != ped) return false;
+    // DL-R1 CPed::GetHealth/GetArmour return these exact native fields
+    // (RVA AB970/AB9B0). They do not decode protection/sentinel values.
     health = ped->m_fHealth;
     armour = ped->m_fArmour;
     damageSource = static_cast<int>(ped->m_nLastWeaponDamage);
@@ -2518,15 +2514,22 @@ bool SAMPBridge::ReadLocalDamageSample(float& health, float& armour, int& damage
 }
 
 void SAMPBridge::PollLocalIncomingDamage() {
+    constexpr unsigned int kInvalidSampleFrameCap = 3;
+    constexpr unsigned int kRpcReflectionFrameCap = 3;
     const bool logEnabled = IsDamageLogEnabled();
     const bool logJustEnabled = logEnabled && !incomingDamageLogEnabledLastFrame_;
     incomingDamageLogEnabledLastFrame_ = logEnabled;
+    scriptedHealthState_->logEnabled.store(logEnabled, std::memory_order_release);
     if (!logEnabled || logJustEnabled) {
         incomingDamageLog_.Reset();
+        scriptedHealthReconciliation_ = {};
+        scriptedArmourReconciliation_ = {};
+        std::lock_guard<std::mutex> lock(scriptedHealthState_->samplesMutex);
+        scriptedHealthState_->samples.clear();
     }
     const bool playing = IsLocalCombatActive();
     const bool finalDeathSample = !playing && incomingDamagePed_ != nullptr && IsLocalCombatActive(true);
-    if ((!hitsoundIncomingCallback_ && !IsDamageLogEnabled()) || (!playing && !finalDeathSample)) {
+    if ((!hitsoundIncomingCallback_ && !logEnabled) || (!playing && !finalDeathSample)) {
         ResetIncomingDamageState();
         return;
     }
@@ -2535,43 +2538,126 @@ void SAMPBridge::PollLocalIncomingDamage() {
     float armour = 0.0f;
     int damageSource = 0;
     const void* pedIdentity = nullptr;
-    const bool hasSample = ReadLocalDamageSample(health, armour, damageSource, pedIdentity);
-    if (!hasSample || pedIdentity == nullptr || !keybinder::IsMeasurablePlayerVital(health)
-        || !keybinder::IsMeasurablePlayerVital(armour)) {
+    if (!ReadLocalDamageSample(health, armour, damageSource, pedIdentity) || pedIdentity == nullptr) {
         ResetIncomingDamageState();
         return;
     }
-    // GTA can briefly retain a negative HP value on a lethal hit. Only the
-    // remaining HP was actually available to lose; never log extra overkill.
-    health = (std::max)(health, 0.0f);
-    armour = (std::max)(armour, 0.0f);
-
     if (pedIdentity != incomingDamagePed_) {
         ResetIncomingDamageState();
         incomingDamagePed_ = pedIdentity;
     }
-
-    // Publish only samples from this spawned ped. Login/spawn updates cannot
-    // carry a baseline or suppression request into the next playing phase.
-    scriptedHealthState_->lastKnownHealth.store(health, std::memory_order_relaxed);
-    scriptedHealthState_->lastKnownArmour.store(armour, std::memory_order_relaxed);
-    scriptedHealthState_->active.store(playing && health > 0.0f, std::memory_order_release);
-    if (scriptedHealthState_->suppressionRequested.exchange(false, std::memory_order_acq_rel)) {
-        incomingDamageDetector_.ArmScriptedSuppression();
+    const bool healthValid = keybinder::IsMeasurablePlayerVital(health);
+    const bool armourValid = keybinder::IsMeasurablePlayerVital(armour);
+    // A single protection/transient sample used to erase the real HP baseline
+    // and swallow the following fall/explosion. Retain it briefly for this ped
+    // only; a prolonged protection phase starts with a fresh baseline.
+    if (!healthValid || !armourValid) {
+        incomingDamageDetector_.Reset();
+        if (++invalidDamageSampleFrames_ > kInvalidSampleFrameCap) {
+            ResetIncomingDamageState();
+            return;
+        }
+    } else {
+        invalidDamageSampleFrames_ = 0;
     }
+    health = (std::max)(health, 0.0f);
+    armour = (std::max)(armour, 0.0f);
 
-    const auto observation = incomingDamageDetector_.ObserveDetailed(true, health + armour,
-                                      keybinder::IsNonCombatDamageSource(damageSource));
-    if (health > 0.0f && observation.IsCombat()
-        && observation.damage > keybinder::IncomingDamageDetector::kDamageEpsilon && hitsoundIncomingCallback_) {
-        hitsoundIncomingCallback_();
+    std::vector<ScriptedHealthSuppressionState::VitalSample> serverSamples;
+    {
+        std::lock_guard<std::mutex> lock(scriptedHealthState_->samplesMutex);
+        serverSamples.swap(scriptedHealthState_->samples);
     }
+    bool serverHealthSeen = false;
+    bool serverArmourSeen = false;
     if (logEnabled) {
-        // Keep the log independent from hitsound suppression. In particular,
-        // Nova's server-applied SetPlayerHealth/Armour must be logged at once.
-        LogIncomingDamage(incomingDamageLog_.Observe(health, armour));
+        keybinder::IncomingDamageLogEntry pendingDamage;
+        bool groupedHealth = false, groupedArmour = false;
+        auto flushDamage = [&]() {
+            LogIncomingDamage(pendingDamage);
+            pendingDamage = {};
+            groupedHealth = groupedArmour = false;
+        };
+        for (const auto& sample : serverSamples) {
+            // Health and armour are sent in separate RPCs for one hit. Combine
+            // adjacent pools, but retain repeated HP samples as separate hits.
+            if (sample.health ? groupedHealth : groupedArmour) flushDamage();
+            auto& reconciliation = sample.health ? scriptedHealthReconciliation_ : scriptedArmourReconciliation_;
+            const float previous = sample.health ? incomingDamageLog_.LastHealth() : incomingDamageLog_.LastArmour();
+            const float value = (std::max)(0.0f, sample.value);
+            const auto damage = incomingDamageLog_.Observe(value, value, sample.health, !sample.health);
+            pendingDamage.healthDamage += damage.healthDamage;
+            pendingDamage.armourDamage += damage.armourDamage;
+            (sample.health ? groupedHealth : groupedArmour) = true;
+            // Duplicate RPCs carry no new change and must retain an existing
+            // pending direction (90 -> 90 is not a heal from the old raw 100).
+            if (std::fabs(value - previous) > 0.001f) {
+                if (reconciliation.framesLeft == 0) {
+                    reconciliation.nativeBeforeRpc = (sample.health
+                        ? scriptedHealthState_->lastKnownHealth : scriptedHealthState_->lastKnownArmour)
+                        .load(std::memory_order_relaxed);
+                }
+                reconciliation.target = value;
+                reconciliation.decreasing = value < previous;
+                reconciliation.framesLeft = kRpcReflectionFrameCap;
+            }
+            (sample.health ? serverHealthSeen : serverArmourSeen) = true;
+            (sample.health ? scriptedHealthState_->lastKnownHealth : scriptedHealthState_->lastKnownArmour)
+                .store(value, std::memory_order_relaxed);
+        }
+        flushDamage();
     }
-    if (finalDeathSample || health == 0.0f) ResetIncomingDamageState();
+    // The hook runs before SA-MP applies its RPC. A matching native decrease is
+    // the same loss, while an old pre-RPC value is not a heal. Reconcile each
+    // pool independently so armour/health RPCs cannot cancel each other.
+    auto acceptNative = [&](bool valid, float value, bool serverSeen,
+                            ScriptedVitalReconciliation& state, bool healthPool) {
+        if (!valid) return false;
+        if (state.framesLeft == 0) return true;
+        const bool reflected = std::fabs(value - state.target) <= 0.001f
+            || (state.decreasing ? value < state.target : value > state.target)
+            // A new loss beyond the confirmed pre-heal value is real damage,
+            // even if the native ped never exposed the intermediate heal.
+            || (state.decreasing ? value > state.nativeBeforeRpc : value < state.nativeBeforeRpc);
+        if (reflected) {
+            state.framesLeft = 0;
+            return true;
+        }
+        // A lethal server value may precede the native death by several
+        // frames. Keep the zero baseline until that death or a new server HP
+        // sample; re-seeding from the still-alive ped would count it twice.
+        if (healthPool && state.target == 0.0f) return false;
+        if (!serverSeen && --state.framesLeft == 0) {
+            // An RPC that was not applied must not leave credits that mute a
+            // future hit or turn a stale value into a second damage message.
+            if (healthPool) incomingDamageLog_.RebaseHealth(value);
+            else incomingDamageLog_.RebaseArmour(value);
+            (healthPool ? scriptedHealthState_->lastKnownHealth : scriptedHealthState_->lastKnownArmour)
+                .store(value, std::memory_order_relaxed);
+        }
+        return false;
+    };
+    const bool sampleHealth = acceptNative(healthValid, health, serverHealthSeen, scriptedHealthReconciliation_, true);
+    const bool sampleArmour = acceptNative(armourValid, armour, serverArmourSeen, scriptedArmourReconciliation_, false);
+    if (logEnabled)
+        LogIncomingDamage(incomingDamageLog_.Observe(health, armour, sampleHealth, sampleArmour));
+
+    if (sampleHealth) scriptedHealthState_->lastKnownHealth.store(health, std::memory_order_relaxed);
+    if (sampleArmour) scriptedHealthState_->lastKnownArmour.store(armour, std::memory_order_relaxed);
+    const float knownHealth = scriptedHealthState_->lastKnownHealth.load(std::memory_order_relaxed);
+    const bool awaitingLethalReflection = scriptedHealthReconciliation_.framesLeft != 0
+        && scriptedHealthReconciliation_.target == 0.0f;
+    scriptedHealthState_->active.store(playing && (knownHealth > 0.0f || awaitingLethalReflection), std::memory_order_release);
+    if (scriptedHealthState_->suppressionRequested.exchange(false, std::memory_order_acq_rel))
+        incomingDamageDetector_.ArmScriptedSuppression();
+    if (healthValid && armourValid) {
+        const auto observation = incomingDamageDetector_.ObserveDetailed(true, health + armour,
+            keybinder::IsNonCombatDamageSource(damageSource));
+        if (health > 0.0f && observation.IsCombat()
+            && observation.damage > keybinder::IncomingDamageDetector::kDamageEpsilon && hitsoundIncomingCallback_)
+            hitsoundIncomingCallback_();
+    }
+    if (finalDeathSample || (healthValid && health == 0.0f)) ResetIncomingDamageState();
 }
 
 void SAMPBridge::NotifyDamageFeedback(const killtracker::DamageEvent& event) {
@@ -2592,6 +2678,9 @@ void SAMPBridge::ProcessDamageRpcForTesting(RakNet::BitStream* payload) {
 }
 void SAMPBridge::RequestScriptedHealthSuppressionForTesting() {
     scriptedHealthState_->suppressionRequested.store(true, std::memory_order_release);
+}
+void SAMPBridge::ProcessScriptedHealthRpcForTesting(unsigned char rpcId, RakNet::BitStream* payload) {
+    CaptureScriptedHealthRpc(scriptedHealthState_, rpcId, payload);
 }
 bool SAMPBridge::ProcessIncomingChatLineForTesting(const char* prefix, const char* text) {
     return jobChatAdapter_ ? jobChatAdapter_->DispatchLineForTesting(prefix, text) : true;

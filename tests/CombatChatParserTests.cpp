@@ -62,9 +62,12 @@ int RunCombatChatParserTests() {
         const auto prison = ParseCombatChat("<< Enemy_One konnte nicht inhaftiert werden, da das Gefängnis gesprengt wurde. >>", local);
         CHECK(prison.kind == CombatChatKind::KillCorroboration && prison.victim == "Enemy_One" && prison.killer.empty());
         const std::string cemetery = "Willkommen auf dem Friedhof. Hier verweilst du, bis du entweder reanimiert wirst oder deine Zeit abläuft.";
-        CHECK(ParseCombatChat(cemetery, local).kind == CombatChatKind::Death);
-        CHECK(ParseCombatChat(Cp1252(cemetery), local).kind == CombatChatKind::Death);
+        CHECK(ParseCombatChat(cemetery, local).kind == CombatChatKind::None);
+        CHECK(ParseCombatChat(Cp1252(cemetery), local).kind == CombatChatKind::None);
         CHECK(ParseCombatChat(cemetery, local, true).kind == CombatChatKind::None);
+        CHECK(ParseCombatChat("{33CCFF}[23:57:06] {FFFFFF}" + cemetery, local).kind == CombatChatKind::None);
+        CHECK(ParseCombatChat(Cp1252("[23:57:06] " + cemetery), local).kind == CombatChatKind::None);
+        CHECK(ParseCombatChat("INFO: " + cemetery, local).kind == CombatChatKind::None);
     }
     CHECK(ParseCombatChat("REVIERKAMPF: local hat enemy getötet.", "LOCAL").kind == CombatChatKind::Kill);
     CHECK(ParseCombatChat("REVIERKAMPF: Local hat Enemy getötet (Teamkill). Neuer Spielstand: Angreifer: -2 - Verteidiger: 3", "Local").kind == CombatChatKind::Kill);

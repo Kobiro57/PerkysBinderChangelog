@@ -1,0 +1,24 @@
+README.md                           |  40 ++---
+ docs/CHANGELOG-GESAMT.txt           |  56 +++++++
+ docs/NLBinder-0.1.1-r12-DE.md       | 112 +++++++++++++
+ docs/review/CHANGELOG-DE.md         |  53 +++++++
+ docs/review/PRUEFUNG-DE.md          |  76 ++++++++-
+ docs/review/PUBLICATION.json        |  10 +-
+ docs/review/README-GITHUB.md        |  40 ++---
+ docs/review/r12-validation.json     |  40 +++++
+ include/CombatChatParser.h          |   2 +-
+ include/IncomingDamageDetector.h    |  42 ++---
+ include/SAMPBridge.h                |  16 ++
+ src/CombatChatParser.cpp            |   5 -
+ src/SAMPBridge.cpp                  | 213 +++++++++++++++++--------
+ tests/CombatChatBridgeTests.cpp     |  43 ++++-
+ tests/CombatChatParserTests.cpp     |   7 +-
+ tests/DamageLogRegressionTests.cpp  | 308 ++++++++++++++++++++++++++++++++++++
+ tests/KeybindTests.cpp              |   4 +-
+ tests/SAMPBridgeTests.cpp           |  68 +++++++-
+ tools/export_full_changelog.py      |   6 +-
+ tools/export_source_bundle.py       |  12 +-
+ tools/package_revision12.ps1        | 138 ++++++++++++++++
+ tools/run_tests.bat                 |   1 +
+ tools/verify_revision12_artifact.py | 115 ++++++++++++++
+ 23 files changed, 1254 insertions(+), 153 deletions(-)

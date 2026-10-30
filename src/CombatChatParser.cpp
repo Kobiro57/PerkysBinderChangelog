@@ -72,14 +72,9 @@ CombatChatNotice ParseCombatChat(const std::string& line, const std::string& loc
     static const std::regex murder(R"(^Du hast ein Verbrechen begangen\s*\(\s*Vorsaetzlicher Mord\s*\)\s*\.\s*Reporter:\s*Anonym$)", flags);
     static const std::regex killed(R"(^Du hast einen Spieler getoetet\.$)", flags);
     static const std::regex gangwar(R"(^GANGWAR\s*\([^\r\n)]{1,80}\): Du hast einen Feind ausgeschaltet!$)", flags);
-    static const std::regex cemetery(R"(^Willkommen auf dem Friedhof\. Hier verweilst du, bis du entweder reanimiert wirst oder deine Zeit ablaeuft\.$)", flags);
     if (std::regex_match(text, murder)) return Kill(CombatChatFamily::Murder, localName);
     if (std::regex_match(text, killed)) return Kill(CombatChatFamily::PlayerKilled, localName);
     if (std::regex_match(text, gangwar)) return Kill(CombatChatFamily::Gangwar, localName);
-    if (std::regex_match(text, cemetery)) {
-        CombatChatNotice result; result.kind = CombatChatKind::Death; result.family = CombatChatFamily::Cemetery;
-        result.victim = localName; result.victimKnown = true; return result;
-    }
     std::smatch match;
     static const std::regex criminal(R"(^<<\s*(\S{1,24}) hat den gesuchten Verbrecher (\S{1,24}) getoetet\.\s*>>$)", flags);
     if (std::regex_match(text, match, criminal) && ValidName(match[1]) && ValidName(match[2])) {

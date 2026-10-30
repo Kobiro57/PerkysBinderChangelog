@@ -1,0 +1,37 @@
+NLBinder v.0.1.1 by KOBiRO – Überarbeitung 12
+Erstellt: 30.10.2026 14:46:10 (Europe/Berlin)
+Datei: NLBinder.asi
+Format: Win32 Release, PE32/x86 DLL
+Größe: 18502656 Bytes
+SHA256: 27add66ee5630b500025dcb8af5e975f5ddadfc994afa3148c3793cf6df1d21c
+Eingebetteter Reconnect-Helfer: Ressource 300, 127488 Bytes
+Helfer-SHA256: 24ae22a1dfa7e0dfe1fa2703112917a6c09415d14db26ead5ba44b82db118f81
+
+Verifikation:
+- Vollständige automatisierte Tests: Exitcode 0
+- Release-Build: Exitcode 0
+- ASI-Format, Windows-Imports und eingebetteter Helfer geprüft
+- Eingebetteter Reconnect-Helfer stimmt mit dem geprüften Helfer überein
+- Nativer Reconnect-Helfer: 83 Prüfungen, 0 Fehler
+- Dafür ausschließlich harmlose Testprozesse verwendet
+- Kein echtes Spiel und kein installierter Launcher gestartet oder beendet
+- Kein Ingame-Test durchgeführt
+
+Neue Änderungen:
+- Friedhofsmeldung ist vollständig als Todesauslöser entfernt
+- Native Erkennung bei 0 HP und die lokale Todesmeldung bleiben erhalten
+- Fallschaden und messbarer Explosionsschaden bleiben im Damagelog enthalten
+- Tödlicher Überkill erzeugt keinen größeren Verlust als die zuvor vorhandenen HP/Weste
+- Damagelog-Präfix bleibt {33CCFF}; vorhandene Hitsound-Filter bleiben getrennt
+- Manuelle Stats-/Jobskills-Synchronisation und sämtliche bisherigen Anpassungen bleiben enthalten
+- Kompilierte Datei heißt weiterhin NLBinder.asi
+- Gesamter Changelog liegt als CHANGELOG-GESAMT.txt bei
+
+Die früheren Job-, Skilltree-, Fraktions-, Radar-, Tacho- und Reconnect-
+Anpassungen sind enthalten. Die ursprüngliche Oberfläche bleibt Grundlage.
+Der Reconnect-Helfer ist in der ASI enthalten.
+
+Grenzen: Die Synchronisation wartet auf eine echte Serverantwort. Mehrere
+Schadensereignisse zwischen Messungen erscheinen als gemessener Gesamtverlust.
+Ein Live-Test mit dem konkreten Server und Launcher steht weiterhin aus.
+Installation und weitere Hinweise stehen in LIESMICH.md.

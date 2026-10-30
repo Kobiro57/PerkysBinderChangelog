@@ -782,3 +782,59 @@ Die finalen Nachweise gehören zum
 r11-Paket (../../dist/NLBinder-0.1.1-r11/BUILD-INFO.txt). Frühere Stände,
 Vergleiche und ursprüngliche Urheberhinweise bleiben erhalten. Ein echter
 Ingame-Test auf dem konkreten Server steht aus.
+
+
+18. Nachtrag r12 – 30. Oktober 2026
+===================================
+
+Friedhofsmeldung als Todesauslöser entfernt
+-------------------------------------------
+
+Die Meldung Willkommen auf dem Friedhof. Hier verweilst du, bis du entweder
+reanimiert wirst oder deine Zeit abläuft. wird nicht mehr als eigener Tod
+ausgewertet. Die zugehörige Erkennung ist aus dem Chatparser entfernt.
+Auch wenn die Zeile erst nach einer zwischenzeitlichen nativen Freigabe
+des Spielers eintrifft, erhöht sie keinen Todeszähler und erzeugt keine
+zusätzliche lokale Todesmeldung. Sie bleibt normal im Serverchat sichtbar.
+
+Die native Erkennung bei 0 HP bleibt enthalten. Ein neuer tatsächlicher
+Tod nach Respawn bzw. Wiederbelebung kann weiterhin einmal zählen.
+Die bisherigen Killformate und die eigene Opferzuordnung der separaten
+gesuchten-Verbrecher-Meldung bleiben erhalten. Der in r11 beschriebene
+Ansatz, die Friedhofszeile mit dem Lebenszyklus abzugleichen, wird durch
+diese vollständige Entfernung des Chat-Auslösers ersetzt.
+
+Fallschaden im Damagelog erhalten
+---------------------------------
+
+Der Damagelog erfasst messbare Lebens-/Westenverluste durch Fallschaden
+unabhängig davon, ob der Hitsound Umweltschaden unterdrückt. Auch ein
+messbarer Explosionsübergang darf eine normale Schadensmeldung erzeugen;
+ein tödlicher Überkill darf dabei nicht als Millionenverlust erscheinen.
+Die zuvor verfügbaren gültigen HP-/Westenwerte begrenzen den tatsächlichen
+Verlust. Login, Respawn und ein anderer Spieler-Ped bilden weiterhin keine
+Schadensereignisse. Das Präfix bleibt {33CCFF}[NL-BINDER].
+
+Kurze unplausible Zwischenwerte desselben Spieler-Peds überschreiben den
+letzten gültigen HP-/Westenstand nicht mehr. Der nächste gültige Verlust
+kann dadurch weiterhin mit dem vorherigen echten Stand verglichen werden.
+Serverseitige HP-/Westenänderungen werden zusätzlich beim Empfang ihrer
+Werte verarbeitet, auch zwischen zwei nativen Messungen. Der nachfolgende
+native Stand wird damit abgeglichen, damit derselbe Verlust keine zweite
+Schadensmeldung erzeugt. Die Tests bilden diese Übergänge nach; ein bestimmtes
+Verhalten des laufenden Servers wird damit nicht garantiert.
+
+Quellen: CombatChatParser.cpp (../../src/CombatChatParser.cpp),
+SAMPBridge.cpp (../../src/SAMPBridge.cpp),
+IncomingDamageDetector.h (../../include/IncomingDamageDetector.h).
+Tests: CombatChatParserTests.cpp (../../tests/CombatChatParserTests.cpp),
+CombatChatBridgeTests.cpp (../../tests/CombatChatBridgeTests.cpp),
+SAMPBridgeTests.cpp (../../tests/SAMPBridgeTests.cpp),
+DamageLogRegressionTests.cpp (../../tests/DamageLogRegressionTests.cpp).
+
+Die Ausgabe heißt weiterhin NLBinder.asi. Der aktuelle vollständige
+Quellcode und TXT-Changelog werden im Desktop-Ordner NLBinder-masterNEW
+bereitgestellt. Vorhandene ältere Quellkopien werden vor einer Erneuerung
+gesichert. Alle bisherigen Änderungen bleiben im GitHub-Verlauf erreichbar.
+Die Paketnachweise gehören zum r12-Paket (../../dist/NLBinder-0.1.1-r12/BUILD-INFO.txt).
+Ein echter Ingame-Test auf dem konkreten Server steht aus.

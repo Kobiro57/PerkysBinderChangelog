@@ -179,37 +179,41 @@ struct IncomingDamageLogEntry {
 
 class IncomingDamageLog {
 public:
-    IncomingDamageLogEntry Observe(float health, float armour) {
-        if (!IsMeasurablePlayerVital(health) || !IsMeasurablePlayerVital(armour)) {
-            Reset();
-            return {};
-        }
-        health = (std::max)(0.0f, health);
-        armour = (std::max)(0.0f, armour);
-        if (!initialized_) {
-            initialized_ = true;
-            lastHealth_ = health;
-            lastArmour_ = armour;
-            return {};
-        }
+    IncomingDamageLogEntry Observe(float health, float armour,
+                                   bool sampleHealth = true, bool sampleArmour = true) {
         // A heal in one pool must not cancel damage to the other pool.
         IncomingDamageLogEntry damage{
-            (std::max)(0.0f, lastHealth_ - health),
-            (std::max)(0.0f, lastArmour_ - armour)
+            sampleHealth ? ObservePool(health, lastHealth_, healthInitialized_) : 0.0f,
+            sampleArmour ? ObservePool(armour, lastArmour_, armourInitialized_) : 0.0f
         };
-        lastHealth_ = health;
-        lastArmour_ = armour;
         return damage.HasDamage() ? damage : IncomingDamageLogEntry{};
     }
 
+    float LastHealth() const { return lastHealth_; }
+    float LastArmour() const { return lastArmour_; }
+    void RebaseHealth(float value) { healthInitialized_ = false; Observe(value, 0.0f, true, false); }
+    void RebaseArmour(float value) { armourInitialized_ = false; Observe(0.0f, value, false, true); }
+
     void Reset() {
-        initialized_ = false;
+        healthInitialized_ = false;
+        armourInitialized_ = false;
         lastHealth_ = 0.0f;
         lastArmour_ = 0.0f;
     }
 
 private:
-    bool initialized_ = false;
+    static float ObservePool(float value, float& previous, bool& initialized) {
+        // A transient protection value must never replace a measured baseline.
+        // The bridge bounds how long it may retain it for the same active ped.
+        if (!IsMeasurablePlayerVital(value)) return 0.0f;
+        value = (std::max)(0.0f, value);
+        const float damage = initialized ? (std::max)(0.0f, previous - value) : 0.0f;
+        previous = value;
+        initialized = true;
+        return damage;
+    }
+    bool healthInitialized_ = false;
+    bool armourInitialized_ = false;
     float lastHealth_ = 0.0f;
     float lastArmour_ = 0.0f;
 };

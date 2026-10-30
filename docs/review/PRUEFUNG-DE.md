@@ -1,6 +1,80 @@
 # Hinweise zur Prüfung durch die Projektleitung
 
-## Aktueller Stand r11 – 29. Oktober 2026
+## Aktueller Stand r12 – 30. Oktober 2026
+
+Der aktuelle Stand ist **NLBinder v.0.1.1 by KOBiRO, r12**.
+[Bedienung](../NLBinder-0.1.1-r12-DE.md),
+[r12-Nachtrag](CHANGELOG-DE.md#18-nachtrag-r12--30-oktober-2026) und
+[vollständiger TXT-Changelog](../CHANGELOG-GESAMT.txt) beschreiben die Änderungen.
+
+### Verhalten und prüfbarer Umfang
+
+Die Friedhofsmeldung ist vollständig aus der Todesauswertung des Chatparsers
+entfernt. Sie darf alleine, nach einer nativen Todesmeldung oder nach einem
+zwischenzeitlichen nativen Respawn keinen zusätzlichen Tod erzeugen.
+Die native 0-HP-/Todeserkennung bleibt enthalten. Andere Killformate und die
+bisherige Opferzuordnung der gesuchten-Verbrecher-Meldung bleiben erhalten.
+Dieser Stand ersetzt den früheren Abgleich der Friedhofszeile aus r11.
+
+Der Damagelog behandelt Fallschaden getrennt vom Umweltfilter des Hitsounds.
+Messbare Explosionsverluste bleiben enthalten, wobei tödlicher Überkill keinen
+größeren Verlust als die zuvor verfügbaren gültigen HP-/Westenwerte erzeugt.
+Kurze unplausible Zwischenwerte desselben Peds ersetzen den letzten gültigen
+HP-/Westenstand nicht. Serverseitige HP-/Westenänderungen werden beim Empfang
+auch zwischen zwei nativen Messungen ausgewertet. Der Abgleich mit dem
+nachfolgenden nativen Stand verhindert, dass derselbe Verlust doppelt im
+Damagelog erscheint. Die End-to-End-Suite `DamageLogRegressionTests` prüft
+die Schadensverarbeitung bis zur erzeugten lokalen Chatmeldung.
+Ein konkretes Antworttempo des Servers und ein echter Ingame-Test werden
+durch die automatisierten Tests nicht behauptet.
+
+### r12-Prüfpfade
+
+| Bereich | Implementierung | Tests / Nachweise |
+| --- | --- | --- |
+| Entfernte Friedhofsauswertung | [CombatChatParser.cpp](../../src/CombatChatParser.cpp) | [CombatChatParserTests.cpp](../../tests/CombatChatParserTests.cpp), [CombatChatBridgeTests.cpp](../../tests/CombatChatBridgeTests.cpp), [SAMPBridgeTests.cpp](../../tests/SAMPBridgeTests.cpp) |
+| Fallschaden und Explosion | [SAMPBridge.cpp](../../src/SAMPBridge.cpp), [IncomingDamageDetector.h](../../include/IncomingDamageDetector.h) | [DamageLogRegressionTests.cpp](../../tests/DamageLogRegressionTests.cpp) |
+| ASI und Paket | [verify_revision12_artifact.py](../../tools/verify_revision12_artifact.py), [package_revision12.ps1](../../tools/package_revision12.ps1) | PE32/x86, Ressource 300, ASI-/Paketprüfsummen |
+
+### Zugehörige finale Paketnachweise
+
+- [NLBinder.asi](../../dist/NLBinder-0.1.1-r12/NLBinder.asi)
+- [Vollständiges ZIP](../../dist/NLBinder-v0.1.1-KOBiRO-r12.zip)
+- [Gesamter TXT-Changelog](../../dist/NLBinder-0.1.1-r12/CHANGELOG-GESAMT.txt)
+- [SHA-256](../../dist/NLBinder-0.1.1-r12/SHA256SUMS.txt)
+- [Build- und Prüfangaben](../../dist/NLBinder-0.1.1-r12/BUILD-INFO.txt)
+- [PE-/Ressourcenprüfung](../../dist/NLBinder-0.1.1-r12/PRUEFBERICHT.json)
+- [Nativer Helfertest](../../dist/NLBinder-0.1.1-r12/RECONNECT-TEST.json)
+
+### Ausgeführte Prüfungen für r12
+
+Gesamttests und Win32-Release-Build endeten mit Exitcode 0.
+Erfolgreiche Prüfungen: DamageLogRegression: 66, ActionExecutor: 143, Reconnect: 116, SAMPBridge: 571, StartupStatsSync: 363, StatsDialogRPCAdapter: 727, JobSkillsImport: 17, CombatChatParser: 190, CombatChatBridge: 116, native_reconnect_helper: 83.
+
+Die Friedhofszeile wird als normaler Servertext behandelt. Parser- und
+Integrationstests prüfen, dass sie weder alleine noch nach einem nativen
+Tod einen weiteren Tod oder eine zusätzliche lokale Todesmeldung erzeugt.
+Die Damagelog-Regressionssuite prüft Fallschaden und Explosionsübergänge
+getrennt von den Umweltfiltern des Hitsounds. Bestehende Statistik- und
+Jobskill-Abläufe werden weiterhin gemeinsam geprüft.
+Die Ausgabe des finalen Builds heißt NLBinder.asi. Die geprüfte Datei
+umfasst 18.502.656 Bytes; SHA-256:
+`27add66ee5630b500025dcb8af5e975f5ddadfc994afa3148c3793cf6df1d21c`.
+
+PE32/x86, Windows-Imports und Ressource 300 sind geprüft. Der
+eingebettete Reconnect-Helfer stimmt mit dem frisch geprüften Helfer
+überein. Die Helferprüfung nutzt harmlose Testprozesse; das echte Spiel
+und der installierte Launcher werden dabei nicht gestartet oder beendet.
+
+Der vollständige TXT-Changelog umfasst die Abschnitte 1–18 und wird
+zusammen mit der ASI ausgeliefert.
+Separater ASI-Stand und ZIP-Inhalt stimmen bytegleich überein. Ein
+unabhängiger Abgleich bestätigt alle Paketdateien, den vollständigen
+TXT-Changelog, 43 explizite leere Waffenordner und keine persönlichen PNGs.
+[Maschinenlesbare Ergebnisse](r12-validation.json) ergänzen die Paketnachweise.
+Ein echter Ingame-Test auf dem konkreten Server steht aus.
+
+## Historischer Prüfstand r11 – 29. Oktober 2026
 
 Der aktuelle Stand ist **NLBinder v.0.1.1 by KOBiRO, r11**.
 [Bedienung](../NLBinder-0.1.1-r11-DE.md),
