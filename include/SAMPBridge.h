@@ -17,6 +17,7 @@
 #include "KillfeedAdapter.h"
 #include "DamageRPCAdapter.h"
 #include "IncomingDamageDetector.h"
+#include "LocalDeathLifecycle.h"
 #include "ServerStatsSnapshot.h"
 #include "StatsDialogRPCAdapter.h"
 #include "SpeedTicketFlow.h"
@@ -179,6 +180,7 @@ public:
         std::function<void(sampapi::v03dl::CInput*)> openChatInput;
         std::function<void(sampapi::v03dl::CInput*)> closeChatInput;
         std::function<bool()> isLocalPlayerControllable;
+        std::function<int()> getLocalNativePedState;
     };
 
     static void SetTestingHooks(const TestingHooks& hooks);
@@ -191,6 +193,7 @@ public:
     void ProcessDamageRpcForTesting(RakNet::BitStream* payload);
     void RequestScriptedHealthSuppressionForTesting();
     void ProcessScriptedHealthRpcForTesting(unsigned char rpcId, RakNet::BitStream* payload);
+    void ProcessOutgoingDeathRpcForTesting(int rpcId, RakNet::BitStream* payload);
     void ProcessLocalSyncPacketForTesting(RakNet::BitStream* payload);
     bool ApplyLocalSyncVitalsForTesting(float& health, float& armour, unsigned char mode,
                                        unsigned short vehicle, const void* pedIdentity) const;
@@ -280,6 +283,13 @@ public:
     void ResetKillTrackerDeathInferenceState();
     void RecordLocalPlayerDeath(const std::string& killer, int weaponId);
     void UpdateLocalDeathFallback();
+    void InstallLocalDeathNotificationHook();
+    struct LocalDeathNotificationState {
+        std::atomic<bool> armed{false};
+        std::atomic<bool> pending{false};
+    };
+    static void CaptureLocalDeathNotification(const std::shared_ptr<LocalDeathNotificationState>& state,
+                                             int rpcId, RakNet::BitStream* payload);
     void SendKillTrackerServerMessage(const std::string& message) const;
 
 private:
@@ -441,8 +451,12 @@ private:
     unsigned int localAliveConfirmationFrames_ = 0;
     bool localDeathSawInactive_ = false;
     const void* localDeathPed_ = nullptr;
-    int pendingCemeteryStatsDeathTotal_ = -1;
-    unsigned long pendingCemeteryStatsDeathAt_ = 0;
+    keybinder::LocalDeathLifecycle localDeathLifecycle_;
+    std::shared_ptr<LocalDeathNotificationState> localDeathNotificationState_ = std::make_shared<LocalDeathNotificationState>();
+    bool localDeathNotificationHookInstalled_ = false;
+    std::string localDeathConnectionIdentity_;
+    int pendingServerDeathTotal_ = -1;
+    unsigned long pendingServerDeathAt_ = 0;
     bool jobTrackerInitialized_;
     
     std::function<bool(const std::string&)> slashCommandInterceptor_;

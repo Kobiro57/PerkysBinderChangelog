@@ -21,6 +21,7 @@ template<class Type> struct FakeObject {
 };
 
 struct Context {
+    float deathHealth = 100.0f;
     FakeObject<sampapi::v03dl::CInput> input;
     FakeObject<sampapi::v03dl::CChat> chat;
     FakeObject<sampapi::v03dl::CDialog> dialog;
@@ -60,6 +61,9 @@ struct Context {
         hooks.getLocalPlayerId = []() { return 5; };
         hooks.getPlayerName = [](int) { return std::string("AnotherPlayer"); };
         hooks.getTickCount = [&]() { return now; };
+        hooks.readLocalDamageSample = [&](float& hp, float& armour, int& source, const void*& ped) {
+            hp = deathHealth; armour = 0.0f; source = 51; ped = local.get()->m_pPed; return true;
+        };
         hooks.isStartupStatsReady = [&]() { return ready; };
         hooks.isStartupJobSkillsReady = [&]() { return jobSkillsReady; };
         hooks.getCityLevel = []() { return 1; };
@@ -801,6 +805,7 @@ void TestManualSyncPreservesRealEventsConfirmedAfterTheRequest() {
     CHECK(bridge.Initialize());
     bridge.Update();
     CHECK(CompleteFreshSyncDialogs(bridge, context, 10, 3, 20));
+    for (int i = 0; i < 3; ++i) { context.now += 400; bridge.Update(); }
     std::string error;
     CHECK(bridge.RequestManualStateSynchronization(error));
     bridge.Update();
@@ -810,7 +815,10 @@ void TestManualSyncPreservesRealEventsConfirmedAfterTheRequest() {
     CHECK(bridge.GetKillTracker()->GetSessionDeaths() == 0); // Native victim RPCs do not count.
     bridge.ProcessIncomingChatLineForTesting(nullptr,
         "Willkommen auf dem Friedhof. Hier verweilst du, bis du entweder reanimiert wirst oder deine Zeit abl\xC3\xA4uft.");
-    bridge.Update(); // The cemetery line is the live death confirmed after this sync request.
+    bridge.Update();
+    CHECK(bridge.GetTotalDeaths() == 3); // Cemetery chat is never a live event.
+    context.deathHealth = 0.0f;
+    bridge.Update(); // The actual native death is confirmed after the sync request.
     CHECK(bridge.GetTotalKills() == 11 && bridge.GetTotalDeaths() == 4);
     CHECK(bridge.GetKillTracker()->GetSessionKills() == 1 && bridge.GetKillTracker()->GetSessionDeaths() == 1);
     CHECK(CompleteFreshSyncDialogs(bridge, context, 10, 3, 21)); // Reply created before the real events.

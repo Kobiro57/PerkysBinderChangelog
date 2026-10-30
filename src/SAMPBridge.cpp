@@ -1070,8 +1070,10 @@ bool SAMPBridge::IsCursorActive() const {
 void SAMPBridge::SetSettingsManager(const keybinder::SettingsManager* manager) {
     settingsManager_ = manager;
     if (manager && killTracker_) {
+        const bool wasCountingDeaths = killTracker_->IsCountingDeaths();
         killTracker_->SetCountKills(manager->Get().kill_tracker_count_kills);
         killTracker_->SetCountDeaths(manager->Get().kill_tracker_count_deaths);
+        if (wasCountingDeaths != killTracker_->IsCountingDeaths()) ResetKillTrackerDeathInferenceState();
     }
     if (manager && !startupStatsComplete_ && manager->Get().synchronized_player_stats.HasCounters())
         synchronizedStats_ = manager->Get().synchronized_player_stats;
@@ -2237,122 +2239,134 @@ bool IsLocalLifeControllable() {
 }
 
 void SAMPBridge::ResetKillTrackerDeathInferenceState() {
-    const bool isDead = IsLocalPlayerDead();
-    localPlayerWasDead_ = isDead;
-    localDeathHandledForCurrentLife_ = false;
-    localDeathFallbackDelayFrames_ = 0;
-    localDeathAwaitingNativeDead_ = false;
-    localDeathAwaitDeadline_ = 0;
-    localAliveConfirmationFrames_ = 0;
-    localDeathSawInactive_ = false;
-    localDeathPed_ = nullptr;
-
-    if (killTracker_ != nullptr) {
-        killTracker_->UpdateDeathWindowState({});
-    }
+    localDeathLifecycle_.Reset();
+    localDeathNotificationState_->armed.store(false, std::memory_order_release);
+    localDeathNotificationState_->pending.store(false, std::memory_order_release);
+    localDeathConnectionIdentity_.clear();
+    pendingServerDeathTotal_ = -1;
+    if (killTracker_) killTracker_->UpdateDeathWindowState({});
 }
 
 void SAMPBridge::RecordLocalPlayerDeath(const std::string& killer, int weaponId) {
-    if (!killTracker_) {
-        return;
-    }
-
+    if (!killTracker_) return;
     const bool countingDeaths = killTracker_->IsCountingDeaths();
     const int totalBefore = killTracker_->GetTotalDeaths();
-    const bool alreadyInStats = pendingCemeteryStatsDeathTotal_ == totalBefore
-        && RuntimeTickCount() - pendingCemeteryStatsDeathAt_ <= 5000;
+    const bool alreadyInStats = pendingServerDeathTotal_ == totalBefore
+        && RuntimeTickCount() - pendingServerDeathAt_ <= 5000;
     killTracker_->RecordDeath(killer, weaponId);
     if (alreadyInStats) killTracker_->ImportDeathCount(totalBefore);
-    pendingCemeteryStatsDeathTotal_ = -1;
-    // A server death notification can precede the native wasted flag. Keep the
-    // life guard through those alive frames, then reset on the observed respawn.
-    localPlayerWasDead_ = IsLocalPlayerDead();
-    localDeathAwaitingNativeDead_ = !localPlayerWasDead_;
-    localDeathAwaitDeadline_ = RuntimeTickCount() + 2000;
-    localDeathHandledForCurrentLife_ = true;
-    localAliveConfirmationFrames_ = 0;
-    localDeathSawInactive_ = !IsLocalCombatActive() || !IsLocalLifeControllable();
-    const auto* deathPlayer = GetLocalPlayer();
-    localDeathPed_ = deathPlayer ? deathPlayer->m_pPed : nullptr;
-    localDeathFallbackDelayFrames_ = 0;
-
-    if (!countingDeaths) {
-        return;
-    }
-
-    Log("[SAMPBridge] Local player death recorded: killer=" +
-        (killer.empty() ? std::string("<none>") : killer) +
-        " weapon=" + std::to_string(weaponId));
-
+    pendingServerDeathTotal_ = -1;
+    if (!countingDeaths) return;
     lastLocalDeathTime_ = std::time(nullptr);
-    hasCombatChatDeath_ = true;
-    lastCombatChatDeathAt_ = RuntimeTickCount();
-    SendLocalMessage("{33CCFF}[NL-BINDER]{FFFFFF} Du bist gestorben. Deine aktuelle Tode: " +
-        std::to_string(killTracker_->GetTotalDeaths()));
+    Log("[SAMPBridge] Own life: death confirmed, total=" + std::to_string(killTracker_->GetTotalDeaths()));
+    SendLocalMessage("{33CCFF}[NL-BINDER]{FFFFFF} Du bist gestorben. Deine aktuelle Tode: "
+        + std::to_string(killTracker_->GetTotalDeaths()));
 }
 
-void SAMPBridge::UpdateLocalDeathFallback() {
-    if (!killTracker_ || !killfeedAdapter_) {
-        return;
-    }
+void SAMPBridge::CaptureLocalDeathNotification(
+    const std::shared_ptr<LocalDeathNotificationState>& state, int rpcId, RakNet::BitStream* payload) {
+    if (!state || rpcId != 53 || !payload || !state->armed.load(std::memory_order_acquire)) return;
+    // DL-R1 WastedNotification RVA5660 sends reason:uint8 + killer:uint16 in
+    // RPC53. Its caller sets Active=0/Wasted=1 only after this notification.
+    const int offset = payload->GetReadOffset();
+    unsigned char reason = 0;
+    unsigned short killer = 0xFFFF;
+    const bool valid = payload->GetNumberOfUnreadBits() == 24 && payload->Read(reason) && payload->Read(killer)
+        && (killer == 0xFFFF || killer < 1004);
+    payload->SetReadOffset(offset);
+    if (valid && state->armed.exchange(false, std::memory_order_acq_rel))
+        state->pending.store(true, std::memory_order_release);
+}
 
-    const bool isDead = IsLocalPlayerDead();
-    if (localDeathHandledForCurrentLife_ && (!IsLocalCombatActive() || !IsLocalLifeControllable())) localDeathSawInactive_ = true;
-    if (!isDead) {
-        if (localDeathHandledForCurrentLife_) {
-            // An alive flag alone is also seen during the explosion/funeral
-            // transition. Do not rearm a life on zero/sentinel HP, inactive
-            // players or a single transient frame. A delayed cemetery line
-            // still describes the death that was already recorded.
-            bool confirmedAlive = false;
-#ifdef KEYBINDER_TESTING
-            if (!GetTestingHooks().readLocalDamageSample) {
-                // Older fixtures model the native life exclusively with the
-                // explicit wasted -> alive transition.
-                confirmedAlive = localPlayerWasDead_;
-                if (confirmedAlive) localAliveConfirmationFrames_ = 1;
-            } else
-#endif
-            {
-                float health = 0.0f, armour = 0.0f;
-                int source = 0;
-                const void* ped = nullptr;
-                const auto* player = GetLocalPlayer();
-                const bool newPed = player && player->m_pPed && player->m_pPed != localDeathPed_;
-                confirmedAlive = (localPlayerWasDead_ || localDeathSawInactive_ || newPed)
-                    && IsLocalCombatActive() && IsLocalLifeControllable()
-                    && ReadLocalDamageSample(health, armour, source, ped) && ped
-                    && keybinder::IsMeasurablePlayerVital(health) && health > 0.0f;
+void SAMPBridge::InstallLocalDeathNotificationHook() {
+    if (localDeathNotificationHookInstalled_) return;
+    localDeathNotificationHookInstalled_ = true;
 #ifndef KEYBINDER_TESTING
-                if (confirmedAlive) {
-                    const auto* gamePed = static_cast<const CPlayerPed*>(ped);
-                    confirmedAlive = gamePed->m_ePedState != PEDSTATE_DIE
-                        && gamePed->m_ePedState != PEDSTATE_DEAD
-                        && gamePed->m_ePedState != PEDSTATE_DIE_BY_STEALTH;
-                }
+    std::weak_ptr<LocalDeathNotificationState> weak = localDeathNotificationState_;
+    rakhook::on_send_rpc += [weak](int& id, RakNet::BitStream* payload, PacketPriority&,
+                                PacketReliability&, char&, bool&) -> bool {
+        if (rakhook::initialized) CaptureLocalDeathNotification(weak.lock(), id, payload);
+        return true;
+    };
 #endif
-            }
-            localAliveConfirmationFrames_ = confirmedAlive ? localAliveConfirmationFrames_ + 1 : 0;
-            if (localAliveConfirmationFrames_ < 2) return;
-        }
+}
+
+#ifdef KEYBINDER_TESTING
+void SAMPBridge::ProcessOutgoingDeathRpcForTesting(int rpcId, RakNet::BitStream* payload) {
+    CaptureLocalDeathNotification(localDeathNotificationState_, rpcId, payload);
+}
+#endif
+
+void SAMPBridge::UpdateLocalDeathFallback() {
+    InstallLocalDeathNotificationHook();
+    auto* network = GetNetGame();
+    auto* player = GetLocalPlayer();
+    const bool connected = network && network->m_nGameState == sampapi::v03dl::CNetGame::GAME_MODE_CONNECTED;
+    const auto name = GetLocalPlayerName();
+    if (!connected || !player || name.empty() || player->m_bDoesSpectating
+        || player->m_classSelection.m_bIsActive || player->m_classSelection.m_bWaitingForSpawnRequestReply) {
         ResetKillTrackerDeathInferenceState();
-        // Cemetery callback deduplication uses its own short window; native
-        // respawn flags must not clear it or permanently gate a later message.
         return;
     }
-
-    localAliveConfirmationFrames_ = 0;
-    localDeathAwaitingNativeDead_ = false;
-    if (!localPlayerWasDead_) {
-        localPlayerWasDead_ = true;
-        if (!localDeathHandledForCurrentLife_) {
-            localDeathFallbackDelayFrames_ = kLocalDeathFallbackDelayFrames;
-        }
+    const std::string identity = std::string(network->m_szHostAddress, strnlen(network->m_szHostAddress, 257))
+        + ":" + std::to_string(network->m_nPort) + "/" + name
+        + "/" + std::to_string(reinterpret_cast<uintptr_t>(network));
+    if (identity != localDeathConnectionIdentity_) {
+        ResetKillTrackerDeathInferenceState();
+        localDeathConnectionIdentity_ = identity;
+        Log("[SAMPBridge] Own life: connection baseline");
     }
-
-    // Native death/wasted and the killfeed only describe the life transition.
-    // A death is counted exclusively when the server admits us to the cemetery.
-    killTracker_->UpdateDeathWindowState(killfeedAdapter_->GetCurrentDeathWindowState());
+    // The client may have replaced/removed the funeral ped before our next
+    // frame. A notification captured during this connection's armed life
+    // still confirms that life ended; evaluate it before resetting ped state.
+    const bool notification = localDeathNotificationState_->pending.exchange(false, std::memory_order_acq_rel);
+    bool counted = notification && localDeathLifecycle_.ObserveDeathNotification();
+    if (!player->m_pPed) {
+        if (counted) RecordLocalPlayerDeath("", -1);
+        ResetKillTrackerDeathInferenceState();
+        return;
+    }
+    float rawHealth = 0.0f, armour = 0.0f;
+    int source = 0, nativeState = 0;
+    const void* ped = nullptr;
+    bool sample = false;
+#ifdef KEYBINDER_TESTING
+    const auto& hooks = GetTestingHooks();
+    sample = hooks.readLocalDamageSample && hooks.readLocalDamageSample(rawHealth, armour, source, ped);
+    if (hooks.getLocalNativePedState) nativeState = hooks.getLocalNativePedState();
+#else
+    const auto* gamePed = FindPlayerPed(0);
+    if (gamePed && player->m_pPed->m_pGamePed == gamePed) {
+        ped = gamePed;
+        rawHealth = gamePed->m_fHealth;
+        nativeState = gamePed->m_ePedState;
+        sample = true;
+    }
+#endif
+    const bool nativeDeath = player->m_bIsWasted != FALSE || nativeState == 54 || nativeState == 55 || nativeState == 56;
+    if (nativeDeath && localDeathLifecycle_.ObserveDeathNotification()) counted = true;
+    const bool dead = nativeDeath
+        || (sample && std::isfinite(rawHealth) && rawHealth <= 0.0f);
+    float aliveHealth = rawHealth;
+    if (sample && !keybinder::IsMeasurablePlayerVital(aliveHealth)) {
+        const void* measuredPed = nullptr;
+        float measuredArmour = 0.0f, measuredHealth = 0.0f;
+        int measuredSource = 0;
+        if (ReadLocalDamageSample(measuredHealth, measuredArmour, measuredSource, measuredPed) && measuredPed == ped)
+            aliveHealth = measuredHealth; // Positive synced vitals establish life, never death.
+    }
+    const bool healthy = sample && keybinder::IsMeasurablePlayerVital(aliveHealth) && aliveHealth > 0.0f;
+    const auto previous = localDeathLifecycle_.GetPhase();
+    const bool observedDeath = localDeathLifecycle_.Observe(true, player->m_bIsActive != FALSE,
+        IsLocalLifeControllable(), healthy, dead, ped, RuntimeTickCount());
+    counted = counted || observedDeath;
+    localDeathNotificationState_->armed.store(localDeathLifecycle_.IsArmed(), std::memory_order_release);
+    if (counted) RecordLocalPlayerDeath("", -1);
+    else if (previous != localDeathLifecycle_.GetPhase()) {
+        Log(localDeathLifecycle_.IsArmed() ? "[SAMPBridge] Own life: alive/respawn armed"
+            : "[SAMPBridge] Own life: already-dead baseline, no death counted");
+    }
+    if (killTracker_ && killfeedAdapter_) killTracker_->UpdateDeathWindowState(killfeedAdapter_->GetCurrentDeathWindowState());
 }
 
 void SAMPBridge::InstallScriptedHealthRpcHook() {
@@ -3051,7 +3065,7 @@ void SAMPBridge::ResetCombatChat() {
     combatKillObservations_.clear();
     combatChatConnected_ = false; combatChatPlayer_.clear();
     hasCombatChatDeath_ = false; processingCombatChat_ = false;
-    pendingCemeteryStatsDeathTotal_ = -1;
+    pendingServerDeathTotal_ = -1;
 }
 
 void SAMPBridge::UpdateCombatChat(unsigned long now) {
@@ -3081,14 +3095,6 @@ void SAMPBridge::UpdateCombatChat(unsigned long now) {
             processingCombatChat_ = true; currentCombatNoticeTick_ = line.at;
             HandleLocalKill(std::move(event));
             processingCombatChat_ = false;
-        } else if (notice.kind == killtracker::CombatChatKind::Death
-                   && notice.family == killtracker::CombatChatFamily::Cemetery) {
-            // The server may keep a healthy native ped throughout its funeral
-            // script. Only duplicate cemetery callbacks share this short guard.
-            if (!hasCombatChatDeath_ || now - lastCombatChatDeathAt_ > 5000) {
-                RecordLocalPlayerDeath(notice.killer, -1);
-                hasCombatChatDeath_ = true; lastCombatChatDeathAt_ = now;
-            }
         } else if (notice.kind == killtracker::CombatChatKind::KillCorroboration) {
             // This line names the prisoner, not the killer. It may corroborate
             // a known own kill but cannot independently establish attribution.
@@ -3318,13 +3324,13 @@ void SAMPBridge::ImportDeathCount(int count) {
 }
 
 void SAMPBridge::ImportServerDeathCount(int count) {
-    // An actual server snapshot can precede the cemetery line even on the
-    // first login sync, when a persisted total has already been loaded.
+    // An actual server snapshot can precede the observed native transition during a
+    // confirmed living life. Initial login snapshots are baselines, not events.
     // Settings/local imports never create this server-event credit.
     const int previous = killTracker_ ? killTracker_->GetTotalDeaths() : 0;
-    if (count > previous && count - previous == 1) {
-        pendingCemeteryStatsDeathTotal_ = count;
-        pendingCemeteryStatsDeathAt_ = RuntimeTickCount();
+    if (localDeathLifecycle_.IsArmed() && count > previous && count - previous == 1) {
+        pendingServerDeathTotal_ = count;
+        pendingServerDeathAt_ = RuntimeTickCount();
     }
     ImportDeathCount(count);
 }

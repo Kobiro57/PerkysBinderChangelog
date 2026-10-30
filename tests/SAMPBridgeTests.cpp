@@ -157,6 +157,8 @@ struct CombatSoundContext : MockContext {
     float health = 100.0f;
     float armour = 100.0f;
     int damageSource = 24;
+    int nativePedState = 0;
+    bool controllable = true;
     const void* pedIdentity = reinterpret_cast<const void*>(0x1000);
     int samplesRead = 0;
     unsigned long tick = 1000;
@@ -172,6 +174,8 @@ struct CombatSoundContext : MockContext {
         auto hooks = BuildHooks();
         hooks.getNetGame = [this]() { return connectedObjectAvailable ? netGame : nullptr; };
         hooks.getTickCount = [this]() { return tick; };
+        hooks.getLocalNativePedState = [this]() { return nativePedState; };
+        hooks.isLocalPlayerControllable = [this]() { return controllable; };
         hooks.readLocalDamageSample = [this](float& outHealth, float& outArmour, int& outSource, const void*& outIdentity) {
             ++samplesRead;
             outHealth = health;
@@ -183,6 +187,14 @@ struct CombatSoundContext : MockContext {
         return hooks;
     }
 };
+
+void ArmLivingPlayer(SAMPBridge& bridge, CombatSoundContext& context) {
+    context.localPlayer->m_bIsActive = TRUE;
+    context.localPlayer->m_bIsWasted = FALSE;
+    context.nativePedState = 0;
+    context.controllable = true;
+    for (int i = 0; i < 3; ++i) { context.tick += 400; bridge.Update(); }
+}
 
 bool EmitDamageRpc(SAMPBridge& bridge, float amount, bool incoming = true, int weapon = 24) {
     RakNet::BitStream payload;
@@ -951,48 +963,34 @@ bool TestKillTrackerStaleVictimDamageCleanup() {
     return true;
 }
 
-bool TestNativeWastedWaitsForCemeteryChat() {
-    CombatSoundContext context;
+bool TestNativeWastedNeedsALivingBaselineAndCountsOnce() {
+CombatSoundContext context;
+    context.health = 0.0f;
+    context.localPlayer->m_bIsWasted = TRUE;
+    context.controllable = false;
     auto hooks = context.BuildCombatHooks();
-    hooks.getLocalPlayerName = []() { return std::string("CemeteryPlayer"); };
+    hooks.getLocalPlayerName = []() { return std::string("BaselinePlayer"); };
     SAMPBridge::SetTestingHooks(hooks);
-
     SAMPBridge bridge;
     bridge.SetKillTrackerEnabled(true);
     ASSERT_TRUE(bridge.Initialize());
-    ASSERT_TRUE(bridge.GetKillTracker() != nullptr);
-    ASSERT_EQ(bridge.GetKillTracker()->GetTotalDeaths(), 0);
-
-    context.localPlayer->m_bIsWasted = TRUE;
-    for (int i = 0; i < 20; ++i) {
-        bridge.Update();
-    }
-
-    ASSERT_EQ(bridge.GetKillTracker()->GetTotalDeaths(), 0);
+    for (int i = 0; i < 20; ++i) { context.tick += 1000; bridge.Update(); }
+    ASSERT_EQ(bridge.GetTotalDeaths(), 0);
     ASSERT_TRUE(bridge.GetKillTracker()->GetRecentDeaths().empty());
     ASSERT_TRUE(context.localMessages.empty());
-    bridge.ProcessIncomingChatLineForTesting(nullptr, "Willkommen auf dem Friedhof. Hier verweilst du, bis du entweder reanimiert wirst oder deine Zeit abl\xC3\xA4uft.");
-    bridge.Update();
-    ASSERT_EQ(bridge.GetTotalDeaths(), 1);
-
-    for (int i = 0; i < 5; ++i) {
-        bridge.Update();
-    }
-    ASSERT_EQ(bridge.GetKillTracker()->GetTotalDeaths(), 1);
-
-    context.localPlayer->m_bIsWasted = FALSE;
-    bridge.Update();
-
+    context.health = 100.0f;
+    ArmLivingPlayer(bridge, context);
     context.localPlayer->m_bIsWasted = TRUE;
-    for (int i = 0; i < 20; ++i) {
-        bridge.Update();
-    }
-    ASSERT_EQ(bridge.GetTotalDeaths(), 1);
-    context.tick += 6000;
-    bridge.ProcessIncomingChatLineForTesting(nullptr, "Willkommen auf dem Friedhof. Hier verweilst du, bis du entweder reanimiert wirst oder deine Zeit abl\xC3\xA4uft.");
     bridge.Update();
-    ASSERT_EQ(bridge.GetKillTracker()->GetTotalDeaths(), 2);
-
+    ASSERT_EQ(bridge.GetTotalDeaths(), 1);
+    for (int i = 0; i < 20; ++i) bridge.Update();
+    ASSERT_EQ(bridge.GetTotalDeaths(), 1);
+    ArmLivingPlayer(bridge, context);
+    context.localPlayer->m_bIsWasted = TRUE;
+    bridge.Update();
+    ASSERT_EQ(bridge.GetTotalDeaths(), 2);
+    ASSERT_EQ(bridge.GetKillTracker()->GetSessionDeaths(), 2);
+    ASSERT_TRUE(context.serverMessages.empty());
     bridge.Shutdown();
     SAMPBridge::ResetTestingHooks();
     return true;
@@ -1405,44 +1403,33 @@ bool TestKillfeedStartsWithBaselineAndDoesNotReplayAfterReset() {
     return true;
 }
 
-bool TestDeathRpcAndWastedCannotCountWithoutCemetery() {
-    CombatSoundContext context;
-    auto deathNoticeCount = [&]() {
-        std::size_t count = 0;
-        for (const std::string& message : context.localMessages) {
-            if (message.find("Du bist gestorben.") != std::string::npos) ++count;
-        }
-        return count;
-    };
+bool TestWastedCountsOnceAndIncomingFeedDoesNotDuplicateIt() {
+CombatSoundContext context;
     auto hooks = context.BuildCombatHooks();
     hooks.getLocalPlayerId = []() { return 5; };
-    hooks.getLocalPlayerName = []() { return std::string("KOBiRO"); };
+    hooks.getLocalPlayerName = []() { return std::string("NativePlayer"); };
     hooks.getPlayerName = [](int) { return std::string("Other"); };
     SAMPBridge::SetTestingHooks(hooks);
     SAMPBridge bridge;
     bridge.SetKillTrackerEnabled(true);
     ASSERT_TRUE(bridge.Initialize());
-
+    ArmLivingPlayer(bridge, context);
     bridge.ProcessDeathMessageForTesting({9, 5, 31, std::time(nullptr), true});
-    ASSERT_EQ(bridge.GetTotalDeaths(), 0);
-    ASSERT_EQ(deathNoticeCount(), std::size_t(0));
-    bridge.Update(); // RPC arrives one frame before local player state changes
-    context.localPlayer->m_bIsWasted = true;
+    ASSERT_EQ(bridge.GetTotalDeaths(), 0); // An incoming feed entry is not a local transition.
+    bridge.Update();
+    context.localPlayer->m_bIsWasted = TRUE;
     for (int i = 0; i < 20; ++i) bridge.Update();
-    ASSERT_EQ(bridge.GetTotalDeaths(), 0);
-    ASSERT_EQ(deathNoticeCount(), std::size_t(0));
+    ASSERT_EQ(bridge.GetTotalDeaths(), 1);
     bridge.ProcessDeathMessageForTesting({9, 5, 31, std::time(nullptr), true});
-    ASSERT_EQ(bridge.GetTotalDeaths(), 0); // Duplicate RPCs cannot count either.
-
-    context.localPlayer->m_bIsWasted = false;
-    bridge.Update(); // observed respawn, including a second death inside five seconds
-    bridge.ProcessDeathMessageForTesting({9, 5, 31, std::time(nullptr), true});
-    ASSERT_EQ(bridge.GetTotalDeaths(), 0);
-    ASSERT_EQ(deathNoticeCount(), std::size_t(0));
-    context.localPlayer->m_bIsWasted = true;
+    bridge.Update();
+    ASSERT_EQ(bridge.GetTotalDeaths(), 1);
+    ArmLivingPlayer(bridge, context);
+    context.localPlayer->m_bIsWasted = TRUE;
     for (int i = 0; i < 20; ++i) bridge.Update();
-    ASSERT_EQ(bridge.GetTotalDeaths(), 0);
-    ASSERT_EQ(bridge.GetKillTracker()->GetSessionDeaths(), 0);
+    ASSERT_EQ(bridge.GetTotalDeaths(), 2);
+    ASSERT_EQ(bridge.GetKillTracker()->GetSessionDeaths(), 2);
+    ASSERT_EQ(std::count_if(context.localMessages.begin(), context.localMessages.end(),
+        [](const std::string& value) { return value.find("Du bist gestorben.") != std::string::npos; }), 2);
     ASSERT_TRUE(context.serverMessages.empty());
     bridge.Shutdown();
     SAMPBridge::ResetTestingHooks();
@@ -2137,12 +2124,11 @@ std::size_t LocalDeathNoticeCount(const MockContext& context) {
 
 constexpr const char* kCemeteryDeathNotice = "Willkommen auf dem Friedhof. Hier verweilst du, bis du entweder reanimiert wirst oder deine Zeit abl\xC3\xA4uft.";
 
-bool TestExplosionOverkillAndDelayedCemeteryCountOneDeathPerLife() {
-    CombatSoundContext context;
+bool TestExplosionOverkillCountsOnceWithoutCemeteryEvidence() {
+CombatSoundContext context;
     context.health = 50.0f; context.armour = 0.0f;
     auto hooks = context.BuildCombatHooks();
     hooks.getLocalPlayerName = []() { return std::string("ExplosionPlayer"); };
-    hooks.getLocalPlayerId = []() { return 5; };
     SAMPBridge::SetTestingHooks(hooks);
     keybinder::SettingsManager settings;
     settings.GetMutable().damage_log_enabled = true;
@@ -2151,51 +2137,45 @@ bool TestExplosionOverkillAndDelayedCemeteryCountOneDeathPerLife() {
     bridge.SetKillTrackerEnabled(true);
     ASSERT_TRUE(bridge.Initialize());
     bridge.ImportDeathCount(212);
-    bridge.Update();
-    context.damageSource = 51; // Explosion, with a large GTA negative overkill value.
+    ArmLivingPlayer(bridge, context);
+    context.damageSource = 51;
     context.health = -8000000.0f;
     context.localPlayer->m_bIsWasted = TRUE;
     context.localPlayer->m_bIsActive = FALSE;
     for (int i = 0; i < 20; ++i) bridge.Update();
     ASSERT_EQ(DamageLogCount(context), std::size_t(1));
     ASSERT_TRUE(context.localMessages.front().find("{33CCFF}[NL-BINDER] {FF0000}-50,0 HP") != std::string::npos);
-    ASSERT_EQ(bridge.GetTotalDeaths(), 212);
-    ASSERT_EQ(LocalDeathNoticeCount(context), std::size_t(0));
-    // Clearing the native wasted flag does not resurrect a zero/negative-HP ped.
+    ASSERT_EQ(bridge.GetTotalDeaths(), 213);
+    ASSERT_EQ(LocalDeathNoticeCount(context), std::size_t(1));
     context.localPlayer->m_bIsWasted = FALSE;
     context.localPlayer->m_bIsActive = TRUE;
     context.tick += 10000;
-    bridge.Update();
     bridge.ProcessIncomingChatLineForTesting(nullptr, kCemeteryDeathNotice);
     bridge.Update();
     ASSERT_EQ(bridge.GetTotalDeaths(), 213);
     ASSERT_EQ(LocalDeathNoticeCount(context), std::size_t(1));
-    context.health = 8000050.0f; // Script/protection state is not a new life.
-    for (int i = 0; i < 3; ++i) bridge.Update();
-    bridge.ProcessIncomingChatLineForTesting(nullptr, kCemeteryDeathNotice);
-    bridge.Update();
-    ASSERT_EQ(bridge.GetTotalDeaths(), 213);
-    ASSERT_EQ(DamageLogCount(context), std::size_t(1));
+    context.health = 8000050.0f;
+    for (int i = 0; i < 3; ++i) { context.tick += 1000; bridge.Update(); }
+    context.health = -8000000.0f; bridge.Update();
+    ASSERT_EQ(bridge.GetTotalDeaths(), 213); // Unmeasurable positive HP did not confirm a new life.
     context.health = 100.0f;
-    bridge.Update(); bridge.Update(); // Actual controllable, healthy respawn.
+    ArmLivingPlayer(bridge, context);
     context.health = -8000000.0f;
     for (int i = 0; i < 20; ++i) bridge.Update();
-    ASSERT_EQ(bridge.GetTotalDeaths(), 213);
-    ASSERT_EQ(LocalDeathNoticeCount(context), std::size_t(1));
-    context.tick += 6000;
-    bridge.ProcessIncomingChatLineForTesting(nullptr, kCemeteryDeathNotice);
-    bridge.Update();
     ASSERT_EQ(bridge.GetTotalDeaths(), 214);
     ASSERT_EQ(LocalDeathNoticeCount(context), std::size_t(2));
     ASSERT_EQ(DamageLogCount(context), std::size_t(2));
+    bridge.ProcessIncomingChatLineForTesting(nullptr, kCemeteryDeathNotice);
+    bridge.Update();
+    ASSERT_EQ(bridge.GetTotalDeaths(), 214);
     bridge.Shutdown();
     SAMPBridge::ResetTestingHooks();
     return true;
 }
 
-bool TestCemeteryIsTheOnlyDeathCountAndDuplicateNoticeIsIgnored() {
-    CombatSoundContext context;
-    context.health = 50.0f;
+bool TestCemeteryCannotCountAndNativeZeroNeedsALivingBaseline() {
+CombatSoundContext context;
+    context.health = 0.0f;
     auto hooks = context.BuildCombatHooks();
     hooks.getLocalPlayerName = []() { return std::string("CemeteryIgnoredPlayer"); };
     SAMPBridge::SetTestingHooks(hooks);
@@ -2203,41 +2183,26 @@ bool TestCemeteryIsTheOnlyDeathCountAndDuplicateNoticeIsIgnored() {
     bridge.SetKillTrackerEnabled(true);
     ASSERT_TRUE(bridge.Initialize());
     bridge.ImportDeathCount(213);
-    bridge.Update();
-
-    context.health = 0.0f;
-    context.localPlayer->m_bIsWasted = FALSE;
     for (int i = 0; i < 20; ++i) bridge.Update();
-    ASSERT_EQ(bridge.GetTotalDeaths(), 213); // A native 0-HP sample never counts.
-    ASSERT_EQ(bridge.GetKillTracker()->GetSessionDeaths(), 0);
+    ASSERT_EQ(bridge.GetTotalDeaths(), 213);
     ASSERT_EQ(LocalDeathNoticeCount(context), std::size_t(0));
-
-    context.tick += 1000;
-    context.health = 100.0f;
-    context.localPlayer->m_bIsWasted = FALSE;
-    bridge.Update(); bridge.Update(); // A genuinely healthy new life rearms detection.
-    context.tick += 2000;
-    const std::string timestamped = std::string("{33CCFF}[23:57:06] {FFFFFF}") + kCemeteryDeathNotice;
-    bridge.ProcessIncomingChatLineForTesting(nullptr, timestamped.c_str());
-    bridge.ProcessIncomingChatLineForTesting(nullptr, "INFO: {FFFFFF}Gib /graveyard ein, um herauszufinden, wie lange du noch hier bist.");
-    bridge.Update();
-    ASSERT_EQ(bridge.GetTotalDeaths(), 214);
-    ASSERT_EQ(bridge.GetKillTracker()->GetSessionDeaths(), 1);
-    ASSERT_EQ(LocalDeathNoticeCount(context), std::size_t(1));
-    ASSERT_TRUE(context.serverMessages.empty());
-
     bridge.ProcessIncomingChatLineForTesting(nullptr, kCemeteryDeathNotice);
     bridge.Update();
-    ASSERT_EQ(bridge.GetTotalDeaths(), 214);
-    ASSERT_EQ(LocalDeathNoticeCount(context), std::size_t(1));
-    context.health = 0.0f;
-    context.localPlayer->m_bIsWasted = FALSE;
+    ASSERT_EQ(bridge.GetTotalDeaths(), 213);
+    context.health = 100.0f;
+    ArmLivingPlayer(bridge, context);
+    context.health = 0.0f; // No Wasted flag or native DIE state is needed for a real zero-HP transition.
     for (int i = 0; i < 20; ++i) bridge.Update();
-    ASSERT_EQ(bridge.GetTotalDeaths(), 214); // The next native death also waits for the server.
+    ASSERT_EQ(bridge.GetTotalDeaths(), 214);
     ASSERT_EQ(bridge.GetKillTracker()->GetSessionDeaths(), 1);
     ASSERT_EQ(LocalDeathNoticeCount(context), std::size_t(1));
     context.tick += 6000;
     bridge.ProcessIncomingChatLineForTesting(nullptr, kCemeteryDeathNotice);
+    bridge.Update();
+    ASSERT_EQ(bridge.GetTotalDeaths(), 214);
+    context.health = 100.0f;
+    ArmLivingPlayer(bridge, context);
+    context.health = 0.0f;
     bridge.Update();
     ASSERT_EQ(bridge.GetTotalDeaths(), 215);
     ASSERT_EQ(LocalDeathNoticeCount(context), std::size_t(2));
@@ -2247,41 +2212,36 @@ bool TestCemeteryIsTheOnlyDeathCountAndDuplicateNoticeIsIgnored() {
     return true;
 }
 
-bool TestLaterCemeteryCountsEvenWithPermanentlyHealthyControlledNativePed() {
-    CombatSoundContext context;
-    context.health = 100.0f;
-    bool controllable = true;
+bool TestDeadLoginAndBlockedFuneralCannotArmANewLife() {
+CombatSoundContext context;
+    context.health = 0.0f;
+    context.localPlayer->m_bIsWasted = TRUE;
+    context.controllable = false;
     auto hooks = context.BuildCombatHooks();
-    hooks.getLocalPlayerName = []() { return std::string("ChatDeathPlayer"); };
-    hooks.isLocalPlayerControllable = [&]() { return controllable; };
+    hooks.getLocalPlayerName = []() { return std::string("FuneralPlayer"); };
     SAMPBridge::SetTestingHooks(hooks);
     SAMPBridge bridge;
     bridge.SetKillTrackerEnabled(true);
     ASSERT_TRUE(bridge.Initialize());
     bridge.Update();
-    const char* criminalDeathNotice = "<< Enemy_One hat den gesuchten Verbrecher ChatDeathPlayer get\xC3\xB6tet. >>";
-    bridge.ProcessIncomingChatLineForTesting(nullptr, criminalDeathNotice);
+    context.localPlayer->m_bIsWasted = FALSE;
+    context.health = 100.0f;
+    for (int i = 0; i < 180; ++i) {
+        context.tick += 1000;
+        bridge.ProcessIncomingChatLineForTesting(nullptr, kCemeteryDeathNotice);
+        bridge.Update();
+    }
+    context.health = 0.0f;
+    context.localPlayer->m_bIsWasted = TRUE;
     bridge.Update();
-    ASSERT_EQ(bridge.GetTotalDeaths(), 0); // An explicit victim announcement is not the admission trigger.
-    bridge.ProcessIncomingChatLineForTesting(nullptr, kCemeteryDeathNotice);
+    ASSERT_EQ(bridge.GetTotalDeaths(), 0);
+    ASSERT_EQ(LocalDeathNoticeCount(context), std::size_t(0));
+    context.health = 100.0f;
+    ArmLivingPlayer(bridge, context);
+    context.health = 0.0f;
     bridge.Update();
     ASSERT_EQ(bridge.GetTotalDeaths(), 1);
-    for (int i = 0; i < 3; ++i) bridge.Update();
-    bridge.ProcessIncomingChatLineForTesting(nullptr, kCemeteryDeathNotice);
-    bridge.Update();
-    ASSERT_EQ(bridge.GetTotalDeaths(), 1); // A duplicate callback has no second count.
-    controllable = false;
-    for (int i = 0; i < 4; ++i) bridge.Update();
-    bridge.ProcessIncomingChatLineForTesting(nullptr, kCemeteryDeathNotice);
-    bridge.Update();
-    ASSERT_EQ(bridge.GetTotalDeaths(), 1); // Healthy but frozen funeral ped.
-    controllable = true;
-    bridge.Update(); bridge.Update();
-    context.tick += 6000;
-    bridge.ProcessIncomingChatLineForTesting(nullptr, kCemeteryDeathNotice);
-    bridge.Update();
-    ASSERT_EQ(bridge.GetTotalDeaths(), 2);
-    ASSERT_EQ(LocalDeathNoticeCount(context), std::size_t(2));
+    ASSERT_EQ(LocalDeathNoticeCount(context), std::size_t(1));
     bridge.Shutdown();
     SAMPBridge::ResetTestingHooks();
     return true;
@@ -2507,9 +2467,9 @@ int RunSAMPBridgeTests() {
     RUN_TEST(TestManualInputBindSendsOnlyExpandedNewsCommand);
     RUN_TEST(TestManualInputDefersHudScaleCommandUntilAnswered);
     RUN_TEST(TestLocalKillNoticeMigratesWithoutChangingPublicBind);
-    RUN_TEST(TestExplosionOverkillAndDelayedCemeteryCountOneDeathPerLife);
-    RUN_TEST(TestCemeteryIsTheOnlyDeathCountAndDuplicateNoticeIsIgnored);
-    RUN_TEST(TestLaterCemeteryCountsEvenWithPermanentlyHealthyControlledNativePed);
+    RUN_TEST(TestExplosionOverkillCountsOnceWithoutCemeteryEvidence);
+    RUN_TEST(TestCemeteryCannotCountAndNativeZeroNeedsALivingBaseline);
+    RUN_TEST(TestDeadLoginAndBlockedFuneralCannotArmANewLife);
     RUN_TEST(TestDamageLogRejectsScriptSentinelsWithoutCappingEnhancedVitals);
 
     RUN_TEST(TestInitFailureWithoutSampModule);
@@ -2538,7 +2498,7 @@ int RunSAMPBridgeTests() {
     RUN_TEST(TestKillTrackerDamageAccumulation);
     RUN_TEST(TestKillTrackerEnabledToggle);
     RUN_TEST(TestKillTrackerStaleVictimDamageCleanup);
-    RUN_TEST(TestNativeWastedWaitsForCemeteryChat);
+    RUN_TEST(TestNativeWastedNeedsALivingBaselineAndCountsOnce);
     RUN_TEST(TestKillAndDeathCountersCanBeDisabledIndependently);
     RUN_TEST(TestCounterSettingsAppliedBeforeTrackerCreation);
     RUN_TEST(TestDisabledDeathCounterSendsNoNotifications);
@@ -2550,7 +2510,7 @@ int RunSAMPBridgeTests() {
     RUN_TEST(TestReceivedServerTotalsAndKillfeedCountExactlyOnce);
     RUN_TEST(TestServerStatsRequireOwnPlayerHeaderAndConsumeContext);
     RUN_TEST(TestKillfeedStartsWithBaselineAndDoesNotReplayAfterReset);
-    RUN_TEST(TestDeathRpcAndWastedCannotCountWithoutCemetery);
+    RUN_TEST(TestWastedCountsOnceAndIncomingFeedDoesNotDuplicateIt);
     RUN_TEST(TestAutoEngineStartUsesDriverTransitionsAndHeldInput);
     RUN_TEST(TestAutoEngineStartDoesNotTypeIntoBinder);
     RUN_TEST(TestAutoEngineStartWaitsForServerEngineStateAfterEntry);

@@ -859,3 +859,64 @@ nicht veröffentlicht. Ältere GitHub-Stände und ursprüngliche Urheberhinweise
 bleiben erhalten. Die finalen Nachweise gehören zum
 [r13-Paket](../../dist/NLBinder-0.1.1-r13/BUILD-INFO.txt).
 Ein echter Ingame-Test auf dem konkreten Server steht aus.
+
+## 20. Nachtrag r14 – 30. Oktober 2026
+
+### Todeszählung am echten Lebenszyklus ausrichten
+
+Der Binder bestätigt zunächst eine eigene lebendige Spielphase: derselbe
+Spieler muss gespawnt, steuerbar und mit positiven gültigen Lebenswerten
+mindestens 750 ms über drei Messungen beobachtet werden. Erst danach kann
+ein Übergang zu 0 bzw. negativen nativen HP, GTA-DIE/DEAD oder SA-MP-Wasted
+einen Tod zählen. Ein positiver Schutzwert oder ein hoher Schadensbetrag
+allein gilt nicht als Tod.
+
+Zusätzlich wird die echte eigene Client-Todesmeldung ausgewertet.
+Für den unterstützten DL-R1-Client wurde der Weg von
+CLocalPlayer::WastedNotification (RVA 0x5660) zu RPC 53 mit
+reason:uint8 und killer:uint16 lokal geprüft. Der Hook liest und
+restauriert den Datenstrom und lässt die Meldung unverändert passieren.
+Er erfasst nur eine zuvor bestätigte eigene Spielphase; die Zählung und
+lokale Ausgabe erfolgen im Spielthread. Dadurch bleibt eine Todesmeldung
+erhalten, wenn der nächste Messdurchlauf bereits einen neuen Friedhofs-Ped
+oder wieder positive HP vorfindet. Ein Verbindungs- oder Accountwechsel
+verwirft alte ausstehende Meldungen.
+
+Login, Relog und ein bereits toter Spieler beginnen als Ausgangslage ohne
+zusätzlichen Tod und ohne neue lokale Todesmeldung. Friedhofs-Chat ist
+vollständig als Zählquelle entfernt. Kurze gesund aussehende Zwischenphasen
+geben die Zählung nicht wieder frei; dafür ist erneut die bestätigte,
+steuerbare lebendige Spielphase erforderlich. Wiederholte native Signale
+des gleichen Todes erzeugen nur einen Eintrag.
+
+Die eigene Statistik bleibt die Quelle der absoluten Gesamtstände.
+Ein Login-Import erzeugt kein künstliches Todesereignis. Ein zeitnah vor
+der nativen Todesbestätigung eingetroffener neuer Serverstand wird mit
+dieser Bestätigung abgeglichen, damit der Gesamtstand nicht doppelt steigt.
+Die manuelle Statistik-Synchronisation setzt die Lebenssperre nicht zurück.
+Einstellungen und lokale Todesmeldung bleiben erhalten.
+
+Quellen: [SAMPBridge.cpp](../../src/SAMPBridge.cpp),
+[LocalDeathLifecycle.h](../../include/LocalDeathLifecycle.h),
+[CombatChatParser.cpp](../../src/CombatChatParser.cpp).
+Tests: [SAMPBridgeTests.cpp](../../tests/SAMPBridgeTests.cpp),
+[CombatChatBridgeTests.cpp](../../tests/CombatChatBridgeTests.cpp),
+[CombatChatParserTests.cpp](../../tests/CombatChatParserTests.cpp).
+
+### Damagelog und bisherige Funktionen erhalten
+
+Der Damagelog aus r13 bleibt unverändert, einschließlich echter eingehender
+TakeDamage-Ereignisse, tatsächlicher Client-Syncwerte nur als Ersatz für
+unmessbare native Werte, Restwertbegrenzung, Quellen-/Poolabgleich und
+getrennter Hitsound-Verarbeitung. Der r13-Nachtrag bleibt als Beschreibung
+dieses unveränderten Verhaltens erhalten. Seine automatisierten Nachweise
+behaupten keinen erfolgreichen Live-Test auf dem konkreten Server.
+
+Die Ausgabe heißt weiterhin **NLBinder.asi**. Der vollständige TXT-Changelog
+enthält die Abschnitte 1–20. Die spätere Erneuerung des Desktop-Quellordners
+**NLBinder-masterNEW** bewahrt die vorhandene r13-Kopie als Sicherung.
+Persönliche Laufzeitdaten, Konfigurationen, Chatlogs und Zugangsdaten werden
+nicht veröffentlicht. Frühere GitHub-Stände und ursprüngliche Urheberhinweise
+bleiben erhalten. Die finalen Nachweise gehören zum
+[r14-Paket](../../dist/NLBinder-0.1.1-r14/BUILD-INFO.txt).
+Ein echter Ingame-Test auf dem konkreten Server steht aus.

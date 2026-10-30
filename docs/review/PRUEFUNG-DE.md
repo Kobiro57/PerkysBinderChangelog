@@ -1,6 +1,99 @@
 # Hinweise zur Prüfung durch die Projektleitung
 
-## Aktueller Stand r13 – 30. Oktober 2026
+## Aktueller Stand r14 – 30. Oktober 2026
+
+Der aktuelle Stand ist **NLBinder v.0.1.1 by KOBiRO, r14**.
+[Bedienung](../NLBinder-0.1.1-r14-DE.md),
+[r14-Nachtrag](CHANGELOG-DE.md#20-nachtrag-r14--30-oktober-2026) und
+[vollständiger TXT-Changelog](../CHANGELOG-GESAMT.txt) beschreiben den Umfang.
+
+### Verhalten und prüfbarer Umfang
+
+Der Binder bestätigt zunächst eine eigene lebendige Spielphase: derselbe
+Spieler muss gespawnt, steuerbar und mit positiven gültigen Lebenswerten
+mindestens 750 ms über drei Messungen beobachtet werden. Erst danach kann
+ein Übergang zu 0 bzw. negativen nativen HP, GTA-DIE/DEAD oder SA-MP-Wasted
+einen Tod zählen. Ein positiver Schutzwert oder ein hoher Schadensbetrag
+allein gilt nicht als Tod.
+
+Zusätzlich wird die echte eigene Client-Todesmeldung ausgewertet.
+Für den unterstützten DL-R1-Client wurde der Weg von
+CLocalPlayer::WastedNotification (RVA 0x5660) zu RPC 53 mit
+reason:uint8 und killer:uint16 lokal geprüft. Der Hook liest und
+restauriert den Datenstrom und lässt die Meldung unverändert passieren.
+Er erfasst nur eine zuvor bestätigte eigene Spielphase; die Zählung und
+lokale Ausgabe erfolgen im Spielthread. Dadurch bleibt eine Todesmeldung
+erhalten, wenn der nächste Messdurchlauf bereits einen neuen Friedhofs-Ped
+oder wieder positive HP vorfindet. Ein Verbindungs- oder Accountwechsel
+verwirft alte ausstehende Meldungen.
+
+Login, Relog und ein bereits toter Spieler beginnen als Ausgangslage ohne
+zusätzlichen Tod und ohne neue lokale Todesmeldung. Friedhofs-Chat ist
+vollständig als Zählquelle entfernt. Kurze gesund aussehende Zwischenphasen
+geben die Zählung nicht wieder frei; dafür ist erneut die bestätigte,
+steuerbare lebendige Spielphase erforderlich. Wiederholte native Signale
+des gleichen Todes erzeugen nur einen Eintrag.
+
+Die eigene Statistik bleibt die Quelle der absoluten Gesamtstände.
+Ein Login-Import erzeugt kein künstliches Todesereignis. Ein zeitnah vor
+der nativen Todesbestätigung eingetroffener neuer Serverstand wird mit
+dieser Bestätigung abgeglichen, damit der Gesamtstand nicht doppelt steigt.
+Die manuelle Statistik-Synchronisation setzt die Lebenssperre nicht zurück.
+Einstellungen und lokale Todesmeldung bleiben erhalten.
+
+Der r13-Damagelog mit TakeDamage-RPC 115, tatsächlichen Client-Syncwerten nur
+bei unmessbaren nativen Werten, Restwertbegrenzung, Quellen-/Poolabgleich und
+getrennter Hitsound-Verarbeitung bleibt unverändert. Seine Beschreibung und
+Grenzen stehen im [r13-Nachtrag](CHANGELOG-DE.md#19-nachtrag-r13--30-oktober-2026).
+Ein echter Ingame-Test auf dem konkreten Server wird nicht behauptet.
+
+### r14-Prüfpfade
+
+| Bereich | Implementierung | Tests / Nachweise |
+| --- | --- | --- |
+| Todeslebenszyklus und entfernte Chatquelle | [LocalDeathLifecycle.h](../../include/LocalDeathLifecycle.h), [SAMPBridge.cpp](../../src/SAMPBridge.cpp), [CombatChatParser.cpp](../../src/CombatChatParser.cpp) | [SAMPBridgeTests.cpp](../../tests/SAMPBridgeTests.cpp), [CombatChatBridgeTests.cpp](../../tests/CombatChatBridgeTests.cpp), [CombatChatParserTests.cpp](../../tests/CombatChatParserTests.cpp) |
+| Unveränderter Damagelog | [IncomingDamageDetector.h](../../include/IncomingDamageDetector.h), [SAMPBridge.cpp](../../src/SAMPBridge.cpp) | [DamageLogRegressionTests.cpp](../../tests/DamageLogRegressionTests.cpp) |
+| ASI und Paket | [verify_revision14_artifact.py](../../tools/verify_revision14_artifact.py), [package_revision14.ps1](../../tools/package_revision14.ps1) | PE32/x86, Ressource 300, ASI-/Paketprüfsummen |
+
+### Zugehörige finale Paketnachweise
+
+- [NLBinder.asi](../../dist/NLBinder-0.1.1-r14/NLBinder.asi)
+- [Vollständiges ZIP](../../dist/NLBinder-v0.1.1-KOBiRO-r14.zip)
+- [Gesamter TXT-Changelog](../../dist/NLBinder-0.1.1-r14/CHANGELOG-GESAMT.txt)
+- [SHA-256](../../dist/NLBinder-0.1.1-r14/SHA256SUMS.txt)
+- [Build- und Prüfangaben](../../dist/NLBinder-0.1.1-r14/BUILD-INFO.txt)
+- [PE-/Ressourcenprüfung](../../dist/NLBinder-0.1.1-r14/PRUEFBERICHT.json)
+- [Nativer Helfertest](../../dist/NLBinder-0.1.1-r14/RECONNECT-TEST.json)
+
+### Ausgeführte Prüfungen für r14
+
+Gesamttests und Win32-Release-Build endeten mit Exitcode 0.
+Erfolgreiche Prüfungen: DamageLogRegression: 152, ActionExecutor: 143, Reconnect: 116, SAMPBridge: 563, StartupStatsSync: 367, StatsDialogRPCAdapter: 727, JobSkillsImport: 17, CombatChatParser: 190, CombatChatBridge: 238, native_reconnect_helper: 83.
+
+Die Friedhofszeile löst keine eigene Todeszählung mehr aus.
+Integrationstests prüfen echte Alive-zu-Dead-Übergänge, lokale Meldung
+und Baselineübernahme bei Login/Relog ohne rückwirkenden Zusatz-Tod.
+Die Damagelog-Regressionssuite prüft Fallschaden und Explosionsübergänge
+getrennt von den Umweltfiltern des Hitsounds. Bestehende Statistik- und
+Jobskill-Abläufe werden weiterhin gemeinsam geprüft.
+Die Ausgabe des finalen Builds heißt NLBinder.asi. Die geprüfte Datei
+umfasst 18.514.432 Bytes; SHA-256:
+`91b1b816e67acec1993e06c03ba8e98216535169293eeae543a054c564a393ab`.
+
+PE32/x86, Windows-Imports und Ressource 300 sind geprüft. Der
+eingebettete Reconnect-Helfer stimmt mit dem frisch geprüften Helfer
+überein. Die Helferprüfung nutzt harmlose Testprozesse; das echte Spiel
+und der installierte Launcher werden dabei nicht gestartet oder beendet.
+
+Der vollständige TXT-Changelog umfasst die Abschnitte 1–20 und wird
+zusammen mit der ASI ausgeliefert.
+Separater ASI-Stand und ZIP-Inhalt stimmen bytegleich überein. Ein
+unabhängiger Abgleich bestätigt alle Paketdateien, den vollständigen
+TXT-Changelog, 43 explizite leere Waffenordner und keine persönlichen PNGs.
+[Maschinenlesbare Ergebnisse](r14-validation.json) ergänzen die Paketnachweise.
+Ein echter Ingame-Test auf dem konkreten Server steht aus.
+
+## Historischer Prüfstand r13 – 30. Oktober 2026
 
 Der aktuelle Stand ist **NLBinder v.0.1.1 by KOBiRO, r13**.
 [Bedienung](../NLBinder-0.1.1-r13-DE.md),

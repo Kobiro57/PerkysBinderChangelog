@@ -1,0 +1,22 @@
+README.md                           |  29 ++--
+ docs/CHANGELOG-GESAMT.txt           |  64 ++++++++
+ docs/NLBinder-0.1.1-r14-DE.md       | 128 ++++++++++++++++
+ docs/review/CHANGELOG-DE.md         |  61 ++++++++
+ docs/review/PRUEFUNG-DE.md          |  95 +++++++++++-
+ docs/review/PUBLICATION.json        |  10 +-
+ docs/review/README-GITHUB.md        |  29 ++--
+ docs/review/r14-validation.json     |  41 +++++
+ include/CombatChatParser.h          |   2 +-
+ include/LocalDeathLifecycle.h       |  50 +++++++
+ include/SAMPBridge.h                |  18 ++-
+ src/CombatChatParser.cpp            |   6 -
+ src/SAMPBridge.cpp                  | 232 ++++++++++++++--------------
+ tests/CombatChatBridgeTests.cpp     | 291 ++++++++++++++++++++++++++++++------
+ tests/CombatChatParserTests.cpp     |  10 +-
+ tests/SAMPBridgeTests.cpp           | 236 ++++++++++++-----------------
+ tests/StartupStatsSyncTests.cpp     |  10 +-
+ tools/export_full_changelog.py      |   6 +-
+ tools/export_source_bundle.py       |  12 +-
+ tools/package_revision14.ps1        | 138 +++++++++++++++++
+ tools/verify_revision14_artifact.py | 115 ++++++++++++++
+ 21 files changed, 1233 insertions(+), 350 deletions(-)
