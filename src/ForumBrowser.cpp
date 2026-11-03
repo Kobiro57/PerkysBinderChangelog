@@ -3,6 +3,9 @@
 #include "../include/SettingsManager.h"
 #include "../include/Logger.h"
 #include "../include/UIComponents.h"
+#include "../include/BrowserSetupProtocol.h"
+#include "../include/BrowserRuntimeLock.h"
+#include "../include/ResourceIds.h"
 #include "../include/imgui-1.92.7/imgui.h"
 
 #include <algorithm>
@@ -19,6 +22,7 @@
 #include <d3d9.h>
 #include <sddl.h>
 #include <aclapi.h>
+#include <shlobj.h>
 
 #pragma comment(lib, "advapi32.lib")
 #pragma comment(lib, "ole32.lib")
@@ -29,15 +33,39 @@ namespace ipc = forum;
 LONG Read(volatile std::int32_t& value) { return InterlockedCompareExchange(reinterpret_cast<volatile LONG*>(&value), 0, 0); }
 void Write(volatile std::int32_t& value, LONG updated) { InterlockedExchange(reinterpret_cast<volatile LONG*>(&value), updated); }
 void CloseNative(HANDLE& handle) { if (handle) { CloseHandle(handle); handle = nullptr; } }
-std::wstring RuntimeDirectory() {
+std::wstring BundledRuntimeDirectory() {
     HMODULE module = nullptr;
     if (!GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
-            reinterpret_cast<LPCWSTR>(&RuntimeDirectory), &module)) return {};
+            reinterpret_cast<LPCWSTR>(&BundledRuntimeDirectory), &module)) return {};
     wchar_t path[32768]{};
     const auto size = GetModuleFileNameW(module, path, static_cast<DWORD>(std::size(path)));
     if (!size || size >= std::size(path)) return {};
     const auto directory = std::wstring(path).substr(0, std::wstring(path).find_last_of(L"\\/"));
     return directory + L"\\NLBinder\\Browser";
+}
+std::wstring BrowserRootDirectory() {
+    PWSTR documents = nullptr;
+    if (FAILED(SHGetKnownFolderPath(FOLDERID_Documents, KF_FLAG_CREATE, nullptr, &documents))) return {};
+    const std::wstring root = std::wstring(documents) + L"\\GTA San Andreas User Files\\NLBinder\\Browser";
+    CoTaskMemFree(documents);
+    if (SHCreateDirectoryExW(nullptr, root.c_str(), nullptr) != ERROR_SUCCESS
+        && GetFileAttributesW(root.c_str()) == INVALID_FILE_ATTRIBUTES) return {};
+    return root;
+}
+bool WriteSetupExecutable(const std::wstring& path) {
+    HMODULE module = nullptr;
+    if (!GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+            reinterpret_cast<LPCWSTR>(&WriteSetupExecutable), &module)) return false;
+    const auto resource = FindResourceW(module, MAKEINTRESOURCEW(IDR_BROWSER_SETUP), MAKEINTRESOURCEW(10));
+    const auto size = resource ? SizeofResource(module, resource) : 0;
+    const auto loaded = resource ? LoadResource(module, resource) : nullptr;
+    const auto* bytes = loaded ? static_cast<const unsigned char*>(LockResource(loaded)) : nullptr;
+    if (!bytes || !size) return false;
+    HANDLE file = CreateFileW(path.c_str(), GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
+    if (file == INVALID_HANDLE_VALUE) return false;
+    DWORD written = 0;
+    const bool ok = WriteFile(file, bytes, size, &written, nullptr) != FALSE && written == size;
+    CloseHandle(file); return ok;
 }
 std::wstring CurrentUserSid() {
     HANDLE token = nullptr;
@@ -139,10 +167,84 @@ struct ForumBrowser::Impl {
     int textureWidth = 0, textureHeight = 0, lastSequence = -1;
     int requestedWidth = 0, requestedHeight = 0, mouseX = 0, mouseY = 0;
     ULONGLONG startedAt = 0, stopAt = 0;
+    ULONGLONG exitSeenAt = 0;
+    bool hardStopRequested = false;
     std::vector<unsigned char> frame;
+    HANDLE setupMapping = nullptr, setupProcess = nullptr, setupJob = nullptr;
+    browser_setup::SetupProgress* setup = nullptr;
+    std::wstring setupExecutable;
+    bool runtimeChecked = false;
+    ULONGLONG setupCancelAt = 0;
 #ifdef KEYBINDER_TESTING
     std::wstring testProfile;
+    std::wstring testRuntimeRoot, testArchive;
 #endif
+
+    std::wstring RuntimeRoot() const {
+#ifdef KEYBINDER_TESTING
+        if (!testRuntimeRoot.empty()) return testRuntimeRoot;
+#endif
+        return BrowserRootDirectory();
+    }
+    std::wstring RuntimeDirectory() const { return RuntimeRoot() + L"\\" + browser_setup::kRuntimeId; }
+    void ReleaseSetup() {
+        if (setup) { UnmapViewOfFile(setup); setup = nullptr; }
+        CloseNative(setupProcess); CloseNative(setupMapping); CloseNative(setupJob);
+        if (!setupExecutable.empty()) DeleteFileW(setupExecutable.c_str());
+        setupExecutable.clear(); setupCancelAt = 0;
+    }
+    bool BeginSetup() {
+        const auto root = RuntimeRoot();
+        if (root.empty()) { Say("Der Browserordner unter Dokumente konnte nicht erstellt werden."); return false; }
+        if (SHCreateDirectoryExW(nullptr, root.c_str(), nullptr) != ERROR_SUCCESS
+            && GetFileAttributesW(root.c_str()) == INVALID_FILE_ATTRIBUTES) return false;
+        GUID guid{}; if (FAILED(CoCreateGuid(&guid))) return false;
+        wchar_t id[64]{}; StringFromGUID2(guid, id, static_cast<int>(std::size(id)));
+        const std::wstring name = L"Local\\NLBinder.BrowserSetup." + std::to_wstring(GetCurrentProcessId()) + id;
+        setupExecutable = root + L"\\BrowserSetup-" + std::to_wstring(GetCurrentProcessId()) + L".exe";
+        if (!WriteSetupExecutable(setupExecutable)) { Say("Die Browserinstallation konnte nicht vorbereitet werden."); ReleaseSetup(); return false; }
+        const auto sid = CurrentUserSid();
+        PSECURITY_DESCRIPTOR security = nullptr;
+        const auto sddl = L"D:P(A;;GA;;;SY)(A;;GA;;;" + sid + L")S:(ML;;NW;;;ME)";
+        if (sid.empty() || !ConvertStringSecurityDescriptorToSecurityDescriptorW(sddl.c_str(), SDDL_REVISION_1, &security, nullptr)) { ReleaseSetup(); return false; }
+        SECURITY_ATTRIBUTES attributes{sizeof(attributes), security, FALSE};
+        setupMapping = CreateFileMappingW(INVALID_HANDLE_VALUE, &attributes, PAGE_READWRITE, 0,
+            sizeof(browser_setup::SetupProgress), name.c_str());
+        LocalFree(security);
+        setup = setupMapping ? static_cast<browser_setup::SetupProgress*>(MapViewOfFile(setupMapping, FILE_MAP_ALL_ACCESS, 0, 0,
+            sizeof(browser_setup::SetupProgress))) : nullptr;
+        if (!setup) { ReleaseSetup(); return false; }
+        new (setup) browser_setup::SetupProgress();
+        setupJob = CreateJobObjectW(nullptr, nullptr);
+        JOBOBJECT_EXTENDED_LIMIT_INFORMATION limits{}; limits.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE;
+        if (!setupJob || !SetInformationJobObject(setupJob, JobObjectExtendedLimitInformation, &limits, sizeof(limits))) { ReleaseSetup(); return false; }
+        std::wstring command = L"\"" + setupExecutable + L"\" --root \"" + root + L"\" --progress \"" + name + L"\"";
+#ifdef KEYBINDER_TESTING
+        if (!testArchive.empty()) command += L" --archive \"" + testArchive + L"\"";
+        else
+#endif
+        command += L" --source \"" + BundledRuntimeDirectory() + L"\"";
+        PROCESS_INFORMATION child{};
+        if (!StartMediumProcess(setupExecutable, command, child)) { ReleaseSetup(); Say("Die Browserinstallation konnte nicht gestartet werden."); return false; }
+        if (!AssignProcessToJobObject(setupJob, child.hProcess)) {
+            TerminateProcess(child.hProcess, 1); CloseHandle(child.hThread); CloseHandle(child.hProcess); ReleaseSetup(); return false;
+        }
+        setupProcess = child.hProcess; ResumeThread(child.hThread); CloseHandle(child.hThread);
+        open = true; firstFrame = true; setupCancelAt = 0;
+        return true;
+    }
+    void UpdateSetup() {
+        if (!setupProcess) return;
+        if (setupCancelAt && GetTickCount64() - setupCancelAt > 20000) TerminateJobObject(setupJob, 1);
+        if (WaitForSingleObject(setupProcess, 0) != WAIT_OBJECT_0) return;
+        DWORD exitCode = 1; GetExitCodeProcess(setupProcess, &exitCode);
+        const bool wanted = open;
+        const bool ready = !exitCode && setup && Read(setup->phase) == static_cast<LONG>(browser_setup::Phase::Ready);
+        const std::string error = setup ? std::string(setup->error, strnlen(setup->error, sizeof(setup->error))) : std::string();
+        ReleaseSetup(); open = false;
+        if (wanted && ready) { runtimeChecked = true; Start(); }
+        else if (wanted) Say(error.empty() ? "Browserinstallation fehlgeschlagen. Mit /forum erneut versuchen." : error);
+    }
 
     void Say(const std::string& text) { if (notice) notice("{33CCFF}[NL-BINDER]{FFFFFF} " + text); }
     void ReleaseTexture() {
@@ -155,6 +257,7 @@ struct ForumBrowser::Impl {
         CloseNative(process); CloseNative(input); CloseNative(mapping); CloseNative(job);
         std::vector<unsigned char>().swap(frame);
         stopping = false; requestedWidth = requestedHeight = 0;
+        exitSeenAt = 0; hardStopRequested = false;
     }
     bool Send(ipc::Command command) {
         std::lock_guard<std::mutex> lock(commandsMutex);
@@ -167,12 +270,15 @@ struct ForumBrowser::Impl {
         return true;
     }
     bool Start() {
+        if (process || setupProcess) return false;
+        if (!runtimeChecked) return BeginSetup();
         const auto directory = RuntimeDirectory();
         const auto executable = directory + L"\\NLBinderBrowser.exe";
         if (GetFileAttributesW(executable.c_str()) == INVALID_FILE_ATTRIBUTES
             || GetFileAttributesW((directory + L"\\NLBinderBrowser.dll").c_str()) == INVALID_FILE_ATTRIBUTES
             || GetFileAttributesW((directory + L"\\libcef.dll").c_str()) == INVALID_FILE_ATTRIBUTES) {
-            Say("Die Browser-Laufzeit fehlt. Kopiere den Ordner NLBinder/Browser aus dem Komplettpaket neben die NLBinder.asi."); return false;
+            runtimeChecked = false;
+            Say("Browserdateien fehlen. Mit /forum wird die Installation erneut gepr\xC3\xBC" "ft und repariert."); return false;
         }
         if (!PermitSandboxResourceReads(directory)) {
             Say("Die CEF-Ressourcen konnten nicht f\xC3\xBC" "r den gesch\xC3\xBC" "tzten Browserprozess freigegeben werden."); return false;
@@ -239,7 +345,7 @@ ForumBrowser::ForumBrowser() : impl_(std::make_unique<Impl>()) {}
 ForumBrowser::~ForumBrowser() {
     // Process-detach may run under the Windows loader lock. Normal game
     // shutdown uses Shutdown(); emergency teardown only closes kernel objects.
-    if (impl_) { impl_->texture = nullptr; impl_->Release(); }
+    if (impl_) { impl_->texture = nullptr; impl_->Release(); impl_->ReleaseSetup(); }
 }
 void ForumBrowser::Initialize(SettingsManager* settings, std::function<void(const std::string&)> notice, std::function<void()> persist) {
     impl_->settings = settings; impl_->notice = std::move(notice); impl_->persist = std::move(persist);
@@ -247,12 +353,17 @@ void ForumBrowser::Initialize(SettingsManager* settings, std::function<void(cons
 bool ForumBrowser::IsOpen() const { return impl_->open; }
 void ForumBrowser::Toggle() {
     if (impl_->open) { Close(); return; }
-    if (impl_->stopping) { impl_->reopen = true; return; }
+    if (impl_->setupProcess) { impl_->Say("Die Browserinstallation wird noch beendet. Bitte gleich erneut versuchen."); return; }
+    if (impl_->stopping) { impl_->reopen = true; impl_->open = true; return; }
     try { impl_->Start(); }
     catch (const std::bad_alloc&) { impl_->open = false; impl_->Release(); impl_->Say("Nicht genug Speicher zum Starten des Forums."); }
 }
 void ForumBrowser::Close() {
     if (!impl_->open) return;
+    if (impl_->stopping) { impl_->reopen = false; impl_->open = false; return; }
+    if (impl_->setup) {
+        Write(impl_->setup->cancel, 1); impl_->setupCancelAt = GetTickCount64(); impl_->open = false; return;
+    }
     impl_->open = false; impl_->focused = false;
     if (impl_->geometryDirty && impl_->persist) impl_->persist();
     impl_->geometryDirty = false;
@@ -262,6 +373,9 @@ void ForumBrowser::Close() {
 }
 void ForumBrowser::Shutdown() {
     if (!impl_) return;
+    if (impl_->setup) Write(impl_->setup->cancel, 1);
+    if (impl_->setupProcess) WaitForSingleObject(impl_->setupProcess, 100);
+    impl_->ReleaseSetup();
     if (impl_->open && impl_->geometryDirty && impl_->persist) impl_->persist();
     if (impl_->shared) impl_->Send({ipc::CommandType::Close});
     impl_->open = false; impl_->reopen = false;
@@ -270,22 +384,37 @@ void ForumBrowser::Shutdown() {
 }
 void ForumBrowser::OnDeviceLost() { impl_->ReleaseTexture(); }
 void ForumBrowser::Update() {
+    impl_->UpdateSetup();
     if (!impl_->process) return;
-    if (WaitForSingleObject(impl_->process, 0) == WAIT_OBJECT_0) {
+    const bool exited = WaitForSingleObject(impl_->process, 0) == WAIT_OBJECT_0;
+    if (exited) {
+        if (!impl_->exitSeenAt) impl_->exitSeenAt = GetTickCount64();
+        JOBOBJECT_BASIC_ACCOUNTING_INFORMATION accounting{};
+        const bool childrenGone = impl_->job && QueryInformationJobObject(impl_->job,
+            JobObjectBasicAccountingInformation, &accounting, sizeof(accounting), nullptr)
+            && accounting.ActiveProcesses == 0;
+        if (!childrenGone) {
+            // A CEF child may still hold the profile lock after the main host
+            // exits. Wait for the owned job to drain before reopening it.
+            if (GetTickCount64() - impl_->exitSeenAt > 2000 && !impl_->hardStopRequested) {
+                TerminateJobObject(impl_->job, 1); impl_->hardStopRequested = true;
+            }
+            return;
+        }
         DWORD code = 0; GetExitCodeProcess(impl_->process, &code);
-        const bool unexpected = impl_->open;
+        const bool unexpected = impl_->open && !impl_->stopping;
         impl_->open = false; impl_->Release();
         if (unexpected) { Logger::Warning("[ForumBrowser] Host exited (%lu)", code); impl_->Say("Der Browser wurde beendet. Mit /forum kannst du ihn neu starten."); }
         if (impl_->reopen) { impl_->reopen = false; impl_->Start(); }
-    } else if (impl_->stopping && GetTickCount64() - impl_->stopAt > 3000) {
-        TerminateJobObject(impl_->job, 1); impl_->Release();
-        if (impl_->reopen) { impl_->reopen = false; impl_->Start(); }
+    } else if (impl_->stopping && GetTickCount64() - impl_->stopAt > 10000 && !impl_->hardStopRequested) {
+        TerminateJobObject(impl_->job, 1); impl_->hardStopRequested = true;
     } else if (!impl_->stopping && impl_->shared && Read(impl_->shared->state) == static_cast<LONG>(ipc::State::Starting)
         && GetTickCount64() - impl_->startedAt > 30000) {
         impl_->Say("Der Browser antwortet nicht. Bitte /forum erneut versuchen."); Close();
     }
 }
 bool ForumBrowser::HandleWindowMessage(HWND, UINT message, WPARAM key, LPARAM native) {
+    if (impl_->setupProcess || impl_->stopping) return false;
     if (!impl_->open || !impl_->focused || key == VK_ESCAPE) return false;
     if (message != WM_KEYDOWN && message != WM_SYSKEYDOWN && message != WM_KEYUP
         && message != WM_SYSKEYUP && message != WM_CHAR && message != WM_SYSCHAR) return false;
@@ -302,6 +431,31 @@ bool ForumBrowser::HandleWindowMessage(HWND, UINT message, WPARAM key, LPARAM na
 
 void ForumBrowser::Render(IDirect3DDevice9* device) {
     if (!impl_->open || !impl_->settings) return;
+    if (impl_->stopping) {
+        ImGui::SetNextWindowSize(ImVec2(500, 160), ImGuiCond_Appearing);
+        bool visible = true;
+        if (ImGui::Begin("NLBinder \xE2\x80\x93 Nova Legacy Forum", &visible, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoCollapse)) {
+            ImGui::TextWrapped("Forum wird neu ge\xC3\xB6" "ffnet ...");
+            if (UIComponents::SecondaryButton("Abbrechen")) visible = false;
+        }
+        ImGui::End(); if (!visible) Close(); return;
+    }
+    if (impl_->setup) {
+        ImGui::SetNextWindowSize(ImVec2(540, 210), ImGuiCond_Appearing);
+        bool visible = true;
+        if (ImGui::Begin("NLBinder \xE2\x80\x93 Nova Legacy Forum", &visible, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings)) {
+            const auto phase = static_cast<browser_setup::Phase>(Read(impl_->setup->phase));
+            const char* label = "Browserdateien werden gepr\xC3\xBC" "ft ...";
+            if (phase == browser_setup::Phase::Copying) label = "Vorhandener Browser wird nach Dokumente \xC3\xBC" "bernommen ...";
+            if (phase == browser_setup::Phase::Downloading) label = "Browser wird einmalig heruntergeladen ...";
+            if (phase == browser_setup::Phase::Extracting) label = "Browser wird entpackt und eingerichtet ...";
+            UIComponents::CardHeader("Forum vorbereiten", label);
+            ImGui::ProgressBar(std::clamp(Read(impl_->setup->percent), 0L, 100L) / 100.0f, ImVec2(-1, 0));
+            ImGui::TextWrapped("Die Einrichtung erfolgt im NLBinder-Ordner unter Dokumente. Danach \xC3\xB6" "ffnet sich das Forum automatisch.");
+            if (UIComponents::SecondaryButton("Abbrechen")) visible = false;
+        }
+        ImGui::End(); if (!visible) Close(); return;
+    }
     auto& settings = impl_->settings->GetMutable();
     const auto* viewport = ImGui::GetMainViewport();
     if (!viewport) return;
@@ -404,38 +558,58 @@ int RunNativeForumSmokeTest() {
     std::vector<std::string> notices;
     browser.Initialize(nullptr, [&](const auto& text) { notices.push_back(text); }, {});
     browser.impl_->testProfile = std::filesystem::absolute(root / "profile").wstring();
-    browser.Toggle();
-    bool ready = false;
+    browser.impl_->testRuntimeRoot = std::filesystem::absolute(root / "Browser").wstring();
+    browser.impl_->testArchive = std::filesystem::absolute("dist/NLBinder-Browser-cef156-r1.zip").wstring();
     int frames = 0;
-    const ULONGLONG deadline = GetTickCount64() + 45000;
-    while (browser.IsOpen() && GetTickCount64() < deadline) {
-        browser.Update();
-        auto* shared = browser.impl_->shared;
-        if (shared && Read(shared->state) == static_cast<LONG>(ipc::State::Ready)
-            && Read(shared->frameSequence) > 2 && !Read(shared->loading)
-            && InterlockedCompareExchange(reinterpret_cast<volatile LONG*>(&shared->frameLock), 1, 0) == 0) {
-            const std::string title(shared->title, strnlen(shared->title, sizeof(shared->title)));
-            frames = Read(shared->frameSequence);
-            ready = title.find("Nova Legacy") != std::string::npos;
-            Write(shared->frameLock, 0);
-            if (ready) break;
+    int successfulCycles = 0;
+    auto awaitReady = [&]() {
+        const ULONGLONG deadline = GetTickCount64() + 60000;
+        while (browser.IsOpen() && GetTickCount64() < deadline) {
+            browser.Update();
+            auto* shared = browser.impl_->shared;
+            if (!browser.impl_->stopping && shared && Read(shared->state) == static_cast<LONG>(ipc::State::Ready)
+                && Read(shared->frameSequence) > 2 && !Read(shared->loading)
+                && InterlockedCompareExchange(reinterpret_cast<volatile LONG*>(&shared->frameLock), 1, 0) == 0) {
+                const std::string title(shared->title, strnlen(shared->title, sizeof(shared->title)));
+                frames += Read(shared->frameSequence);
+                const bool ready = title.find("Nova Legacy") != std::string::npos;
+                Write(shared->frameLock, 0);
+                if (ready) { ++successfulCycles; return true; }
+            }
+            Sleep(50);
         }
-        Sleep(50);
+        return false;
+    };
+    auto awaitStopped = [&]() {
+        const auto deadline = GetTickCount64() + 16000;
+        while ((browser.impl_->process || browser.impl_->setupProcess) && GetTickCount64() < deadline) { browser.Update(); Sleep(25); }
+        return !browser.impl_->process && !browser.impl_->setupProcess && !browser.IsOpen();
+    };
+    browser.Toggle();
+    bool ready = awaitReady();
+    browser.Close();
+    ready = awaitStopped() && ready;
+    if (ready) { browser.Toggle(); ready = awaitReady(); } // Same profile, second normal open.
+    if (ready) { browser.Close(); browser.Toggle(); ready = awaitReady(); } // Queue during shutdown.
+    if (ready) {
+        browser.Close(); ready = awaitStopped();
+        if (ready) { browser.Toggle(); browser.Close(); browser.Toggle(); ready = awaitReady(); } // Close before CEF is ready.
     }
     browser.Close();
-    const auto closeDeadline = GetTickCount64() + 7000;
-    while (browser.impl_->process && GetTickCount64() < closeDeadline) { browser.Update(); Sleep(25); }
-    const bool closed = browser.impl_->process == nullptr && !browser.IsOpen();
-    std::ofstream proof("build/revision16-native-browser-smoke.json");
+    const bool closed = awaitStopped();
+    std::ofstream proof("build/revision17-native-browser-smoke.json");
     proof << "{\n  \"native_x86_controller_launched_x64_cef\": " << (ready ? "true" : "false")
         << ",\n  \"real_forum_rendered\": " << (ready ? "true" : "false")
         << ",\n  \"offscreen_frames\": " << frames
         << ",\n  \"clean_async_shutdown\": " << (closed ? "true" : "false")
+        << ",\n  \"same_profile_open_cycles\": " << successfulCycles
+        << ",\n  \"automatic_setup_from_embedded_installer\": " << (browser.impl_->runtimeChecked ? "true" : "false")
+        << ",\n  \"queued_and_early_reopen_checked\": " << (successfulCycles == 4 ? "true" : "false")
         << ",\n  \"isolated_anonymous_profile\": true,\n  \"login_or_post_submitted\": false\n}\n";
     for (const auto& message : notices) std::printf("[NativeForumSmoke] %s\n", message.c_str());
-    std::printf("NativeForumSmoke: ready=%d frames=%d closed=%d\n", ready, frames, closed);
+    std::printf("NativeForumSmoke: ready=%d frames=%d closed=%d cycles=%d\n", ready, frames, closed, successfulCycles);
     browser.Shutdown();
-    return ready && closed ? 0 : 1;
+    return ready && closed && successfulCycles == 4 ? 0 : 1;
 }
 #endif
 } // namespace keybinder

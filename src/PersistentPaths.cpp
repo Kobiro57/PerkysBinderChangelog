@@ -260,7 +260,14 @@ std::string EnsureLayout() {
         return {};
     }
 
+    if (!EnsureDirectoryRecursive(BrowserDir())) return {};
+
     return rootDir;
+}
+
+std::string BrowserDir() {
+    const auto root = RootDir();
+    return root.empty() ? std::string() : JoinPath(root, "Browser");
 }
 
 std::string ResolveAssetPath(const std::string& logicalPath) {

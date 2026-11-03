@@ -120,9 +120,12 @@ const GpsEntry* GpsManager::ActiveDestination() const {
 bool GpsManager::Navigate(unsigned int id) {
     if (std::none_of(entries_.begin(), entries_.end(), [id](const auto& entry) { return entry.id == id; })) return false;
     activeId_ = id; listOpen_ = false;
+    GpsPosition current;
+    arrivalArmed_ = positionProvider_ && positionProvider_(current)
+        && !HasArrived(current, ActiveDestination()->position);
     Say("Navigation gestartet: " + ActiveDestination()->name + ". Das Ziel ist rot markiert."); return true;
 }
-void GpsManager::StopNavigation() { activeId_ = 0; }
+void GpsManager::StopNavigation() { activeId_ = 0; arrivalArmed_ = false; }
 void GpsManager::ShowHelp() const {
     Say("/setgps (Bemerkung) - Marker speichern | /gpslist - GPS-Liste \xC3\xB6" "ffnen");
     Say("/delgpsall - Alle GPS-Eintr\xC3\xA4ge l\xC3\xB6" "schen | /gps - Diese Hilfe");
@@ -131,7 +134,12 @@ void GpsManager::Update() {
     const auto* destination = ActiveDestination();
     if (!destination) return;
     GpsPosition current;
-    if (positionProvider_ && positionProvider_(current) && HasArrived(current, destination->position)) {
+    if (!positionProvider_ || !positionProvider_(current) || !IsValidPosition(current)) return;
+    const bool inside = HasArrived(current, destination->position);
+    if (!inside) { arrivalArmed_ = true; return; }
+    // Starting navigation while standing on the saved position must still
+    // show the checkpoint. Arrival is armed after first leaving its radius.
+    if (arrivalArmed_) {
         const auto name = destination->name;
         StopNavigation(); Say("Du hast dein Ziel erreicht: " + name + ".");
     }

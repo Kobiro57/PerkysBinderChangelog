@@ -10,6 +10,7 @@ exit /b %NLBINDER_TEST_RESULT%
 
 :run_test_suite
 call "%~dp0build_reconnect_helper.bat" || exit /b 2
+call "%~dp0build_browser_setup.bat" || exit /b 2
 
 echo === Compiling Tests ===
 rc.exe /nologo /fo "%~dp0..\build\KeybinderTests.res" "%~dp0..\Keybinder.rc"
@@ -51,6 +52,7 @@ set "KEYBINDER_TEST_RSP=%~dp0..\build\KeybinderTests.rsp"
     echo "%~dp0..\tests\CombatChatBridgeTests.cpp"
     echo "%~dp0..\tests\DamageLogRegressionTests.cpp"
     echo "%~dp0..\tests\R16FeatureTests.cpp"
+    echo "%~dp0..\tests\R17FeatureTests.cpp"
     echo "%~dp0..\tests\ImGuiOverlayTests.cpp"
     echo "%~dp0..\tests\HitmarkerTests.cpp"
     echo "%~dp0..\tests\HitsoundTests.cpp"

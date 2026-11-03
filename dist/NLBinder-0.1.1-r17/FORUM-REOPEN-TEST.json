@@ -1,0 +1,11 @@
+{
+  "native_x86_controller_launched_x64_cef": true,
+  "real_forum_rendered": true,
+  "offscreen_frames": 13,
+  "clean_async_shutdown": true,
+  "same_profile_open_cycles": 4,
+  "automatic_setup_from_embedded_installer": true,
+  "queued_and_early_reopen_checked": true,
+  "isolated_anonymous_profile": true,
+  "login_or_post_submitted": false
+}

@@ -570,7 +570,7 @@
 
   <ItemGroup>
     <ResourceCompile Include="Keybinder.rc">
-      <AdditionalInputs>gtasamap.jpg;$(ProjectDir)build\ReconnectHelper.exe;%(AdditionalInputs)</AdditionalInputs>
+      <AdditionalInputs>gtasamap.jpg;$(ProjectDir)build\ReconnectHelper.exe;$(ProjectDir)build\BrowserSetup.exe;%(AdditionalInputs)</AdditionalInputs>
     </ResourceCompile>
   </ItemGroup>
 
@@ -578,6 +578,11 @@
           Inputs="$(ProjectDir)tools\ReconnectHelper.cpp;$(ProjectDir)include\ReconnectManager.h;$(ProjectDir)tools\build_reconnect_helper.bat;$(ProjectDir)tools\setup_msvc.bat"
           Outputs="$(ProjectDir)build\ReconnectHelper.exe">
     <Exec Command="&quot;$(ProjectDir)tools\build_reconnect_helper.bat&quot;" WorkingDirectory="$(ProjectDir)" />
+  </Target>
+  <Target Name="BuildBrowserSetup" BeforeTargets="ResourceCompile"
+          Inputs="$(ProjectDir)tools\BrowserSetup.cpp;$(ProjectDir)include\BrowserSetupProtocol.h;$(ProjectDir)include\BrowserRuntimeLock.h;$(ProjectDir)tools\build_browser_setup.bat;$(ProjectDir)third_party\miniz\miniz.c;$(ProjectDir)third_party\miniz\miniz_tinfl.c;$(ProjectDir)third_party\miniz\miniz_zip.c"
+          Outputs="$(ProjectDir)build\BrowserSetup.exe">
+    <Exec Command="&quot;$(ProjectDir)tools\build_browser_setup.bat&quot;" WorkingDirectory="$(ProjectDir)" />
   </Target>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets" />

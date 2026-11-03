@@ -1,6 +1,42 @@
 # Hinweise zur Prüfung durch die Projektleitung
 
-## Aktueller Stand r16 – 3. November 2026
+## Aktueller Stand r17 – 3. November 2026
+
+[Bedienung und Installation](../NLBinder-0.1.1-r17-DE.md),
+[vollständiger TXT-Changelog](../CHANGELOG-GESAMT.txt),
+[Prüfnachweis](r17-validation.json).
+
+Die Browserdateien werden bei Bedarf automatisch unter Dokumente installiert.
+Der eingebettete Win32-Helfer arbeitet außerhalb des Spielprozesses, verwendet
+WinHTTP mit regulärer HTTPS-Prüfung und fest begrenzten GitHub-Downloadhosts.
+Dateigrößen, Archiv-SHA-256 und alle 236 Datei-Hashes sind in der ASI bzw. im
+eingebetteten Helfer fixiert. Die ZIP-Bibliothek liest Daten stromweise;
+ungeprüfte Dateien werden nicht ausgeführt. Vor Aktivierung wird das ganze
+Dateiset geprüft. Der Installer benötigt keine Adminrechte oder Skriptlaufzeit.
+
+Der native Test hat den echten öffentlichen Download ausgeführt, ein bereits
+gültiges Dateiset ohne Netz wiederverwendet, vorhandene Dateien übernommen,
+eine gleich große beschädigte Datei repariert und Abbruch/falsche Archive
+geprüft. Private Testverzeichnisse mit Umlauten und Leerzeichen wurden benutzt.
+Die persönlichen Dokumente und Nutzerprofile waren nicht Testziel.
+
+Der produktive x86-Browsercontroller hat aus seiner eigenen Ressource den
+Installer gestartet, die Runtime in einem isolierten Testordner eingerichtet
+und das echte Forum viermal mit demselben frischen Profil geladen. Darunter
+Wiederöffnen während des Schließens und Schließen vor dem vollständigen Start.
+Der Controller wartet auf alle eigenen CEF-Prozesse, bevor er das Profil erneut
+verwendet. Tastatur-/Mausbesitz hängt weiterhin am sichtbaren Forumfenster.
+
+Die GPS-Tests prüfen den früheren sofortigen Ankunftsfall sowie genau eine
+Ankunft nach Verlassen/Wiederbetreten. Generation, Typ und Position des
+Radareintrags verhindern das Löschen eines recycelten Servermarkers. Minimap-
+und Weltmarkierung verwenden eigene Einträge und ersetzen keine SA-MP-Slots.
+
+Gesamte Testsuite und Release-Build erfolgreich; genaue Zahlen und SHA-256
+stehen im Prüfnachweis. Kein automatischer Login/Beitrag/Nachrichtenversand.
+Ein Live-Test der neuen Fassung innerhalb von GTA wird nicht behauptet.
+
+## Vorheriger Stand r16 – 3. November 2026
 
 Grundlage ist der zuletzt vom Nutzer bereitgestellte Ordner NLBinder-masterNEW
 mit den live bestätigten r15-Todes-/Damagelog-Korrekturen. Diese bleiben erhalten.

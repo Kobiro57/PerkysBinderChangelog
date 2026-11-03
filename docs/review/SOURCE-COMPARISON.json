@@ -2,22 +2,22 @@
   "original_archive": "NLBinder-master.zip",
   "original_sha256": "a328e78eea63420e9bfe9c084883100177fe0fd9c2d62c4fcaef38c0a44801e9",
   "original_archive_commit_comment": "92ce21971bee2d166d830e23ad20950f1dc98921",
-  "release": "v0.1.1-r16",
-  "release_asi_sha256": "69ae76195feb01223f2e10290391ff45d7e35d7f1b4747a5c555ecf6d02423e4",
+  "release": "v0.1.1-r17",
+  "release_asi_sha256": "e1c2a04cc945685e48400ecd63f8df0b1d45a37add32a36e44bc5e914acf8b6f",
   "baseline_tag": "original-archive-92ce219",
   "baseline_commit": "2da75e6c54a098243bf00ab48d86c5e3ee3cd261",
-  "hash_scope": "Exact Git blob bytes in original tag versus staged r16 source; generated comparisons and release binaries excluded.",
+  "hash_scope": "Exact Git blob bytes in original tag versus staged r17 source; generated comparisons and release binaries excluded.",
   "generated_paths_excluded": [
     "docs/review/DATEIVERGLEICH.md",
     "docs/review/DIFFSTAT.txt",
-    "docs/review/REVISION16-DIFFSTAT.txt",
+    "docs/review/REVISION17-DIFFSTAT.txt",
     "docs/review/SOURCE-COMPARISON.json",
     "docs/review/first-party-changes.patch",
-    "docs/review/revision16-changes.patch"
+    "docs/review/revision17-changes.patch"
   ],
   "historical_revision_patches_excluded": true,
   "baseline_files": 2006,
-  "current_files": 5709,
+  "current_files": 5740,
   "changes": [
     {
       "path": ".gitattributes",
@@ -41,7 +41,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": "069e9cbc2aa3afa14d6e68535dcbcea5ce95f368eea1ad445d6e8adc90ec3ebd",
-      "after_sha256": "ac1287d261af4c7b7091aa9ba7e1480534d73474ccc82cb3f1e1c30beb0df85d"
+      "after_sha256": "767413ace6af7de1f6b927537b9e6e8816df727e8d1c8c2e08572f634079bd8c"
     },
     {
       "path": "Keybinder.vcxproj",
@@ -49,7 +49,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": "9ce784480d2be6bf031f91ae852de817748a194285ad98e3c53d0af54b612973",
-      "after_sha256": "e8dedf960a9a4e1120dcf12adadf0b8525e55c952f4ede9927059feb735330d3"
+      "after_sha256": "fb6167addac1eb9e9a1629c88fad92edb7024e1f852c396592da1950e65a8e9b"
     },
     {
       "path": "README.md",
@@ -57,7 +57,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": "65b8ae3822ae33054ece73689612fc8afb758e59282f3ee1185ee5fce62e269d",
-      "after_sha256": "b8e0779a56b18d1e42a9db88bc2dbef42fd42be931f08a25aef1132e4569bd6b"
+      "after_sha256": "9a33a144a770b7129d56ab097650a3eb94057b962043480136a8a5559cbc0480"
     },
     {
       "path": "browser/CMakeLists.txt",
@@ -81,7 +81,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": null,
-      "after_sha256": "3e64d886f027b495b2f9bd38d3297aeb5687ed858cde66678b27e22fc0f21e97"
+      "after_sha256": "77a970be842f565d3bf32697f628fde7026b8f90b329ad9de5463982ab800cf5"
     },
     {
       "path": "docs/CHANGELOG-GESAMT.txt",
@@ -89,7 +89,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": null,
-      "after_sha256": "463b13bc447e4552ca43b4704fa7b6ae763cc11a669b8a63bbcb18003dd03b59"
+      "after_sha256": "fed69367685c60feef1852898b0b64f6ac24223e31dd57ec6bd156b3d2e62ca9"
     },
     {
       "path": "docs/NLBinder-0.1.1-DE.md",
@@ -154,6 +154,14 @@
       "line_endings_only": false,
       "before_sha256": null,
       "after_sha256": "2e8499feef278c6def118ed66d386ce77c160f29a301b914cb7aad4403b07e4c"
+    },
+    {
+      "path": "docs/NLBinder-0.1.1-r17-DE.md",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "99aab8a3aa318e4347a49d3772beee9eb488caa0f30097a9f6405975f9ced30f"
     },
     {
       "path": "docs/NLBinder-0.1.1-r2-DE.md",
@@ -249,7 +257,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": null,
-      "after_sha256": "c261e9b4176e89bf66517191ccd79394ae003a7c725c0e58e0570503903a8a0b"
+      "after_sha256": "04e0392d7b73cc3e00a53c18bed29c9cdb5209a6f4f5ca5abf31bc7d584063a1"
     },
     {
       "path": "docs/review/DEPENDENCIES.md",
@@ -257,7 +265,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": null,
-      "after_sha256": "7f63f6aef42b5dc89b37d7d8a3cb530a2f31aa238def410731c6155dd824f71d"
+      "after_sha256": "75f039282ca97da3c594a1e72534cdf4e3ec8e30fc4b971c926a306952cd6300"
     },
     {
       "path": "docs/review/PRUEFUNG-DE.md",
@@ -265,7 +273,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": null,
-      "after_sha256": "ca066544df1829d5bc68d117b4d5c833e57c30031a761e9147d859abfd0ccf1c"
+      "after_sha256": "04b89f909de2e912b7e88adc8a87e18e12a4fe3e96882c3baa575ccdbd171983"
     },
     {
       "path": "docs/review/PUBLICATION.json",
@@ -273,7 +281,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": null,
-      "after_sha256": "205b4e4f2abc872396b5751a7d0904a4aaf8902def480700e96cdbbe46379e56"
+      "after_sha256": "e8780980f132c2651430b6109d1fe67c185fc4cca574363101f1eb0a3bf15723"
     },
     {
       "path": "docs/review/PUBLISHING-DE.md",
@@ -289,7 +297,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": null,
-      "after_sha256": "600295d7319de2d267707c58cbab66df5ecf975cce75cedbb93e94520f690f71"
+      "after_sha256": "714b7781731d766053eac35c3d6b54806546392a3a8ba77f735b1ca1b48f51c9"
     },
     {
       "path": "docs/review/r10-validation.json",
@@ -356,6 +364,14 @@
       "after_sha256": "444fe8f34cd877e23723b3e9da230228668e80fa5eedc41990fd8ee5827a2be3"
     },
     {
+      "path": "docs/review/r17-validation.json",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "9d1af4d6f197688b8787077e45bc90306fb8cc26af84a65796e1c513118375e1"
+    },
+    {
       "path": "docs/review/r4-validation.json",
       "status": "added",
       "dependency": false,
@@ -412,6 +428,22 @@
       "after_sha256": "a9b02f576b15f3395bb6b8ed3dc23314d95199664fe126c71a1302cfaa051fe9"
     },
     {
+      "path": "include/BrowserRuntimeLock.h",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "3723855f4c389dd1772a28ad7fcde6bb17030534ce27215fa0163454c4b010b4"
+    },
+    {
+      "path": "include/BrowserSetupProtocol.h",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "a23a5001b37d564ba655a5f0f09f8bc30a63f2678140f0d1f042ac050057e1a0"
+    },
+    {
       "path": "include/CombatChatParser.h",
       "status": "added",
       "dependency": false,
@@ -457,7 +489,15 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": null,
-      "after_sha256": "3128e42576ec943bc89358f6f4e797d74b3e097355891dee6d765fa0ac49b106"
+      "after_sha256": "a361a4e73b08f0d5f43ab44ac107ab9bdf9d69a1ee12c1e155205eb981772401"
+    },
+    {
+      "path": "include/GpsRadarOwnership.h",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "084eb092ea847a9fc2696048c2339000ccba950f75b9d374b2255aefa56fbd63"
     },
     {
       "path": "include/ImGuiOverlay.h",
@@ -673,7 +713,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": "3dd9fb1325df1fc881dca1c5307d108f02b149c51e056f3180b30495858e47e8",
-      "after_sha256": "2b82f88418c430add153588ab86bf2a17a728823e1e7587b032300cad58a2099"
+      "after_sha256": "dc219449e120723044d5fba07d3dbfd84e7b8b2479280a657c440f6b9451ed9a"
     },
     {
       "path": "include/RakHook/.clang-format",
@@ -993,7 +1033,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": "6457acd28d8086512e93b084a5c32782125c339f04aa5c570767f268352c6b8d",
-      "after_sha256": "0c5c6a06c8aade4c26a6837992f4f27cbc21444d6928df7d950e28d7b2f3a1a8"
+      "after_sha256": "921eab91c7c1d481cdd3e0da8246d0b96eac14f9c525261fe72c1dc8bb23918b"
     },
     {
       "path": "include/SAMPBridge.h",
@@ -29276,6 +29316,14 @@
       "after_sha256": "9806d7ca4f63114ff22622d9c74ce86b50481910b5490529cf00692e3e793d48"
     },
     {
+      "path": "res/browser-runtime.json",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "0329308b6f4d5c33ad5d879d7b4d353396cda38f91e7220679c12d7f7b8f7a3f"
+    },
+    {
       "path": "res/jobs_registry.json",
       "status": "modified",
       "dependency": false,
@@ -29321,7 +29369,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": null,
-      "after_sha256": "5b8a3a9f689bcf1b785207083662b477d71937d1dd2e9e769ac0df903f1d6574"
+      "after_sha256": "ec221dba410df758e095e1d341270a313172b34b5211c2931baaec333d36e6ed"
     },
     {
       "path": "src/GpsGameAdapter.cpp",
@@ -29329,7 +29377,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": null,
-      "after_sha256": "f9f0893e6e0669d20f64267aeaaf32068407203b18af7aad28dc844d2c226bba"
+      "after_sha256": "aaeeb6a02eb743141924f283ae409192d8888263e0577e2c3881bce54cc06c67"
     },
     {
       "path": "src/GpsManager.cpp",
@@ -29337,7 +29385,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": null,
-      "after_sha256": "e26f350879c08a8e0982ad24d7c7e7f6f98a22a84bc638bef9114a69d1d0ae8d"
+      "after_sha256": "e6805be8c6242ef5270569d9233033df44d09e8a99ba9ac123c2e89587f9dfaa"
     },
     {
       "path": "src/ImGuiOverlay.cpp",
@@ -29497,7 +29545,15 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": "d233100d5d2234827ba8a7f0741b79a2d3236dac12631d210e6577ccc9b64a35",
-      "after_sha256": "cf166b55827088446e46f278bc3e1f7ac0a8bd603674e0c01e71bf47e85dff69"
+      "after_sha256": "ca7d96cc12ba4dd6a55af863f5e48d72c331ab8c0d38c8a64c67607830d89e37"
+    },
+    {
+      "path": "src/QuickMap.cpp",
+      "status": "modified",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": "5ce4ef64c897df231a21678b8b8611d2f991758a2a8add60f0c830aa5d94e10e",
+      "after_sha256": "c567a4c1ccee0364b9b1216e8056194731e8b245b76c9e13a2bea47ad71e7023"
     },
     {
       "path": "src/ReconnectManager.cpp",
@@ -29612,6 +29668,14 @@
       "after_sha256": "e26c2d523d4e16b4edda4a10c137e7a8eb89826aa01381c6e73a1c1cf4018233"
     },
     {
+      "path": "tests/BrowserSetupUnitTests.cpp",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "0ba634d62fbfeb20ac13fac5db12253dee4d20e6c007f22115df38caf3d99a56"
+    },
+    {
       "path": "tests/CombatChatBridgeTests.cpp",
       "status": "added",
       "dependency": false,
@@ -29721,7 +29785,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": "1fac4a1d9c947b62b3910b9b0cee32c0a604560edf7a048e03dca7f7a461d3f3",
-      "after_sha256": "11aabe0286c28a2bc5416ea145f19550e97f210844ab230d29dd63ef01d2dcee"
+      "after_sha256": "b9468d7556d8b329997e941842033e678bc0d915b65e0f6791c8156f2b4e99a3"
     },
     {
       "path": "tests/KillMessageTestTests.cpp",
@@ -29778,6 +29842,14 @@
       "line_endings_only": false,
       "before_sha256": null,
       "after_sha256": "c6c4ebf72df1b568e01060cdbb76aae3e4de2705e7e598e009c1ce6df4edf058"
+    },
+    {
+      "path": "tests/R17FeatureTests.cpp",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "47143aa3cad0e1eb305855283e1f7bea37c1e596a58b0e7d8465023ffeecdf6d"
     },
     {
       "path": "tests/ReconnectManagerTests.cpp",
@@ -29884,6 +29956,102 @@
       "after_sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
     },
     {
+      "path": "third_party/miniz/LICENSE",
+      "status": "added",
+      "dependency": true,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "6f20fa7672b00e2e975c291df737cf227addf3ad32e36fef3fe0f416e4664d3d"
+    },
+    {
+      "path": "third_party/miniz/NLBINDER-PROVENANCE.json",
+      "status": "added",
+      "dependency": true,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "fa8c7491224a6816e1c5e1281b292b52a267ae19766c6579b473bd25c13f56df"
+    },
+    {
+      "path": "third_party/miniz/miniz.c",
+      "status": "added",
+      "dependency": true,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "f23204efee2bfaffb72a974d2e28c64c3c1d9787144b5c5890f129c465e467bd"
+    },
+    {
+      "path": "third_party/miniz/miniz.h",
+      "status": "added",
+      "dependency": true,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "f0b67217bdd8e45b74eb9b7c2c7ae20ed6760a1d76f3276b93617039ebd082df"
+    },
+    {
+      "path": "third_party/miniz/miniz_common.h",
+      "status": "added",
+      "dependency": true,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "f1ba29821c8caef83585b328196aa346c5da7c82890a70a3d10d77c6cec0ed39"
+    },
+    {
+      "path": "third_party/miniz/miniz_export.h",
+      "status": "added",
+      "dependency": true,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "195259dc89fb3f83a96426a90ee03dc45acef113150cd3475ea9cfbf1f7784f3"
+    },
+    {
+      "path": "third_party/miniz/miniz_tdef.h",
+      "status": "added",
+      "dependency": true,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "d62da02953c3834dfcbde4db026c6d9345013ef9b0e53185131016a3a4e48c33"
+    },
+    {
+      "path": "third_party/miniz/miniz_tinfl.c",
+      "status": "added",
+      "dependency": true,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "2296ebd21ef9af5ebbefd5b454d4bb67d8fb4af2d24945e7fb32114374f75a76"
+    },
+    {
+      "path": "third_party/miniz/miniz_tinfl.h",
+      "status": "added",
+      "dependency": true,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "da4850920fdf09f8877d9affabe1ebba1852ce4b1ebbd121f2ba7a7ea8e57e5d"
+    },
+    {
+      "path": "third_party/miniz/miniz_zip.c",
+      "status": "added",
+      "dependency": true,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "b70e502c425e2a31146178c1466dccaf1874390009950774be2be9bd4ec908a9"
+    },
+    {
+      "path": "third_party/miniz/miniz_zip.h",
+      "status": "added",
+      "dependency": true,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "b062a5def545445c73fd1d664e35a89165dfb0d996ab848f507244e819cfcf04"
+    },
+    {
+      "path": "tools/BrowserSetup.cpp",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "a327601903948452bab2fea776f6a7ce45bc45ddcb613c05d62eba65ede722d5"
+    },
+    {
       "path": "tools/ReconnectHelper.cpp",
       "status": "added",
       "dependency": false,
@@ -29898,6 +30066,22 @@
       "line_endings_only": false,
       "before_sha256": "1ecdd54853e7f124c8a96c2e7b824f0d617be0e2a31ac33b5a23abb98c8784d1",
       "after_sha256": "910a47690188f705582576822e449f585562e10f1f7946f9320b45209c8bac34"
+    },
+    {
+      "path": "tools/build_browser_setup.bat",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "0ce4a53760d0de33a06b5e8d2ba340851d4e3ca79d96115bfe7e97d17e8e3c1e"
+    },
+    {
+      "path": "tools/build_browser_setup_tests.bat",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "95e9c6a4b3ab9263f61829902270061902b663ab154bd00f2457b4e1e1b5abb4"
     },
     {
       "path": "tools/build_forum_browser.bat",
@@ -29956,12 +30140,20 @@
       "after_sha256": "349fb4b73d614c9f1e5871b8738c8157025f60e4b3698f82799f19170c336edc"
     },
     {
+      "path": "tools/document_revision17.py",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "af20d351b02930eb997fd2a14073bf60c0fcdf91d3427fb51e53608637e0e467"
+    },
+    {
       "path": "tools/export_full_changelog.py",
       "status": "added",
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": null,
-      "after_sha256": "be2c48402051d73c1d69ea2c982aa44d342d9b0b274af8e214db16c8193ff796"
+      "after_sha256": "167558a5dd85a94c02d28e5608d6f075fd7008d2dc59e84b6cc199ea97c109cb"
     },
     {
       "path": "tools/export_source_bundle.py",
@@ -29969,7 +30161,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": null,
-      "after_sha256": "37526ebe5e942a38cb6ebacedad78d0414f4c3439356796d9839b5c4419a81d7"
+      "after_sha256": "8d974a9099563c811c61ad687f566767508f326a9f98921f4754b866dc0548b3"
     },
     {
       "path": "tools/fetch_cef_runtime.py",
@@ -29986,6 +30178,14 @@
       "line_endings_only": false,
       "before_sha256": null,
       "after_sha256": "b2c63fe44c978fd2e40bf4c5b0830e98fd47be94a61067dfcdc8c196e632fd9a"
+    },
+    {
+      "path": "tools/finalize_revision17.py",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "bb39c211c47c0fcc42d8c5500bf597b6fd14cd6acd4dd56170acafd2f067de9f"
     },
     {
       "path": "tools/launch_samp_03dl.ps1",
@@ -30052,6 +30252,14 @@
       "after_sha256": "c8c0836f5cd008051c3a16b3b78f5350a37de6a5c9534bdffb0b939939c2ba5a"
     },
     {
+      "path": "tools/package_revision17.py",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "2a4b12fa20873444cb53823f3567c84e2867d14df4a5b729c8dd0bcfcdbbb58e"
+    },
+    {
       "path": "tools/package_revision4.ps1",
       "status": "added",
       "dependency": false,
@@ -30108,6 +30316,14 @@
       "after_sha256": "5477611a991e4fb8d715a73b99b701eeab1bb9f2ca30260293755a5a20ced36a"
     },
     {
+      "path": "tools/prepare_browser_autoinstall.py",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "1478d39ec7a31e6057daa679158bb2a3dc8dbae1ce4d24d65ef762382d98fc2d"
+    },
+    {
       "path": "tools/prepare_browser_runtime.py",
       "status": "added",
       "dependency": false,
@@ -30132,12 +30348,28 @@
       "after_sha256": "64e77f462e331f1a59cf890de46155a65d76e2cc51b539f4628a9a8adb77f085"
     },
     {
+      "path": "tools/publish_revision17.py",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "c21ef5ce9bda949e4e4f08732580ecee1871caf68b55c0f2756ad3afab167e6f"
+    },
+    {
       "path": "tools/report_revision16_log.py",
       "status": "added",
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": null,
       "after_sha256": "b231e86262a83ffd2824d1c2c3059930cda8f3cbcb307374b5a29b0414d828d4"
+    },
+    {
+      "path": "tools/report_revision17_log.py",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "0ea5cebd0a2b324acca0fdb93e698a867b1a276df2d669d06c92d51ab18ee496"
     },
     {
       "path": "tools/run_revision16.bat",
@@ -30148,12 +30380,20 @@
       "after_sha256": "fbbf93f3e097ed526b1a5e8426f187c2542885b36616b623bf2b559b53098d43"
     },
     {
+      "path": "tools/run_revision17.bat",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "aa0ffa77d04d65fa13927a9562fe5601349501fb7f741e19bea2faa2e6f308f5"
+    },
+    {
       "path": "tools/run_tests.bat",
       "status": "modified",
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": "e8c7a0a6dde01e6ef6d857c59ffe1fec9278f15863e1f5a690b65d87ad002e69",
-      "after_sha256": "ec48a10af86c43a938d8eb682ac42df788bb992bc99b4860806110b1e9b5add6"
+      "after_sha256": "0249c9e89a5bff58d6569e036e5eb1daafc52eebc4b372f60daa2cc907744dcc"
     },
     {
       "path": "tools/setup_msvc.bat",
@@ -30162,6 +30402,14 @@
       "line_endings_only": false,
       "before_sha256": null,
       "after_sha256": "60847a4a1b58bfc30a7b2eccd7bdb47292a7badf3fd36d90607360a086101d74"
+    },
+    {
+      "path": "tools/test_browser_setup.py",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "f50ad2c52de58da2cf6867cb7016e91b0399d7dc886ba5062ba366bf4522ae3e"
     },
     {
       "path": "tools/test_forum_host.py",
@@ -30234,6 +30482,14 @@
       "line_endings_only": false,
       "before_sha256": null,
       "after_sha256": "1e5c34b64403f00e05b206440aef58e29c7f10dd35b0734be4f42f508214bbb1"
+    },
+    {
+      "path": "tools/verify_revision17_artifact.py",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "bf69fb32341ed14128d3434d087b8d57f46f2edf4ecb4694fdd7e53356034ade"
     },
     {
       "path": "tools/verify_revision4_artifact.py",

@@ -1,14 +1,17 @@
- Keybinder.rc                             |    2 +
- Keybinder.vcxproj                        |   28 +-
+ Keybinder.rc                             |    3 +
+ Keybinder.vcxproj                        |   33 +-
  browser/CMakeLists.txt                   |   24 +
  browser/ForumBrowserHost.cpp             |  301 +++++
  include/ActionExecutor.h                 |   22 +-
+ include/BrowserRuntimeLock.h             |  248 ++++
+ include/BrowserSetupProtocol.h           |   16 +
  include/CombatChatParser.h               |   29 +
  include/DamageRPCAdapter.h               |    8 +-
  include/DeathMessageRPCAdapter.h         |    3 +
  include/ForumBrowser.h                   |   32 +
  include/ForumBrowserProtocol.h           |   51 +
- include/GpsManager.h                     |   60 +
+ include/GpsManager.h                     |   61 +
+ include/GpsRadarOwnership.h              |   19 +
  include/ImGuiOverlay.h                   |   12 +
  include/IncomingDamageDetector.h         |  248 +++-
  include/InterfaceEditor.h                |   18 +-
@@ -35,9 +38,9 @@
  include/OnlineOverlayController.h        |   51 +
  include/OnlineOverlayRenderer.h          |    5 +
  include/OnlineUI.h                       |   10 +-
- include/PersistentPaths.h                |    1 +
+ include/PersistentPaths.h                |    2 +
  include/ReconnectManager.h               |   80 ++
- include/ResourceIds.h                    |    1 +
+ include/ResourceIds.h                    |    2 +
  include/SAMPBridge.h                     |  261 +++-
  include/ServerStatsSnapshot.h            |  369 ++++++
  include/SettingsManager.h                |   63 +-
@@ -51,14 +54,15 @@
  include/WeaponIconCatalog.h              |   69 ++
  include/WeaponIconManager.h              |   60 +
  include/WeaponIconsUI.h                  |   31 +
+ res/browser-runtime.json                 | 1192 ++++++++++++++++++
  res/jobs_registry.json                   |  192 ++-
  src/ActionExecutor.cpp                   |   93 +-
  src/CombatChatParser.cpp                 |  110 ++
  src/DamageRPCAdapter.cpp                 |   31 +-
  src/DeathMessageRPCAdapter.cpp           |    7 +
- src/ForumBrowser.cpp                     |  441 +++++++
- src/GpsGameAdapter.cpp                   |   58 +
- src/GpsManager.cpp                       |  161 +++
+ src/ForumBrowser.cpp                     |  615 ++++++++++
+ src/GpsGameAdapter.cpp                   |   78 ++
+ src/GpsManager.cpp                       |  169 +++
  src/ImGuiOverlay.cpp                     |  111 +-
  src/InterfaceEditor.cpp                  |  301 ++---
  src/InterfaceEditorUI.cpp                |  111 +-
@@ -78,7 +82,8 @@
  src/OnlineOverlayController.cpp          |  217 +++-
  src/OnlineOverlayRenderer.cpp            |  146 ++-
  src/OnlineUI.cpp                         |  146 ++-
- src/PersistentPaths.cpp                  |   21 +
+ src/PersistentPaths.cpp                  |   28 +
+ src/QuickMap.cpp                         |    2 +-
  src/ReconnectManager.cpp                 |  371 ++++++
  src/SAMPBridge.cpp                       | 1978 +++++++++++++++++++-----------
  src/SettingsManager.cpp                  |  373 +++++-
@@ -93,6 +98,7 @@
  src/WeaponIconManager.cpp                |  269 ++++
  src/WeaponIconsUI.cpp                    |  154 +++
  tests/ActionExecutorTests.cpp            |  239 ++++
+ tests/BrowserSetupUnitTests.cpp          |   18 +
  tests/CombatChatBridgeTests.cpp          |  639 ++++++++++
  tests/CombatChatParserTests.cpp          |   84 ++
  tests/DamageLogRegressionTests.cpp       |  711 +++++++++++
@@ -106,7 +112,7 @@
  tests/JobSkillsSnapshotTests.cpp         |  114 ++
  tests/JobTrackerLifecycleTests.cpp       |   47 +
  tests/JobsUITests.cpp                    |    2 +-
- tests/KeybindTests.cpp                   |   43 +-
+ tests/KeybindTests.cpp                   |   45 +-
  tests/KillMessageTestTests.cpp           |   59 +
  tests/LocationVariableTests.cpp          |  112 ++
  tests/NativeHudEditorTests.cpp           |  103 ++
@@ -114,6 +120,7 @@
  tests/OnlineOverlayRendererTests.cpp     |  351 +++++-
  tests/OnlineSettingsTests.cpp            |  137 +++
  tests/R16FeatureTests.cpp                |  127 ++
+ tests/R17FeatureTests.cpp                |   39 +
  tests/ReconnectManagerTests.cpp          |  256 ++++
  tests/ReconnectWorkerFixture.cpp         |  100 ++
  tests/RegressionTests.cpp                |   35 +-
@@ -126,8 +133,11 @@
  tests/StatsDialogRPCAdapterTests.cpp     |  114 ++
  tests/WeaponIconManagerTests.cpp         |  181 +++
  tests/WeaponIconSettingsTests.cpp        |   87 ++
+ tools/BrowserSetup.cpp                   |  186 +++
  tools/ReconnectHelper.cpp                |  220 ++++
  tools/build_and_test.bat                 |   11 +-
+ tools/build_browser_setup.bat            |    8 +
+ tools/build_browser_setup_tests.bat      |    7 +
  tools/build_forum_browser.bat            |   22 +
  tools/build_plugin_sdk.bat               |   19 +-
  tools/build_reconnect_helper.bat         |   13 +
@@ -135,10 +145,12 @@
  tools/cef-runtime.lock.json              |   13 +
  tools/document_publication_revision16.py |  177 +++
  tools/document_revision16.py             |  152 +++
+ tools/document_revision17.py             |  258 ++++
  tools/export_full_changelog.py           |   34 +
- tools/export_source_bundle.py            |  194 +++
+ tools/export_source_bundle.py            |  185 +++
  tools/fetch_cef_runtime.py               |   55 +
  tools/finalize_revision16.py             |   56 +
+ tools/finalize_revision17.py             |   54 +
  tools/launch_samp_03dl.ps1               |   17 +-
  tools/package_revision10.ps1             |  136 ++
  tools/package_revision11.ps1             |  138 +++
@@ -147,6 +159,7 @@
  tools/package_revision14.ps1             |  138 +++
  tools/package_revision15.ps1             |  144 +++
  tools/package_revision16.py              |   99 ++
+ tools/package_revision17.py              |   79 ++
  tools/package_revision4.ps1              |   97 ++
  tools/package_revision5.ps1              |   96 ++
  tools/package_revision6.ps1              |   93 ++
@@ -154,13 +167,18 @@
  tools/package_revision8.ps1              |  126 ++
  tools/package_revision9.ps1              |  126 ++
  tools/premium_ui_qa.ps1                  |    4 +-
+ tools/prepare_browser_autoinstall.py     |   40 +
  tools/prepare_browser_runtime.py         |   34 +
  tools/prepare_github_review.py           |  135 ++
  tools/publish_revision16.py              |  268 ++++
+ tools/publish_revision17.py              |  275 +++++
  tools/report_revision16_log.py           |   10 +
+ tools/report_revision17_log.py           |   10 +
  tools/run_revision16.bat                 |   87 ++
- tools/run_tests.bat                      |   52 +-
+ tools/run_revision17.bat                 |   71 ++
+ tools/run_tests.bat                      |   54 +-
  tools/setup_msvc.bat                     |   16 +
+ tools/test_browser_setup.py              |   80 ++
  tools/test_forum_host.py                 |  102 ++
  tools/test_reconnect_worker.py           |  250 ++++
  tools/verify_revision10_artifact.py      |  115 ++
@@ -170,10 +188,11 @@
  tools/verify_revision14_artifact.py      |  115 ++
  tools/verify_revision15_artifact.py      |  115 ++
  tools/verify_revision16_artifact.py      |  115 ++
+ tools/verify_revision17_artifact.py      |  124 ++
  tools/verify_revision4_artifact.py       |  115 ++
  tools/verify_revision5_artifact.py       |  115 ++
  tools/verify_revision6_artifact.py       |  115 ++
  tools/verify_revision7_artifact.py       |  115 ++
  tools/verify_revision8_artifact.py       |  115 ++
  tools/verify_revision9_artifact.py       |  115 ++
- 178 files changed, 21379 insertions(+), 1471 deletions(-)
+ 197 files changed, 24317 insertions(+), 1472 deletions(-)

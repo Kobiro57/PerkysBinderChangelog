@@ -99,3 +99,22 @@ Quellen/Buildskripte des eigenen Hosts stehen unter `browser/` und `tools/`.
 Der große CEF-Binärbestand gehört zum Release-ZIP und wird nicht als einzelne
 Datei in das Git-Repository eingecheckt. CEF-SDK und Zwischenstände bleiben
 lokal unter `build/`; es werden keine Browserprofile veröffentlicht.
+
+## Automatische Browserinstallation ab r17
+
+Der bereits geprüfte CEF-Bestand wird als eigenständiges, unveränderlich
+gepinntes [Browser-Release](https://github.com/Kobiro57/PerkysBinderChangelog/releases/tag/browser-cef156-r1)
+bereitgestellt. [Manifest](../../res/browser-runtime.json) mit URL, Version,
+Archivgröße, SHA-256 und allen Datei-Hashes; [Generator](../../tools/prepare_browser_autoinstall.py).
+Ein neuer Host-/CEF-Stand bekommt eine neue Runtime-ID; alte ASIs verwenden
+weiterhin ihr eigenes geprüftes Paket.
+
+miniz 3.1.2, Commit `77d0dce8627735138c51770d1799a1ef48f2117d`, wird statisch
+im Installer zum Lesen/Entpacken benutzt. Originalquellen bleiben unverändert;
+das Exportheader für den statischen Build ist dokumentiert.
+[Offizielle Veröffentlichung](https://github.com/richgel999/miniz/releases/tag/3.1.2),
+[Lizenz](../../third_party/miniz/LICENSE),
+[Dateiherkunft und Hashes](../../third_party/miniz/NLBINDER-PROVENANCE.json).
+ZIP-Schreib- und Deflate-Kompressions-APIs sind im Installer deaktiviert.
+WinHTTP und BCrypt stammen von Windows; zusätzliche Nutzerinstallationen
+werden dafür nicht benötigt. [Installerquelle](../../tools/BrowserSetup.cpp).

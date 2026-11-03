@@ -140,3 +140,24 @@ VS 2022 x86/x64 v143 tools, Windows SDK and CMake are required.
 `tools/run_revision16.bat tests` runs the complete suite. `smoke` loads the
 real forum anonymously; `native-smoke` exercises x86-to-x64 IPC with a fresh
 test profile. No automated account login or post submission is performed.
+
+## r17 automatic browser setup
+
+Distribute only NLBinder.asi. The embedded native BrowserSetup.exe installs
+the pinned runtime into the NLBinder Browser folder in Documents on first
+/forum. The browser cookie profile remains separate in LocalAppData.
+The old r16 instruction to copy the Browser directory beside the ASI is
+historical; r17 can migrate such a supplied folder without downloading it.
+
+The installer sources are tools/BrowserSetup.cpp and third_party/miniz.
+BuildBrowserSetup runs automatically before ResourceCompile and embeds the
+result as RCDATA 301. The immutable archive lock and per-file hashes are
+res/browser-runtime.json and include/BrowserRuntimeLock.h. Building the ASI
+does not require re-downloading or re-building CEF when using this pinned host.
+The existing CEF host build instructions remain valid for a future host update.
+
+tools/run_revision17.bat tests runs the full suite. setup-tests additionally
+tests the native installer against the actual public pinned HTTPS download in
+private fixture directories. native-smoke installs from the embedded resource,
+opens the real forum four times with one anonymous profile and verifies clean
+shutdown and queued/early reopen. No account login or post is automated.

@@ -1,53 +1,50 @@
 # PerkysBinderChangelog
 
-Vollständiger Prüfstand von **NLBinder v.0.1.1 by KOBiRO, r16**.
+Aktueller Prüfstand: **NLBinder v.0.1.1 by KOBiRO, r17**.
 Grundlage und ursprüngliche Urheberhinweise von Perkys bleiben erhalten.
-Der aktuelle Quellstand basiert auf dem zuletzt bereitgestellten NLBinder-masterNEW.
+Alle bisherigen Änderungen und Veröffentlichungen sind in der Historie erhalten.
 
-r16 ergänzt die verschiebbare native **Ausdauer-Sidebar**, **Akkordverdienste**,
-**20 gespeicherte GPS-Ziele**, **Spielernamen für `/speed`** und das echte
-**Nova-Forum im Spiel** über Chromium/CEF. Die bisherigen Todes-/Damagelog-
-Korrekturen und alle anderen Binder-Funktionen bleiben enthalten.
+r17 installiert den Browser beim ersten **`/forum` automatisch unter Dokumente**.
+Es muss nur noch **NLBinder.asi** verteilt werden. Der eigene native Installer
+prüft das versionierte Downloadpaket und jede enthaltene Datei. Vorhandene
+passende r16-Dateien werden ohne Download übernommen. Fortschritt, Abbruch,
+Reparatur und erneuter Versuch sind vorhanden.
 
-## Einstieg für die Projektleitung
+Das Forum kann mehrfach und auch direkt während des Schließens wieder geöffnet
+werden. Die rote GPS-Markierung bleibt beim Start direkt am Ziel sichtbar;
+entfernte eigene Radar-Einträge werden wiederhergestellt und fremde geschont.
 
-1. [Gesamter Changelog](docs/review/CHANGELOG-DE.md), auch [als TXT](docs/CHANGELOG-GESAMT.txt)
-2. [Verhalten, tatsächliche Prüfungen und Grenzen](docs/review/PRUEFUNG-DE.md)
-3. [Dateivergleich zum unveränderten Original](docs/review/DATEIVERGLEICH.md)
-4. [Abhängigkeiten und Herkunft](docs/review/DEPENDENCIES.md)
-5. [Alle Programmänderungen](https://github.com/Kobiro57/PerkysBinderChangelog/compare/build-dependencies-baseline...v0.1.1-r16)
-6. [Nur Änderungen von r15 nach r16](https://github.com/Kobiro57/PerkysBinderChangelog/compare/v0.1.1-r15...v0.1.1-r16)
+## Prüfung durch die Projektleitung
 
-Der vollständige bearbeitete Code liegt in `src/`, `include/`, `browser/`,
-`tests/`, `res/`, `tools/` und `third_party/`. Die ursprüngliche Importhistorie,
-der Tag `original-archive-92ce219`, der getrennte Abhängigkeitsimport und alle
-früheren Veröffentlichungen bleiben nachvollziehbar erhalten. Die ursprüngliche
-ZIP-Commitkennung lautet `92ce21971bee2d166d830e23ad20950f1dc98921`.
+- [Gesamter Changelog](docs/review/CHANGELOG-DE.md), auch [als TXT](docs/CHANGELOG-GESAMT.txt)
+- [Verhalten und tatsächlicher Prüfumfang](docs/review/PRUEFUNG-DE.md)
+- [Dateivergleich zum Original](docs/review/DATEIVERGLEICH.md)
+- [Bibliotheken, Downloadherkunft und Lizenzen](docs/review/DEPENDENCIES.md)
+- [Änderungen seit r16](https://github.com/Kobiro57/PerkysBinderChangelog/compare/v0.1.1-r16...v0.1.1-r17)
+- [Alle Programmänderungen](https://github.com/Kobiro57/PerkysBinderChangelog/compare/build-dependencies-baseline...v0.1.1-r17)
 
-## Fertiges Paket
+Der vollständige Code steht unter `src/`, `include/`, `browser/`, `tests/`,
+`tools/`, `res/` und `third_party/`. Original-Tag `original-archive-92ce219`,
+getrennter SDK-Import und frühere Revisionspatches bleiben unverändert.
 
-- [Vollständiges r16-Release mit ASI und Browser-Runtime](https://github.com/Kobiro57/PerkysBinderChangelog/releases/tag/v0.1.1-r16)
-- [NLBinder.asi](dist/NLBinder-0.1.1-r16/NLBinder.asi)
-- [Installation und neue Befehle](dist/NLBinder-0.1.1-r16/LIESMICH.md)
-- [Build-/Prüfangaben](dist/NLBinder-0.1.1-r16/BUILD-INFO.txt)
-- [ASI-Prüfbericht](dist/NLBinder-0.1.1-r16/PRUEFBERICHT.json)
-- [Browser-Dateien und Prüfsummen](dist/NLBinder-0.1.1-r16/BROWSER-RUNTIME.json)
-- [Gesamtnachweis r16](docs/review/r16-validation.json)
+## Fertiger Binder
 
-Für `/forum` muss der Ordner **NLBinder/Browser** aus dem vollständigen ZIP
-neben die ASI kopiert werden. Die große Runtime liegt als GitHub-Release-Anhang;
-die ASI allein enthält Chromium nicht. Es werden keine persönlichen
-Einstellungen, Chatlogs, UCP-Zugangsdaten oder Browserprofile veröffentlicht.
+- [r17-Download](https://github.com/Kobiro57/PerkysBinderChangelog/releases/tag/v0.1.1-r17)
+- [NLBinder.asi](dist/NLBinder-0.1.1-r17/NLBinder.asi)
+- [Installation und Bedienung](dist/NLBinder-0.1.1-r17/LIESMICH.md)
+- [Build und Prüfung](dist/NLBinder-0.1.1-r17/BUILD-INFO.txt)
+- [Prüfsumme / eingebettete Helfer](dist/NLBinder-0.1.1-r17/PRUEFBERICHT.json)
+- [Downloadmanifest](res/browser-runtime.json)
+- [Gesamtnachweis r17](docs/review/r17-validation.json)
 
-Die gesamte automatisierte Testsuite und der Release-Build sind erfolgreich.
-Das echte Forum wurde anonym gerendert und gescrollt; die native x86-Anbindung
-hat den x64-Browser mit Sandbox gestartet und sauber beendet. Diese neuen
-Funktionen wurden noch nicht in einer laufenden GTA-Sitzung live getestet.
-Die frühere r15-Todeskorrektur war bereits durch Explosion und Friedhofs-Relog
-im Spiel bestätigt: [damaliger Live-Prüfumfang](docs/review/r15-live-validation.json).
+Bei beendetem Spiel die bisherige Binder-ASI ersetzen. Ein manueller
+Browserordner ist ab r17 nicht mehr nötig. Der erste Download umfasst etwa
+188 MB; entpackt werden rund 429 MB. Originales Forum, Sandbox und getrenntes
+Cookieprofil bleiben erhalten. Persönliche Einstellungen, Zugangsdaten,
+Browserprofile und Chatlogs werden nicht veröffentlicht.
 
-[Ursprüngliche Projektbeschreibung](docs/ORIGINAL-README.md) ·
-[Aktuelle Build-Anleitung](docs/BUILD-README.md)
+Gesamttests, Release-Build, echter Installer-Download und vier Öffnungen des
+Forums mit demselben anonymen Testprofil sind erfolgreich geprüft. Ein
+zusätzlicher Live-Test der neuen Fassung innerhalb von GTA steht noch aus.
 
-Weitere Updates erscheinen als neue Commits mit Changelog, Quellcode,
-passenden Prüfungen und eindeutiger ASI-Prüfsumme. Ältere Stände bleiben erhalten.
+[Ursprüngliche Beschreibung](docs/ORIGINAL-README.md) · [Build-Anleitung](docs/BUILD-README.md)

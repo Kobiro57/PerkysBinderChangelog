@@ -24,6 +24,7 @@ std::string FistsDir();
 std::string WeaponIconsDir();
 
 std::string HitsoundsDir();
+std::string BrowserDir();
 
 std::string EnsureLayout();
 

@@ -714,7 +714,7 @@ QuickMapRenderData QuickMap::ExtractRenderData(SAMPBridge* bridge) const {
                     continue;
                 }
 
-                if (radarTrace.m_nBlipDisplay != BLIP_DISPLAY_MARKER_ONLY
+                if (radarTrace.m_nBlipDisplay != BLIP_DISPLAY_BLIP_ONLY
                     && radarTrace.m_nBlipDisplay != BLIP_DISPLAY_BOTH) {
                     continue;
                 }

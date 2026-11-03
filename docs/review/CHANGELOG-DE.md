@@ -998,3 +998,31 @@ Live-Tests dieser beiden Todesursachen werden nicht behauptet.
   Ein Live-Test der neuen Funktionen in einer GTA-Sitzung wird nicht behauptet.
 
 - `/speed` akzeptiert zusätzlich vollständige Spielernamen und eindeutige Namensteile ab drei Zeichen. Exakte Namen haben Vorrang; mehrdeutige Eingaben vergeben keine Wanteds.
+
+## 23. Nachtrag r17 – 3. November 2026
+
+- Browserordner automatisch unter Dokumente/GTA San Andreas User Files/NLBinder
+  angelegt. Nur NLBinder.asi muss weitergegeben werden.
+- Eingebetteter Installer richtet beim ersten `/forum` die echte Chromium-
+  Runtime im Hintergrund ein. Passende r16-Dateien werden ohne Download
+  übernommen; sonst einmaliger HTTPS-Download aus dem eigenen GitHub-Release.
+- Downloadquelle, Archivgröße und SHA-256 festgelegt. Jede entpackte Datei
+  zusätzlich gegen das eingebettete Manifest geprüft. ZIP-Pfade, doppelte
+  Einträge, Verknüpfungen und fremde Dateien werden abgelehnt.
+- Fortschrittsfenster, Abbruch, erneuter Versuch und Reparatur ergänzt.
+  Installation zunächst separat vorbereitet und erst vollständig aktiviert.
+  Vorherige beschädigte Runtime bleibt bei Reparatur als Sicherung erhalten.
+- Keine Python-/PowerShell-/Entpackerinstallation beim Nutzer nötig. Separater
+  nativer Helfer mit asInvoker-Manifest; keine UAC-Abfrage. Chromium weiterhin
+  als eigener x64-Prozess mit aktivierter Sandbox und eigenem Cookieprofil.
+- Wiederöffnen des Forums abgesichert: vollständiges Ende der eigenen
+  Prozessgruppe abwarten, erneuten Aufruf vormerken und Wartezustand anzeigen.
+  Auch schnelles Wiederöffnen und Schließen während des Starts geprüft.
+- GPS-Ziel am eigenen Standort bleibt sichtbar, bis der Zielbereich verlassen
+  und erneut betreten wird. Bisherige sofortige Entfernung dadurch behoben.
+- Rote Minimap-Markierung größer und dauerhaft sichtbar konfiguriert.
+  Entfernte eigene Blips wiederhergestellt; recycelte Server-Radarslots anhand
+  ihrer Generation und Position geschützt. QuickMap-Anzeigeflags korrigiert.
+- Neue GPS-/Radar-Regressionsprüfungen, native Installer-Tests mit echtem
+  HTTPS-Download und vier echte Forum-Öffnungen desselben anonymen Profils.
+  Keine Anmeldung/Beiträge automatisch ausgeführt, kein GTA-Live-Test behauptet.

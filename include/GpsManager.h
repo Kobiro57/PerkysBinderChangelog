@@ -50,6 +50,7 @@ private:
     unsigned int activeId_ = 0;
     unsigned int selectedId_ = 0;
     bool listOpen_ = false;
+    bool arrivalArmed_ = false;
 };
 
 // Local GTA marker uses a private identifier and never replaces the server's
