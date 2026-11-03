@@ -70,6 +70,8 @@ public:
     void SetFocusLostHandler(std::function<void()> callback);
     void SetAuxiliaryInteractionActiveCallback(std::function<bool()> callback);
     void SetAuxiliaryInteractionCancelCallback(std::function<void()> callback);
+    void SetAuxiliaryKeyboardCaptureCallback(std::function<bool()> callback);
+    void SetAuxiliaryWindowMessageCallback(std::function<bool(HWND, UINT, WPARAM, LPARAM)> callback);
 
     void SetMainWindowUI(MainWindowUI* ui) { mainWindowUI_ = ui; }
 
@@ -139,6 +141,8 @@ private:
     std::function<void()> focusLostHandlerCallback_;
     std::function<bool()> auxiliaryInteractionActiveCallback_;
     std::function<void()> auxiliaryInteractionCancelCallback_;
+    std::function<bool()> auxiliaryKeyboardCaptureCallback_;
+    std::function<bool(HWND, UINT, WPARAM, LPARAM)> auxiliaryWindowMessageCallback_;
     bool initialized_ = false;
     bool visible_ = false;
     bool context_owned_ = false;

@@ -973,6 +973,7 @@ void OnlineUI::RenderPersistentOverlaySettings() {
     if (UIComponents::Toggle("Ort anzeigen", &settings.online_location_overlay_enabled)) { PersistSettings(); ApplyLiveSettings(); }
     if (UIComponents::Toggle("Fortbewegungsmittel anzeigen", &settings.online_transport_overlay_enabled)) { PersistSettings(); ApplyLiveSettings(); }
     if (UIComponents::Toggle("Pedslots anzeigen", &settings.online_pedslots_overlay_enabled)) { PersistSettings(); ApplyLiveSettings(); }
+    if (UIComponents::Toggle("Ausdauer anzeigen", &settings.online_stamina_overlay_enabled)) { PersistSettings(); ApplyLiveSettings(); }
     if (ImGui::IsItemHovered()) { ImGui::SetTooltip("Anzahl anderer Spieler, die aktuell in deinem Stream geladen sind."); }
     if (UIComponents::Toggle("Freunde anzeigen", &settings.online_friends_overlay_enabled)) { PersistSettings(); ApplyLiveSettings(); }
     if (UIComponents::Toggle("Feinde anzeigen", &settings.online_enemies_overlay_enabled)) { PersistSettings(); ApplyLiveSettings(); }

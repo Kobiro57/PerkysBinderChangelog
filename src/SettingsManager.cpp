@@ -1630,6 +1630,16 @@ bool SettingsManager::LoadFromJson(const std::string& json_content) {
     ParseBoolField(json_content, "\"online_location_overlay_enabled\"", settings_.online_location_overlay_enabled);
     ParseBoolField(json_content, "\"online_transport_overlay_enabled\"", settings_.online_transport_overlay_enabled);
     ParseBoolField(json_content, "\"online_pedslots_overlay_enabled\"", settings_.online_pedslots_overlay_enabled);
+    ParseFloatField(json_content, "\"forum_window_x\"", settings_.forum_window_x);
+    if (!std::isfinite(settings_.forum_window_x)) settings_.forum_window_x = -1.0f;
+    ParseFloatField(json_content, "\"forum_window_y\"", settings_.forum_window_y);
+    if (!std::isfinite(settings_.forum_window_y)) settings_.forum_window_y = -1.0f;
+    ParseFloatField(json_content, "\"forum_window_width\"", settings_.forum_window_width);
+    if (!std::isfinite(settings_.forum_window_width)) settings_.forum_window_width = 1100.0f;
+    ParseFloatField(json_content, "\"forum_window_height\"", settings_.forum_window_height);
+    if (!std::isfinite(settings_.forum_window_height)) settings_.forum_window_height = 760.0f;
+    ParseBoolField(json_content, "\"forum_window_fullscreen\"", settings_.forum_window_fullscreen);
+    ParseBoolField(json_content, "\"online_stamina_overlay_enabled\"", settings_.online_stamina_overlay_enabled);
     // Split the old shared radar position into two independently saved panels.
     // Keep friends at the old position and start enemies 120 px farther from
     // the same edge. Explicit new values below always take precedence.
@@ -1673,11 +1683,17 @@ bool SettingsManager::LoadFromJson(const std::string& json_content) {
     ParseFloatField(json_content, "\"online_transport_overlay_offset_y\"", settings_.online_transport_overlay_offset_y);
     if (!std::isfinite(settings_.online_transport_overlay_offset_y)) settings_.online_transport_overlay_offset_y = 12.0f;
     ParseStringField(json_content, "\"online_pedslots_overlay_anchor\"", settings_.online_pedslots_overlay_anchor);
+    ParseStringField(json_content, "\"online_stamina_overlay_anchor\"", settings_.online_stamina_overlay_anchor);
     settings_.online_pedslots_overlay_anchor = NormalizeOnlineOverlayAnchor(settings_.online_pedslots_overlay_anchor);
+    settings_.online_stamina_overlay_anchor = NormalizeOnlineOverlayAnchor(settings_.online_stamina_overlay_anchor);
     ParseFloatField(json_content, "\"online_pedslots_overlay_offset_x\"", settings_.online_pedslots_overlay_offset_x);
+    ParseFloatField(json_content, "\"online_stamina_overlay_offset_x\"", settings_.online_stamina_overlay_offset_x);
     if (!std::isfinite(settings_.online_pedslots_overlay_offset_x)) settings_.online_pedslots_overlay_offset_x = 12.0f;
+    if (!std::isfinite(settings_.online_stamina_overlay_offset_x)) settings_.online_stamina_overlay_offset_x = 12.0f;
     ParseFloatField(json_content, "\"online_pedslots_overlay_offset_y\"", settings_.online_pedslots_overlay_offset_y);
+    ParseFloatField(json_content, "\"online_stamina_overlay_offset_y\"", settings_.online_stamina_overlay_offset_y);
     if (!std::isfinite(settings_.online_pedslots_overlay_offset_y)) settings_.online_pedslots_overlay_offset_y = 12.0f;
+    if (!std::isfinite(settings_.online_stamina_overlay_offset_y)) settings_.online_stamina_overlay_offset_y = 320.0f;
 
     bool foundWeaponIconSettings = ParseBoolField(json_content, "\"weapon_icons_enabled\"", settings_.weapon_icons_enabled);
     settings_.weapon_icon_selections.clear();
@@ -2089,6 +2105,12 @@ std::string SettingsManager::GetSettingsJson() const {
     oss << "    \"online_location_overlay_enabled\": " << (settings_.online_location_overlay_enabled ? "true" : "false") << ",\n";
     oss << "    \"online_transport_overlay_enabled\": " << (settings_.online_transport_overlay_enabled ? "true" : "false") << ",\n";
     oss << "    \"online_pedslots_overlay_enabled\": " << (settings_.online_pedslots_overlay_enabled ? "true" : "false") << ",\n";
+    oss << "    \"forum_window_x\": " << settings_.forum_window_x << ",\n";
+    oss << "    \"forum_window_y\": " << settings_.forum_window_y << ",\n";
+    oss << "    \"forum_window_width\": " << settings_.forum_window_width << ",\n";
+    oss << "    \"forum_window_height\": " << settings_.forum_window_height << ",\n";
+    oss << "    \"forum_window_fullscreen\": " << (settings_.forum_window_fullscreen ? "true" : "false") << ",\n";
+    oss << "    \"online_stamina_overlay_enabled\": " << (settings_.online_stamina_overlay_enabled ? "true" : "false") << ",\n";
     oss << "    \"online_friends_overlay_anchor\": \"" << EscapeJsonString(settings_.online_friends_overlay_anchor) << "\",\n";
     oss << "    \"online_friends_overlay_offset_x\": " << settings_.online_friends_overlay_offset_x << ",\n";
     oss << "    \"online_friends_overlay_offset_y\": " << settings_.online_friends_overlay_offset_y << ",\n";
@@ -2102,8 +2124,11 @@ std::string SettingsManager::GetSettingsJson() const {
     oss << "    \"online_transport_overlay_offset_x\": " << settings_.online_transport_overlay_offset_x << ",\n";
     oss << "    \"online_transport_overlay_offset_y\": " << settings_.online_transport_overlay_offset_y << ",\n";
     oss << "    \"online_pedslots_overlay_anchor\": \"" << EscapeJsonString(settings_.online_pedslots_overlay_anchor) << "\",\n";
+    oss << "    \"online_stamina_overlay_anchor\": \"" << EscapeJsonString(settings_.online_stamina_overlay_anchor) << "\",\n";
     oss << "    \"online_pedslots_overlay_offset_x\": " << settings_.online_pedslots_overlay_offset_x << ",\n";
+    oss << "    \"online_stamina_overlay_offset_x\": " << settings_.online_stamina_overlay_offset_x << ",\n";
     oss << "    \"online_pedslots_overlay_offset_y\": " << settings_.online_pedslots_overlay_offset_y << ",\n";
+    oss << "    \"online_stamina_overlay_offset_y\": " << settings_.online_stamina_overlay_offset_y << ",\n";
     oss << "    \"online_player_markers\": [";
     bool firstMarker = true;
     for (const auto& marker : settings_.online_player_markers) {

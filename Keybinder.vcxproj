@@ -199,6 +199,10 @@
     <ClCompile Include="src\KeybindManager.cpp" />
     <ClCompile Include="src\ImGuiOverlay.cpp" />
     <ClCompile Include="src\SAMPBridge.cpp" />
+    <ClCompile Include="src\GpsManager.cpp" />
+    <ClCompile Include="src\GpsGameAdapter.cpp" />
+    <ClCompile Include="src\ForumBrowser.cpp" />
+
     <ClCompile Include="src\CombatChatParser.cpp" />
     <ClCompile Include="src\StartupStatsSync.cpp" />
     <ClCompile Include="src\JobSkillsSync.cpp" />

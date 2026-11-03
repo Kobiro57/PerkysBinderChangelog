@@ -1,6 +1,56 @@
 # Hinweise zur Prüfung durch die Projektleitung
 
-## Aktueller Stand r15 – 30. Oktober 2026
+## Aktueller Stand r16 – 3. November 2026
+
+Grundlage ist der zuletzt vom Nutzer bereitgestellte Ordner NLBinder-masterNEW
+mit den live bestätigten r15-Todes-/Damagelog-Korrekturen. Diese bleiben erhalten.
+
+[Bedienung und Installation](../NLBinder-0.1.1-r16-DE.md),
+[gesamter TXT-Changelog](../CHANGELOG-GESAMT.txt) und
+[maschinenlesbarer Prüfnachweis](r16-validation.json).
+
+### Neue Funktionen und Eingriffe
+
+- Native Ausdauerreserve als verschiebbare senkrechte Sidebar. Keine Änderung
+  an Ausdauerwerten und kein nachgebauter Timer. Vorhandener Overlay-Move-Modus.
+- Akkord-Anteil wird als bestehendes Job-Verdienstereignis erfasst. Keine
+  zusätzliche Auszahlung oder Veränderung serverseitiger Daten.
+- Bis zu 20 lokale GPS-Ziele mit eigenen GTA-Markern und Kartenpunkten.
+  Eigene IDs, keine Übernahme serverseitiger Checkpoint-Slots.
+- `/speed` löst Namen und eindeutige Teile ab drei Zeichen aus dem verbundenen
+  Spielerpool auf. Exakte Namen bevorzugt; Mehrdeutigkeit bricht lokal ab.
+- `/forum` rendert das echte Forum mit CEF-Offscreen-Rendering. Ein eigener
+  x64-Prozess führt Chromium mit Sandbox aus; die x86-ASI überträgt Bild und
+  Bedienung über begrenzte gemeinsame Speicherstrukturen.
+
+Die Login- und Schreibfunktionen stammen unverändert von der Originalwebseite.
+Der Binder liest weder DOM-Passwortfelder noch Cookieinhalte. Getippte Eingaben
+werden nicht protokolliert; abgearbeitete IPC-Eingabefelder werden gelöscht.
+CEF verwaltet sein separates lokales Profil. Externe Hauptnavigation,
+Popups und Downloads werden begrenzt. Das Paket enthält keine Nutzerprofile.
+
+### Tatsächlich ausgeführte Prüfungen
+
+Gesamte C++-Testsuite und Release-Build: Exitcode 0. Enthalten sind 127 neue
+Ausdauer-/GPS-/Akkord-/Einstellungsprüfungen sowie zusätzliche Namensauflösungs-
+und Dialog-Integrationstests. Der native Reconnect-Helfer wird nach dem letzten
+Build mit 83 Prüfungen und sechs Nova-Testfällen geprüft. Testprozesse führen
+weder ein echtes Spiel noch den installierten Launcher aus.
+
+Die offizielle CEF-Runtime hat das echte Forum in einem frischen anonymen
+Testprofil gerendert. Scrollen änderte die tatsächlichen Webseitenpixel;
+der Host beendete sich sauber. Separat startete der produktive x86-Controller
+den x64-Browser, empfing echte Frames und schloss ihn über den normalen
+asynchronen Ablauf. Es wurden keine Anmeldung, Beiträge oder Nachrichten
+automatisch abgeschickt. Diese neuen Funktionen wurden nicht in einer
+laufenden GTA-Sitzung live getestet; das wird nicht als bereits belegt behauptet.
+
+Chromium wird wegen seiner Größe im vollständigen GitHub-Release-ZIP
+mitgeliefert. Quellcode, fixiertes SDK, Runtime-Prüfsummen und die ASI liegen
+im Repository. `NLBinder/Browser` muss bei der Installation neben die ASI.
+
+## Vorheriger Stand r15 – 30. Oktober 2026
+
 
 [Bedienung](../NLBinder-0.1.1-r15-DE.md),
 [r15-Nachtrag](CHANGELOG-DE.md#21-nachtrag-r15--30-oktober-2026) und

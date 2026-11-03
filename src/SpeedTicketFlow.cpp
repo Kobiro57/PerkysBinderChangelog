@@ -142,6 +142,48 @@ bool SpeedTicketFlow::Start(const std::string& arguments, unsigned long now, std
     return true;
 }
 
+bool SpeedTicketFlow::ResolvePlayerTarget(const std::string& arguments,
+    const std::vector<std::pair<int, std::string>>& players, int& id, std::string& error) {
+    error.clear();
+    const auto value = Trim(arguments);
+    if (ParsePlayerId(value, id)) return true;
+    if (value.empty() || value.size() > 24 || value.find_first_of(" \t\r\n") != std::string::npos
+        || value.find('\0') != std::string::npos) {
+        error = "Nutzung: /speed Spieler-ID, Spielername oder eindeutiger Namensteil (mindestens 3 Zeichen).";
+        return false;
+    }
+    // All-digit input remains an ID; never reinterpret an invalid ID as a name.
+    if (value.find_first_not_of("0123456789") == std::string::npos) {
+        error = "Die Spieler-ID muss zwischen 0 und 1003 liegen.";
+        return false;
+    }
+    auto lower = [](std::string text) {
+        for (char& ch : text) if (ch >= 'A' && ch <= 'Z') ch += 'a' - 'A';
+        return text;
+    };
+    const auto needle = lower(value);
+    int exact = -1, partial = -1;
+    bool exactAmbiguous = false, partialAmbiguous = false;
+    for (const auto& player : players) {
+        if (player.first < 0 || player.first > 1003 || player.second.empty()) continue;
+        const auto name = lower(player.second);
+        if (name == needle) {
+            if (exact >= 0 && exact != player.first) exactAmbiguous = true;
+            exact = player.first;
+        }
+        if (needle.size() >= 3 && name.find(needle) != std::string::npos) {
+            if (partial >= 0 && partial != player.first) partialAmbiguous = true;
+            partial = player.first;
+        }
+    }
+    if (exact >= 0 && !exactAmbiguous) { id = exact; return true; }
+    if (!exactAmbiguous && partial >= 0 && !partialAmbiguous) { id = partial; return true; }
+    if (exactAmbiguous || partialAmbiguous) error = "Mehrere Spieler passen. Bitte einen genaueren Namen oder die Spieler-ID eingeben.";
+    else if (needle.size() < 3) error = "Bitte mindestens 3 Zeichen des Namens oder die Spieler-ID eingeben.";
+    else error = "Kein verbundener Spieler mit diesem Namen gefunden.";
+    return false;
+}
+
 SpeedTicketAction SpeedTicketFlow::OnDialog(const SpeedTicketDialog& dialog, unsigned long now) {
     if (const auto expired = Update(now); expired.kind != SpeedTicketAction::Kind::None) return expired;
     if (!IsActive()) return {};

@@ -1024,3 +1024,38 @@ Todesmeldung nach einer Explosion und keinen weiteren Tod nach dem Relog im
 Friedhof. Der eigene Serverstand erhöhte sich beim Tod um eins und blieb beim
 Relog gleich. Beschuss und Fallschaden wurden automatisiert geprüft; separate
 Live-Tests dieser beiden Todesursachen werden nicht behauptet.
+
+22. Nachtrag r16 – 3. November 2026
+===================================
+
+- Aktuellsten vom Nutzer bereitgestellten Stand NLBinder-masterNEW als
+  Grundlage übernommen; frühere Funktionen und Urheberhinweise erhalten.
+- Neue vertikale Ausdaueranzeige unter Online → Overlay-Einstellungen →
+  Dauerhaft → Spielinformationen direkt unter Pedslots. Liest tatsächliche
+  native Reserve, spielseitige Maximalkapazität und gemessene Erholung.
+  Bestehenden Move-Modus einschließlich ESC-Speicherung übernommen.
+- Akkord-Anteil aus Firmenarbeit für alle bekannten Jobs in die vorhandene
+  Verdienst-/Tagesauswertung aufgenommen. Deutsche Tausenderpunkte und
+  geprüfte Zahlenbereiche; kein doppelter Parser-Eintrag pro Meldung.
+- Lokale GPS-Liste mit maximal 20 benannten Positionen: /setgps, /gpslist,
+  /delgpsall und /gps. XML-Speicherung, Auswahl, Löschen, roter eigener
+  Weltmarker/Kartenpunkt, Interiorprüfung und einmalige lokale Ankunftsmeldung.
+  Serverseitige Checkpoints bleiben unabhängig.
+- /forum öffnet das echte Nova-Forum über Chromium/CEF im Binder.
+  Originale Webseite mit HTML/CSS/JavaScript und ursprünglichem Login.
+  Getrenntes Cookieprofil, Navigation, Reload, Startseite, Kopieren/Einfügen,
+  gespeicherte Fenstergeometrie und optionales Vollbild.
+- Chromium als separaten x64-Prozess mit unverändertem offiziellen Sandbox-
+  Bootstrap umgesetzt. x86-ASI zeigt das echte Offscreen-Bild per DirectX 9.
+  Tastatur-/Mausübernahme und Rückgabe in die vorhandene Eingabeverwaltung
+  integriert; Browser-Job verhindert übrig gebliebene Kindprozesse.
+- Keine Passwort-/Cookieauswertung durch den Binder, keine Eingabeprotokolle,
+  keine Login-/Captcha-Umgehung; externe Hauptnavigation und Downloads begrenzt.
+- Offizielles CEF-SDK fixiert, Prüfsummen/Buildskripte und erforderliche
+  Browser-Runtime dokumentiert. Vollständiges Paket enthält die zusätzlichen
+  Runtime-Dateien; die große Runtime wird über das GitHub-Release ausgeliefert.
+- Automatisierte Regressionen und echte anonyme CEF-Offscreen-/Native-IPC-Tests
+  ergänzt. Kein automatischer Login, Beitrag oder Versand privater Nachrichten.
+  Ein Live-Test der neuen Funktionen in einer GTA-Sitzung wird nicht behauptet.
+
+- /speed akzeptiert zusätzlich vollständige Spielernamen und eindeutige Namensteile ab drei Zeichen. Exakte Namen haben Vorrang; mehrdeutige Eingaben vergeben keine Wanteds.

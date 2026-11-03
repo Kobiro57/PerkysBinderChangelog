@@ -24,6 +24,8 @@
 #include "../include/HitmarkerRenderer.h"
 #include "../include/HitsoundPlayer.h"
 #include "../include/ImGuiOverlay.h"
+#include "../include/GpsManager.h"
+#include "../include/ForumBrowser.h"
 #include "../include/InputManager.h"
 #include "../include/InterfaceEditor.h"
 #include "../include/NativeHudEditor.h"
@@ -555,7 +557,7 @@ public:
         inputManager_.SetSAMPBridge(&bridge_);
         inputManager_.SetImGuiOverlay(&overlay_);
         inputManager_.SetQuickMapVisibleCallback([&]() {
-            return quickMap_.IsVisible() || interfaceEditor_.IsElementMoveModeActive();
+            return quickMap_.IsVisible() || interfaceEditor_.IsElementMoveModeActive() || gps_.IsListOpen() || forumBrowser_.IsOpen();
         });
         overlay_.SetEarlyKeybindHandler([&](int key, bool keyDown) {
             return inputManager_.HandleEarlyKeyEvent(key, keyDown);
@@ -570,7 +572,7 @@ public:
         bridge_.SetEngineInputBlockedCallback([&]() {
             return overlay_.IsVisible() || quickMap_.IsVisible()
                 || onlineOverlayRenderer_.IsPersistentOverlayMoveModeActive()
-                || interfaceEditor_.IsElementMoveModeActive();
+                || interfaceEditor_.IsElementMoveModeActive() || gps_.IsListOpen() || forumBrowser_.IsOpen();
         });
         mainWindowUI_.SetHitmarker(&hitmarker_);
         mainWindowUI_.SetHitsoundPlayer(&hitsoundPlayer_);
@@ -624,6 +626,8 @@ public:
         });
         overlay_.SetQuickMapRenderCallback([&]() {
             quickMap_.Render();
+            gps_.Render();
+            forumBrowser_.Render(overlay_.GetDevice());
         });
         overlay_.SetQuickMapWheelCaptureCallback([&]() {
             return quickMap_.WantsMouseWheelCapture();
@@ -663,12 +667,23 @@ public:
         });
         overlay_.SetAuxiliaryInteractionActiveCallback([&]() {
             return onlineOverlayRenderer_.IsPersistentOverlayMoveModeActive()
-                || interfaceEditor_.IsElementMoveModeActive();
+                || interfaceEditor_.IsElementMoveModeActive() || gps_.IsListOpen() || forumBrowser_.IsOpen();
         });
         overlay_.SetAuxiliaryInteractionCancelCallback([&]() {
             onlineOverlayRenderer_.SetPersistentOverlayMoveMode(false);
             interfaceEditor_.FinishElementMove();
+            gps_.CloseList(); forumBrowser_.Close();
+            inputManager_.ClearTransientInputState();
         });
+        overlay_.SetAuxiliaryKeyboardCaptureCallback([&]() { return gps_.IsListOpen() || forumBrowser_.IsOpen(); });
+        overlay_.SetAuxiliaryWindowMessageCallback([&](HWND window, UINT message, WPARAM key, LPARAM native) {
+            return forumBrowser_.HandleWindowMessage(window, message, key, native);
+        });
+        gps_.Initialize(keybinder::PersistentPaths::RootDir() + "\\gps.xml",
+            [&](const std::string& text) { bridge_.QueueLocalMessage(text); },
+            [&](keybinder::GpsPosition& position) { return keybinder::ReadGpsPlayerPosition(&bridge_, position); });
+        forumBrowser_.Initialize(&settingsManager_, [&](const std::string& text) { bridge_.QueueLocalMessage(text); },
+            [&]() { keybindManager_.Save(&settingsManager_); });
 
         onlineEventDetector_.Initialize(&settingsManager_);
         onlineOverlayController_.Initialize(&settingsManager_, &onlineDataManager_);
@@ -684,6 +699,20 @@ public:
         onlinePlayerInfoService_.Initialize();
         onlineDataManager_.Initialize();
         // SyncOnlineRuntimeContext will be called in drawHudEvent once bridge is ready
+
+        bridge_.RegisterCommand("setgps", [&](const std::string& parameters) { gps_.Set(parameters); });
+        bridge_.RegisterCommand("gpslist", [&](const std::string&) {
+            forumBrowser_.Close(); quickMap_.Hide(); overlay_.Hide();
+            onlineOverlayRenderer_.SetPersistentOverlayMoveMode(false); interfaceEditor_.FinishElementMove();
+            gps_.ShowList();
+        });
+        bridge_.RegisterCommand("delgpsall", [&](const std::string&) { gps_.RemoveAll(); });
+        bridge_.RegisterCommand("gps", [&](const std::string&) { gps_.ShowHelp(); });
+        bridge_.RegisterCommand("forum", [&](const std::string&) {
+            gps_.CloseList(); quickMap_.Hide(); overlay_.Hide();
+            onlineOverlayRenderer_.SetPersistentOverlayMoveMode(false); interfaceEditor_.FinishElementMove();
+            forumBrowser_.Toggle();
+        });
 
         bridge_.RegisterCommand("info", [&](const std::string& params) {
             const std::string username = keybinder::OnlinePlayerInfoService::NormalizeLookupName(params);
@@ -789,7 +818,7 @@ public:
                 return true;
             }
 
-            if (command == "info" || command == "reconnect" || command == "speed") {
+            if (command == "info" || command == "reconnect" || command == "speed" || command == "setgps" || command == "gpslist" || command == "delgpsall" || command == "gps" || command == "forum") {
                 return false;
             }
             
@@ -978,6 +1007,12 @@ public:
             if (keybinder::UpdateReconnect(reconnectError)) {
                 bridge_.QueueLocalMessage("{FF6600}[NL-BINDER]{FFFFFF} " + reconnectError);
             }
+            forumBrowser_.Update();
+            gps_.Update();
+            keybinder::GpsPosition gpsCurrent;
+            const auto* gpsTarget = gps_.ActiveDestination();
+            keybinder::RenderGpsDestination(gpsTarget && keybinder::ReadGpsPlayerPosition(&bridge_, gpsCurrent)
+                && gpsCurrent.interior == gpsTarget->position.interior ? gpsTarget : nullptr);
             inputManager_.ApplyEarlySuppressedKeys();
 
             if (overlay_.OwnsMouseInput()) {
@@ -989,6 +1024,7 @@ public:
             }
         };
         Events::d3dLostEvent += [] {
+            forumBrowser_.OnDeviceLost();
             hudSpriteManager_.OnDeviceLost();
             weaponIconManager_.OnDeviceLost();
             squareMap_.OnDeviceLost();
@@ -1026,6 +1062,8 @@ public:
             squareMap_.Shutdown();
             hudSpriteManager_.Shutdown();
             weaponIconManager_.Shutdown();
+            forumBrowser_.Shutdown();
+            gps_.Shutdown(); keybinder::ClearGpsDestinationMarker();
             onlineOverlayRenderer_.Shutdown();
             quickMap_.Shutdown();
             speedometerManager_.Shutdown();
@@ -1094,6 +1132,8 @@ private:
     static keybinder::OnlineEventDetector onlineEventDetector_;
     static keybinder::OnlineOverlayController onlineOverlayController_;
     static keybinder::TextDrawAdapter textDrawAdapter_;
+    static keybinder::GpsManager gps_;
+    static keybinder::ForumBrowser forumBrowser_;
     static keybinder::SpeedometerManager speedometerManager_;
     static keybinder::SpeedometerUI speedometerUI_;
 };
@@ -1124,6 +1164,8 @@ keybinder::OnlineOverlayRenderer Keybinder::onlineOverlayRenderer_{};
 keybinder::OnlineEventDetector Keybinder::onlineEventDetector_{};
 keybinder::OnlineOverlayController Keybinder::onlineOverlayController_{};
 keybinder::TextDrawAdapter Keybinder::textDrawAdapter_{};
+keybinder::GpsManager Keybinder::gps_{};
+keybinder::ForumBrowser Keybinder::forumBrowser_{};
 keybinder::SpeedometerManager Keybinder::speedometerManager_{};
 keybinder::SpeedometerUI Keybinder::speedometerUI_{};
 Keybinder plugin_instance{};

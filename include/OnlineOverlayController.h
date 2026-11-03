@@ -1,6 +1,7 @@
 #pragma once
 
 #include <chrono>
+#include "StaminaGauge.h"
 #include <functional>
 #include <map>
 #include <string>
@@ -33,6 +34,7 @@ enum class PersistentOverlayKind {
     Location,
     Transport,
     Pedslots,
+    Stamina,
     FriendsRadar,
     EnemiesRadar,
 };
@@ -47,6 +49,7 @@ struct OnlineGameOverlayState {
     int streamedPlayers = 0;
     std::string location;
     std::string transport;
+    StaminaReading stamina;
     std::vector<OnlineMarkerPlayer> players;
 };
 
@@ -96,6 +99,7 @@ struct PersistentOverlayData {
     int playerCount = 0;
     bool showPlayerCount = true;
     float minimumWidth = 0.0f;
+    StaminaDisplay stamina;
 };
 
 // ---------------------------------------------------------------------------
@@ -156,6 +160,7 @@ private:
     std::vector<OnlineMarkerState> markerStates_;
     std::function<OnlineGameOverlayState()> gameStateProvider_;
     float gameRefreshSeconds_ = 0.0f;
+    StaminaGauge staminaGauge_;
 
     // Cached settings
     bool localOverlayEnabled_ = false;

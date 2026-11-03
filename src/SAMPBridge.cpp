@@ -41,7 +41,7 @@ static std::string StripSampColorCodes(const std::string& text);
 
 namespace {
 constexpr std::size_t kInvalidDispatcherIndex = static_cast<std::size_t>(-1);
-constexpr std::size_t kMaxDirectCommands = 8;
+constexpr std::size_t kMaxDirectCommands = 16;
 constexpr unsigned long kStartupMessageColor = 0xFFFFFFFF;
 constexpr int kTrackedIncomeMessageDelayFrames = 10;
 constexpr int kLocalDeathFallbackDelayFrames = 12;
@@ -594,6 +594,15 @@ constexpr std::array<sampapi::CMDPROC, kMaxDirectCommands> kDispatchers = {
     &SAMPBridge::DispatchDirectCommand5,
     &SAMPBridge::DispatchDirectCommand6,
     &SAMPBridge::DispatchDirectCommand7,
+    &SAMPBridge::DispatchDirectCommand8,
+    &SAMPBridge::DispatchDirectCommand9,
+    &SAMPBridge::DispatchDirectCommand10,
+    &SAMPBridge::DispatchDirectCommand11,
+    &SAMPBridge::DispatchDirectCommand12,
+    &SAMPBridge::DispatchDirectCommand13,
+    &SAMPBridge::DispatchDirectCommand14,
+    &SAMPBridge::DispatchDirectCommand15,
+
 };
 
 safetyhook::InlineHook* g_sendHook = nullptr;
@@ -1507,6 +1516,38 @@ void __cdecl SAMPBridge::DispatchDirectCommand7(const char* params) {
     if (g_activeBridge != nullptr) {
         g_activeBridge->DispatchRegisteredCommand(7, params);
     }
+}
+
+void __cdecl SAMPBridge::DispatchDirectCommand8(const char* params) {
+    if (g_activeBridge != nullptr) g_activeBridge->DispatchRegisteredCommand(8, params);
+}
+
+void __cdecl SAMPBridge::DispatchDirectCommand9(const char* params) {
+    if (g_activeBridge != nullptr) g_activeBridge->DispatchRegisteredCommand(9, params);
+}
+
+void __cdecl SAMPBridge::DispatchDirectCommand10(const char* params) {
+    if (g_activeBridge != nullptr) g_activeBridge->DispatchRegisteredCommand(10, params);
+}
+
+void __cdecl SAMPBridge::DispatchDirectCommand11(const char* params) {
+    if (g_activeBridge != nullptr) g_activeBridge->DispatchRegisteredCommand(11, params);
+}
+
+void __cdecl SAMPBridge::DispatchDirectCommand12(const char* params) {
+    if (g_activeBridge != nullptr) g_activeBridge->DispatchRegisteredCommand(12, params);
+}
+
+void __cdecl SAMPBridge::DispatchDirectCommand13(const char* params) {
+    if (g_activeBridge != nullptr) g_activeBridge->DispatchRegisteredCommand(13, params);
+}
+
+void __cdecl SAMPBridge::DispatchDirectCommand14(const char* params) {
+    if (g_activeBridge != nullptr) g_activeBridge->DispatchRegisteredCommand(14, params);
+}
+
+void __cdecl SAMPBridge::DispatchDirectCommand15(const char* params) {
+    if (g_activeBridge != nullptr) g_activeBridge->DispatchRegisteredCommand(15, params);
 }
 
 void __cdecl SAMPBridge::DefaultCommandInterceptor(const char* text) {

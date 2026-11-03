@@ -2,6 +2,8 @@
 
 #include <optional>
 #include <string>
+#include <utility>
+#include <vector>
 
 namespace keybinder {
 
@@ -30,6 +32,8 @@ public:
     static constexpr unsigned long kStageTimeoutMs = 8000;
 
     static bool ParsePlayerId(const std::string& arguments, int& id);
+    static bool ResolvePlayerTarget(const std::string& arguments,
+        const std::vector<std::pair<int, std::string>>& players, int& id, std::string& error);
     bool Start(const std::string& arguments, unsigned long now, std::string& error);
     SpeedTicketAction OnDialog(const SpeedTicketDialog& dialog, unsigned long now);
     SpeedTicketAction Update(unsigned long now, bool connected = true);

@@ -1,4 +1,4 @@
-"""Export a verified r15 source snapshot, current ASI and complete changelog.
+"""Export a verified r16 source snapshot, ASI, browser runtime and full changelog.
 
 Reads Git blobs without changing Git or the game installation. The destination
 must not exist. Historical release binaries, Git metadata, local build outputs
@@ -13,15 +13,15 @@ import subprocess
 
 
 ROOT = Path(__file__).resolve().parents[1]
-RELEASE = "v0.1.1-r15"
-PACKAGE = "dist/NLBinder-0.1.1-r15"
+RELEASE = "v0.1.1-r16"
+PACKAGE = "dist/NLBinder-0.1.1-r16"
 PRIVATE_PARTS = {
     ".git", ".vs", ".aws", ".codex", ".agents", "__pycache__", "build",
     "output", "debug", "release", "obj", "cmakefiles", ".venv", "venv",
 }
 PRIVATE_NAMES = {
     "keybinder.json", "jobs_data.json", "imgui.ini", ".env", ".git-credentials",
-    "credentials", "id_rsa", "id_ed25519", "nul",
+    "credentials", "id_rsa", "id_ed25519", "nul", "gps.xml",
 }
 PRIVATE_SUFFIXES = {".log", ".obj", ".pdb", ".ilk", ".exp", ".pyc", ".suo", ".user", ".o"}
 
@@ -91,7 +91,7 @@ def main():
     parser.add_argument("--repository", type=Path, default=ROOT / "build/github-publication/repository")
     parser.add_argument("--revision", default="HEAD")
     parser.add_argument("--binary", type=Path, default=ROOT / "build/Release/NLBinder.asi")
-    parser.add_argument("--manifest", type=Path, default=ROOT / "build/source-export-r15.json")
+    parser.add_argument("--manifest", type=Path, default=ROOT / "build/source-export-r16.json")
     args = parser.parse_args()
     repo = args.repository.resolve(strict=True)
     destination = args.destination.resolve()
@@ -118,9 +118,10 @@ def main():
         "PRUEFBERICHT.json": PACKAGE + "/PRUEFBERICHT.json",
         "SHA256SUMS.txt": PACKAGE + "/SHA256SUMS.txt",
         "RECONNECT-TEST.json": PACKAGE + "/RECONNECT-TEST.json",
+        "BROWSER-RUNTIME.json": PACKAGE + "/BROWSER-RUNTIME.json",
     }
     for source in extras.values():
-        require(source in entries, "Verified r15 publication file missing: " + source)
+        require(source in entries, "Verified r16 publication file missing: " + source)
     read_entries = dict(selected)
     read_entries.update({source: entries[source] for source in extras.values()})
     files = read_blobs(repo, read_entries)
@@ -132,7 +133,19 @@ def main():
     report = json.loads(exported["PRUEFBERICHT.json"].decode("utf-8-sig"))
     require(report.get("revision") == RELEASE and report.get("asi") == "NLBinder.asi" and report.get("sha256") == digest(binary)
             and report.get("bytes") == len(binary) and report.get("embedded_helper_matches") is True,
-            "r15 artifact verification is missing or stale")
+            "r16 artifact verification is missing or stale")
+    runtime = json.loads(exported['BROWSER-RUNTIME.json'].decode('utf-8'))
+    runtime_files = {}
+    runtime_root = ROOT / 'dist/NLBinder-0.1.1-r16/NLBinder/Browser'
+    for entry in runtime['files']:
+        relative = PurePosixPath(entry['path'])
+        require(not relative.is_absolute() and '..' not in relative.parts and ':' not in str(relative)
+                and '\\' not in str(relative), 'Unsafe browser runtime path')
+        path = runtime_root / str(relative)
+        require(not path.is_symlink() and path.resolve().is_relative_to(runtime_root.resolve()), 'Runtime path escaped')
+        data = path.read_bytes()
+        require(len(data) == entry['bytes'] and digest(data) == entry['sha256'], 'Runtime file changed: ' + str(relative))
+        runtime_files['NLBinder/Browser/' + str(relative)] = path
     require(exported["Keybinder.vcxproj"].count(b"<TargetName>NLBinder</TargetName>") == 2,
             "Release/Debug project names are not both NLBinder")
     folded = [relative.casefold() for relative in exported]
@@ -146,14 +159,25 @@ def main():
         require(target.resolve().is_relative_to(destination), "Export escaped the destination")
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_bytes(data)
+    import shutil
+    for relative, source in runtime_files.items():
+        target = destination / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(source, target)
     actual = {path.relative_to(destination).as_posix(): path for path in destination.rglob("*") if path.is_file()}
-    require(set(actual) == set(exported), "Exported file set differs")
+    require(set(actual) == set(exported) | set(runtime_files), "Exported file set differs")
     for relative, data in exported.items():
         require(actual[relative].read_bytes() == data, "Exported file differs: " + relative)
         require(not actual[relative].is_symlink(), "Unexpected exported symlink: " + relative)
+    for relative, source in runtime_files.items():
+        with source.open('rb') as stream: before = hashlib.file_digest(stream, 'sha256').hexdigest()
+        with actual[relative].open('rb') as stream: after = hashlib.file_digest(stream, 'sha256').hexdigest()
+        require(before == after, 'Exported runtime differs: ' + relative)
     manifest = {
         "release": RELEASE, "source_commit": commit, "destination": str(destination),
-        "exported_files": len(exported), "exported_bytes": sum(map(len, exported.values())),
+        "exported_files": len(exported) + len(runtime_files),
+        "exported_bytes": sum(map(len, exported.values())) + sum(p.stat().st_size for p in runtime_files.values()),
+        "browser_runtime_files": len(runtime_files),
         "source_files": len(selected), "all_files_verified": True,
         "historical_release_binaries_in_export": 0, "private_runtime_files": 0,
         "asi_bytes": len(binary), "asi_sha256": digest(binary),

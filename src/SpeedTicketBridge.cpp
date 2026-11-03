@@ -43,12 +43,32 @@ bool SAMPBridge::RequestSpeedTicket(const std::string& arguments, std::string& e
         return false;
     }
     if (IsDialogOpen()) { error = "Bitte zuerst den offenen Dialog schließen."; return false; }
+    if (speedTicketFlow_.IsActive()) { error = "Ein /speed-Ablauf ist bereits aktiv."; return false; }
+    int target = -1;
+    if (!keybinder::SpeedTicketFlow::ParsePlayerId(arguments, target)) {
+        std::vector<std::pair<int, std::string>> players;
+#ifdef KEYBINDER_TESTING
+        const auto& lookup = GetTestingHooks().getPlayerName;
+        if (lookup) for (int id = 0; id < 1004; ++id) {
+            const auto name = lookup(id);
+            if (!name.empty()) players.emplace_back(id, name);
+        }
+#else
+        auto* pool = GetNetGame()->GetPlayerPool();
+        if (pool) for (int id = 0; id < 1004; ++id) {
+            if (id != pool->m_nLocalPlayerId && !pool->IsConnected(id)) continue;
+            const char* name = pool->GetName(id);
+            if (name && *name) players.emplace_back(id, name);
+        }
+#endif
+        if (!keybinder::SpeedTicketFlow::ResolvePlayerTarget(arguments, players, target, error)) return false;
+    }
 #ifdef KEYBINDER_TESTING
     const auto now = GetTestingHooks().getTickCount ? GetTestingHooks().getTickCount() : GetTickCount();
 #else
     const auto now = GetTickCount();
 #endif
-    if (!speedTicketFlow_.Start(arguments, now, error)) return false;
+    if (!speedTicketFlow_.Start(std::to_string(target), now, error)) return false;
     {
         std::lock_guard<std::mutex> lock(startupStatsMutex_);
         speedTicketDialogs_.clear();

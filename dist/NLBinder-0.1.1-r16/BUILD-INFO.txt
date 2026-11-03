@@ -1,0 +1,16 @@
+﻿NLBinder v0.1.1-r16
+ASI: NLBinder.asi (x86), 18572800 Bytes
+SHA256: 69ae76195feb01223f2e10290391ff45d7e35d7f1b4747a5c555ecf6d02423e4
+
+Neue Funktionen: Ausdauer-Sidebar im bestehenden Overlay-Move-Modus,
+Akkord-Anteil in den Jobverdiensten, 20 lokale GPS-Ziele und echtes Ingame-Forum.
+Chromium/CEF: 156.0.15+gcf671c0+chromium-156.0.8078.80 (isolierter x64-Prozess, Sandbox aktiv).
+Der Ordner NLBinder/Browser muss neben der ASI installiert werden.
+
+Gesamttests und Release-Build: Exitcode 0.
+Neue Funktionstests: 127; Damagelog-Regressionsprüfungen: 210.
+Echtes Forum gerendert und Scrollen geprüft. Native x86-Anbindung startet x64-
+CEF erfolgreich und beendet den Prozess sauber. Dafür ausschließlich anonyme
+Testprofile; keine Anmeldung, Beiträge oder Nachrichten automatisch abgeschickt.
+Ein Live-Test der neuen Funktionen in einer laufenden GTA-Sitzung wurde nicht durchgeführt.
+Die bisherigen Binder-Funktionen und ihre Regressionstests bleiben enthalten.

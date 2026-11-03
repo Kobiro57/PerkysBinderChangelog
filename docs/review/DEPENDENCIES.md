@@ -76,3 +76,26 @@ SDK-`output/`-Ordner, Objektdateien, IDE-Zustand oder lokale Laufzeitdaten.
 Prüfberichte und die ausdrücklich veröffentlichte ASI werden als ausgewählte
 Prüfartefakte geführt; persönliche Binder-Konfigurationen und Chatlogs gehören
 nicht zum veröffentlichten Quellstand.
+
+## Chromium/CEF für r16
+
+CEF `156.0.15+gcf671c0+chromium-156.0.8078.80`, stable, Windows x64.
+Quelle: [offizieller CEF-Buildindex](https://cef-builds.spotifycdn.com/index.json).
+Der SDK-Download ist in [cef-runtime.lock.json](../../tools/cef-runtime.lock.json)
+mit Größe, offizieller SHA-1 und SHA-256 fixiert. Der Downloader prüft beide
+Prüfsummen. Ein x86-SDK existiert ebenfalls; der getrennte x64-Prozess wurde
+wegen des knappen Adressraums von GTA und zur Prozessisolation gewählt.
+
+Die ursprüngliche offizielle `bootstrap.exe` lädt die selbst gebaute
+`NLBinderBrowser.dll`. Die moderne Chromium-Sandbox bleibt aktiv; es wird kein
+`--no-sandbox` verwendet. Siehe [offizielle Sandbox-Anleitung](https://chromiumembedded.github.io/cef/sandbox_setup).
+Der Windows-Launcher startet den Host mit normalen Benutzerrechten und setzt
+die notwendigen LPAC-Leserechte ausschließlich auf den dedizierten Runtime-Ordner.
+
+Das vollständige Release enthält CEF-LICENSE.txt und CEF-README.txt neben den
+Originalbibliotheken, Ressourcen und Sprachpaketen. Die dateigenauen Hashes
+stehen in [BROWSER-RUNTIME.json](../../dist/NLBinder-0.1.1-r16/BROWSER-RUNTIME.json).
+Quellen/Buildskripte des eigenen Hosts stehen unter `browser/` und `tools/`.
+Der große CEF-Binärbestand gehört zum Release-ZIP und wird nicht als einzelne
+Datei in das Git-Repository eingecheckt. CEF-SDK und Zwischenstände bleiben
+lokal unter `build/`; es werden keine Browserprofile veröffentlicht.

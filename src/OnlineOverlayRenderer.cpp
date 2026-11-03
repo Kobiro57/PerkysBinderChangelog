@@ -648,7 +648,7 @@ void OnlineOverlayRenderer::PersistMovedOverlayPosition(const PersistentOverlayD
     const float newStackedY = [&]() -> float {
         if (overlayController_ == nullptr) return 0.0f;
         if (data.kind == PersistentOverlayKind::Location || data.kind == PersistentOverlayKind::Transport
-            || data.kind == PersistentOverlayKind::Pedslots || data.kind == PersistentOverlayKind::FriendsRadar
+            || data.kind == PersistentOverlayKind::Stamina || data.kind == PersistentOverlayKind::Pedslots || data.kind == PersistentOverlayKind::FriendsRadar
             || data.kind == PersistentOverlayKind::EnemiesRadar) return 0.0f;
         if (data.kind == PersistentOverlayKind::LocalAffiliation) return 0.0f;
         const PersistentOverlayData& local = overlayController_->GetLocalOverlayData();
@@ -698,6 +698,11 @@ void OnlineOverlayRenderer::PersistMovedOverlayPosition(const PersistentOverlayD
         storedX = &settings.online_pedslots_overlay_offset_x;
         storedY = &settings.online_pedslots_overlay_offset_y;
         anchor = &settings.online_pedslots_overlay_anchor;
+        break;
+    case PersistentOverlayKind::Stamina:
+        storedX = &settings.online_stamina_overlay_offset_x;
+        storedY = &settings.online_stamina_overlay_offset_y;
+        anchor = &settings.online_stamina_overlay_anchor;
         break;
     case PersistentOverlayKind::FriendsRadar:
         storedX = &settings.online_friends_overlay_offset_x;
@@ -768,7 +773,8 @@ void OnlineOverlayRenderer::RenderSinglePersistentOverlay(const PersistentOverla
     const float textScale = ((data.style == OnlineOverlayStyle::Dense) ? 0.9f : 1.0f) * data.scale;
     const float rowHeight = ImGui::GetTextLineHeightWithSpacing() * textScale;
 
-    const float colWidth = (hasCountRows ? 220.0f : 160.0f) * overlayScale;
+    const bool isStamina = data.kind == PersistentOverlayKind::Stamina;
+    const float colWidth = (isStamina ? 96.0f : (hasCountRows ? 220.0f : 160.0f)) * overlayScale;
     const bool hasHeader = (data.style == OnlineOverlayStyle::Card || data.style == OnlineOverlayStyle::Dense);
     const float headerHeight = hasHeader ? (28.0f * overlayScale) : 0.0f;
     const float padding = 8.0f * overlayScale;
@@ -777,7 +783,7 @@ void OnlineOverlayRenderer::RenderSinglePersistentOverlay(const PersistentOverla
     const int visibleRows = hasCountRows ? rowCount : static_cast<int>(data.playerNames.size());
     const bool isRadar = data.kind == PersistentOverlayKind::FriendsRadar || data.kind == PersistentOverlayKind::EnemiesRadar;
     const bool boundToViewport = data.kind == PersistentOverlayKind::Location
-        || data.kind == PersistentOverlayKind::Transport || data.kind == PersistentOverlayKind::Pedslots
+        || data.kind == PersistentOverlayKind::Transport || data.kind == PersistentOverlayKind::Stamina || data.kind == PersistentOverlayKind::Pedslots
         || isRadar;
     if (isRadar && rowHeight > 0.0f) {
         const float availableHeight = (std::max)(rowHeight, viewport->Size.y - headerHeight - padding * 2.0f);
@@ -798,7 +804,7 @@ void OnlineOverlayRenderer::RenderSinglePersistentOverlay(const PersistentOverla
     const float naturalWidth = (std::max)(minimumWidth, padding * 2.0f + static_cast<float>(columns) * colWidth);
     const float panelWidth = boundToViewport ? (std::min)(viewport->Size.x, naturalWidth) : naturalWidth;
     const int rowsPerCol = (visibleRows + columns - 1) / columns;
-    const float panelContentHeight = static_cast<float>(rowsPerCol) * rowHeight;
+    const float panelContentHeight = isStamina ? 140.0f * overlayScale : static_cast<float>(rowsPerCol) * rowHeight;
     const float naturalHeight = headerHeight + panelContentHeight + padding * 2.0f;
     const float panelHeight = boundToViewport ? (std::min)(viewport->Size.y, naturalHeight) : naturalHeight;
 
@@ -890,7 +896,24 @@ void OnlineOverlayRenderer::RenderSinglePersistentOverlay(const PersistentOverla
 
         ImGui::SetWindowFontScale(textScale);
 
-        if (hasCountRows) {
+        if (isStamina) {
+            const ImVec2 start = ImGui::GetCursorScreenPos();
+            const ImVec2 barMin(start.x + 6.0f * overlayScale, start.y + 5.0f * overlayScale);
+            const ImVec2 barMax(barMin.x + 18.0f * overlayScale, barMin.y + 100.0f * overlayScale);
+            ImDrawList* draw = ImGui::GetWindowDrawList();
+            draw->AddRectFilled(barMin, barMax, IM_COL32(35, 38, 43, 220), 4.0f * overlayScale);
+            const float fraction = std::clamp(data.stamina.fraction, 0.0f, 1.0f);
+            if (data.stamina.available && fraction > 0.0f) {
+                const ImU32 color = fraction < 0.2f ? IM_COL32(230, 95, 80, 255) : IM_COL32(51, 204, 255, 255);
+                draw->AddRectFilled(ImVec2(barMin.x, barMax.y - (barMax.y - barMin.y) * fraction), barMax, color, 4.0f * overlayScale);
+            }
+            draw->AddRect(barMin, barMax, ImGui::ColorConvertFloat4ToU32(headerTextColor), 4.0f * overlayScale);
+            ImGui::SetCursorScreenPos(ImVec2(barMax.x + 10.0f * overlayScale, start.y + 43.0f * overlayScale));
+            if (data.stamina.available) ImGui::Text("%d%%", data.stamina.percent);
+            else ImGui::TextUnformatted("--");
+            ImGui::SetCursorScreenPos(ImVec2(start.x, barMax.y + 9.0f * overlayScale));
+            RenderTruncatedOverlayText(data.stamina.status, rowTextColor, panelWidth - padding * 2.0f);
+        } else if (hasCountRows) {
             const float countWidth = ImGui::CalcTextSize("999").x + 8.0f * overlayScale;
             const float availWidth = panelWidth - padding * 2.0f;
             const float nameWidth = (std::max)(40.0f * overlayScale, availWidth - countWidth);

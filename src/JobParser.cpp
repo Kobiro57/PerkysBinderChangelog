@@ -3,6 +3,8 @@
 #include "../include/Logger.h"
 
 #include <cctype>
+#include <charconv>
+#include <algorithm>
 #include <ctime>
 #include <cstdlib>
 #include <utility>
@@ -65,6 +67,31 @@ std::vector<JobEvent> JobParser::Parse(const JobChatEvent& event, const JobRegis
         keybinder::Logger::Debug("[JobParser] Ignored start-task line for job '%s': '%s'",
             definition->id.c_str(),
             payload.c_str());
+        return parsedEvents;
+    }
+
+    // Company piecework is an earning for every registered job, including
+    // definitions whose individual rules only cover the ordinary salary.
+    static const std::regex piecework(
+        "^Dein Akkord-Anteil von ((?:[0-9]{1,3}(?:\\.[0-9]{3})+)|[0-9]+)\\$ "
+        "wird dir zum n(?:\xC3\xA4|ae|a)chsten Zahltag ausgezahlt[.!]?$",
+        std::regex::icase | std::regex::optimize);
+    std::smatch pieceworkMatch;
+    if (std::regex_match(payload, pieceworkMatch, piecework)) {
+        std::string digits = pieceworkMatch[1].str();
+        digits.erase(std::remove(digits.begin(), digits.end(), '.'), digits.end());
+        int amount = 0;
+        const auto parsed = std::from_chars(digits.data(), digits.data() + digits.size(), amount);
+        if (parsed.ec == std::errc() && parsed.ptr == digits.data() + digits.size() && amount > 0) {
+            JobEvent earning;
+            earning.jobId = definition->id;
+            earning.type = kEventTypeEarning;
+            earning.source = kSourceChatAuto;
+            earning.timestamp = event.arrivalTime != 0 ? event.arrivalTime : std::time(nullptr);
+            earning.amount = amount;
+            earning.note = "Akkord-Anteil";
+            parsedEvents.push_back(std::move(earning));
+        }
         return parsedEvents;
     }
 

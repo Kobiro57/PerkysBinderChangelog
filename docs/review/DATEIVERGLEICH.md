@@ -1,14 +1,9 @@
-# Dateivergleich mit dem Originalarchiv
+# Dateivergleich zum Original
 
-Originalarchiv: `a328e78eea63420e9bfe9c084883100177fe0fd9c2d62c4fcaef38c0a44801e9`; Commitkennung im ZIP: `92ce21971bee2d166d830e23ad20950f1dc98921`.
-
-Aktueller Vergleich: `v0.1.1-r15`, ASI-SHA-256 `9d2139f9889fe5368030f505e515575ef0acbb83d374046d42dddd3aff929018`.
-
-Alle Dateien einschließlich wiederhergestellter Abhängigkeiten stehen in [SOURCE-COMPARISON.json](SOURCE-COMPARISON.json).
-Die Vorher-Prüfsummen stammen aus dem unveränderten gefilterten ZIP-Snapshot.
-Die Nachher-Prüfsummen beschreiben die tatsächlich zur Veröffentlichung vorgemerkten Git-Dateiobjekte nach der Text-/Zeilenendennormalisierung.
-Generierte Vergleichsdateien werden nicht selbst gehasht. Reine CRLF/LF-Unterschiede sind gesondert markiert.
-Diese Liste zeigt Inhaltsänderungen außerhalb der Vendor-Verzeichnisse.
+Verglichen werden die unveränderlichen Git-Blobs des Tags `original-archive-92ce219` mit den gestagten r16-Quellen.
+Die Archivherkunft bleibt dokumentiert; diese Hashes beziehen sich ausdrücklich auf Git-Blobs, nicht neu eingelesene ZIP-Rohbytes.
+Generierte Vergleichsdateien, alte Revisionspatches und Binärpakete sind aus diesem rekursionsfreien Vergleich ausgeschlossen.
+Alle betrachteten Änderungen stehen in [SOURCE-COMPARISON.json](SOURCE-COMPARISON.json).
 
 | Status | Datei |
 | --- | --- |
@@ -17,123 +12,8 @@ Diese Liste zeigt Inhaltsänderungen außerhalb der Vendor-Verzeichnisse.
 | modified | [Keybinder.rc](../../Keybinder.rc) |
 | modified | [Keybinder.vcxproj](../../Keybinder.vcxproj) |
 | modified | [README.md](../../README.md) |
-| added | [dist/NLBinder-0.1.1-r10/BUILD-INFO.txt](../../dist/NLBinder-0.1.1-r10/BUILD-INFO.txt) |
-| added | [dist/NLBinder-0.1.1-r10/JOB-HINWEISE.md](../../dist/NLBinder-0.1.1-r10/JOB-HINWEISE.md) |
-| added | [dist/NLBinder-0.1.1-r10/Keybinder.asi](../../dist/NLBinder-0.1.1-r10/Keybinder.asi) |
-| added | [dist/NLBinder-0.1.1-r10/LIESMICH.md](../../dist/NLBinder-0.1.1-r10/LIESMICH.md) |
-| added | [dist/NLBinder-0.1.1-r10/NLBinder/Waffenicons/LIESMICH.md](../../dist/NLBinder-0.1.1-r10/NLBinder/Waffenicons/LIESMICH.md) |
-| added | [dist/NLBinder-0.1.1-r10/PRUEFBERICHT.json](../../dist/NLBinder-0.1.1-r10/PRUEFBERICHT.json) |
-| added | [dist/NLBinder-0.1.1-r10/RECONNECT-TEST.json](../../dist/NLBinder-0.1.1-r10/RECONNECT-TEST.json) |
-| added | [dist/NLBinder-0.1.1-r10/SHA256SUMS.txt](../../dist/NLBinder-0.1.1-r10/SHA256SUMS.txt) |
-| added | [dist/NLBinder-0.1.1-r11/BUILD-INFO.txt](../../dist/NLBinder-0.1.1-r11/BUILD-INFO.txt) |
-| added | [dist/NLBinder-0.1.1-r11/CHANGELOG-GESAMT.txt](../../dist/NLBinder-0.1.1-r11/CHANGELOG-GESAMT.txt) |
-| added | [dist/NLBinder-0.1.1-r11/JOB-HINWEISE.md](../../dist/NLBinder-0.1.1-r11/JOB-HINWEISE.md) |
-| added | [dist/NLBinder-0.1.1-r11/LIESMICH.md](../../dist/NLBinder-0.1.1-r11/LIESMICH.md) |
-| added | [dist/NLBinder-0.1.1-r11/NLBinder.asi](../../dist/NLBinder-0.1.1-r11/NLBinder.asi) |
-| added | [dist/NLBinder-0.1.1-r11/NLBinder/Waffenicons/LIESMICH.md](../../dist/NLBinder-0.1.1-r11/NLBinder/Waffenicons/LIESMICH.md) |
-| added | [dist/NLBinder-0.1.1-r11/PRUEFBERICHT.json](../../dist/NLBinder-0.1.1-r11/PRUEFBERICHT.json) |
-| added | [dist/NLBinder-0.1.1-r11/RECONNECT-TEST.json](../../dist/NLBinder-0.1.1-r11/RECONNECT-TEST.json) |
-| added | [dist/NLBinder-0.1.1-r11/SHA256SUMS.txt](../../dist/NLBinder-0.1.1-r11/SHA256SUMS.txt) |
-| added | [dist/NLBinder-0.1.1-r12/BUILD-INFO.txt](../../dist/NLBinder-0.1.1-r12/BUILD-INFO.txt) |
-| added | [dist/NLBinder-0.1.1-r12/CHANGELOG-GESAMT.txt](../../dist/NLBinder-0.1.1-r12/CHANGELOG-GESAMT.txt) |
-| added | [dist/NLBinder-0.1.1-r12/JOB-HINWEISE.md](../../dist/NLBinder-0.1.1-r12/JOB-HINWEISE.md) |
-| added | [dist/NLBinder-0.1.1-r12/LIESMICH.md](../../dist/NLBinder-0.1.1-r12/LIESMICH.md) |
-| added | [dist/NLBinder-0.1.1-r12/NLBinder.asi](../../dist/NLBinder-0.1.1-r12/NLBinder.asi) |
-| added | [dist/NLBinder-0.1.1-r12/NLBinder/Waffenicons/LIESMICH.md](../../dist/NLBinder-0.1.1-r12/NLBinder/Waffenicons/LIESMICH.md) |
-| added | [dist/NLBinder-0.1.1-r12/PRUEFBERICHT.json](../../dist/NLBinder-0.1.1-r12/PRUEFBERICHT.json) |
-| added | [dist/NLBinder-0.1.1-r12/RECONNECT-TEST.json](../../dist/NLBinder-0.1.1-r12/RECONNECT-TEST.json) |
-| added | [dist/NLBinder-0.1.1-r12/SHA256SUMS.txt](../../dist/NLBinder-0.1.1-r12/SHA256SUMS.txt) |
-| added | [dist/NLBinder-0.1.1-r13/BUILD-INFO.txt](../../dist/NLBinder-0.1.1-r13/BUILD-INFO.txt) |
-| added | [dist/NLBinder-0.1.1-r13/CHANGELOG-GESAMT.txt](../../dist/NLBinder-0.1.1-r13/CHANGELOG-GESAMT.txt) |
-| added | [dist/NLBinder-0.1.1-r13/JOB-HINWEISE.md](../../dist/NLBinder-0.1.1-r13/JOB-HINWEISE.md) |
-| added | [dist/NLBinder-0.1.1-r13/LIESMICH.md](../../dist/NLBinder-0.1.1-r13/LIESMICH.md) |
-| added | [dist/NLBinder-0.1.1-r13/NLBinder.asi](../../dist/NLBinder-0.1.1-r13/NLBinder.asi) |
-| added | [dist/NLBinder-0.1.1-r13/NLBinder/Waffenicons/LIESMICH.md](../../dist/NLBinder-0.1.1-r13/NLBinder/Waffenicons/LIESMICH.md) |
-| added | [dist/NLBinder-0.1.1-r13/PRUEFBERICHT.json](../../dist/NLBinder-0.1.1-r13/PRUEFBERICHT.json) |
-| added | [dist/NLBinder-0.1.1-r13/RECONNECT-TEST.json](../../dist/NLBinder-0.1.1-r13/RECONNECT-TEST.json) |
-| added | [dist/NLBinder-0.1.1-r13/SHA256SUMS.txt](../../dist/NLBinder-0.1.1-r13/SHA256SUMS.txt) |
-| added | [dist/NLBinder-0.1.1-r14/BUILD-INFO.txt](../../dist/NLBinder-0.1.1-r14/BUILD-INFO.txt) |
-| added | [dist/NLBinder-0.1.1-r14/CHANGELOG-GESAMT.txt](../../dist/NLBinder-0.1.1-r14/CHANGELOG-GESAMT.txt) |
-| added | [dist/NLBinder-0.1.1-r14/JOB-HINWEISE.md](../../dist/NLBinder-0.1.1-r14/JOB-HINWEISE.md) |
-| added | [dist/NLBinder-0.1.1-r14/LIESMICH.md](../../dist/NLBinder-0.1.1-r14/LIESMICH.md) |
-| added | [dist/NLBinder-0.1.1-r14/NLBinder.asi](../../dist/NLBinder-0.1.1-r14/NLBinder.asi) |
-| added | [dist/NLBinder-0.1.1-r14/NLBinder/Waffenicons/LIESMICH.md](../../dist/NLBinder-0.1.1-r14/NLBinder/Waffenicons/LIESMICH.md) |
-| added | [dist/NLBinder-0.1.1-r14/PRUEFBERICHT.json](../../dist/NLBinder-0.1.1-r14/PRUEFBERICHT.json) |
-| added | [dist/NLBinder-0.1.1-r14/RECONNECT-TEST.json](../../dist/NLBinder-0.1.1-r14/RECONNECT-TEST.json) |
-| added | [dist/NLBinder-0.1.1-r14/SHA256SUMS.txt](../../dist/NLBinder-0.1.1-r14/SHA256SUMS.txt) |
-| added | [dist/NLBinder-0.1.1-r15/BUILD-INFO.txt](../../dist/NLBinder-0.1.1-r15/BUILD-INFO.txt) |
-| added | [dist/NLBinder-0.1.1-r15/CHANGELOG-GESAMT.txt](../../dist/NLBinder-0.1.1-r15/CHANGELOG-GESAMT.txt) |
-| added | [dist/NLBinder-0.1.1-r15/JOB-HINWEISE.md](../../dist/NLBinder-0.1.1-r15/JOB-HINWEISE.md) |
-| added | [dist/NLBinder-0.1.1-r15/LIESMICH.md](../../dist/NLBinder-0.1.1-r15/LIESMICH.md) |
-| added | [dist/NLBinder-0.1.1-r15/NLBinder.asi](../../dist/NLBinder-0.1.1-r15/NLBinder.asi) |
-| added | [dist/NLBinder-0.1.1-r15/NLBinder/Waffenicons/LIESMICH.md](../../dist/NLBinder-0.1.1-r15/NLBinder/Waffenicons/LIESMICH.md) |
-| added | [dist/NLBinder-0.1.1-r15/PRUEFBERICHT.json](../../dist/NLBinder-0.1.1-r15/PRUEFBERICHT.json) |
-| added | [dist/NLBinder-0.1.1-r15/RECONNECT-TEST.json](../../dist/NLBinder-0.1.1-r15/RECONNECT-TEST.json) |
-| added | [dist/NLBinder-0.1.1-r15/SHA256SUMS.txt](../../dist/NLBinder-0.1.1-r15/SHA256SUMS.txt) |
-| added | [dist/NLBinder-0.1.1-r3/BUILD-INFO.txt](../../dist/NLBinder-0.1.1-r3/BUILD-INFO.txt) |
-| added | [dist/NLBinder-0.1.1-r3/JOB-HINWEISE.md](../../dist/NLBinder-0.1.1-r3/JOB-HINWEISE.md) |
-| added | [dist/NLBinder-0.1.1-r3/Keybinder.asi](../../dist/NLBinder-0.1.1-r3/Keybinder.asi) |
-| added | [dist/NLBinder-0.1.1-r3/LIESMICH.md](../../dist/NLBinder-0.1.1-r3/LIESMICH.md) |
-| added | [dist/NLBinder-0.1.1-r3/PRUEFBERICHT.json](../../dist/NLBinder-0.1.1-r3/PRUEFBERICHT.json) |
-| added | [dist/NLBinder-0.1.1-r3/RECONNECT-TEST.json](../../dist/NLBinder-0.1.1-r3/RECONNECT-TEST.json) |
-| added | [dist/NLBinder-0.1.1-r3/SHA256SUMS.txt](../../dist/NLBinder-0.1.1-r3/SHA256SUMS.txt) |
-| added | [dist/NLBinder-0.1.1-r4/BUILD-INFO.txt](../../dist/NLBinder-0.1.1-r4/BUILD-INFO.txt) |
-| added | [dist/NLBinder-0.1.1-r4/JOB-HINWEISE.md](../../dist/NLBinder-0.1.1-r4/JOB-HINWEISE.md) |
-| added | [dist/NLBinder-0.1.1-r4/Keybinder.asi](../../dist/NLBinder-0.1.1-r4/Keybinder.asi) |
-| added | [dist/NLBinder-0.1.1-r4/LIESMICH.md](../../dist/NLBinder-0.1.1-r4/LIESMICH.md) |
-| added | [dist/NLBinder-0.1.1-r4/PRUEFBERICHT.json](../../dist/NLBinder-0.1.1-r4/PRUEFBERICHT.json) |
-| added | [dist/NLBinder-0.1.1-r4/RECONNECT-TEST.json](../../dist/NLBinder-0.1.1-r4/RECONNECT-TEST.json) |
-| added | [dist/NLBinder-0.1.1-r4/SHA256SUMS.txt](../../dist/NLBinder-0.1.1-r4/SHA256SUMS.txt) |
-| added | [dist/NLBinder-0.1.1-r5/BUILD-INFO.txt](../../dist/NLBinder-0.1.1-r5/BUILD-INFO.txt) |
-| added | [dist/NLBinder-0.1.1-r5/JOB-HINWEISE.md](../../dist/NLBinder-0.1.1-r5/JOB-HINWEISE.md) |
-| added | [dist/NLBinder-0.1.1-r5/Keybinder.asi](../../dist/NLBinder-0.1.1-r5/Keybinder.asi) |
-| added | [dist/NLBinder-0.1.1-r5/LIESMICH.md](../../dist/NLBinder-0.1.1-r5/LIESMICH.md) |
-| added | [dist/NLBinder-0.1.1-r5/PRUEFBERICHT.json](../../dist/NLBinder-0.1.1-r5/PRUEFBERICHT.json) |
-| added | [dist/NLBinder-0.1.1-r5/RECONNECT-TEST.json](../../dist/NLBinder-0.1.1-r5/RECONNECT-TEST.json) |
-| added | [dist/NLBinder-0.1.1-r5/SHA256SUMS.txt](../../dist/NLBinder-0.1.1-r5/SHA256SUMS.txt) |
-| added | [dist/NLBinder-0.1.1-r6/BUILD-INFO.txt](../../dist/NLBinder-0.1.1-r6/BUILD-INFO.txt) |
-| added | [dist/NLBinder-0.1.1-r6/JOB-HINWEISE.md](../../dist/NLBinder-0.1.1-r6/JOB-HINWEISE.md) |
-| added | [dist/NLBinder-0.1.1-r6/Keybinder.asi](../../dist/NLBinder-0.1.1-r6/Keybinder.asi) |
-| added | [dist/NLBinder-0.1.1-r6/LIESMICH.md](../../dist/NLBinder-0.1.1-r6/LIESMICH.md) |
-| added | [dist/NLBinder-0.1.1-r6/PRUEFBERICHT.json](../../dist/NLBinder-0.1.1-r6/PRUEFBERICHT.json) |
-| added | [dist/NLBinder-0.1.1-r6/RECONNECT-TEST.json](../../dist/NLBinder-0.1.1-r6/RECONNECT-TEST.json) |
-| added | [dist/NLBinder-0.1.1-r6/SHA256SUMS.txt](../../dist/NLBinder-0.1.1-r6/SHA256SUMS.txt) |
-| added | [dist/NLBinder-0.1.1-r7/BUILD-INFO.txt](../../dist/NLBinder-0.1.1-r7/BUILD-INFO.txt) |
-| added | [dist/NLBinder-0.1.1-r7/JOB-HINWEISE.md](../../dist/NLBinder-0.1.1-r7/JOB-HINWEISE.md) |
-| added | [dist/NLBinder-0.1.1-r7/Keybinder.asi](../../dist/NLBinder-0.1.1-r7/Keybinder.asi) |
-| added | [dist/NLBinder-0.1.1-r7/LIESMICH.md](../../dist/NLBinder-0.1.1-r7/LIESMICH.md) |
-| added | [dist/NLBinder-0.1.1-r7/NLBinder/Waffenicons/LIESMICH.md](../../dist/NLBinder-0.1.1-r7/NLBinder/Waffenicons/LIESMICH.md) |
-| added | [dist/NLBinder-0.1.1-r7/PRUEFBERICHT.json](../../dist/NLBinder-0.1.1-r7/PRUEFBERICHT.json) |
-| added | [dist/NLBinder-0.1.1-r7/RECONNECT-TEST.json](../../dist/NLBinder-0.1.1-r7/RECONNECT-TEST.json) |
-| added | [dist/NLBinder-0.1.1-r7/SHA256SUMS.txt](../../dist/NLBinder-0.1.1-r7/SHA256SUMS.txt) |
-| added | [dist/NLBinder-0.1.1-r8/BUILD-INFO.txt](../../dist/NLBinder-0.1.1-r8/BUILD-INFO.txt) |
-| added | [dist/NLBinder-0.1.1-r8/JOB-HINWEISE.md](../../dist/NLBinder-0.1.1-r8/JOB-HINWEISE.md) |
-| added | [dist/NLBinder-0.1.1-r8/Keybinder.asi](../../dist/NLBinder-0.1.1-r8/Keybinder.asi) |
-| added | [dist/NLBinder-0.1.1-r8/LIESMICH.md](../../dist/NLBinder-0.1.1-r8/LIESMICH.md) |
-| added | [dist/NLBinder-0.1.1-r8/NLBinder/Waffenicons/LIESMICH.md](../../dist/NLBinder-0.1.1-r8/NLBinder/Waffenicons/LIESMICH.md) |
-| added | [dist/NLBinder-0.1.1-r8/PRUEFBERICHT.json](../../dist/NLBinder-0.1.1-r8/PRUEFBERICHT.json) |
-| added | [dist/NLBinder-0.1.1-r8/RECONNECT-TEST.json](../../dist/NLBinder-0.1.1-r8/RECONNECT-TEST.json) |
-| added | [dist/NLBinder-0.1.1-r8/SHA256SUMS.txt](../../dist/NLBinder-0.1.1-r8/SHA256SUMS.txt) |
-| added | [dist/NLBinder-0.1.1-r9/BUILD-INFO.txt](../../dist/NLBinder-0.1.1-r9/BUILD-INFO.txt) |
-| added | [dist/NLBinder-0.1.1-r9/JOB-HINWEISE.md](../../dist/NLBinder-0.1.1-r9/JOB-HINWEISE.md) |
-| added | [dist/NLBinder-0.1.1-r9/Keybinder.asi](../../dist/NLBinder-0.1.1-r9/Keybinder.asi) |
-| added | [dist/NLBinder-0.1.1-r9/LIESMICH.md](../../dist/NLBinder-0.1.1-r9/LIESMICH.md) |
-| added | [dist/NLBinder-0.1.1-r9/NLBinder/Waffenicons/LIESMICH.md](../../dist/NLBinder-0.1.1-r9/NLBinder/Waffenicons/LIESMICH.md) |
-| added | [dist/NLBinder-0.1.1-r9/PRUEFBERICHT.json](../../dist/NLBinder-0.1.1-r9/PRUEFBERICHT.json) |
-| added | [dist/NLBinder-0.1.1-r9/RECONNECT-TEST.json](../../dist/NLBinder-0.1.1-r9/RECONNECT-TEST.json) |
-| added | [dist/NLBinder-0.1.1-r9/SHA256SUMS.txt](../../dist/NLBinder-0.1.1-r9/SHA256SUMS.txt) |
-| added | [dist/NLBinder-v0.1.1-KOBiRO-r10.zip](../../dist/NLBinder-v0.1.1-KOBiRO-r10.zip) |
-| added | [dist/NLBinder-v0.1.1-KOBiRO-r11.zip](../../dist/NLBinder-v0.1.1-KOBiRO-r11.zip) |
-| added | [dist/NLBinder-v0.1.1-KOBiRO-r12.zip](../../dist/NLBinder-v0.1.1-KOBiRO-r12.zip) |
-| added | [dist/NLBinder-v0.1.1-KOBiRO-r13.zip](../../dist/NLBinder-v0.1.1-KOBiRO-r13.zip) |
-| added | [dist/NLBinder-v0.1.1-KOBiRO-r14.zip](../../dist/NLBinder-v0.1.1-KOBiRO-r14.zip) |
-| added | [dist/NLBinder-v0.1.1-KOBiRO-r15.zip](../../dist/NLBinder-v0.1.1-KOBiRO-r15.zip) |
-| added | [dist/NLBinder-v0.1.1-KOBiRO-r4.zip](../../dist/NLBinder-v0.1.1-KOBiRO-r4.zip) |
-| added | [dist/NLBinder-v0.1.1-KOBiRO-r5.zip](../../dist/NLBinder-v0.1.1-KOBiRO-r5.zip) |
-| added | [dist/NLBinder-v0.1.1-KOBiRO-r6.zip](../../dist/NLBinder-v0.1.1-KOBiRO-r6.zip) |
-| added | [dist/NLBinder-v0.1.1-KOBiRO-r7.zip](../../dist/NLBinder-v0.1.1-KOBiRO-r7.zip) |
-| added | [dist/NLBinder-v0.1.1-KOBiRO-r8.zip](../../dist/NLBinder-v0.1.1-KOBiRO-r8.zip) |
-| added | [dist/NLBinder-v0.1.1-KOBiRO-r9.zip](../../dist/NLBinder-v0.1.1-KOBiRO-r9.zip) |
+| added | [browser/CMakeLists.txt](../../browser/CMakeLists.txt) |
+| added | [browser/ForumBrowserHost.cpp](../../browser/ForumBrowserHost.cpp) |
 | added | [docs/BUILD-README.md](../../docs/BUILD-README.md) |
 | added | [docs/CHANGELOG-GESAMT.txt](../../docs/CHANGELOG-GESAMT.txt) |
 | added | [docs/NLBinder-0.1.1-DE.md](../../docs/NLBinder-0.1.1-DE.md) |
@@ -143,6 +23,7 @@ Diese Liste zeigt Inhaltsänderungen außerhalb der Vendor-Verzeichnisse.
 | added | [docs/NLBinder-0.1.1-r13-DE.md](../../docs/NLBinder-0.1.1-r13-DE.md) |
 | added | [docs/NLBinder-0.1.1-r14-DE.md](../../docs/NLBinder-0.1.1-r14-DE.md) |
 | added | [docs/NLBinder-0.1.1-r15-DE.md](../../docs/NLBinder-0.1.1-r15-DE.md) |
+| added | [docs/NLBinder-0.1.1-r16-DE.md](../../docs/NLBinder-0.1.1-r16-DE.md) |
 | added | [docs/NLBinder-0.1.1-r2-DE.md](../../docs/NLBinder-0.1.1-r2-DE.md) |
 | added | [docs/NLBinder-0.1.1-r3-DE.md](../../docs/NLBinder-0.1.1-r3-DE.md) |
 | added | [docs/NLBinder-0.1.1-r4-DE.md](../../docs/NLBinder-0.1.1-r4-DE.md) |
@@ -167,6 +48,7 @@ Diese Liste zeigt Inhaltsänderungen außerhalb der Vendor-Verzeichnisse.
 | added | [docs/review/r14-validation.json](../../docs/review/r14-validation.json) |
 | added | [docs/review/r15-live-validation.json](../../docs/review/r15-live-validation.json) |
 | added | [docs/review/r15-validation.json](../../docs/review/r15-validation.json) |
+| added | [docs/review/r16-validation.json](../../docs/review/r16-validation.json) |
 | added | [docs/review/r4-validation.json](../../docs/review/r4-validation.json) |
 | added | [docs/review/r5-validation.json](../../docs/review/r5-validation.json) |
 | added | [docs/review/r6-validation.json](../../docs/review/r6-validation.json) |
@@ -177,6 +59,9 @@ Diese Liste zeigt Inhaltsänderungen außerhalb der Vendor-Verzeichnisse.
 | added | [include/CombatChatParser.h](../../include/CombatChatParser.h) |
 | modified | [include/DamageRPCAdapter.h](../../include/DamageRPCAdapter.h) |
 | modified | [include/DeathMessageRPCAdapter.h](../../include/DeathMessageRPCAdapter.h) |
+| added | [include/ForumBrowser.h](../../include/ForumBrowser.h) |
+| added | [include/ForumBrowserProtocol.h](../../include/ForumBrowserProtocol.h) |
+| added | [include/GpsManager.h](../../include/GpsManager.h) |
 | modified | [include/ImGuiOverlay.h](../../include/ImGuiOverlay.h) |
 | modified | [include/IncomingDamageDetector.h](../../include/IncomingDamageDetector.h) |
 | modified | [include/InterfaceEditor.h](../../include/InterfaceEditor.h) |
@@ -212,6 +97,7 @@ Diese Liste zeigt Inhaltsänderungen außerhalb der Vendor-Verzeichnisse.
 | added | [include/SpeedTicketFlow.h](../../include/SpeedTicketFlow.h) |
 | modified | [include/SpeedometerManager.h](../../include/SpeedometerManager.h) |
 | modified | [include/SpeedometerUI.h](../../include/SpeedometerUI.h) |
+| added | [include/StaminaGauge.h](../../include/StaminaGauge.h) |
 | added | [include/StatsDialogRPCAdapter.h](../../include/StatsDialogRPCAdapter.h) |
 | modified | [include/TextDrawAdapter.h](../../include/TextDrawAdapter.h) |
 | modified | [include/Version.h](../../include/Version.h) |
@@ -223,10 +109,14 @@ Diese Liste zeigt Inhaltsänderungen außerhalb der Vendor-Verzeichnisse.
 | added | [src/CombatChatParser.cpp](../../src/CombatChatParser.cpp) |
 | modified | [src/DamageRPCAdapter.cpp](../../src/DamageRPCAdapter.cpp) |
 | modified | [src/DeathMessageRPCAdapter.cpp](../../src/DeathMessageRPCAdapter.cpp) |
+| added | [src/ForumBrowser.cpp](../../src/ForumBrowser.cpp) |
+| added | [src/GpsGameAdapter.cpp](../../src/GpsGameAdapter.cpp) |
+| added | [src/GpsManager.cpp](../../src/GpsManager.cpp) |
 | modified | [src/ImGuiOverlay.cpp](../../src/ImGuiOverlay.cpp) |
 | modified | [src/InterfaceEditor.cpp](../../src/InterfaceEditor.cpp) |
 | modified | [src/InterfaceEditorUI.cpp](../../src/InterfaceEditorUI.cpp) |
 | modified | [src/JobChatAdapter.cpp](../../src/JobChatAdapter.cpp) |
+| modified | [src/JobParser.cpp](../../src/JobParser.cpp) |
 | added | [src/JobSkillsSync.cpp](../../src/JobSkillsSync.cpp) |
 | modified | [src/JobTracker.cpp](../../src/JobTracker.cpp) |
 | modified | [src/JobsUI.cpp](../../src/JobsUI.cpp) |
@@ -276,6 +166,7 @@ Diese Liste zeigt Inhaltsänderungen außerhalb der Vendor-Verzeichnisse.
 | modified | [tests/OnlineDataManagerTests.cpp](../../tests/OnlineDataManagerTests.cpp) |
 | modified | [tests/OnlineOverlayRendererTests.cpp](../../tests/OnlineOverlayRendererTests.cpp) |
 | modified | [tests/OnlineSettingsTests.cpp](../../tests/OnlineSettingsTests.cpp) |
+| added | [tests/R16FeatureTests.cpp](../../tests/R16FeatureTests.cpp) |
 | added | [tests/ReconnectManagerTests.cpp](../../tests/ReconnectManagerTests.cpp) |
 | added | [tests/ReconnectWorkerFixture.cpp](../../tests/ReconnectWorkerFixture.cpp) |
 | modified | [tests/RegressionTests.cpp](../../tests/RegressionTests.cpp) |
@@ -288,13 +179,20 @@ Diese Liste zeigt Inhaltsänderungen außerhalb der Vendor-Verzeichnisse.
 | added | [tests/StatsDialogRPCAdapterTests.cpp](../../tests/StatsDialogRPCAdapterTests.cpp) |
 | added | [tests/WeaponIconManagerTests.cpp](../../tests/WeaponIconManagerTests.cpp) |
 | added | [tests/WeaponIconSettingsTests.cpp](../../tests/WeaponIconSettingsTests.cpp) |
+| added | [third_party/assets/LICENSES/Apache-2.0-full.txt](../../third_party/assets/LICENSES/Apache-2.0-full.txt) |
 | added | [tools/ReconnectHelper.cpp](../../tools/ReconnectHelper.cpp) |
 | modified | [tools/build_and_test.bat](../../tools/build_and_test.bat) |
+| added | [tools/build_forum_browser.bat](../../tools/build_forum_browser.bat) |
 | modified | [tools/build_plugin_sdk.bat](../../tools/build_plugin_sdk.bat) |
 | added | [tools/build_reconnect_helper.bat](../../tools/build_reconnect_helper.bat) |
 | added | [tools/build_release.bat](../../tools/build_release.bat) |
+| added | [tools/cef-runtime.lock.json](../../tools/cef-runtime.lock.json) |
+| added | [tools/document_publication_revision16.py](../../tools/document_publication_revision16.py) |
+| added | [tools/document_revision16.py](../../tools/document_revision16.py) |
 | added | [tools/export_full_changelog.py](../../tools/export_full_changelog.py) |
 | added | [tools/export_source_bundle.py](../../tools/export_source_bundle.py) |
+| added | [tools/fetch_cef_runtime.py](../../tools/fetch_cef_runtime.py) |
+| added | [tools/finalize_revision16.py](../../tools/finalize_revision16.py) |
 | modified | [tools/launch_samp_03dl.ps1](../../tools/launch_samp_03dl.ps1) |
 | added | [tools/package_revision10.ps1](../../tools/package_revision10.ps1) |
 | added | [tools/package_revision11.ps1](../../tools/package_revision11.ps1) |
@@ -302,6 +200,7 @@ Diese Liste zeigt Inhaltsänderungen außerhalb der Vendor-Verzeichnisse.
 | added | [tools/package_revision13.ps1](../../tools/package_revision13.ps1) |
 | added | [tools/package_revision14.ps1](../../tools/package_revision14.ps1) |
 | added | [tools/package_revision15.ps1](../../tools/package_revision15.ps1) |
+| added | [tools/package_revision16.py](../../tools/package_revision16.py) |
 | added | [tools/package_revision4.ps1](../../tools/package_revision4.ps1) |
 | added | [tools/package_revision5.ps1](../../tools/package_revision5.ps1) |
 | added | [tools/package_revision6.ps1](../../tools/package_revision6.ps1) |
@@ -309,9 +208,14 @@ Diese Liste zeigt Inhaltsänderungen außerhalb der Vendor-Verzeichnisse.
 | added | [tools/package_revision8.ps1](../../tools/package_revision8.ps1) |
 | added | [tools/package_revision9.ps1](../../tools/package_revision9.ps1) |
 | modified | [tools/premium_ui_qa.ps1](../../tools/premium_ui_qa.ps1) |
+| added | [tools/prepare_browser_runtime.py](../../tools/prepare_browser_runtime.py) |
 | added | [tools/prepare_github_review.py](../../tools/prepare_github_review.py) |
+| added | [tools/publish_revision16.py](../../tools/publish_revision16.py) |
+| added | [tools/report_revision16_log.py](../../tools/report_revision16_log.py) |
+| added | [tools/run_revision16.bat](../../tools/run_revision16.bat) |
 | modified | [tools/run_tests.bat](../../tools/run_tests.bat) |
 | added | [tools/setup_msvc.bat](../../tools/setup_msvc.bat) |
+| added | [tools/test_forum_host.py](../../tools/test_forum_host.py) |
 | added | [tools/test_reconnect_worker.py](../../tools/test_reconnect_worker.py) |
 | added | [tools/verify_revision10_artifact.py](../../tools/verify_revision10_artifact.py) |
 | added | [tools/verify_revision11_artifact.py](../../tools/verify_revision11_artifact.py) |
@@ -319,6 +223,7 @@ Diese Liste zeigt Inhaltsänderungen außerhalb der Vendor-Verzeichnisse.
 | added | [tools/verify_revision13_artifact.py](../../tools/verify_revision13_artifact.py) |
 | added | [tools/verify_revision14_artifact.py](../../tools/verify_revision14_artifact.py) |
 | added | [tools/verify_revision15_artifact.py](../../tools/verify_revision15_artifact.py) |
+| added | [tools/verify_revision16_artifact.py](../../tools/verify_revision16_artifact.py) |
 | added | [tools/verify_revision4_artifact.py](../../tools/verify_revision4_artifact.py) |
 | added | [tools/verify_revision5_artifact.py](../../tools/verify_revision5_artifact.py) |
 | added | [tools/verify_revision6_artifact.py](../../tools/verify_revision6_artifact.py) |

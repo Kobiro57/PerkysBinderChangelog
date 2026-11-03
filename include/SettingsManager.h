@@ -162,6 +162,15 @@ struct Settings {
     std::string online_pedslots_overlay_anchor = "top_left";
     float online_pedslots_overlay_offset_x = 12.0f;
     float online_pedslots_overlay_offset_y = 185.0f;
+    float forum_window_x = -1.0f;
+    float forum_window_y = -1.0f;
+    float forum_window_width = 1100.0f;
+    float forum_window_height = 760.0f;
+    bool forum_window_fullscreen = false;
+    bool online_stamina_overlay_enabled = false;
+    std::string online_stamina_overlay_anchor = "top_left";
+    float online_stamina_overlay_offset_x = 12.0f;
+    float online_stamina_overlay_offset_y = 320.0f;
     bool online_enabled = true;
     bool online_quick_overlay_enabled = true;
     int online_quick_overlay_hotkey = 0;

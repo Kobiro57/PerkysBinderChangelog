@@ -1,0 +1,13 @@
+{
+  "version": "156.0.15+gcf671c0+chromium-156.0.8078.80",
+  "chromium_version": "156.0.8078.80",
+  "architecture": "windows64",
+  "channel": "stable",
+  "archive": "cef_binary_156.0.15+gcf671c0+chromium-156.0.8078.80_windows64.tar.bz2",
+  "archive_bytes": 366936108,
+  "official_sha1": "dec540c7236c7c98c033f78618c010e3ae322f82",
+  "directory": "cef_binary_156.0.15+gcf671c0+chromium-156.0.8078.80_windows64",
+  "index_url": "https://cef-builds.spotifycdn.com/index.json",
+  "sandbox": true,
+  "archive_sha256": "51fabb69de6bbb99b38704665e8bc67a511ec4a68f8cfa2465460c03ae7e8d75"
+}

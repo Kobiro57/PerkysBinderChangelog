@@ -1,4 +1,8 @@
 #include "../include/OnlineOverlayController.h"
+#ifndef KEYBINDER_TESTING
+#include "CWorld.h"
+#include "CPlayerInfo.h"
+#endif
 #include "../include/OnlineDataManager.h"
 #include "../include/SettingsManager.h"
 #include <algorithm>
@@ -133,6 +137,13 @@ OnlineGameOverlayState OnlineOverlayController::CaptureGameState(SAMPBridge* bri
             ? bridge->GetVehicleName() : "Zu Fu\xC3\x9F";
     }
 
+    if (localPed && localPed->m_pPlayerData && localPlayer->m_bIsActive) {
+        state.stamina.available = true;
+        state.stamina.energy = localPed->m_pPlayerData->m_fTimeCanRun;
+        state.stamina.maximum = plugin::CallAndReturn<float, 0x559AF0, int>(7);
+        state.stamina.unlimited = CWorld::Players[0].m_bDoesNotGetTired;
+    }
+
     for (int id = 0; id < sampapi::v03dl::CPlayerPool::MAX_PLAYERS; ++id) {
         if (id == pool->m_nLocalPlayerId || !pool->m_bNotEmpty[id]) continue;
         auto* info = pool->m_pObject[id];
@@ -168,10 +179,11 @@ void OnlineOverlayController::UpdateGameOverlays(float deltaTimeSeconds) {
         for (std::size_t i = 0; i < gameState_.players.size(); ++i) {
             gamePlayerIndices_.emplace(NormalizeMarkerName(gameState_.players[i].name), i);
         }
-        gameRefreshSeconds_ = 0.5f;
+        gameRefreshSeconds_ = settings.online_stamina_overlay_enabled ? 0.1f : 0.5f;
     }
 
     if (!gameState_.connected) {
+        staminaGauge_.Reset();
         return;
     }
 
@@ -205,6 +217,15 @@ void OnlineOverlayController::UpdateGameOverlays(float deltaTimeSeconds) {
         settings.online_pedslots_overlay_anchor, settings.online_pedslots_overlay_offset_x,
         settings.online_pedslots_overlay_offset_y,
         {std::to_string(gameState_.streamedPlayers) + " Spieler im Stream"});
+
+    const StaminaDisplay stamina = staminaGauge_.Observe(gameState_.stamina, elapsed);
+    addOverlay(PersistentOverlayKind::Stamina, "Ausdauer", settings.online_stamina_overlay_enabled,
+        settings.online_stamina_overlay_anchor, settings.online_stamina_overlay_offset_x,
+        settings.online_stamina_overlay_offset_y, {stamina.status});
+    if (settings.online_stamina_overlay_enabled && !gameOverlays_.empty()) {
+        gameOverlays_.back().stamina = stamina;
+        gameOverlays_.back().minimumWidth = 112.0f;
+    }
 
     std::vector<std::string> savedNames;
     std::vector<std::string> friends;

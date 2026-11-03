@@ -161,6 +161,26 @@ void TestTimeoutDisconnectCloseAndClockWrapResetTheFlow() {
     flow.Reset();
     CHECK(!flow.IsActive() && flow.TargetPlayerId() == -1 && flow.Update(100000).kind == Kind::None);
 }
+
+void TestPlayerNamesResolveWithoutGuessingAmbiguousTargets() {
+    const std::vector<std::pair<int, std::string>> players{{57, "KOBiRO"}, {58, "Kobiro_Friend"}, {12, "Other_Player"}, {4, "XY"}};
+    int id = -1; std::string error;
+    CHECK(Flow::ResolvePlayerTarget("57", {}, id, error) && id == 57);
+    CHECK(Flow::ResolvePlayerTarget(" koBIro ", players, id, error) && id == 57 && error.empty());
+    CHECK(Flow::ResolvePlayerTarget("friend", players, id, error) && id == 58);
+    CHECK(Flow::ResolvePlayerTarget("other", players, id, error) && id == 12);
+    CHECK(Flow::ResolvePlayerTarget("xy", players, id, error) && id == 4);
+    id = 91;
+    CHECK(!Flow::ResolvePlayerTarget("kob", players, id, error) && id == 91 && !error.empty());
+    CHECK(!Flow::ResolvePlayerTarget("ko", players, id, error) && id == 91);
+    CHECK(!Flow::ResolvePlayerTarget("Nobody", players, id, error) && id == 91);
+    CHECK(!Flow::ResolvePlayerTarget("1004", players, id, error) && id == 91);
+    CHECK(!Flow::ResolvePlayerTarget("999999999999999999999999999999", players, id, error));
+    CHECK(!Flow::ResolvePlayerTarget("kob extra", players, id, error));
+    CHECK(!Flow::ResolvePlayerTarget(std::string("kob\0x", 5), players, id, error));
+    CHECK(Flow::ResolvePlayerTarget("KOB", {{57,"KOBiRO"}}, id, error) && id == 57);
+    CHECK(!Flow::ResolvePlayerTarget("KOBiRO", {{57,"KOBiRO"},{58,"KOBIRO"}}, id, error));
+}
 } // namespace
 
 int RunSpeedTicketFlowTests() {
@@ -171,6 +191,7 @@ int RunSpeedTicketFlowTests() {
     TestUnexpectedOrAmbiguousCatalogueNeverSelectsAnUnrelatedOffence();
     TestFinalInputRequiresTheCorrectReasonPointsAndPrompt();
     TestTimeoutDisconnectCloseAndClockWrapResetTheFlow();
+    TestPlayerNamesResolveWithoutGuessingAmbiguousTargets();
     std::printf("SpeedTicketFlowTests: %d checks, %d failures\n", checks, failures);
     return failures;
 }

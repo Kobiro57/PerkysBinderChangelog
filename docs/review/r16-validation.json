@@ -1,0 +1,30 @@
+{
+  "revision": "v0.1.1-r16",
+  "date": "2026-11-03",
+  "asi_sha256": "69ae76195feb01223f2e10290391ff45d7e35d7f1b4747a5c555ecf6d02423e4",
+  "asi_bytes": 18572800,
+  "full_test_suite_exit_code": 0,
+  "release_build_exit_code": 0,
+  "focused_checks": {
+    "R16Feature": 127,
+    "DamageLogRegression": 210,
+    "StartupStatsSync": 401,
+    "CombatChatBridge": 238
+  },
+  "native_reconnect_checks": 83,
+  "real_cef_offscreen_forum_test": true,
+  "native_x86_to_x64_browser_integration_test": true,
+  "cef_sandbox_enabled": true,
+  "browser_clean_shutdown": true,
+  "live_gta_gameplay_test_performed": false,
+  "login_or_post_submitted_in_test": false,
+  "cef_version": "156.0.15+gcf671c0+chromium-156.0.8078.80",
+  "runtime_files": 236,
+  "runtime_bytes": 429252102,
+  "changelog_sha256": "463b13bc447e4552ca43b4704fa7b6ae763cc11a669b8a63bbcb18003dd03b59",
+  "changelog_sections": 22,
+  "archive": "NLBinder-v0.1.1-KOBiRO-r16.zip",
+  "archive_bytes": 198781538,
+  "archive_sha256": "9e5dd6348b4eebff340d5ccb354bb5e22fef7a6727534ea44184a0c591188fa2",
+  "archive_integrity_checked": true
+}

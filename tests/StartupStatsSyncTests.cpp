@@ -437,15 +437,18 @@ void TestObservedNovaScreenshotLayoutThroughCompressedRpcWithDynamicPlayerName()
 }
 
 void TestSpeedCommandPerformsThreeExactDialogRepliesAndSubmitsOnlyOnce() {
+    for (const std::string target : {"57", "kOBIRO", "iro"}) {
     Context context;
-    SAMPBridge::SetTestingHooks(context.Hooks());
+    auto hooks = context.Hooks();
+    hooks.getPlayerName = [](int id) { return id == 57 ? std::string("KOBiRO") : std::string(); };
+    SAMPBridge::SetTestingHooks(hooks);
     SAMPBridge bridge;
     CHECK(bridge.Initialize());
     bridge.Update();
     std::string error;
     CHECK(!bridge.RequestSpeedTicket("1004", error));
     CHECK(context.commands.empty());
-    CHECK(bridge.RequestSpeedTicket("57", error));
+    CHECK(bridge.RequestSpeedTicket(target, error));
     CHECK(context.commands == std::vector<std::string>{"/su"});
     CHECK(!bridge.RequestSpeedTicket("58", error));
     CHECK(DeliverDialog(bridge, context, 500, 2, "Staat \xBB Wantedkatalog", "Ordnungswidrigkeit\nVergehen\nVerbrechen"));
@@ -471,6 +474,7 @@ void TestSpeedCommandPerformsThreeExactDialogRepliesAndSubmitsOnlyOnce() {
     CHECK(context.replies.size() == 3);
     bridge.Shutdown();
     SAMPBridge::ResetTestingHooks();
+    }
 }
 
 void TestStartupSynchronizesStatsThenJobSkillsAndKeepsExistingEarnings() {

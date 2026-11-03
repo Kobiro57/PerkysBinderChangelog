@@ -1069,6 +1069,7 @@ bool ImGuiOverlay::IsQuickMapWheelCaptureActive() const {
 }
 
 bool ImGuiOverlay::IsKeyboardCaptureActive() const {
+    if (auxiliaryKeyboardCaptureCallback_ && auxiliaryKeyboardCaptureCallback_()) return true;
     if (!visible_ || ImGui::GetCurrentContext() == nullptr) {
         return false;
     }
@@ -1364,6 +1365,9 @@ LRESULT ImGuiOverlay::WndProcHandler(HWND hwnd, UINT msg, WPARAM w_param, LPARAM
             dependencies_.restore_game_mouse();
         }
     }
+
+    if (auxiliaryWindowMessageCallback_ && w_param != VK_ESCAPE
+        && auxiliaryWindowMessageCallback_(hwnd, msg, w_param, l_param)) return 1;
 
     const int uiToggleHotkey = GetUiToggleHotkey(settings_manager_);
     if ((msg == WM_KEYDOWN || msg == WM_SYSKEYDOWN) && static_cast<int>(w_param) == uiToggleHotkey) {
@@ -2025,6 +2029,13 @@ void ImGuiOverlay::SetEarlyKeybindHandler(std::function<bool(int, bool)> callbac
 
 void ImGuiOverlay::SetFocusLostHandler(std::function<void()> callback) {
     focusLostHandlerCallback_ = std::move(callback);
+}
+
+void ImGuiOverlay::SetAuxiliaryKeyboardCaptureCallback(std::function<bool()> callback) {
+    auxiliaryKeyboardCaptureCallback_ = std::move(callback);
+}
+void ImGuiOverlay::SetAuxiliaryWindowMessageCallback(std::function<bool(HWND, UINT, WPARAM, LPARAM)> callback) {
+    auxiliaryWindowMessageCallback_ = std::move(callback);
 }
 
 void ImGuiOverlay::SetAuxiliaryInteractionActiveCallback(std::function<bool()> callback) {

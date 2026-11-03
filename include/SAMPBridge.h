@@ -356,6 +356,14 @@ public:
     static void __cdecl DispatchDirectCommand5(const char* params);
     static void __cdecl DispatchDirectCommand6(const char* params);
     static void __cdecl DispatchDirectCommand7(const char* params);
+    static void __cdecl DispatchDirectCommand8(const char* params);
+    static void __cdecl DispatchDirectCommand9(const char* params);
+    static void __cdecl DispatchDirectCommand10(const char* params);
+    static void __cdecl DispatchDirectCommand11(const char* params);
+    static void __cdecl DispatchDirectCommand12(const char* params);
+    static void __cdecl DispatchDirectCommand13(const char* params);
+    static void __cdecl DispatchDirectCommand14(const char* params);
+    static void __cdecl DispatchDirectCommand15(const char* params);
     static void __cdecl DefaultCommandInterceptor(const char* text);
 
 private:

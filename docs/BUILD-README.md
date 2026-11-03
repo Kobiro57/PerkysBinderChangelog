@@ -123,3 +123,20 @@ All hotkeys are configurable in settings. The QuickMap mode (toggle vs. hold) is
 ## License
 
 This project is provided as-is for educational purposes.
+
+## r16 additions
+
+Stamina sidebar, Akkord earnings, 20 persistent local GPS destinations,
+player-name resolution for `/speed`, and a real CEF offscreen forum browser.
+See [German r16 instructions](NLBinder-0.1.1-r16-DE.md).
+
+The ASI remains x86. The browser runs separately as x64 using the original CEF
+sandbox bootstrap. Fetch the pinned SDK with `python tools/fetch_cef_runtime.py`,
+build with `tools/build_forum_browser.bat`, and assemble the required runtime
+with `python tools/prepare_browser_runtime.py`. Install `build/NLBinder/Browser`
+next to `NLBinder.asi`; the ASI alone does not contain Chromium. Windows x64,
+VS 2022 x86/x64 v143 tools, Windows SDK and CMake are required.
+
+`tools/run_revision16.bat tests` runs the complete suite. `smoke` loads the
+real forum anonymously; `native-smoke` exercises x86-to-x64 IPC with a fresh
+test profile. No automated account login or post submission is performed.
