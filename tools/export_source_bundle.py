@@ -1,4 +1,4 @@
-"""Export a verified r17 source snapshot, ASI, automatic-browser manifest and full changelog.
+"""Export a verified r18 source snapshot, ASI, automatic-browser manifest and full changelog.
 
 Reads Git blobs without changing Git or the game installation. The destination
 must not exist. Historical release binaries, Git metadata, local build outputs
@@ -13,8 +13,8 @@ import subprocess
 
 
 ROOT = Path(__file__).resolve().parents[1]
-RELEASE = "v0.1.1-r17"
-PACKAGE = "dist/NLBinder-0.1.1-r17"
+RELEASE = "v0.1.1-r18"
+PACKAGE = "dist/NLBinder-0.1.1-r18"
 PRIVATE_PARTS = {
     ".git", ".vs", ".aws", ".codex", ".agents", "__pycache__", "build",
     "output", "debug", "release", "obj", "cmakefiles", ".venv", "venv",
@@ -91,7 +91,7 @@ def main():
     parser.add_argument("--repository", type=Path, default=ROOT / "build/github-publication/repository")
     parser.add_argument("--revision", default="HEAD")
     parser.add_argument("--binary", type=Path, default=ROOT / "build/Release/NLBinder.asi")
-    parser.add_argument("--manifest", type=Path, default=ROOT / "build/source-export-r17.json")
+    parser.add_argument("--manifest", type=Path, default=ROOT / "build/source-export-r18.json")
     args = parser.parse_args()
     repo = args.repository.resolve(strict=True)
     destination = args.destination.resolve()
@@ -121,7 +121,7 @@ def main():
         "BROWSER-RUNTIME.json": PACKAGE + "/BROWSER-RUNTIME.json",
     }
     for source in extras.values():
-        require(source in entries, "Verified r17 publication file missing: " + source)
+        require(source in entries, "Verified r18 publication file missing: " + source)
     read_entries = dict(selected)
     read_entries.update({source: entries[source] for source in extras.values()})
     files = read_blobs(repo, read_entries)
@@ -133,10 +133,10 @@ def main():
     report = json.loads(exported["PRUEFBERICHT.json"].decode("utf-8-sig"))
     require(report.get("revision") == RELEASE and report.get("asi") == "NLBinder.asi" and report.get("sha256") == digest(binary)
             and report.get("bytes") == len(binary) and report.get("embedded_helper_matches") is True,
-            "r17 artifact verification is missing or stale")
+            "r18 artifact verification is missing or stale")
     runtime = json.loads(exported['BROWSER-RUNTIME.json'].decode('utf-8'))
     runtime_files = {}
-    # r17 installs the pinned browser automatically into Documents on first /forum.
+    # r18 installs the pinned browser automatically into Documents on first /forum.
     require(exported["Keybinder.vcxproj"].count(b"<TargetName>NLBinder</TargetName>") == 2,
             "Release/Debug project names are not both NLBinder")
     folded = [relative.casefold() for relative in exported]

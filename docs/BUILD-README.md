@@ -161,3 +161,18 @@ tests the native installer against the actual public pinned HTTPS download in
 private fixture directories. native-smoke installs from the embedded resource,
 opens the real forum four times with one anonymous profile and verifies clean
 shutdown and queued/early reopen. No account login or post is automated.
+
+## r18 render-driven coordination
+
+Forum setup is polled from Render/HUD as well as the command handler; Ready
+hands off immediately without waiting for helper process cleanup. Cancellation
+terminates only the owned installer job and resets state immediately. Verified
+archives survive interrupted extraction and can be retried without network.
+GPS navigation creates the native red checkpoint immediately and refreshes it
+through scene/HUD/render callbacks, without requiring a gameProcess callback.
+
+`tools/run_revision18.bat tests` checks the full suite; `native-smoke` runs the
+real forum through render-only polling with delayed-exit/cancel fault injection.
+`python tools/test_browser_restart.py` interrupts native extraction and verifies
+a cached retry. `tools/test_gps_native.bat` executes the production adapter with
+actual GTA structures and replaced engine functions, without opening GTA.

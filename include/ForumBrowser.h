@@ -13,7 +13,8 @@ public:
     ForumBrowser();
     ~ForumBrowser();
     void Initialize(SettingsManager* settings, std::function<void(const std::string&)> notice,
-                    std::function<void()> persist);
+                    std::function<void()> persist,
+                    std::function<bool(const std::string&)> sessionCommand = {});
     void Toggle();
     void Close();
     void Shutdown();

@@ -1,0 +1,26 @@
+﻿NLBinder v0.1.1-r18
+NLBinder.asi (x86): 18855936 Bytes
+SHA256: 4eec175d23397a51d4da28877b8f1109044cce8523cbcb06c7a70aa6cbf837b9
+
+Nur die ASI muss installiert werden. Beim ersten /forum werden die Browserdateien
+automatisch unter Dokumente/GTA San Andreas User Files/NLBinder/Browser eingerichtet.
+Gepruefte vorhandene Dateien werden uebernommen; sonst einmaliger HTTPS-Download
+von 188258850 Bytes. Archiv und alle 236 Dateien werden mit SHA-256 geprueft.
+Browser-Download SHA256: 01fc7f1d4dcec644a191e9c63da7088a73aa81a63c9a4c207001f7038a70ff45
+Fortschritt, Abbruch und Reparatur vorhanden. Keine Adminrechte/PowerShell/Python noetig.
+
+GPS: Roter Welt-Checkpoint und Minimap-Punkt, Wiederherstellung eigener Eintraege,
+Schutz recycelter fremder Radarslots und sichtbares Ziel beim Start am Zielort.
+Forum: Erneutes Oeffnen nach dem vollstaendigen Ende der eigenen Browserprozesse.
+
+Status und GPS werden ueber Render/HUD fortgefuehrt. Ready oeffnet sofort, Abbruch setzt sofort zurueck.
+Gepruefter Download wird nach abgebrochenem Entpacken ohne Netz wiederverwendet.
+Beim Oeffnen des Forums einmal /afk, beim Schliessen einmal /back; keine Befehle je Bild.
+Gesamttests und Release-Build: Exitcode 0. Neue r18-Pruefungen: 31.
+Installer: 983 native Integrationspruefungen plus 732 Bibliotheks-/Pfadpruefungen.
+Echter HTTPS-Download, alle Dateihashes, Reparatur, Uebernahme, Wiederverwendung, Abbruch.
+Produktiver x86-Controller mit eingebettetem Installer startet das echte Forum viermal
+mit demselben anonymen Profil, auch bei schnellem bzw. fruehem Schliessen/Wiederoeffnen.
+AFK-/Back-Umschaltung: 6 Paare mit ersetztem Befehlsversand geprueft.
+Keine Anmeldung oder Nachricht automatisch versendet. Vorlaeufiger GTA-Test separat
+dokumentiert; finale AFK-Erweiterung bisher automatisiert geprueft.

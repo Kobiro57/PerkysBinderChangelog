@@ -21,7 +21,8 @@ public:
     static constexpr std::size_t kMaximumEntries = 20;
     using Notice = std::function<void(const std::string&)>;
     using PositionProvider = std::function<bool(GpsPosition&)>;
-    void Initialize(std::string path, Notice notice, PositionProvider provider);
+    using DestinationRenderer = std::function<void(const GpsEntry*)>;
+    void Initialize(std::string path, Notice notice, PositionProvider provider, DestinationRenderer renderer = {});
     void Shutdown();
     bool Set(const std::string& name);
     bool Remove(unsigned int id);
@@ -45,6 +46,7 @@ private:
     std::string path_;
     Notice notice_;
     PositionProvider positionProvider_;
+    DestinationRenderer renderer_;
     std::vector<GpsEntry> entries_;
     unsigned int nextId_ = 1;
     unsigned int activeId_ = 0;

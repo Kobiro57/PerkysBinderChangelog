@@ -681,9 +681,14 @@ public:
         });
         gps_.Initialize(keybinder::PersistentPaths::RootDir() + "\\gps.xml",
             [&](const std::string& text) { bridge_.QueueLocalMessage(text); },
-            [&](keybinder::GpsPosition& position) { return keybinder::ReadGpsPlayerPosition(&bridge_, position); });
+            [&](keybinder::GpsPosition& position) { return keybinder::ReadGpsPlayerPosition(&bridge_, position); },
+            [&](const keybinder::GpsEntry* target) { keybinder::RenderGpsDestination(target); });
         forumBrowser_.Initialize(&settingsManager_, [&](const std::string& text) { bridge_.QueueLocalMessage(text); },
-            [&]() { keybindManager_.Save(&settingsManager_); });
+            [&]() { keybindManager_.Save(&settingsManager_); },
+            [&](const std::string& command) {
+                if (g_shutdown_phase.load() != 0) return false;
+                return bridge_.SendCommand(command);
+            });
 
         onlineEventDetector_.Initialize(&settingsManager_);
         onlineOverlayController_.Initialize(&settingsManager_, &onlineDataManager_);
@@ -905,6 +910,8 @@ public:
 
             bridge_.Initialize();
             bridge_.Update();
+            forumBrowser_.Update();
+            gps_.Update();
             if (const auto* netGame = bridge_.GetNetGame(); netGame
                 && netGame->m_nGameState == sampapi::v03dl::CNetGame::GAME_MODE_CONNECTED) {
                 const auto* localPlayer = bridge_.GetLocalPlayer();
@@ -1001,18 +1008,17 @@ public:
             overlay_.Render();
 
         };
+        // Prepare the normal GTA checkpoint before the world effects pass.
+        // HUD polling below is also retained for clients replacing this call.
+        Events::renderSceneEvent += [&]() {
+            if (g_shutdown_phase.load() == 0) gps_.Update();
+        };
         Events::gameProcessEvent += [&]() {
             if (g_shutdown_phase.load() != 0) return;
             std::string reconnectError;
             if (keybinder::UpdateReconnect(reconnectError)) {
                 bridge_.QueueLocalMessage("{FF6600}[NL-BINDER]{FFFFFF} " + reconnectError);
             }
-            forumBrowser_.Update();
-            gps_.Update();
-            keybinder::GpsPosition gpsCurrent;
-            const auto* gpsTarget = gps_.ActiveDestination();
-            keybinder::RenderGpsDestination(gpsTarget && keybinder::ReadGpsPlayerPosition(&bridge_, gpsCurrent)
-                && gpsCurrent.interior == gpsTarget->position.interior ? gpsTarget : nullptr);
             inputManager_.ApplyEarlySuppressedKeys();
 
             if (overlay_.OwnsMouseInput()) {

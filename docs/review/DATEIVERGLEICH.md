@@ -1,6 +1,6 @@
 # Dateivergleich zum Original
 
-Verglichen werden die unveränderlichen Git-Blobs des Tags `original-archive-92ce219` mit den gestagten r17-Quellen.
+Verglichen werden die unveränderlichen Git-Blobs des Tags `original-archive-92ce219` mit den gestagten r18-Quellen.
 Die Archivherkunft bleibt dokumentiert; diese Hashes beziehen sich ausdrücklich auf Git-Blobs, nicht neu eingelesene ZIP-Rohbytes.
 Generierte Vergleichsdateien, alte Revisionspatches und Binärpakete sind aus diesem rekursionsfreien Vergleich ausgeschlossen.
 Alle betrachteten Änderungen stehen in [SOURCE-COMPARISON.json](SOURCE-COMPARISON.json).
@@ -25,6 +25,7 @@ Alle betrachteten Änderungen stehen in [SOURCE-COMPARISON.json](SOURCE-COMPARIS
 | added | [docs/NLBinder-0.1.1-r15-DE.md](../../docs/NLBinder-0.1.1-r15-DE.md) |
 | added | [docs/NLBinder-0.1.1-r16-DE.md](../../docs/NLBinder-0.1.1-r16-DE.md) |
 | added | [docs/NLBinder-0.1.1-r17-DE.md](../../docs/NLBinder-0.1.1-r17-DE.md) |
+| added | [docs/NLBinder-0.1.1-r18-DE.md](../../docs/NLBinder-0.1.1-r18-DE.md) |
 | added | [docs/NLBinder-0.1.1-r2-DE.md](../../docs/NLBinder-0.1.1-r2-DE.md) |
 | added | [docs/NLBinder-0.1.1-r3-DE.md](../../docs/NLBinder-0.1.1-r3-DE.md) |
 | added | [docs/NLBinder-0.1.1-r4-DE.md](../../docs/NLBinder-0.1.1-r4-DE.md) |
@@ -51,6 +52,8 @@ Alle betrachteten Änderungen stehen in [SOURCE-COMPARISON.json](SOURCE-COMPARIS
 | added | [docs/review/r15-validation.json](../../docs/review/r15-validation.json) |
 | added | [docs/review/r16-validation.json](../../docs/review/r16-validation.json) |
 | added | [docs/review/r17-validation.json](../../docs/review/r17-validation.json) |
+| added | [docs/review/r18-live-validation.json](../../docs/review/r18-live-validation.json) |
+| added | [docs/review/r18-validation.json](../../docs/review/r18-validation.json) |
 | added | [docs/review/r4-validation.json](../../docs/review/r4-validation.json) |
 | added | [docs/review/r5-validation.json](../../docs/review/r5-validation.json) |
 | added | [docs/review/r6-validation.json](../../docs/review/r6-validation.json) |
@@ -63,6 +66,7 @@ Alle betrachteten Änderungen stehen in [SOURCE-COMPARISON.json](SOURCE-COMPARIS
 | added | [include/CombatChatParser.h](../../include/CombatChatParser.h) |
 | modified | [include/DamageRPCAdapter.h](../../include/DamageRPCAdapter.h) |
 | modified | [include/DeathMessageRPCAdapter.h](../../include/DeathMessageRPCAdapter.h) |
+| added | [include/ForumAfkSession.h](../../include/ForumAfkSession.h) |
 | added | [include/ForumBrowser.h](../../include/ForumBrowser.h) |
 | added | [include/ForumBrowserProtocol.h](../../include/ForumBrowserProtocol.h) |
 | added | [include/GpsManager.h](../../include/GpsManager.h) |
@@ -157,6 +161,7 @@ Alle betrachteten Änderungen stehen in [SOURCE-COMPARISON.json](SOURCE-COMPARIS
 | added | [tests/CombatChatBridgeTests.cpp](../../tests/CombatChatBridgeTests.cpp) |
 | added | [tests/CombatChatParserTests.cpp](../../tests/CombatChatParserTests.cpp) |
 | added | [tests/DamageLogRegressionTests.cpp](../../tests/DamageLogRegressionTests.cpp) |
+| added | [tests/GpsNativeAdapterTests.cpp](../../tests/GpsNativeAdapterTests.cpp) |
 | modified | [tests/ImGuiOverlayTests.cpp](../../tests/ImGuiOverlayTests.cpp) |
 | modified | [tests/InterfaceEditorTests.cpp](../../tests/InterfaceEditorTests.cpp) |
 | added | [tests/InterfaceLayoutSettingsTests.cpp](../../tests/InterfaceLayoutSettingsTests.cpp) |
@@ -176,6 +181,7 @@ Alle betrachteten Änderungen stehen in [SOURCE-COMPARISON.json](SOURCE-COMPARIS
 | modified | [tests/OnlineSettingsTests.cpp](../../tests/OnlineSettingsTests.cpp) |
 | added | [tests/R16FeatureTests.cpp](../../tests/R16FeatureTests.cpp) |
 | added | [tests/R17FeatureTests.cpp](../../tests/R17FeatureTests.cpp) |
+| added | [tests/R18FeatureTests.cpp](../../tests/R18FeatureTests.cpp) |
 | added | [tests/ReconnectManagerTests.cpp](../../tests/ReconnectManagerTests.cpp) |
 | added | [tests/ReconnectWorkerFixture.cpp](../../tests/ReconnectWorkerFixture.cpp) |
 | modified | [tests/RegressionTests.cpp](../../tests/RegressionTests.cpp) |
@@ -202,11 +208,14 @@ Alle betrachteten Änderungen stehen in [SOURCE-COMPARISON.json](SOURCE-COMPARIS
 | added | [tools/document_publication_revision16.py](../../tools/document_publication_revision16.py) |
 | added | [tools/document_revision16.py](../../tools/document_revision16.py) |
 | added | [tools/document_revision17.py](../../tools/document_revision17.py) |
+| added | [tools/document_revision18.py](../../tools/document_revision18.py) |
 | added | [tools/export_full_changelog.py](../../tools/export_full_changelog.py) |
 | added | [tools/export_source_bundle.py](../../tools/export_source_bundle.py) |
 | added | [tools/fetch_cef_runtime.py](../../tools/fetch_cef_runtime.py) |
 | added | [tools/finalize_revision16.py](../../tools/finalize_revision16.py) |
 | added | [tools/finalize_revision17.py](../../tools/finalize_revision17.py) |
+| added | [tools/finalize_revision18.py](../../tools/finalize_revision18.py) |
+| added | [tools/install_revision18.py](../../tools/install_revision18.py) |
 | modified | [tools/launch_samp_03dl.ps1](../../tools/launch_samp_03dl.ps1) |
 | added | [tools/package_revision10.ps1](../../tools/package_revision10.ps1) |
 | added | [tools/package_revision11.ps1](../../tools/package_revision11.ps1) |
@@ -216,6 +225,7 @@ Alle betrachteten Änderungen stehen in [SOURCE-COMPARISON.json](SOURCE-COMPARIS
 | added | [tools/package_revision15.ps1](../../tools/package_revision15.ps1) |
 | added | [tools/package_revision16.py](../../tools/package_revision16.py) |
 | added | [tools/package_revision17.py](../../tools/package_revision17.py) |
+| added | [tools/package_revision18.py](../../tools/package_revision18.py) |
 | added | [tools/package_revision4.ps1](../../tools/package_revision4.ps1) |
 | added | [tools/package_revision5.ps1](../../tools/package_revision5.ps1) |
 | added | [tools/package_revision6.ps1](../../tools/package_revision6.ps1) |
@@ -228,14 +238,20 @@ Alle betrachteten Änderungen stehen in [SOURCE-COMPARISON.json](SOURCE-COMPARIS
 | added | [tools/prepare_github_review.py](../../tools/prepare_github_review.py) |
 | added | [tools/publish_revision16.py](../../tools/publish_revision16.py) |
 | added | [tools/publish_revision17.py](../../tools/publish_revision17.py) |
+| added | [tools/publish_revision18.py](../../tools/publish_revision18.py) |
+| added | [tools/record_gps_native_test.py](../../tools/record_gps_native_test.py) |
 | added | [tools/report_revision16_log.py](../../tools/report_revision16_log.py) |
 | added | [tools/report_revision17_log.py](../../tools/report_revision17_log.py) |
+| added | [tools/report_revision18_log.py](../../tools/report_revision18_log.py) |
 | added | [tools/run_revision16.bat](../../tools/run_revision16.bat) |
 | added | [tools/run_revision17.bat](../../tools/run_revision17.bat) |
+| added | [tools/run_revision18.bat](../../tools/run_revision18.bat) |
 | modified | [tools/run_tests.bat](../../tools/run_tests.bat) |
 | added | [tools/setup_msvc.bat](../../tools/setup_msvc.bat) |
+| added | [tools/test_browser_restart.py](../../tools/test_browser_restart.py) |
 | added | [tools/test_browser_setup.py](../../tools/test_browser_setup.py) |
 | added | [tools/test_forum_host.py](../../tools/test_forum_host.py) |
+| added | [tools/test_gps_native.bat](../../tools/test_gps_native.bat) |
 | added | [tools/test_reconnect_worker.py](../../tools/test_reconnect_worker.py) |
 | added | [tools/verify_revision10_artifact.py](../../tools/verify_revision10_artifact.py) |
 | added | [tools/verify_revision11_artifact.py](../../tools/verify_revision11_artifact.py) |
@@ -245,6 +261,7 @@ Alle betrachteten Änderungen stehen in [SOURCE-COMPARISON.json](SOURCE-COMPARIS
 | added | [tools/verify_revision15_artifact.py](../../tools/verify_revision15_artifact.py) |
 | added | [tools/verify_revision16_artifact.py](../../tools/verify_revision16_artifact.py) |
 | added | [tools/verify_revision17_artifact.py](../../tools/verify_revision17_artifact.py) |
+| added | [tools/verify_revision18_artifact.py](../../tools/verify_revision18_artifact.py) |
 | added | [tools/verify_revision4_artifact.py](../../tools/verify_revision4_artifact.py) |
 | added | [tools/verify_revision5_artifact.py](../../tools/verify_revision5_artifact.py) |
 | added | [tools/verify_revision6_artifact.py](../../tools/verify_revision6_artifact.py) |

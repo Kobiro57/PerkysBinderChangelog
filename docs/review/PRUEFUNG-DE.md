@@ -1,6 +1,41 @@
 # Hinweise zur Prüfung durch die Projektleitung
 
-## Aktueller Stand r17 – 3. November 2026
+## Aktueller Stand r18 – 3. November 2026
+
+Ein vorläufiger r18-Stand wurde inzwischen im Spiel bestätigt: Der Nutzer
+meldete den angefragten Forum-/GPS-Test als funktionierend. Die konkrete
+getestete ASI-Prüfsumme steht im [Live-Nachweis](r18-live-validation.json).
+Danach kamen eine explizite native Renderfreigabe und die gewünschte
+AFK-/Back-Umschaltung hinzu. Diese Zusätze werden nicht rückwirkend als bereits
+live geprüft dargestellt. Die AFK-/Back-Aufrufe werden zusätzlich in den
+realen anonymen Browser-Lebenszyklustests über einen ersetzten Befehlsversand
+geprüft; das sendet keine echten Serverbefehle aus dem Testprogramm.
+
+[Bedienung und Änderung](../NLBinder-0.1.1-r18-DE.md),
+[Gesamtnachweis](r18-validation.json), [gesamter TXT-Changelog](../CHANGELOG-GESAMT.txt).
+
+Die Komponenten wurden bisher direkt durch Test-Updates getrieben. Das belegte
+keine korrekte Einbindung des Game-Process-Hooks in die konkrete Clientumgebung.
+r18 entfernt diese alleinige Abhängigkeit. Der konkrete Hookzustand des laufenden
+Spiels konnte nicht per Prozessspeicher verifiziert werden; die Quellanalyse
+und die neuen unabhängigen Abläufe sind davon zu unterscheiden.
+
+Native Tests laden das echte öffentliche Browserpaket und prüfen alle Dateien.
+Ein harter Abbruch während des Entpackens wird durch einen netzlosen Retry aus
+dem geprüften Cache gefolgt. Der echte x86-Controller öffnet das Forum viermal
+über reine Render-Aufrufe, mit sofortigem Cancel/Retry und absichtlich 15 Sekunden
+verzögertem Installer-Ende nach Ready. Die Übergabe wartet nicht auf dieses Ende.
+
+Der GPS-Adapter wird zusätzlich als produktiver Code mit den GTA-Strukturen
+und ersetzten Engine-Aufrufen geprüft. Das prüft den tatsächlich angeforderten
+Checkpoint, Boden, Radar und Slotbesitz, jedoch keine sichtbaren Pixel in GTA.
+Die Render-getriebenen GPS-Tests prüfen sofortige Erzeugung und einmalige Ankunft.
+
+Gesamttests/Release-Build und genaue Prüfzahlen stehen im Nachweis. Solange die
+neue ASI noch nicht im laufenden Spiel eingesetzt und beobachtet wurde, wird
+kein bestandener Sichttest behauptet. Keine Zugangsdaten/Profile veröffentlicht.
+
+## Vorheriger Stand r17 – 3. November 2026
 
 [Bedienung und Installation](../NLBinder-0.1.1-r17-DE.md),
 [vollständiger TXT-Changelog](../CHANGELOG-GESAMT.txt),

@@ -35,8 +35,9 @@ std::string GpsName(std::string value) {
 }
 } // namespace
 
-void GpsManager::Initialize(std::string path, Notice notice, PositionProvider provider) {
+void GpsManager::Initialize(std::string path, Notice notice, PositionProvider provider, DestinationRenderer renderer) {
     path_ = std::move(path); notice_ = std::move(notice); positionProvider_ = std::move(provider);
+    renderer_ = std::move(renderer);
     if (!Load()) Say("Die GPS-Datei konnte nicht gelesen werden. Vorhandene Daten werden nicht automatisch ersetzt.");
 }
 void GpsManager::Shutdown() { listOpen_ = false; StopNavigation(); }
@@ -123,18 +124,22 @@ bool GpsManager::Navigate(unsigned int id) {
     GpsPosition current;
     arrivalArmed_ = positionProvider_ && positionProvider_(current)
         && !HasArrived(current, ActiveDestination()->position);
+    if (renderer_) renderer_(ActiveDestination());
     Say("Navigation gestartet: " + ActiveDestination()->name + ". Das Ziel ist rot markiert."); return true;
 }
-void GpsManager::StopNavigation() { activeId_ = 0; arrivalArmed_ = false; }
+void GpsManager::StopNavigation() { activeId_ = 0; arrivalArmed_ = false; if (renderer_) renderer_(nullptr); }
 void GpsManager::ShowHelp() const {
     Say("/setgps (Bemerkung) - Marker speichern | /gpslist - GPS-Liste \xC3\xB6" "ffnen");
     Say("/delgpsall - Alle GPS-Eintr\xC3\xA4ge l\xC3\xB6" "schen | /gps - Diese Hilfe");
 }
 void GpsManager::Update() {
     const auto* destination = ActiveDestination();
-    if (!destination) return;
+    if (!destination) { if (renderer_) renderer_(nullptr); return; }
     GpsPosition current;
-    if (!positionProvider_ || !positionProvider_(current) || !IsValidPosition(current)) return;
+    if (!positionProvider_ || !positionProvider_(current) || !IsValidPosition(current)) {
+        if (renderer_) renderer_(nullptr); return;
+    }
+    if (renderer_) renderer_(current.interior == destination->position.interior ? destination : nullptr);
     const bool inside = HasArrived(current, destination->position);
     if (!inside) { arrivalArmed_ = true; return; }
     // Starting navigation while standing on the saved position must still
@@ -145,6 +150,7 @@ void GpsManager::Update() {
     }
 }
 void GpsManager::Render() {
+    Update(); // Rendered frames remain available when SA-MP replaces Process.
     if (!listOpen_) return;
     ImGui::SetNextWindowSize(ImVec2(520.0f, 430.0f), ImGuiCond_FirstUseEver);
     if (ImGui::Begin("GPS-Liste##NLBinderGps", &listOpen_, ImGuiWindowFlags_NoCollapse)) {

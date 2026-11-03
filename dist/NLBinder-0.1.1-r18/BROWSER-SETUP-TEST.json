@@ -1,0 +1,73 @@
+{
+  "revision": "v0.1.1-r18",
+  "checks": 983,
+  "failures": 0,
+  "real_public_https_download": true,
+  "archive_sha256": "01fc7f1d4dcec644a191e9c63da7088a73aa81a63c9a4c207001f7038a70ff45",
+  "native_installer": true,
+  "unicode_and_spaces_in_paths": true,
+  "all_runtime_files_verified": 236,
+  "cases": [
+    {
+      "case": "real pinned HTTPS download",
+      "success_expected": true,
+      "exit_code": 0,
+      "phases": [
+        1,
+        3,
+        4,
+        5
+      ],
+      "seconds": 15.49
+    },
+    {
+      "case": "already installed without a download",
+      "success_expected": true,
+      "exit_code": 0,
+      "phases": [
+        1
+      ],
+      "seconds": 0.41
+    },
+    {
+      "case": "repair same-size damaged file",
+      "success_expected": true,
+      "exit_code": 0,
+      "phases": [
+        1,
+        4
+      ],
+      "seconds": 5.38
+    },
+    {
+      "case": "migrate supplied runtime without download",
+      "success_expected": true,
+      "exit_code": 0,
+      "phases": [
+        1,
+        2
+      ],
+      "seconds": 5.84
+    },
+    {
+      "case": "reject incorrect archive",
+      "success_expected": false,
+      "exit_code": 1,
+      "phases": [
+        1
+      ],
+      "seconds": 0.03
+    },
+    {
+      "case": "cancel before installation",
+      "success_expected": false,
+      "exit_code": 1,
+      "phases": [
+        1
+      ],
+      "seconds": 0.05
+    }
+  ],
+  "personal_documents_modified": false,
+  "login_or_post_submitted": false
+}

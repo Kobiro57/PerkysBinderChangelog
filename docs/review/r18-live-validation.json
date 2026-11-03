@@ -1,0 +1,11 @@
+{
+  "revision": "v0.1.1-r18",
+  "tested_asi_sha256": "3c2d0c210e31b600c989710e48966a1571cfaadee3d2d97c1895ae346cd6bf38",
+  "basis": "User confirmation after installing the provisional r18 build and requesting combined forum/GPS checks.",
+  "forum_and_gps_function_reported": true,
+  "observed_setup_ready_handoff_in_private_log": true,
+  "afk_back_extension_live_tested": false,
+  "later_explicit_render_flag_live_tested": false,
+  "exact_test_timings_claimed": false,
+  "raw_session_data_published": false
+}

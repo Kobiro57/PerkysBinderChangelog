@@ -1,21 +1,26 @@
 #include "../include/GpsManager.h"
 #include "../include/GpsRadarOwnership.h"
 #include "../include/SAMPBridge.h"
-#ifndef KEYBINDER_TESTING
+#include "../include/Logger.h"
+#include <cmath>
+#if !defined(KEYBINDER_TESTING) || defined(NLBINDER_NATIVE_GPS_FIXTURE)
 #include "C3dMarkers.h"
 #include "C3dMarker.h"
 #include "CRadar.h"
 #include "CPed.h"
 #include "CVector.h"
+#include "CWorld.h"
 #endif
 
 namespace keybinder {
 namespace {
 constexpr unsigned int kGpsMarkerId = 0x4E4C4753;
-#ifndef KEYBINDER_TESTING
+#if !defined(KEYBINDER_TESTING) || defined(NLBINDER_NATIVE_GPS_FIXTURE)
 int gpsBlip = -1;
 unsigned int gpsBlipEntry = 0;
 GpsPosition gpsBlipPosition;
+CVector checkpointPosition;
+unsigned int checkpointEntry = 0;
 bool OwnsGpsBlip() {
     if (gpsBlip == -1) return false;
     const auto index = static_cast<unsigned int>(gpsBlip) & 0xffff;
@@ -41,17 +46,20 @@ bool ReadGpsPlayerPosition(::SAMPBridge* bridge, GpsPosition& position) {
 #endif
 }
 void ClearGpsDestinationMarker() {
-#ifndef KEYBINDER_TESTING
+#if !defined(KEYBINDER_TESTING) || defined(NLBINDER_NATIVE_GPS_FIXTURE)
     if (OwnsGpsBlip()) CRadar::ClearBlip(gpsBlip);
     gpsBlip = -1; gpsBlipEntry = 0;
+    checkpointEntry = 0;
     for (unsigned int i = 0; i < MAX_NUM_3DMARKERS; ++i) {
         auto& marker = C3dMarkers::m_aMarkerArray[i];
-        if (static_cast<unsigned int>(marker.m_nIdentifier) == kGpsMarkerId && marker.m_bIsUsed) marker.DeleteMarkerObject();
+        if (static_cast<unsigned int>(marker.m_nIdentifier) == kGpsMarkerId && marker.m_pAtomic) {
+            marker.DeleteMarkerObject(); marker.m_bIsUsed = false; marker.m_bMustBeRenderedThisFrame = false;
+        }
     }
 #endif
 }
 void RenderGpsDestination(const GpsEntry* destination) {
-#ifndef KEYBINDER_TESTING
+#if !defined(KEYBINDER_TESTING) || defined(NLBINDER_NATIVE_GPS_FIXTURE)
     if (!destination) { ClearGpsDestinationMarker(); return; }
     CVector target(destination->position.x, destination->position.y, destination->position.z - 0.9f);
     if (!OwnsGpsBlip()) gpsBlip = -1; // The server/game can recycle a radar slot.
@@ -71,8 +79,42 @@ void RenderGpsDestination(const GpsEntry* destination) {
         CRadar::SetBlipAlwaysDisplayInZoom(gpsBlip, true);
         CRadar::ms_RadarTrace[static_cast<unsigned int>(gpsBlip) & 0xffff].m_bShortRange = false;
     }
-    C3dMarkers::PlaceMarker(kGpsMarkerId, MARKER3D_CYLINDER, target, 3.0f,
-        255, 40, 40, 170, 1024, 0.15f, 0, 0.0f, 0.0f, 1.0f, false);
+    const bool checkpointChanged = checkpointEntry != destination->id;
+    if (checkpointChanged) {
+        checkpointPosition = target;
+        bool found = false;
+        const float ground = CWorld::FindGroundZFor3DCoord(target.x, target.y, destination->position.z + 3.0f, &found, nullptr);
+        if (found && std::isfinite(ground) && std::fabs(ground - target.z) < 6.0f) checkpointPosition.z = ground + 0.1f;
+        checkpointEntry = destination->id;
+        Logger::Info("[GPS] Navigation checkpoint activated");
+    }
+    // A normal script checkpoint uses this native marker set and a zero
+    // surface normal. Re-submit it before effects/HUD instead of relying
+    // on the replaceable game-processing hook.
+    bool prepared = false;
+    for (unsigned int i = 0; i < MAX_NUM_3DMARKERS; ++i) {
+        const auto& marker = C3dMarkers::m_aMarkerArray[i];
+        if (static_cast<unsigned int>(marker.m_nIdentifier) == kGpsMarkerId && marker.m_pAtomic
+            && marker.m_bMustBeRenderedThisFrame) { prepared = true; break; }
+    }
+    if (checkpointChanged) {
+        for (unsigned int i = 0; i < MAX_NUM_3DMARKERS; ++i) {
+            auto& marker = C3dMarkers::m_aMarkerArray[i];
+            if (static_cast<unsigned int>(marker.m_nIdentifier) == kGpsMarkerId) {
+                marker.m_bIsUsed = false; marker.m_bMustBeRenderedThisFrame = false;
+            }
+        }
+    }
+    if (!prepared || checkpointChanged) C3dMarkers::PlaceMarkerSet(kGpsMarkerId, MARKER3D_CYLINDER, checkpointPosition, 3.0f,
+        255, 0, 0, 228, 2048, 0.1f, 0);
+    // PlaceMarker marks the object as used, but GTA normally sets the active
+    // render flag in C3dMarkers::Update. Our HUD/scene calls run after that
+    // update, so explicitly submit only our own checkpoint for this pass.
+    for (unsigned int i = 0; i < MAX_NUM_3DMARKERS; ++i) {
+        auto& marker = C3dMarkers::m_aMarkerArray[i];
+        if (static_cast<unsigned int>(marker.m_nIdentifier) == kGpsMarkerId && marker.m_pAtomic
+            && marker.m_nType == MARKER3D_CYLINDER) marker.m_bMustBeRenderedThisFrame = true;
+    }
 #endif
 }
 } // namespace keybinder

@@ -1,0 +1,11 @@
+{
+  "revision": "v0.1.1-r18",
+  "checks": 246,
+  "failures": 0,
+  "hard_cancel_during_extraction": true,
+  "verified_download_kept": true,
+  "retry_uses_cache_without_network": true,
+  "all_files_verified": 236,
+  "retry_seconds": 4.09,
+  "personal_documents_modified": false
+}

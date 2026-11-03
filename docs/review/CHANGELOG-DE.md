@@ -1026,3 +1026,33 @@ Live-Tests dieser beiden Todesursachen werden nicht behauptet.
 - Neue GPS-/Radar-Regressionsprüfungen, native Installer-Tests mit echtem
   HTTPS-Download und vier echte Forum-Öffnungen desselben anonymen Profils.
   Keine Anmeldung/Beiträge automatisch ausgeführt, kein GTA-Live-Test behauptet.
+
+## 24. Nachtrag r18 – 3. November 2026
+
+- Abhängigkeit der Browser-/GPS-Koordination vom Game-Process-Hook entfernt:
+  Installer und Browser laufen über Render/HUD weiter, GPS wird direkt beim
+  Navigieren erzeugt und über gerenderte Bilder aktualisiert.
+- Installer-Ready als fertigen Dateistand auswerten, ohne auf Prozessende und
+  temporäre Dateibereinigung zu warten. Anzeige bis dahin höchstens 99 Prozent.
+- Abbrechen beendet den eigenen Installer und räumt den Zustand unmittelbar
+  auf. Verlassenen versteckten Zustand beim erneuten `/forum` ebenfalls lösen.
+- Fertiges geprüftes Downloadarchiv bei abgebrochenem Entpacken aufheben und
+  beim nächsten Versuch ohne erneuten Netzdownload verwenden.
+- SHA-256 während des Entpackens statt zusätzlicher kompletter Dateileseläufe.
+  Unveränderte geprüfte Dateien anhand Größe/Änderungszeit schnell wiederverwenden.
+- Normale native rote GTA-Checkpoint-Erzeugung und Bodenplatzierung verwendet.
+  Zielwechsel sofort übernehmen, vorhandene Minimap-/Fremdmarkerprüfung erhalten.
+- Bisherige Komponententests erfassten die ausschließliche Game-Process-
+  Abhängigkeit nicht. Neue Tests treiben Browser/GPS ausdrücklich über Render.
+- Tatsächlichen Installer mit 15 Sekunden verzögertem Ende nach Ready getestet:
+  Forum öffnet vor diesem Prozessende. Abbruch und unmittelbarer Retry geprüft.
+- Produktiven GPS-Adapter mit GTA-Strukturen und ersetzten Engine-Aufrufen
+  isoliert geprüft. Ein Sichttest im laufenden Spiel wird getrennt behandelt.
+- ZIP-Bibliotheks-Lizenz zusätzlich in der einzelnen ASI als Ressource sowie
+  im Paket mitgeliefert; weiterhin ist kein Browserordner manuell erforderlich.
+
+- Eigenen Checkpoint ausdrücklich für den aktuellen Renderdurchlauf freigeben. GTA setzt beim normalen Anlegen zunächst nur den Belegt-Status; ohne den separaten aktiven Renderstatus bleibt er sonst unsichtbar. Test bildet das echte Verhalten jetzt nach.
+
+- Auf zusätzlichen Nutzerwunsch `/afk` beim Öffnen des Forumfensters und `/back` beim Schließen ergänzt. Übergänge werden einmal ausgewertet, einschließlich ESC, Button, Einrichtungsabbruch und Fehler.
+
+Der Nutzer bestätigte nach Einspielen des vorläufigen r18-Stands, dass der angefragte Forum-/GPS-Test funktioniert. Das ist vom anschließenden Zusatz der expliziten Renderfreigabe und der neuen AFK-/Back-Umschaltung zu unterscheiden. Die Bestätigung wird mit der tatsächlich getesteten ASI-Prüfsumme separat dokumentiert; keine Rohlogs oder privaten Profile werden veröffentlicht.

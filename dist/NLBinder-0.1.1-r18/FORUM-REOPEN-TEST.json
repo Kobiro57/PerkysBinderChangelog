@@ -1,0 +1,16 @@
+{
+  "native_x86_controller_launched_x64_cef": true,
+  "real_forum_rendered": true,
+  "offscreen_frames": 14,
+  "clean_async_shutdown": true,
+  "same_profile_open_cycles": 4,
+  "automatic_setup_from_embedded_installer": true,
+  "queued_and_early_reopen_checked": true,
+  "render_only_polling_without_game_process": true,
+  "ready_handoff_before_delayed_installer_exit": true,
+  "cancel_then_immediate_retry": true,
+  "forum_afk_back_lifecycle_checked": true,
+  "forum_afk_back_pairs": 6,
+  "isolated_anonymous_profile": true,
+  "login_or_post_submitted": false
+}

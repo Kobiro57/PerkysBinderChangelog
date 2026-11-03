@@ -13,8 +13,8 @@ kernel.CreateFileMappingW.argtypes=[w.HANDLE,c.c_void_p,w.DWORD,w.DWORD,w.DWORD,
 kernel.MapViewOfFile.argtypes=[w.HANDLE,w.DWORD,w.DWORD,w.DWORD,c.c_size_t];kernel.MapViewOfFile.restype=c.c_void_p
 kernel.UnmapViewOfFile.argtypes=[c.c_void_p];kernel.CloseHandle.argtypes=[w.HANDLE]
 class Progress(c.Structure):
-    _fields_=[('magic',c.c_uint32),('bytes',c.c_uint32),('phase',c.c_int32),('percent',c.c_int32),('cancel',c.c_int32),('error',c.c_char*256)]
-assert c.sizeof(Progress)==276
+    _fields_=[('magic',c.c_uint32),('bytes',c.c_uint32),('phase',c.c_int32),('percent',c.c_int32),('cancel',c.c_int32),('heartbeat',c.c_int32),('downloadedKiB',c.c_int32),('error',c.c_char*256)]
+assert c.sizeof(Progress)==284
 checks=0;cases=[]
 def check(ok,text):
     global checks
@@ -58,6 +58,7 @@ try:
     runtime=root/LOCK['runtime_id'];stamp=(runtime/'NLBinderBrowser.exe').stat().st_mtime_ns
     phases=run('already installed without a download',root,['--archive',BASE/'does-not-exist.zip'])
     check(3 not in phases and (runtime/'NLBinderBrowser.exe').stat().st_mtime_ns==stamp,'Existing good files must be reused')
+    check((runtime/'.verified-runtime').is_file(),'Cached verification receipt missing')
     file=runtime/'CEF-README.txt';data=file.read_bytes();file.write_bytes(bytes([data[0]^1])+data[1:])
     run('repair same-size damaged file',root,['--archive',R/'dist'/LOCK['asset']])
     check(bool(list(root.glob(LOCK['runtime_id']+'.previous-*'))),'Damaged old runtime retained as backup')
@@ -69,10 +70,10 @@ try:
     check(not (rejected/LOCK['runtime_id']).exists(),'Bad archive must not become an active runtime')
     cancelled=BASE/'cancelled'/'Browser';run('cancel before installation',cancelled,['--archive',R/'dist'/LOCK['asset']],success=False,cancel=True)
     check(not (cancelled/LOCK['runtime_id']).exists(),'Cancelled setup must not become active')
-    result={'revision':'v0.1.1-r17','checks':checks,'failures':0,'real_public_https_download':True,'archive_sha256':LOCK['archive_sha256'],
+    result={'revision':'v0.1.1-r18','checks':checks,'failures':0,'real_public_https_download':True,'archive_sha256':LOCK['archive_sha256'],
         'native_installer':True,'unicode_and_spaces_in_paths':True,'all_runtime_files_verified':len(LOCK['files']),
         'cases':cases,'personal_documents_modified':False,'login_or_post_submitted':False}
-    (R/'build/revision17-setup-tests.json').write_text(json.dumps(result,indent=2)+'\n',encoding='utf-8')
+    (R/'build/revision18-setup-tests.json').write_text(json.dumps(result,indent=2)+'\n',encoding='utf-8')
     print(json.dumps(result,indent=2),flush=True)
 finally:
     # Only the uniquely generated fixture directory inside this build root.

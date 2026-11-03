@@ -1,0 +1,8 @@
+{
+  "checks": 16,
+  "failures": 0,
+  "production_adapter_code": true,
+  "gta_structures_with_replaced_engine_calls": true,
+  "world_checkpoint_and_radar_checked": true,
+  "live_gta_gameplay_test": false
+}
