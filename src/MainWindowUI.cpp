@@ -918,7 +918,7 @@ void MainWindowUI::RenderSidebar() {
         }
         ImGui::PushStyleColor(ImGuiCol_Text, theme.GetColor(ThemeColorRole::TextMuted));
         ImGui::SetWindowFontScale(smallFontScale);
-        ImGui::TextUnformatted("NLBinder v." NLBINDER_VERSION " by KOBiRO");
+        ImGui::TextUnformatted("NLBinder v." NLBINDER_VERSION " by " NLBINDER_CREDITS);
         ImGui::SetWindowFontScale(1.0f);
         ImGui::PopStyleColor();
     }

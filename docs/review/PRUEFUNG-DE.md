@@ -1,6 +1,13 @@
 # Hinweise zur Prüfung durch die Projektleitung
 
-## Aktueller Stand r19 – 9. November 2026
+## Aktueller Stand v0.1.2 / r20 – 9. November 2026
+
+Version, Urheberhinweise und transparente Forum-Einrichtung sind im
+[r20-Prüfumfang](r20-PRUEFUNG-DE.md) und
+[maschinellen Nachweis](r20-validation.json) dokumentiert.
+Die historischen Testergebnisse bleiben nachstehend erhalten.
+
+## Vorheriger Stand r19 – 9. November 2026
 
 Der aktuelle Prüfumfang des Drogen-Cooldown-/Nachwirkungs-Overlays
 steht in [r19-PRUEFUNG-DE.md](r19-PRUEFUNG-DE.md), die Ergebnisse

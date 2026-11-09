@@ -1083,3 +1083,22 @@ Der Nutzer bestätigte nach Einspielen des vorläufigen r18-Stands, dass der ang
 - Gezielte Timer-, Settings- und Overlay-/Move-Prüfungen ergänzt. Tatsächliche
   Prüfergebnisse stehen im separaten r19-Nachweis; früheren Browser-/GPS-Testumfang
   nicht als neu ausgeführten r19-Live-Test darstellen.
+
+## 26. Nachtrag v0.1.2 / r20 – 9. November 2026
+
+- Lokale Startmeldung auf „NLBinder v.0.1.2 by perkys & edited by KOBiRO wurde
+  erfolgreich gestartet!“ geändert; bestehende Farben beibehalten.
+- Version und Credits zentral definiert und konsistent auch im Hauptmenü und
+  Startprotokoll verwendet. Bisherigen Funktionsstand einschließlich r19 erhalten.
+- Neuen vollständigen Desktop-Export NLBinder-v0.1.2 mit kompletter Binder-Quelle,
+  fertiger NLBinder.asi und Gesamt-Changelog vorgesehen; ältere Ordner erhalten.
+- Postbaren Forum-Changelog, ausführliche Beschreibung der /forum-Einrichtung,
+  Speicherorte und vollständige Runtime-Dateiliste mit Größen und SHA-256 ergänzt.
+- Fokussierten Prüfordner mit den eigenen Browser-/Installer-Originalquellen,
+  Protokollen, Buildhilfen, Downloadmanifest und ZIP-Bibliothek zusammengestellt.
+- Eigenen Binder-Code klar von vorcompilierter Chromium-/CEF-Runtime abgegrenzt;
+  Herkunft, offizielle Quellcode-Verweise und Lizenzangaben dokumentiert.
+- Der Browserstand cef156-r1 bleibt unverändert. Persönliche Browserprofile,
+  Einstellungen, Zugangsdaten und Chatlogs werden nicht mitverteilt.
+- Tatsächlich ausgeführte automatisierte Prüfungen und ASI-Prüfsummen getrennt
+  dokumentiert; keinen noch nicht erfolgten GTA-Live-Test behauptet.

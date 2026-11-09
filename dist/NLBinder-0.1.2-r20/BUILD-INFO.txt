@@ -1,0 +1,21 @@
+﻿NLBinder v.0.1.2 by perkys & edited by KOBiRO (r20)
+NLBinder.asi (x86): 18866176 Bytes
+SHA256: e2302602093e31c0cb1588ead71f6b5232f44fd2ebc1d795d4e286199ac43d7e
+
+Gewuenschte farbige Startmeldung ist im finalen PE enthalten.
+Gesamttests und Release-Build: Exitcode 0. Nativer Reconnect-Worker: 83 Checks.
+ASI-Ressourcen 300/301 stimmen mit den gebauten nativen Helfern ueberein.
+Browser-/GPS-/Timerquellen und Browsermanifest sind gegen r19 unveraendert geprueft.
+Fruehere Browser-/GPS-Pruefungen sind separat historisch dokumentiert.
+Diese aufwendigen Integrationstests wurden fuer r20 nicht erneut ausgefuehrt.
+Ein neuer r20-GTA-Live-Test wird nicht behauptet.
+
+FORUM-INSTALLATION.txt beschreibt Einrichtung und Speicherorte. Die Dateiliste
+enthaelt alle 236 festgelegten Runtime-Dateien. FORUM-INSTALLATION-QUELLCODE
+enthaelt die eigenen Originalquellen und ihre SHA-256-Nachweise, keine privaten Profile.
+FORUM-CHANGELOG.txt ist der fertige Text fuer die Veroeffentlichung im Forum.
+Der vollstaendige Binder-Quellcode ist im neuen Desktop-Ordner und auf GitHub enthalten.
+Der komplette Drittanbieter-Chromium-/CEF-Upstreamcode wird nicht als enthalten ausgegeben.
+
+Nur NLBinder.asi bei beendetem GTA ersetzen. Browserstand unveraendert: cef156-r1.
+Browser-Download SHA256: 01fc7f1d4dcec644a191e9c63da7088a73aa81a63c9a4c207001f7038a70ff45

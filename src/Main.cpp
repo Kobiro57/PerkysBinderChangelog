@@ -55,6 +55,7 @@
 #include "../include/ToastNotification.h"
 #include "../include/TextureManager.h"
 #include "../include/ThemeManager.h"
+#include "../include/Version.h"
 
 using namespace plugin;
 
@@ -438,7 +439,7 @@ public:
         // Enable info logging (change to Debug for verbose output)
         keybinder::Logger::SetMinLevel(keybinder::LogLevel::Info);
         
-        keybinder::Logger::Info("NLBinder v0.1.1 by KOBiRO - SA-MP 0.3.DL Keybinder starting up");
+        keybinder::Logger::Info("NLBinder v." NLBINDER_VERSION " by " NLBINDER_CREDITS " - SA-MP 0.3.DL Keybinder starting up");
         keybinder::Logger::Info("Crash handler installed");
 
         if (!keybindManager_.Load(&settingsManager_)) {

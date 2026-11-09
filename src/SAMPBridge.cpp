@@ -1,5 +1,6 @@
 #include "../include/NativePlayerHealth.h"
 #include "../include/SAMPBridge.h"
+#include "../include/Version.h"
 
 #include <algorithm>
 #include <array>
@@ -1449,7 +1450,7 @@ bool SAMPBridge::SendStartupMessage() const {
         return false;
     }
 
-    const std::string line1 = "{33CCFF}[NLBinder]{FFFFFF} NLBinder v.0.1.1 by KOBiRO wurde {00CC00}erfolgreich{FFFFFF} gestartet!";
+    const std::string line1 = "{33CCFF}[NLBinder]{FFFFFF} NLBinder v." NLBINDER_VERSION " by " NLBINDER_CREDITS " wurde {00CC00}erfolgreich{FFFFFF} gestartet!";
     const std::string encodedLine1 = ConvertUtf8ToGameEncoding(line1);
     AddMessageHook(chat, kStartupMessageColor, encodedLine1.c_str());
 

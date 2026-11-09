@@ -1,42 +1,37 @@
-# PerkysBinderChangelog
+# NLBinder – PerkysBinderChangelog
 
-Aktueller Stand: **NLBinder v.0.1.1 by KOBiRO, r19**.
-Ursprüngliche Urheberhinweise und bisherige Veröffentlichungen bleiben erhalten.
+Aktueller Stand: **NLBinder v.0.1.2 by perkys & edited by KOBiRO**, interne Revision r20.
+Originalimport, bisherige Änderungen und frühere Revisionspatches bleiben erhalten.
 
-r19 ergänzt unter Online → Overlay-Einstellungen → Dauerhaft direkt unter
-Ausdauer ein aktivierbares „Use Cooldown & Nachwirkung“-Overlay. Eigene
-Konsumaktionen starten unabhängige Countdown-Zeilen in Sekunden; die Abklingzeit
-beginnt parallel zum Cooldown. Nach dem Cooldown kommt einmalig eine lokale
-Bereit-Meldung. Die Anzeige nutzt denselben Stil und Move-Modus mit ESC wie die
-vorhandenen Overlays. Ohne aktive Timer bleibt sie unsichtbar; im Move-Modus
-hilft eine Vorschau beim Positionieren.
+Version und Urheberhinweise sind in Startmeldung, Hauptmenü und Startprotokoll
+vereinheitlicht. Der bisherige Funktionsstand ist enthalten. Zusätzlich liegen
+ein fertiger Forum-Veröffentlichungstext, ein vollständiger Gesamt-Changelog
+und die gesondert prüfbaren Quellen und Dateilisten der /forum-Einrichtung bei.
 
-## Prüfung und Quellcode
+## Herunterladen und prüfen
 
+- [Fertiges v0.1.2-Paket](https://github.com/Kobiro57/PerkysBinderChangelog/releases/tag/v0.1.2-r20)
+- [NLBinder.asi](dist/NLBinder-0.1.2-r20/NLBinder.asi)
+- [Bedienung](docs/NLBinder-0.1.2-r20-DE.md)
+- [Fertiger Text zum Posten im Forum](docs/FORUM-CHANGELOG-v0.1.2.txt)
 - [Vollständiger Changelog](docs/review/CHANGELOG-DE.md), auch [als TXT](docs/CHANGELOG-GESAMT.txt)
-- [Bedienung und alle Zeiten](docs/NLBinder-0.1.1-r19-DE.md)
-- [Tatsächlicher r19-Prüfumfang](docs/review/r19-PRUEFUNG-DE.md)
-- [Maschinenlesbarer r19-Nachweis](docs/review/r19-validation.json)
+- [Was /forum installiert und wo Daten liegen](docs/FORUM-INSTALLATION-DE.md)
+- [Alle 236 Runtime-Dateien mit Größe und SHA-256](docs/FORUM-DATEILISTE.txt)
+- [Fokussierter eigener Installer-/Browser-Quellcode](dist/NLBinder-0.1.2-r20/FORUM-INSTALLATION-QUELLCODE/README.md)
+- [Tatsächlicher aktueller Prüfumfang](docs/review/r20-PRUEFUNG-DE.md)
+- [Maschineller Prüfnachweis](docs/review/r20-validation.json)
+- [ASI und eingebettete Helfer](dist/NLBinder-0.1.2-r20/PRUEFBERICHT.json)
+- [Änderungen seit r19](https://github.com/Kobiro57/PerkysBinderChangelog/compare/v0.1.1-r19...v0.1.2-r20)
 - [Dateivergleich zum Original](docs/review/DATEIVERGLEICH.md)
 - [Abhängigkeiten und Lizenzen](docs/review/DEPENDENCIES.md)
-- [Änderungen seit r18](https://github.com/Kobiro57/PerkysBinderChangelog/compare/v0.1.1-r18...v0.1.1-r19)
-- [Alle Programmänderungen](https://github.com/Kobiro57/PerkysBinderChangelog/compare/build-dependencies-baseline...v0.1.1-r19)
 
-Vollständige Quellen unter src/, include/, browser/, res/, tests/, tools/ und
-third_party/. Originalimport, SDK-Basis und frühere Revisionspatches bleiben
-unverändert nachvollziehbar. Keine persönlichen Laufzeitdateien enthalten.
+Alle Binder-Quellen stehen unter src/, include/, browser/, res/, tests/, tools/
+und third_party/. Der gesonderte Prüfordner enthält die eigenen Installations-
+und Browserquellen samt Herkunfts-/Lizenzangaben; vollständiger Chromium-/CEF-
+Upstreamcode wird nicht als beigefügter Binder-Code ausgegeben.
 
-## Fertiger Binder
-
-- [r19-Paket herunterladen](https://github.com/Kobiro57/PerkysBinderChangelog/releases/tag/v0.1.1-r19)
-- [NLBinder.asi](dist/NLBinder-0.1.1-r19/NLBinder.asi)
-- [Installation und Bedienung](dist/NLBinder-0.1.1-r19/LIESMICH.md)
-- [Build- und Prüfangaben](dist/NLBinder-0.1.1-r19/BUILD-INFO.txt)
-- [ASI und eingebettete Helfer](dist/NLBinder-0.1.1-r19/PRUEFBERICHT.json)
-
-GTA vollständig beenden, ASI ersetzen und neu starten. Der Browser wird beim
-ersten /forum weiterhin automatisch unter Dokumente eingerichtet. Frühere
-Browser-/GPS-Integrationstests bleiben getrennt dokumentiert; ein r19-Live-Test
-wird erst nach tatsächlicher Beobachtung als bestanden angegeben.
+GTA vollständig schließen, ASI ersetzen und neu starten. Der festgelegte
+Browserstand cef156-r1 wird weiterverwendet. Persönliche Laufzeitdaten werden
+nicht mitgeliefert. Ein noch nicht erfolgter neuer GTA-Live-Test wird nicht behauptet.
 
 [Ursprüngliche Beschreibung](docs/ORIGINAL-README.md) · [Build-Anleitung](docs/BUILD-README.md)

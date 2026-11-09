@@ -1,0 +1,17 @@
+ include/Version.h                         |   3 +-
+ src/Main.cpp                              |   3 +-
+ src/MainWindowUI.cpp                      |   2 +-
+ src/SAMPBridge.cpp                        |   3 +-
+ tools/document_revision20.py              | 174 +++++++++++++++++++
+ tools/export_forum_installation_review.py | 189 +++++++++++++++++++++
+ tools/export_full_changelog.py            |   6 +-
+ tools/export_source_bundle_revision20.py  | 192 +++++++++++++++++++++
+ tools/finalize_revision20.py              |  54 ++++++
+ tools/install_revision20.py               |  48 ++++++
+ tools/package_revision20.py               | 138 +++++++++++++++
+ tools/publish_revision20.py               | 272 ++++++++++++++++++++++++++++++
+ tools/report_revision20_log.py            |  10 ++
+ tools/run_revision20.bat                  |  74 ++++++++
+ tools/verify_revision20_artifact.py       |  58 +++++++
+ tools/verify_revision20_public.py         |  35 ++++
+ 16 files changed, 1254 insertions(+), 7 deletions(-)

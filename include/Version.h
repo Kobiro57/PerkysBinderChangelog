@@ -4,4 +4,5 @@
 */
 #pragma once
 
-#define NLBINDER_VERSION "0.1.1"
+#define NLBINDER_VERSION "0.1.2"
+#define NLBINDER_CREDITS "perkys & edited by KOBiRO"

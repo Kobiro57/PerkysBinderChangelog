@@ -2,22 +2,22 @@
   "original_archive": "NLBinder-master.zip",
   "original_sha256": "a328e78eea63420e9bfe9c084883100177fe0fd9c2d62c4fcaef38c0a44801e9",
   "original_archive_commit_comment": "92ce21971bee2d166d830e23ad20950f1dc98921",
-  "release": "v0.1.1-r19",
-  "release_asi_sha256": "638f889bb6ef5bb13c9382d7add3eba4e25bcacbec39c815379a195e844ed2b1",
+  "release": "v0.1.2-r20",
+  "release_asi_sha256": "e2302602093e31c0cb1588ead71f6b5232f44fd2ebc1d795d4e286199ac43d7e",
   "baseline_tag": "original-archive-92ce219",
   "baseline_commit": "2da75e6c54a098243bf00ab48d86c5e3ee3cd261",
-  "hash_scope": "Exact Git blob bytes in original tag versus staged r19 source; generated comparisons and release binaries excluded.",
+  "hash_scope": "Exact Git blob bytes in original tag versus staged r20 source; generated comparisons and release binaries excluded.",
   "generated_paths_excluded": [
     "docs/review/DATEIVERGLEICH.md",
     "docs/review/DIFFSTAT.txt",
-    "docs/review/REVISION19-DIFFSTAT.txt",
+    "docs/review/REVISION20-DIFFSTAT.txt",
     "docs/review/SOURCE-COMPARISON.json",
     "docs/review/first-party-changes.patch",
-    "docs/review/revision19-changes.patch"
+    "docs/review/revision20-changes.patch"
   ],
   "historical_revision_patches_excluded": true,
   "baseline_files": 2006,
-  "current_files": 5772,
+  "current_files": 5789,
   "changes": [
     {
       "path": ".gitattributes",
@@ -57,7 +57,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": "65b8ae3822ae33054ece73689612fc8afb758e59282f3ee1185ee5fce62e269d",
-      "after_sha256": "ea2fc5eff55f67aac7380456a0a10cc74447ddee189ff461af8cd575b2b732fd"
+      "after_sha256": "9b1051b311f64cf8db7078860c681336529de7cec54828ada3d87eb1cf186ca7"
     },
     {
       "path": "browser/CMakeLists.txt",
@@ -89,7 +89,31 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": null,
-      "after_sha256": "bea3ca72a3e5c41ae64e8056837778efb7f4b3ce57fce605fdc16b32917c5d0e"
+      "after_sha256": "314d967ae230c0a8d8da1a913bbe60365e30631b51af29d77c1532a504862d2e"
+    },
+    {
+      "path": "docs/FORUM-CHANGELOG-v0.1.2.txt",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "955bdd8e24bdf8b8328e4a1c857a6788ee037ef5a68586bf7cfcf1480bc96bc3"
+    },
+    {
+      "path": "docs/FORUM-DATEILISTE.txt",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "086f77875f4c293b314fb9c37eb2c15638571de87c3f72dac35e712acc64f34c"
+    },
+    {
+      "path": "docs/FORUM-INSTALLATION-DE.md",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "065b3829e5189b3580ffdbaed711e2103fc8b20bc54cef6b7873bbee207c4924"
     },
     {
       "path": "docs/NLBinder-0.1.1-DE.md",
@@ -244,6 +268,14 @@
       "after_sha256": "e67d052434e89a0060480f779c54695bef5568025e35c60462da128b7039dfc2"
     },
     {
+      "path": "docs/NLBinder-0.1.2-r20-DE.md",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "462404849ff8699b1c2ebcda756dd9eb80f1d6b7de5ce6ddcb4a75b435967787"
+    },
+    {
       "path": "docs/ORIGINAL-README.md",
       "status": "added",
       "dependency": false,
@@ -273,7 +305,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": null,
-      "after_sha256": "0f3a9c9f051a524fb7c0a01c0d3e196c9b4b0f03907d9761a1824faf4f8df306"
+      "after_sha256": "05d68c206d823f1e52006318ee2ce1e0cd0784e40129c493a2995736563afe29"
     },
     {
       "path": "docs/review/DEPENDENCIES.md",
@@ -289,7 +321,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": null,
-      "after_sha256": "0799feb78b30477232c9d44c1505ee014b9bf83ee6700c5d34b594414f9bcf28"
+      "after_sha256": "a8732090f33ece1fdb192afeed178d2012c86f362198ddde180e5bf9b165890f"
     },
     {
       "path": "docs/review/PUBLICATION.json",
@@ -297,7 +329,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": null,
-      "after_sha256": "b7f6ae7dfa0708da4a4ef254002769a777f4b22c63423156875c96665d0cb282"
+      "after_sha256": "f1f3d0d56f27f71caee102446395d1ac83a286f54129cf64ed0527f018abef71"
     },
     {
       "path": "docs/review/PUBLISHING-DE.md",
@@ -313,7 +345,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": null,
-      "after_sha256": "518d201414e00b8cebde6087f6906d377c639198f29452d219c3f41c011519bc"
+      "after_sha256": "0fe9dc81e5bb794b85cd8abcfbb9e2cd1a0c9d2198752b71d05c106ed0b21a38"
     },
     {
       "path": "docs/review/r10-validation.json",
@@ -418,6 +450,22 @@
       "line_endings_only": false,
       "before_sha256": null,
       "after_sha256": "bbec2a1dad954eaa90f207a3f18db873a9c33c8c342ac8bdd6349405e58fd309"
+    },
+    {
+      "path": "docs/review/r20-PRUEFUNG-DE.md",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "ef0e3b6aaf73308faff871a39ed8a4e24c2b35ba8edd5d018fc66a5edafac82c"
+    },
+    {
+      "path": "docs/review/r20-validation.json",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "ed07956ec4272238cbcc59d75c82e0e62e283876017943a1b166df677462fc09"
     },
     {
       "path": "docs/review/r4-validation.json",
@@ -1177,7 +1225,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": "75676a06a6943df58b89e7699ab0f350781bd7939bd3fea4e608b2fb68134f45",
-      "after_sha256": "766e2b796eb487545287e42ac8eca9c30268287279d90c9a8c271769d91c1f92"
+      "after_sha256": "a31a560c17b35d2be964b63b8c5910433ea194bfe5347802a6d83c6b5746ed4d"
     },
     {
       "path": "include/WeaponIconCatalog.h",
@@ -29553,7 +29601,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": "eb9f28895fa6b3b435282a6285e06fff924a252ab88bfe81ad90658a0a222781",
-      "after_sha256": "f7ffa1b765e45b1f4ceeefc7065535f0b7ac2bdcf553ab15d1b573206b25886a"
+      "after_sha256": "bd91391645e77c5c4e96d1f8f237591a835050f188e545c65f4592ddf2fffce5"
     },
     {
       "path": "src/MainWindowUI.cpp",
@@ -29561,7 +29609,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": "382276bfc63910a601b4b870386bd1b4b9499ef5234aa72332d7cd2662a50dd4",
-      "after_sha256": "3b4e2a8212a30e498a4fe5d82afb95ecaaf5d3cb1772c0952e1d00c3d8c709e2"
+      "after_sha256": "5f1ec1513c1c4871f9063da1a9226ce3646b8dffc64234e5d4c8f203c92d1317"
     },
     {
       "path": "src/NativeHudEditor.cpp",
@@ -29633,7 +29681,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": "d955624a2eb4a14103100e09a90ddbb5a7525ae8cc082665deadd324c08feef2",
-      "after_sha256": "31bbd4c34bac6fb47e0cead1d19418201c6824e3d2745d8695b3429b4ceba17d"
+      "after_sha256": "bc911f63fefc7306bebe59bf972c070d34ad5fea8bf27a9c667d012761989de6"
     },
     {
       "path": "src/SettingsManager.cpp",
@@ -30252,12 +30300,28 @@
       "after_sha256": "5eb995c484c74ac2ea75cdeddae37aceff06545b8fbc4b76ddea547850774c00"
     },
     {
+      "path": "tools/document_revision20.py",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "16c9ffafa5a6a71f9b5384c7d728f9cf0cbae4a6e0d88af8ba00e49bf0ba5a8e"
+    },
+    {
+      "path": "tools/export_forum_installation_review.py",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "835fbecda24a42954b69aabee5b72df9c0f110893786dafc70ab6b13ae11bc28"
+    },
+    {
       "path": "tools/export_full_changelog.py",
       "status": "added",
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": null,
-      "after_sha256": "8cd5fd7660e49aac35d3c5d6492ac5af365a27c30ab91ebb6377bf46aa68318d"
+      "after_sha256": "a646df753c2131d1b91fc32ca2ed558e967bd9d836e0be0a547e9c8d2a71d068"
     },
     {
       "path": "tools/export_source_bundle.py",
@@ -30274,6 +30338,14 @@
       "line_endings_only": false,
       "before_sha256": null,
       "after_sha256": "1c8814430a47c11c8228ce5aef0a8b012cdfded6d824f07f55e5d02db08c2328"
+    },
+    {
+      "path": "tools/export_source_bundle_revision20.py",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "3db5693f726394e0c235a1312b3a59c23c4f567de97a5a30f13ba6ed62efd579"
     },
     {
       "path": "tools/fetch_cef_runtime.py",
@@ -30316,6 +30388,14 @@
       "after_sha256": "941d45a1376ab83607d71305ccd0bfb46a0a14e4d2581f63301fd1e00ce871c8"
     },
     {
+      "path": "tools/finalize_revision20.py",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "f751a8cec3ec88cd6382d63c17b8f32dd19bc04659770472b5c6553f1a2715b7"
+    },
+    {
       "path": "tools/install_revision18.py",
       "status": "added",
       "dependency": false,
@@ -30330,6 +30410,14 @@
       "line_endings_only": false,
       "before_sha256": null,
       "after_sha256": "42ef37ad822de424e3788e726c454f034afdc76758dc0a6775529b71df047e96"
+    },
+    {
+      "path": "tools/install_revision20.py",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "cfd2330ad4deb4d9c31c8ac6d81be8d4d2bffcf0ae64dac6f068fb82857e21a4"
     },
     {
       "path": "tools/launch_samp_03dl.ps1",
@@ -30418,6 +30506,14 @@
       "line_endings_only": false,
       "before_sha256": null,
       "after_sha256": "494d625ee7014c0e77a96ce0b80fbbe1ca5866392339456f429fecba47e75f4f"
+    },
+    {
+      "path": "tools/package_revision20.py",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "0a331c552c127bc634558dffcbf0b7eb003a0e24b7faae73e5cd08dbe3643ce7"
     },
     {
       "path": "tools/package_revision4.ps1",
@@ -30532,6 +30628,14 @@
       "after_sha256": "a4962383081a763053d40ce816e9ffa313df945b99259bfa5465a32e51cba068"
     },
     {
+      "path": "tools/publish_revision20.py",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "57ecd80a13c08cc6ea884383c857f83b756b1112456ca45567437241236b82de"
+    },
+    {
       "path": "tools/record_gps_native_test.py",
       "status": "added",
       "dependency": false,
@@ -30572,6 +30676,14 @@
       "after_sha256": "68078cd96f527d637f18ce44ef287b0c54f62e79d232e13707eee6da1b805193"
     },
     {
+      "path": "tools/report_revision20_log.py",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "966f36ac16dc228b1563b78d8cd74b6219f097ef70ff4595c2c176aa61fe0b64"
+    },
+    {
       "path": "tools/run_revision16.bat",
       "status": "added",
       "dependency": false,
@@ -30602,6 +30714,14 @@
       "line_endings_only": false,
       "before_sha256": null,
       "after_sha256": "9a1af49b5456d7359af0c4ab932388ed57c4f176a48887fddd21f476df77a0d0"
+    },
+    {
+      "path": "tools/run_revision20.bat",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "0f302f35f54b70680db0a6651d903efc80ea1470910f6cdc8881006367e0dcf4"
     },
     {
       "path": "tools/run_tests.bat",
@@ -30746,6 +30866,22 @@
       "line_endings_only": false,
       "before_sha256": null,
       "after_sha256": "9790061e04b4c1316d12385a35f47748213b2f30567f8f74e852efe4ff76346a"
+    },
+    {
+      "path": "tools/verify_revision20_artifact.py",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "c5fb05a18d68e4981de305ed5fd04f5d9f8623bdb66ae94c9be9932c342f9bad"
+    },
+    {
+      "path": "tools/verify_revision20_public.py",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "a4e9339e0bc8a2d6cbeaa8602fd80c9ca870092128d18f61222b55719ec5d6bc"
     },
     {
       "path": "tools/verify_revision4_artifact.py",
