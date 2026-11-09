@@ -1,0 +1,18 @@
+﻿NLBinder v0.1.1-r19
+NLBinder.asi (x86): 18865664 Bytes
+SHA256: 638f889bb6ef5bb13c9382d7add3eba4e25bcacbec39c815379a195e844ed2b1
+
+Use Cooldown & Nachwirkung: lokale eigene Einnahmen, parallele Echtzeit-Timer
+in Sekunden, eigene Overlay-Position, bestehender Move-Modus mit ESC-Speichern.
+Ohne aktive Timer unsichtbar; im Move-Modus eine verschiebbare Vorschau.
+Gesamttests und Release-Build Exitcode 0. DrugUseTracker: 141 Checks.
+Online Settings: 262 Checks. Overlay Renderer: 256 Checks.
+Nativer Reconnect-Helfer: 83 Checks, 6 Nova-Faelle.
+ASI-Ressourcen 300/301 stimmen mit den gebauten nativen Helfern ueberein.
+Browser-/GPS-/Helferquellen und Browsermanifest sind gegen r18 unveraendert geprueft.
+Die frueheren Browser-Download-/GPS-Tests stehen getrennt unter docs/review/r18-validation.json.
+Diese Integrationstests wurden fuer r19 nicht erneut ausgefuehrt. Kein r19-GTA-Live-Test behauptet.
+
+Nur NLBinder.asi bei beendetem GTA ersetzen. Browserdateien weiterhin automatisch
+unter Dokumente/GTA San Andreas User Files/NLBinder/Browser; kein Browserordner mitzusenden.
+Browser-Download SHA256: 01fc7f1d4dcec644a191e9c63da7088a73aa81a63c9a4c207001f7038a70ff45

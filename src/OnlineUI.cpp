@@ -973,8 +973,10 @@ void OnlineUI::RenderPersistentOverlaySettings() {
     if (UIComponents::Toggle("Ort anzeigen", &settings.online_location_overlay_enabled)) { PersistSettings(); ApplyLiveSettings(); }
     if (UIComponents::Toggle("Fortbewegungsmittel anzeigen", &settings.online_transport_overlay_enabled)) { PersistSettings(); ApplyLiveSettings(); }
     if (UIComponents::Toggle("Pedslots anzeigen", &settings.online_pedslots_overlay_enabled)) { PersistSettings(); ApplyLiveSettings(); }
-    if (UIComponents::Toggle("Ausdauer anzeigen", &settings.online_stamina_overlay_enabled)) { PersistSettings(); ApplyLiveSettings(); }
     if (ImGui::IsItemHovered()) { ImGui::SetTooltip("Anzahl anderer Spieler, die aktuell in deinem Stream geladen sind."); }
+    if (UIComponents::Toggle("Ausdauer anzeigen", &settings.online_stamina_overlay_enabled)) { PersistSettings(); ApplyLiveSettings(); }
+    if (UIComponents::Toggle("Use Cooldown & Nachwirkung anzeigen", &settings.online_drug_timers_overlay_enabled)) { PersistSettings(); ApplyLiveSettings(); }
+    if (ImGui::IsItemHovered()) { ImGui::SetTooltip("Zeigt Cooldown und Nachwirkung deines Drogenkonsums in Sekunden. Im Move-Modus wie die anderen Overlays verschiebbar."); }
     if (UIComponents::Toggle("Freunde anzeigen", &settings.online_friends_overlay_enabled)) { PersistSettings(); ApplyLiveSettings(); }
     if (UIComponents::Toggle("Feinde anzeigen", &settings.online_enemies_overlay_enabled)) { PersistSettings(); ApplyLiveSettings(); }
 
@@ -999,7 +1001,7 @@ void OnlineUI::RenderPersistentOverlaySettings() {
     UIComponents::Separator();
 
     if (currentStyleTarget_ == OnlinePersistentStyleTarget::GeneralOverlays) {
-        ImGui::TextWrapped("Gemeinsamer Stil f\xC3\xBC" "r eigene Fraktion, Gang-\xC3\x9C" "bersicht, Ort, Fortbewegungsmittel, Pedslots, Freunde-Radar und Feinde-Radar.");
+        ImGui::TextWrapped("Gemeinsamer Stil f\xC3\xBC" "r eigene Fraktion, Gang-\xC3\x9C" "bersicht, Ort, Fortbewegungsmittel, Pedslots, Ausdauer, Use Cooldown & Nachwirkung, Freunde-Radar und Feinde-Radar.");
         RenderPersistentOverlayStyleControls(
             settings.online_overlay_style,
             settings.online_overlay_opacity,

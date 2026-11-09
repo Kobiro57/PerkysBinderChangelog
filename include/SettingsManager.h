@@ -171,6 +171,10 @@ struct Settings {
     std::string online_stamina_overlay_anchor = "top_left";
     float online_stamina_overlay_offset_x = 12.0f;
     float online_stamina_overlay_offset_y = 320.0f;
+    bool online_drug_timers_overlay_enabled = false;
+    std::string online_drug_timers_overlay_anchor = "top_left";
+    float online_drug_timers_overlay_offset_x = 12.0f;
+    float online_drug_timers_overlay_offset_y = 520.0f;
     bool online_enabled = true;
     bool online_quick_overlay_enabled = true;
     int online_quick_overlay_hotkey = 0;

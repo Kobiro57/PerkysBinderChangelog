@@ -9,6 +9,7 @@
 #include <cstdio>
 #include <cmath>
 #include <cstring>
+#include <limits>
 #include <string>
 #include <vector>
 
@@ -617,6 +618,39 @@ bool TestSeparateRadarPositionsMigrateLegacyValuesAndRespectExplicitPlacements()
     return true;
 }
 
+bool TestDrugTimerOverlayDefaultsRoundtripAndInvalidCoordinates() {
+    SettingsManager defaults;
+    ASSERT_TRUE(!defaults.Get().online_drug_timers_overlay_enabled);
+    ASSERT_EQ(defaults.Get().online_drug_timers_overlay_anchor, std::string("top_left"));
+    ASSERT_EQ(defaults.Get().online_drug_timers_overlay_offset_x, 12.0f);
+    ASSERT_EQ(defaults.Get().online_drug_timers_overlay_offset_y, 520.0f);
+
+    auto& settings = defaults.GetMutable();
+    settings.online_drug_timers_overlay_enabled = true;
+    settings.online_drug_timers_overlay_anchor = "bottom_left";
+    settings.online_drug_timers_overlay_offset_x = 43.5f;
+    settings.online_drug_timers_overlay_offset_y = 1.25e-5f;
+    SettingsManager reloaded;
+    ASSERT_TRUE(reloaded.LoadFromJson(defaults.GetSettingsJson()));
+    ASSERT_TRUE(reloaded.Get().online_drug_timers_overlay_enabled);
+    ASSERT_EQ(reloaded.Get().online_drug_timers_overlay_anchor, std::string("bottom_left"));
+    ASSERT_EQ(reloaded.Get().online_drug_timers_overlay_offset_x, 43.5f);
+    ASSERT_NEAR(reloaded.Get().online_drug_timers_overlay_offset_y, 1.25e-5f, 0.0000001f);
+
+    reloaded.GetMutable().online_drug_timers_overlay_offset_x = std::numeric_limits<float>::quiet_NaN();
+    reloaded.GetMutable().online_drug_timers_overlay_offset_y = std::numeric_limits<float>::infinity();
+    ASSERT_TRUE(reloaded.LoadFromJson(R"({"online_drug_timers_overlay_anchor":"invalid"})"));
+    ASSERT_EQ(reloaded.Get().online_drug_timers_overlay_anchor, std::string("top_right"));
+    ASSERT_EQ(reloaded.Get().online_drug_timers_overlay_offset_x, 12.0f);
+    ASSERT_EQ(reloaded.Get().online_drug_timers_overlay_offset_y, 520.0f);
+
+    ASSERT_TRUE(reloaded.LoadFromJson(R"({"online_drug_timers_overlay_anchor":" BOTTOM_RIGHT ","online_drug_timers_overlay_offset_x":null,"online_drug_timers_overlay_offset_y":365})"));
+    ASSERT_EQ(reloaded.Get().online_drug_timers_overlay_anchor, std::string("bottom_right"));
+    ASSERT_EQ(reloaded.Get().online_drug_timers_overlay_offset_x, 12.0f);
+    ASSERT_EQ(reloaded.Get().online_drug_timers_overlay_offset_y, 365.0f);
+    return true;
+}
+
 int RunOnlineSettingsTests() {
     std::printf("\n=== Online Settings Tests ===\n");
     RUN_TEST(TestOnlineDefaultsWhenEmpty);
@@ -643,6 +677,7 @@ int RunOnlineSettingsTests() {
     RUN_TEST(TestPlayerMarkersNormalizeDeduplicateAndLimitEntries);
     RUN_TEST(TestLegacyRadarSettingsOnlyMigrateDisplaySelections);
     RUN_TEST(TestSeparateRadarPositionsMigrateLegacyValuesAndRespectExplicitPlacements);
+    RUN_TEST(TestDrugTimerOverlayDefaultsRoundtripAndInvalidCoordinates);
     std::printf("Online Settings: %d passed, %d failed\n", g_state.passed, g_state.failed);
     return g_state.failed;
 }

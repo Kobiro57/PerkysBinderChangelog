@@ -549,6 +549,7 @@
     <ClInclude Include="include\OnlineOverlayRenderer.h" />
     <ClInclude Include="include\OnlineEventDetector.h" />
     <ClInclude Include="include\OnlineOverlayController.h" />
+    <ClInclude Include="include\DrugUseTracker.h" />
     <ClInclude Include="include\\StatsStorage.h" />
     <ClInclude Include="include\\JobsTypes.h" />
     <ClInclude Include="include\\JobRegistry.h" />

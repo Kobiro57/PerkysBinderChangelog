@@ -14,7 +14,7 @@ index 88480d9..9e7a6cb 100644
  IDR_FONT_MATERIAL_SYMBOLS RCDATA "third_party\\assets\\fonts\\icons\\MaterialSymbols.ttf"
  IDR_IMAGE_NL_LOGO RCDATA "res\\NLLogo.png"
 diff --git a/Keybinder.vcxproj b/Keybinder.vcxproj
-index 41dbd9f..2743c0f 100644
+index 41dbd9f..9f91555 100644
 --- a/Keybinder.vcxproj
 +++ b/Keybinder.vcxproj
 @@ -53,14 +53,14 @@
@@ -82,7 +82,15 @@ index 41dbd9f..2743c0f 100644
      <ClCompile Include="src\ActionExecutor.cpp" />
      <ClCompile Include="src\InputManager.cpp" />
      <ClCompile Include="src\Logger.cpp" />
-@@ -553,10 +570,20 @@
+@@ -532,6 +549,7 @@
+     <ClInclude Include="include\OnlineOverlayRenderer.h" />
+     <ClInclude Include="include\OnlineEventDetector.h" />
+     <ClInclude Include="include\OnlineOverlayController.h" />
++    <ClInclude Include="include\DrugUseTracker.h" />
+     <ClInclude Include="include\\StatsStorage.h" />
+     <ClInclude Include="include\\JobsTypes.h" />
+     <ClInclude Include="include\\JobRegistry.h" />
+@@ -553,10 +571,20 @@
  
    <ItemGroup>
      <ResourceCompile Include="Keybinder.rc">
@@ -859,6 +867,169 @@ index c03c239..0748883 100644
  
  private:
      std::atomic<bool> initialized_;
+diff --git a/include/DrugUseTracker.h b/include/DrugUseTracker.h
+new file mode 100644
+index 0000000..b09c11e
+--- /dev/null
++++ b/include/DrugUseTracker.h
+@@ -0,0 +1,157 @@
++#pragma once
++
++#include <array>
++#include <chrono>
++#include <cmath>
++#include <string>
++#include <vector>
++
++namespace keybinder {
++
++struct DrugTimerDisplay {
++    std::string displayName;
++    int cooldownSeconds = 0;
++    int aftereffectSeconds = 0;
++    int cooldownDuration = 0;
++    int aftereffectDuration = 0;
++};
++
++// The server supplies consumption events; deadlines use a monotonic clock,
++// independently of render frequency. Only the caller's own actor is accepted.
++class DrugUseTracker {
++public:
++    using Clock = std::chrono::steady_clock;
++    using TimePoint = Clock::time_point;
++
++    bool ObserveChat(const std::string& line, const std::string& localName, TimePoint now) {
++        if (localName.empty()) return false;
++        const std::string text = NormalizeLine(line);
++        const std::string prefix = localName + " nimmt ";
++        const std::string suffix = " zu sich.";
++        if (text.size() <= prefix.size() + suffix.size()
++            || text.compare(0, prefix.size(), prefix) != 0
++            || text.compare(text.size() - suffix.size(), suffix.size(), suffix) != 0) return false;
++
++        std::string drug = text.substr(prefix.size(), text.size() - prefix.size() - suffix.size());
++        for (char& ch : drug) if (ch >= 'A' && ch <= 'Z') ch += 'a' - 'A';
++        if (drug == "ectasy") drug = "ecstasy";
++        const auto& definitions = Definitions();
++        for (std::size_t index = 0; index < definitions.size(); ++index) {
++            const auto& definition = definitions[index];
++            if (drug != definition.key) continue;
++            auto& use = uses_[index];
++            // Some chat hooks can observe the same server action twice. Later
++            // legitimate consumption restarts only the matching drug's clocks.
++            if (use.observed && now >= use.started && now - use.started < std::chrono::seconds(1)) return false;
++            use.observed = true;
++            use.started = now;
++            use.cooldownDeadline = now + std::chrono::seconds(definition.cooldown);
++            use.aftereffectDeadline = now + std::chrono::seconds(definition.aftereffect);
++            use.readyPending = definition.cooldown > 0;
++            return true;
++        }
++        return false;
++    }
++
++    std::vector<DrugTimerDisplay> Snapshot(TimePoint now) const {
++        std::vector<DrugTimerDisplay> result;
++        const auto& definitions = Definitions();
++        for (std::size_t index = 0; index < definitions.size(); ++index) {
++            const auto& use = uses_[index];
++            if (!use.observed) continue;
++            const auto& definition = definitions[index];
++            const int cooldown = Remaining(use.cooldownDeadline, now, definition.cooldown);
++            const int aftereffect = Remaining(use.aftereffectDeadline, now, definition.aftereffect);
++            if (cooldown == 0 && aftereffect == 0) continue;
++            result.push_back({definition.name, cooldown, aftereffect, definition.cooldown, definition.aftereffect});
++        }
++        return result;
++    }
++
++    // A snapshot never consumes these notifications, including when both
++    // timers have expired between two rendered frames.
++    std::vector<std::string> TakeReadyDrugs(TimePoint now) {
++        std::vector<std::string> result;
++        const auto& definitions = Definitions();
++        for (std::size_t index = 0; index < definitions.size(); ++index) {
++            auto& use = uses_[index];
++            if (use.observed && use.readyPending && now >= use.cooldownDeadline) {
++                use.readyPending = false;
++                result.emplace_back(definitions[index].name);
++            }
++        }
++        return result;
++    }
++
++    void Reset() { uses_ = {}; }
++
++private:
++    struct Definition {
++        const char* key;
++        const char* name;
++        int cooldown;
++        int aftereffect;
++    };
++    struct ActiveUse {
++        bool observed = false;
++        bool readyPending = false;
++        TimePoint started{};
++        TimePoint cooldownDeadline{};
++        TimePoint aftereffectDeadline{};
++    };
++
++    static const std::array<Definition, 7>& Definitions() {
++        static const std::array<Definition, 7> definitions{{
++            {"kokain", "Kokain", 120, 120},
++            {"heroin", "Heroin", 120, 60},
++            {"speed", "Speed", 180, 180},
++            {"ecstasy", "Ecstasy", 180, 60},
++            {"cannabis", "Cannabis", 0, 40},
++            {"adrenalin", "Adrenalin", 45, 0},
++            {"morphium", "Morphium", 45, 45},
++        }};
++        return definitions;
++    }
++
++    static int Remaining(TimePoint deadline, TimePoint now, int duration) {
++        if (duration <= 0 || now >= deadline) return 0;
++        // Clamp to the configured duration if a malformed test/input clock
++        // predates consumption. The production clock cannot go backwards.
++        const double seconds = std::chrono::duration<double>(deadline - now).count();
++        return seconds >= duration ? duration : static_cast<int>(std::ceil(seconds));
++    }
++
++    static bool IsHex(char value) {
++        return (value >= '0' && value <= '9') || (value >= 'a' && value <= 'f') || (value >= 'A' && value <= 'F');
++    }
++
++    static std::string NormalizeLine(const std::string& line) {
++        std::string result;
++        result.reserve(line.size());
++        for (std::size_t offset = 0; offset < line.size();) {
++            if (line[offset] == '{') {
++                const auto close = line.find('}', offset + 1);
++                if (close != std::string::npos && (close - offset == 7 || close - offset == 9)) {
++                    bool valid = true;
++                    for (std::size_t digit = offset + 1; digit < close; ++digit) valid = valid && IsHex(line[digit]);
++                    if (valid) { offset = close + 1; continue; }
++                }
++            }
++            result.push_back(line[offset++]);
++        }
++        const auto first = result.find_first_not_of(" \t\r\n");
++        if (first == std::string::npos) return {};
++        result = result.substr(first, result.find_last_not_of(" \t\r\n") - first + 1);
++        if (result.size() >= 11 && result[0] == '[' && result[3] == ':' && result[6] == ':'
++            && result[9] == ']' && result[10] == ' ') {
++            bool digits = true;
++            for (const int index : {1, 2, 4, 5, 7, 8}) digits = digits && result[index] >= '0' && result[index] <= '9';
++            if (digits) result.erase(0, 11);
++        }
++        return result;
++    }
++
++    std::array<ActiveUse, 7> uses_{};
++};
++
++} // namespace keybinder
 diff --git a/include/ForumAfkSession.h b/include/ForumAfkSession.h
 new file mode 100644
 index 0000000..6f0b805
@@ -2408,7 +2579,7 @@ index 97c5707..59fecea 100644
  
      // Gang buckets: Zivilisten first, then ascending alphabetical
 diff --git a/include/OnlineOverlayController.h b/include/OnlineOverlayController.h
-index f1e8acc..ae97106 100644
+index f1e8acc..cac90d2 100644
 --- a/include/OnlineOverlayController.h
 +++ b/include/OnlineOverlayController.h
 @@ -1,9 +1,14 @@
@@ -2426,7 +2597,7 @@ index f1e8acc..ae97106 100644
  namespace keybinder {
  
  class SettingsManager;
-@@ -26,6 +31,34 @@ enum class PersistentOverlayKind {
+@@ -26,6 +31,35 @@ enum class PersistentOverlayKind {
      OwnGang,
      GangsSummary,
      Wanted,
@@ -2436,6 +2607,7 @@ index f1e8acc..ae97106 100644
 +    Stamina,
 +    FriendsRadar,
 +    EnemiesRadar,
++    DrugTimers,
 +};
 +
 +struct OnlineMarkerPlayer {
@@ -2461,7 +2633,7 @@ index f1e8acc..ae97106 100644
  };
  
  // ---------------------------------------------------------------------------
-@@ -64,6 +97,9 @@ struct PersistentOverlayData {
+@@ -64,6 +98,9 @@ struct PersistentOverlayData {
      std::vector<std::string> playerNames; // deduped by id, sorted by name
      std::vector<PersistentOverlayCountRow> countRows; // summary rows: label + online count
      int playerCount = 0;
@@ -2471,7 +2643,7 @@ index f1e8acc..ae97106 100644
  };
  
  // ---------------------------------------------------------------------------
-@@ -86,6 +122,13 @@ public:
+@@ -86,6 +123,15 @@ public:
      const PersistentOverlayData& GetGangsOverlayData() const { return gangsOverlay_; }
      const PersistentOverlayData& GetWantedOverlayData() const { return wantedOverlay_; }
      const PersistentOverlayData& GetOwnGangOverlayData() const { return ownGangOverlay_; }
@@ -2479,13 +2651,15 @@ index f1e8acc..ae97106 100644
 +    const std::vector<OnlineMarkerState>& GetMarkerStates() const { return markerStates_; }
 +    const OnlineGameOverlayState& GetGameState() const { return gameState_; }
 +    void SetGameStateProvider(std::function<OnlineGameOverlayState()> provider);
++    void SetDrugTimerLines(std::vector<std::string> lines);
++    PersistentOverlayData GetDrugTimerOverlayPreview() const;
 +    static OnlineGameOverlayState CaptureGameState(SAMPBridge* bridge);
 +    static std::string NormalizeMarkerName(const std::string& name);
 +    static std::string ResolveMarkerAffiliation(const OnlineSnapshot& snapshot, const std::string& name);
  
      // Static helpers
      static OnlineOverlayAnchor ParseAnchor(const std::string& value);
-@@ -100,6 +143,7 @@ private:
+@@ -100,6 +146,7 @@ private:
      void UpdateOwnGangOverlay();
      void UpdateGangsOverlay();
      void UpdateWantedOverlay();
@@ -2493,7 +2667,7 @@ index f1e8acc..ae97106 100644
  
      // From the snapshot, find the bucket matching the local player's affiliation.
      const OnlineBucketSummary* FindLocalBucket(const OnlineSnapshot& snapshot) const;
-@@ -110,6 +154,13 @@ private:
+@@ -110,6 +157,14 @@ private:
      PersistentOverlayData ownGangOverlay_;
      PersistentOverlayData gangsOverlay_;
      PersistentOverlayData wantedOverlay_;
@@ -2504,6 +2678,7 @@ index f1e8acc..ae97106 100644
 +    std::function<OnlineGameOverlayState()> gameStateProvider_;
 +    float gameRefreshSeconds_ = 0.0f;
 +    StaminaGauge staminaGauge_;
++    std::vector<std::string> drugTimerLines_;
  
      // Cached settings
      bool localOverlayEnabled_ = false;
@@ -3457,7 +3632,7 @@ index 0000000..64d7800
 +
 +} // namespace keybinder
 diff --git a/include/SettingsManager.h b/include/SettingsManager.h
-index 5805c1c..265ac88 100644
+index 5805c1c..2939073 100644
 --- a/include/SettingsManager.h
 +++ b/include/SettingsManager.h
 @@ -8,6 +8,8 @@
@@ -3527,7 +3702,7 @@ index 5805c1c..265ac88 100644
      bool squaremap_enabled = false;
      std::string quickmap_radar_pack = "radar1";
      std::string fist_texture_path = "";
-@@ -118,6 +141,36 @@ struct Settings {
+@@ -118,6 +141,40 @@ struct Settings {
      std::vector<RssFeedConfig> rss_feeds;
  
      // Online feature settings
@@ -3561,10 +3736,14 @@ index 5805c1c..265ac88 100644
 +    std::string online_stamina_overlay_anchor = "top_left";
 +    float online_stamina_overlay_offset_x = 12.0f;
 +    float online_stamina_overlay_offset_y = 320.0f;
++    bool online_drug_timers_overlay_enabled = false;
++    std::string online_drug_timers_overlay_anchor = "top_left";
++    float online_drug_timers_overlay_offset_x = 12.0f;
++    float online_drug_timers_overlay_offset_y = 520.0f;
      bool online_enabled = true;
      bool online_quick_overlay_enabled = true;
      int online_quick_overlay_hotkey = 0;
-@@ -125,6 +178,7 @@ struct Settings {
+@@ -125,6 +182,7 @@ struct Settings {
      bool online_quick_overlay_show_lspd = true;
      bool online_quick_overlay_show_army = true;
      bool online_quick_overlay_show_fire_department = true;
@@ -3572,7 +3751,7 @@ index 5805c1c..265ac88 100644
      bool online_quick_overlay_show_zivilisten = true;
      bool online_quick_overlay_show_all_gangs = true;
      std::vector<std::string> online_quick_overlay_selected_gangs;
-@@ -185,6 +239,7 @@ struct Settings {
+@@ -185,6 +243,7 @@ struct Settings {
      std::vector<DeathEventData> kill_tracker_recent_deaths;
      int kill_tracker_kill_count = 0;
      int kill_tracker_death_count = 0;
@@ -8446,7 +8625,7 @@ index 3164ab4..a892dd0 100644
  
      return entries;
 diff --git a/src/Main.cpp b/src/Main.cpp
-index 0419ba1..51fcab6 100644
+index 0419ba1..97d4760 100644
 --- a/src/Main.cpp
 +++ b/src/Main.cpp
 @@ -6,6 +6,7 @@
@@ -8457,19 +8636,20 @@ index 0419ba1..51fcab6 100644
  #include <atomic>
  #include <cstdio>
  #include <ctime>
-@@ -23,8 +24,11 @@
+@@ -23,8 +24,12 @@
  #include "../include/HitmarkerRenderer.h"
  #include "../include/HitsoundPlayer.h"
  #include "../include/ImGuiOverlay.h"
 +#include "../include/GpsManager.h"
 +#include "../include/ForumBrowser.h"
++#include "../include/DrugUseTracker.h"
  #include "../include/InputManager.h"
  #include "../include/InterfaceEditor.h"
 +#include "../include/NativeHudEditor.h"
  #include "../include/KeybindManager.h"
  #include "../include/Logger.h"
  #include "../include/MainWindowUI.h"
-@@ -34,6 +38,7 @@
+@@ -34,6 +39,7 @@
  #include "../include/OnlineOverlayController.h"
  #include "../include/OnlineOverlayRenderer.h"
  #include "../include/PersistentPaths.h"
@@ -8477,7 +8657,7 @@ index 0419ba1..51fcab6 100644
  #include "../include/QuickMap.h"
  #include "../include/ResourceIds.h"
  #include "../include/RssFeedManager.h"
-@@ -41,6 +46,7 @@
+@@ -41,6 +47,7 @@
  #include "../include/SAMPBridge.h"
  #include "../include/SquareMap.h"
  #include "../include/HudSpriteManager.h"
@@ -8485,7 +8665,7 @@ index 0419ba1..51fcab6 100644
  #include "../include/SettingsManager.h"
  #include "../include/SpeedometerManager.h"
  #include "../include/SpeedometerUI.h"
-@@ -371,6 +377,7 @@ public:
+@@ -371,10 +378,13 @@ public:
              keybinder::Logger::Error("Failed to save config on emergency shutdown");
          }
  
@@ -8493,7 +8673,13 @@ index 0419ba1..51fcab6 100644
          interfaceEditor_.Shutdown();
          interfaceEditor_.RestoreOriginalValues();
          onlineOverlayRenderer_.Shutdown();
-@@ -382,6 +389,7 @@ public:
+         onlineOverlayController_.Shutdown();
++        drugUseTracker_.Reset();
++        drugTimerPlayerName_.clear();
+         onlineEventDetector_.Shutdown();
+         quickMap_.Shutdown();
+         speedometerManager_.Shutdown();
+@@ -382,6 +392,7 @@ public:
          
          // Shut down SAMPBridge (removes RakHook, command hooks)
          hitsoundPlayer_.Shutdown();
@@ -8501,7 +8687,7 @@ index 0419ba1..51fcab6 100644
          textureManager_.ReleaseAll();
          bridge_.Shutdown();
          
-@@ -427,7 +435,7 @@ public:
+@@ -427,7 +438,7 @@ public:
          // Enable info logging (change to Debug for verbose output)
          keybinder::Logger::SetMinLevel(keybinder::LogLevel::Info);
          
@@ -8510,7 +8696,7 @@ index 0419ba1..51fcab6 100644
          keybinder::Logger::Info("Crash handler installed");
  
          if (!keybindManager_.Load(&settingsManager_)) {
-@@ -451,6 +459,11 @@ public:
+@@ -451,6 +462,11 @@ public:
          bridge_.SetAutoHudScaleFix(settingsManager_.Get().auto_hudscalefix);
          bridge_.SetAutoEngineStart(settingsManager_.Get().auto_engine_start);
          bridge_.SetSettingsManager(&settingsManager_);
@@ -8522,7 +8708,7 @@ index 0419ba1..51fcab6 100644
          textDrawAdapter_.SetSpeedometerEnabled(keybinder::speedometer::kCustomTachoAvailable && settingsManager_.Get().speedometer_enabled);
          textDrawAdapter_.Initialize();
          speedometerManager_.Initialize(&textDrawAdapter_, &bridge_);
-@@ -458,8 +471,14 @@ public:
+@@ -458,8 +474,14 @@ public:
          interfaceEditor_.SetSettingsManager(&settingsManager_);
          interfaceEditor_.SetSAMPBridge(&bridge_);
          interfaceEditor_.SetOnRuntimePresetChanged([&]() {
@@ -8537,7 +8723,7 @@ index 0419ba1..51fcab6 100644
          quickMap_.Initialize(&settingsManager_, &textureManager_, &bridge_);
          quickMap_.SetInputGateCallback([&]() {
              return overlay_.IsVisible();
-@@ -525,6 +544,7 @@ public:
+@@ -525,6 +547,7 @@ public:
          crosshairSwitcher_.ApplySettings(settingsManager_.Get());
          squareMap_.ApplySettings(settingsManager_.Get());
          hudSpriteManager_.ApplySettings(settingsManager_.Get());
@@ -8545,7 +8731,7 @@ index 0419ba1..51fcab6 100644
  
          hitmarker_.ApplySettings(settingsManager_.Get());
  
-@@ -537,7 +557,7 @@ public:
+@@ -537,7 +560,7 @@ public:
          inputManager_.SetSAMPBridge(&bridge_);
          inputManager_.SetImGuiOverlay(&overlay_);
          inputManager_.SetQuickMapVisibleCallback([&]() {
@@ -8554,7 +8740,7 @@ index 0419ba1..51fcab6 100644
          });
          overlay_.SetEarlyKeybindHandler([&](int key, bool keyDown) {
              return inputManager_.HandleEarlyKeyEvent(key, keyDown);
-@@ -549,12 +569,24 @@ public:
+@@ -549,12 +572,24 @@ public:
          mainWindowUI_.SetKeybindManager(&keybindManager_);
          mainWindowUI_.SetSettingsManager(&settingsManager_);
          mainWindowUI_.SetSAMPBridge(&bridge_);
@@ -8579,7 +8765,7 @@ index 0419ba1..51fcab6 100644
          mainWindowUI_.SetRssFeedManager(&rssFeedManager_);
          mainWindowUI_.SetOnlineDataManager(&onlineDataManager_);
          mainWindowUI_.SetOnlineOverlayController(&onlineOverlayController_);
-@@ -594,6 +626,8 @@ public:
+@@ -594,6 +629,8 @@ public:
          });
          overlay_.SetQuickMapRenderCallback([&]() {
              quickMap_.Render();
@@ -8588,7 +8774,7 @@ index 0419ba1..51fcab6 100644
          });
          overlay_.SetQuickMapWheelCaptureCallback([&]() {
              return quickMap_.WantsMouseWheelCapture();
-@@ -603,6 +637,7 @@ public:
+@@ -603,6 +640,7 @@ public:
          });
          overlay_.SetVitalStatsRenderCallback([&]() {
              interfaceEditor_.RenderVitalStatsNumbers(ImGui::GetForegroundDrawList(), overlay_.IsVisible(), overlay_.GetCurrentScale());
@@ -8596,7 +8782,7 @@ index 0419ba1..51fcab6 100644
          });
          overlay_.SetSpeedometerRenderCallback([&]() {
              const keybinder::Settings& settings = settingsManager_.Get();
-@@ -631,14 +666,35 @@ public:
+@@ -631,17 +669,41 @@ public:
              keybindManager_.Save(&settingsManager_);
          });
          overlay_.SetAuxiliaryInteractionActiveCallback([&]() {
@@ -8633,7 +8819,13 @@ index 0419ba1..51fcab6 100644
          onlineOverlayRenderer_.SetOverlayController(&onlineOverlayController_);
          bridge_.SetIncomingChatCallback([&](const std::string& text) {
              onlineEventDetector_.OnChatLine(text);
-@@ -649,6 +705,20 @@ public:
++            if (RefreshDrugTimerSession()) {
++                drugUseTracker_.ObserveChat(text, drugTimerPlayerName_, keybinder::DrugUseTracker::Clock::now());
++            }
+         });
+ 
+         rssFeedManager_.Initialize();
+@@ -649,6 +711,20 @@ public:
          onlineDataManager_.Initialize();
          // SyncOnlineRuntimeContext will be called in drawHudEvent once bridge is ready
  
@@ -8654,7 +8846,7 @@ index 0419ba1..51fcab6 100644
          bridge_.RegisterCommand("info", [&](const std::string& params) {
              const std::string username = keybinder::OnlinePlayerInfoService::NormalizeLookupName(params);
              if (username.empty()) {
-@@ -659,6 +729,26 @@ public:
+@@ -659,6 +735,26 @@ public:
              onlinePlayerInfoService_.QueueLookup(username);
          });
  
@@ -8681,7 +8873,7 @@ index 0419ba1..51fcab6 100644
          auto runTextDrawDump = [&](const std::string&) {
              const std::string outputPath = BuildTextDrawDumpPath();
              std::size_t count = 0;
-@@ -733,7 +823,7 @@ public:
+@@ -733,7 +829,7 @@ public:
                  return true;
              }
  
@@ -8690,7 +8882,7 @@ index 0419ba1..51fcab6 100644
                  return false;
              }
              
-@@ -789,6 +879,10 @@ public:
+@@ -789,6 +885,10 @@ public:
              crosshairSwitcher_.Initialize();
              squareMap_.Initialize();
              hudSpriteManager_.Initialize();
@@ -8701,7 +8893,7 @@ index 0419ba1..51fcab6 100644
              if (!interfaceEditor_.Initialize()) {
                  keybinder::Logger::Error("InterfaceEditor hooks failed to initialize; custom zone text may not work");
              }
-@@ -807,6 +901,7 @@ public:
+@@ -807,6 +907,7 @@ public:
              crosshairSwitcher_.OnDeviceReset();
              squareMap_.OnDeviceReset();
              hudSpriteManager_.OnDeviceReset();
@@ -8709,7 +8901,7 @@ index 0419ba1..51fcab6 100644
          };
          Events::drawHudEvent += [&]() {
              if (g_shutdown_phase.load() != 0) {
-@@ -815,11 +910,24 @@ public:
+@@ -815,11 +916,24 @@ public:
  
              bridge_.Initialize();
              bridge_.Update();
@@ -8734,7 +8926,7 @@ index 0419ba1..51fcab6 100644
  
              static bool overlayWasVisible = false;
              static bool quickMapWasVisible = false;
-@@ -830,7 +938,11 @@ public:
+@@ -830,7 +944,29 @@ public:
              }
  
              onlineOverlayRenderer_.Update();
@@ -8743,11 +8935,29 @@ index 0419ba1..51fcab6 100644
 +            static auto previousOnlineUpdateTime = onlineUpdateTime;
 +            const float onlineDelta = std::chrono::duration<float>(onlineUpdateTime - previousOnlineUpdateTime).count();
 +            previousOnlineUpdateTime = onlineUpdateTime;
++            std::vector<std::string> drugTimerLines;
++            if (RefreshDrugTimerSession()) {
++                for (const auto& drug : drugUseTracker_.TakeReadyDrugs(onlineUpdateTime)) {
++                    // This notice belongs to the current session; do not leave
++                    // a deferred chat message behind if the connection ends.
++                    bridge_.SendLocalMessage("{33CCFF}[NL-BINDER]{FFFFFF} Du kannst " + drug + " wieder konsumieren.");
++                }
++                for (const auto& timer : drugUseTracker_.Snapshot(onlineUpdateTime)) {
++                    drugTimerLines.push_back(timer.displayName);
++                    if (timer.cooldownDuration > 0) {
++                        drugTimerLines.push_back("Cooldown: " + std::to_string(timer.cooldownSeconds) + " s");
++                    }
++                    if (timer.aftereffectDuration > 0) {
++                        drugTimerLines.push_back("Abklingzeit: " + std::to_string(timer.aftereffectSeconds) + " s");
++                    }
++                }
++            }
++            onlineOverlayController_.SetDrugTimerLines(std::move(drugTimerLines));
 +            onlineOverlayController_.Update(onlineDelta);
  
              bool overlayVisible = overlay_.IsVisible();
              bool quickMapVisible = quickMap_.IsVisible();
-@@ -896,10 +1008,20 @@ public:
+@@ -896,10 +1032,20 @@ public:
              overlay_.Render();
  
          };
@@ -8769,7 +8979,7 @@ index 0419ba1..51fcab6 100644
                  // Suppress mouse-look before the game consumes per-frame input.
                  // The later HUD/render passes are too late to reliably stop camera
                  // movement, but we intentionally keep this suppression scoped to
-@@ -908,7 +1030,9 @@ public:
+@@ -908,7 +1054,9 @@ public:
              }
          };
          Events::d3dLostEvent += [] {
@@ -8779,7 +8989,7 @@ index 0419ba1..51fcab6 100644
              squareMap_.OnDeviceLost();
              crosshairSwitcher_.OnDeviceLost();
              quickMap_.OnDeviceLost();
-@@ -923,6 +1047,7 @@ public:
+@@ -923,6 +1071,7 @@ public:
              crosshairSwitcher_.OnDeviceReset();
              squareMap_.OnDeviceReset();
              hudSpriteManager_.OnDeviceReset();
@@ -8787,7 +8997,7 @@ index 0419ba1..51fcab6 100644
          };
          Events::shutdownRwEvent += [] {
              g_shutdown_phase.store(2);
-@@ -942,10 +1067,14 @@ public:
+@@ -942,10 +1091,14 @@ public:
              crosshairSwitcher_.Shutdown();
              squareMap_.Shutdown();
              hudSpriteManager_.Shutdown();
@@ -8802,7 +9012,7 @@ index 0419ba1..51fcab6 100644
              interfaceEditor_.Shutdown();
              interfaceEditor_.RestoreOriginalValues();
              keybinder::Logger::Info("Phase 2: Shutting down SAMPBridge");
-@@ -1000,13 +1129,17 @@ private:
+@@ -1000,13 +1153,20 @@ private:
      static keybinder::CrosshairSwitcher crosshairSwitcher_;
      static keybinder::SquareMap squareMap_;
      static keybinder::HudSpriteManager hudSpriteManager_;
@@ -8814,13 +9024,16 @@ index 0419ba1..51fcab6 100644
      static keybinder::OnlineOverlayRenderer onlineOverlayRenderer_;
      static keybinder::OnlineEventDetector onlineEventDetector_;
      static keybinder::OnlineOverlayController onlineOverlayController_;
++    static keybinder::DrugUseTracker drugUseTracker_;
++    static std::string drugTimerPlayerName_;
++    static bool RefreshDrugTimerSession();
      static keybinder::TextDrawAdapter textDrawAdapter_;
 +    static keybinder::GpsManager gps_;
 +    static keybinder::ForumBrowser forumBrowser_;
      static keybinder::SpeedometerManager speedometerManager_;
      static keybinder::SpeedometerUI speedometerUI_;
  };
-@@ -1028,13 +1161,17 @@ keybinder::HitsoundPlayer Keybinder::hitsoundPlayer_{};
+@@ -1028,17 +1188,39 @@ keybinder::HitsoundPlayer Keybinder::hitsoundPlayer_{};
  keybinder::CrosshairSwitcher Keybinder::crosshairSwitcher_{};
  keybinder::SquareMap Keybinder::squareMap_{};
  keybinder::HudSpriteManager Keybinder::hudSpriteManager_{};
@@ -8832,12 +9045,34 @@ index 0419ba1..51fcab6 100644
  keybinder::OnlineOverlayRenderer Keybinder::onlineOverlayRenderer_{};
  keybinder::OnlineEventDetector Keybinder::onlineEventDetector_{};
  keybinder::OnlineOverlayController Keybinder::onlineOverlayController_{};
++keybinder::DrugUseTracker Keybinder::drugUseTracker_{};
++std::string Keybinder::drugTimerPlayerName_{};
  keybinder::TextDrawAdapter Keybinder::textDrawAdapter_{};
 +keybinder::GpsManager Keybinder::gps_{};
 +keybinder::ForumBrowser Keybinder::forumBrowser_{};
  keybinder::SpeedometerManager Keybinder::speedometerManager_{};
  keybinder::SpeedometerUI Keybinder::speedometerUI_{};
  Keybinder plugin_instance{};
+ 
++bool Keybinder::RefreshDrugTimerSession() {
++    const auto& settings = settingsManager_.Get();
++    const auto* netGame = bridge_.GetNetGame();
++    const bool enabled = settings.online_enabled && settings.online_drug_timers_overlay_enabled;
++    const std::string playerName = enabled && netGame
++        && netGame->m_nGameState == sampapi::v03dl::CNetGame::GAME_MODE_CONNECTED
++        ? bridge_.GetLocalPlayerName() : std::string{};
++    // Do not carry another account's deadlines or completion messages through
++    // a disconnect, account switch, or disabling this feature.
++    if (playerName.empty() || playerName != drugTimerPlayerName_) {
++        drugUseTracker_.Reset();
++        drugTimerPlayerName_ = playerName;
++    }
++    return !playerName.empty();
++}
++
+ // Definition of DoEmergencyShutdown - must be after Keybinder class definition
+ // so EmergencyShutdown() can access the static members.
+ static void DoEmergencyShutdown() {
 diff --git a/src/MainWindowUI.cpp b/src/MainWindowUI.cpp
 index c1cc818..bbbb621 100644
 --- a/src/MainWindowUI.cpp
@@ -9500,7 +9735,7 @@ index 4806d71..cdb9595 100644
  // Freedom Front — case-insensitive, never emitted as a gang bucket
  constexpr const char* kFreedomFrontAliases[] = {
 diff --git a/src/OnlineOverlayController.cpp b/src/OnlineOverlayController.cpp
-index 4887a2b..ca08cb6 100644
+index 4887a2b..fbcf465 100644
 --- a/src/OnlineOverlayController.cpp
 +++ b/src/OnlineOverlayController.cpp
 @@ -1,9 +1,22 @@
@@ -9526,13 +9761,14 @@ index 4887a2b..ca08cb6 100644
  namespace keybinder {
  
  namespace {
-@@ -42,13 +55,17 @@ void OnlineOverlayController::Shutdown() {
+@@ -42,13 +55,18 @@ void OnlineOverlayController::Shutdown() {
      ownGangOverlay_.visible = false;
      gangsOverlay_.visible = false;
      wantedOverlay_.visible = false;
 +    gameOverlays_.clear();
 +    markerStates_.clear();
 +    gameState_ = {};
++    drugTimerLines_.clear();
 +    gamePlayerIndices_.clear();
 +    gameStateProvider_ = nullptr;
 +    gameRefreshSeconds_ = 0.0f;
@@ -9546,7 +9782,7 @@ index 4887a2b..ca08cb6 100644
      if (settingsManager_ == nullptr || dataManager_ == nullptr) {
          return;
      }
-@@ -58,6 +75,202 @@ void OnlineOverlayController::Update(float deltaTimeSeconds) {
+@@ -58,6 +76,233 @@ void OnlineOverlayController::Update(float deltaTimeSeconds) {
      UpdateOwnGangOverlay();
      UpdateGangsOverlay();
      UpdateWantedOverlay();
@@ -9556,6 +9792,30 @@ index 4887a2b..ca08cb6 100644
 +void OnlineOverlayController::SetGameStateProvider(std::function<OnlineGameOverlayState()> provider) {
 +    gameStateProvider_ = std::move(provider);
 +    gameRefreshSeconds_ = 0.0f;
++}
++
++void OnlineOverlayController::SetDrugTimerLines(std::vector<std::string> lines) {
++    drugTimerLines_ = std::move(lines);
++}
++
++PersistentOverlayData OnlineOverlayController::GetDrugTimerOverlayPreview() const {
++    PersistentOverlayData data = localOverlay_;
++    data.kind = PersistentOverlayKind::DrugTimers;
++    data.visible = false;
++    data.title = "Use Cooldown & Nachwirkung";
++    data.playerNames = {"Cooldown: 0 s", "Abklingzeit: 0 s"};
++    data.countRows.clear();
++    data.playerCount = static_cast<int>(data.playerNames.size());
++    data.showPlayerCount = false;
++    data.minimumWidth = 240.0f;
++    if (settingsManager_ != nullptr) {
++        const auto& settings = settingsManager_->Get();
++        data.visible = settings.online_enabled && settings.online_drug_timers_overlay_enabled && gameState_.connected;
++        data.anchor = ParseAnchor(settings.online_drug_timers_overlay_anchor);
++        data.offsetX = settings.online_drug_timers_overlay_offset_x;
++        data.offsetY = settings.online_drug_timers_overlay_offset_y;
++    }
++    return data;
 +}
 +
 +std::string OnlineOverlayController::NormalizeMarkerName(const std::string& name) {
@@ -9702,6 +9962,13 @@ index 4887a2b..ca08cb6 100644
 +        gameOverlays_.back().minimumWidth = 112.0f;
 +    }
 +
++    if (settings.online_drug_timers_overlay_enabled && !drugTimerLines_.empty()) {
++        PersistentOverlayData data = GetDrugTimerOverlayPreview();
++        data.playerNames = drugTimerLines_;
++        data.playerCount = static_cast<int>(data.playerNames.size());
++        gameOverlays_.push_back(std::move(data));
++    }
++
 +    std::vector<std::string> savedNames;
 +    std::vector<std::string> friends;
 +    std::vector<std::string> enemies;
@@ -9750,7 +10017,7 @@ index 4887a2b..ca08cb6 100644
  
  // ---------------------------------------------------------------------------
 diff --git a/src/OnlineOverlayRenderer.cpp b/src/OnlineOverlayRenderer.cpp
-index 813d6a0..cdcff91 100644
+index 813d6a0..8f8caf9 100644
 --- a/src/OnlineOverlayRenderer.cpp
 +++ b/src/OnlineOverlayRenderer.cpp
 @@ -87,6 +87,7 @@ void OnlineOverlayRenderer::RefreshSettings() {
@@ -9795,28 +10062,33 @@ index 813d6a0..cdcff91 100644
      ImGui::PopStyleColor();
  }
  
-@@ -587,6 +592,10 @@ void OnlineOverlayRenderer::RenderPersistentOverlays() {
+@@ -587,6 +592,15 @@ void OnlineOverlayRenderer::RenderPersistentOverlays() {
          RenderSinglePersistentOverlay(wantedData, scale, stackedOffsetY);
      }
  
++    bool hasDrugTimerOverlay = false;
 +    for (const auto& data : overlayController_->GetGameOverlays()) {
 +        RenderSinglePersistentOverlay(data, scale, 0.0f);
++        if (data.kind == PersistentOverlayKind::DrugTimers && data.visible) hasDrugTimerOverlay = true;
++    }
++    if (persistentOverlayMoveMode_ && !hasDrugTimerOverlay) {
++        RenderSinglePersistentOverlay(overlayController_->GetDrugTimerOverlayPreview(), scale, 0.0f);
 +    }
 +
      if (persistentOverlayMovedSinceSave_ && ImGui::IsMouseReleased(ImGuiMouseButton_Left)) {
          if (settingsPersistCallback_) {
              settingsPersistCallback_();
-@@ -638,6 +647,9 @@ void OnlineOverlayRenderer::PersistMovedOverlayPosition(const PersistentOverlayD
+@@ -638,6 +652,9 @@ void OnlineOverlayRenderer::PersistMovedOverlayPosition(const PersistentOverlayD
      // the dropped position by 200 px on the next render.
      const float newStackedY = [&]() -> float {
          if (overlayController_ == nullptr) return 0.0f;
 +        if (data.kind == PersistentOverlayKind::Location || data.kind == PersistentOverlayKind::Transport
 +            || data.kind == PersistentOverlayKind::Stamina || data.kind == PersistentOverlayKind::Pedslots || data.kind == PersistentOverlayKind::FriendsRadar
-+            || data.kind == PersistentOverlayKind::EnemiesRadar) return 0.0f;
++            || data.kind == PersistentOverlayKind::EnemiesRadar || data.kind == PersistentOverlayKind::DrugTimers) return 0.0f;
          if (data.kind == PersistentOverlayKind::LocalAffiliation) return 0.0f;
          const PersistentOverlayData& local = overlayController_->GetLocalOverlayData();
          const PersistentOverlayData& own = overlayController_->GetOwnGangOverlayData();
-@@ -657,23 +669,56 @@ void OnlineOverlayRenderer::PersistMovedOverlayPosition(const PersistentOverlayD
+@@ -657,23 +674,61 @@ void OnlineOverlayRenderer::PersistMovedOverlayPosition(const PersistentOverlayD
      }();
  
      Settings& settings = settingsManager_->GetMutable();
@@ -9872,6 +10144,11 @@ index 813d6a0..cdcff91 100644
 +        storedY = &settings.online_stamina_overlay_offset_y;
 +        anchor = &settings.online_stamina_overlay_anchor;
 +        break;
++    case PersistentOverlayKind::DrugTimers:
++        storedX = &settings.online_drug_timers_overlay_offset_x;
++        storedY = &settings.online_drug_timers_overlay_offset_y;
++        anchor = &settings.online_drug_timers_overlay_anchor;
++        break;
 +    case PersistentOverlayKind::FriendsRadar:
 +        storedX = &settings.online_friends_overlay_offset_x;
 +        storedY = &settings.online_friends_overlay_offset_y;
@@ -9890,7 +10167,7 @@ index 813d6a0..cdcff91 100644
      float offsetX = 0.0f;
      float offsetY = 0.0f;
  
-@@ -724,20 +769,44 @@ void OnlineOverlayRenderer::RenderSinglePersistentOverlay(const PersistentOverla
+@@ -724,20 +779,44 @@ void OnlineOverlayRenderer::RenderSinglePersistentOverlay(const PersistentOverla
      }
  
      const float overlayScale = scale * data.scale;
@@ -9915,7 +10192,7 @@ index 813d6a0..cdcff91 100644
 +    const bool isRadar = data.kind == PersistentOverlayKind::FriendsRadar || data.kind == PersistentOverlayKind::EnemiesRadar;
 +    const bool boundToViewport = data.kind == PersistentOverlayKind::Location
 +        || data.kind == PersistentOverlayKind::Transport || data.kind == PersistentOverlayKind::Stamina || data.kind == PersistentOverlayKind::Pedslots
-+        || isRadar;
++        || data.kind == PersistentOverlayKind::DrugTimers || isRadar;
 +    if (isRadar && rowHeight > 0.0f) {
 +        const float availableHeight = (std::max)(rowHeight, viewport->Size.y - headerHeight - padding * 2.0f);
 +        const int maxRowsPerColumn = (std::max)(1, static_cast<int>(availableHeight / rowHeight));
@@ -9941,7 +10218,7 @@ index 813d6a0..cdcff91 100644
  
      const float displayOffsetY = data.offsetY + stackedOffsetY;
      float posX = 0.0f;
-@@ -762,6 +831,11 @@ void OnlineOverlayRenderer::RenderSinglePersistentOverlay(const PersistentOverla
+@@ -762,6 +841,11 @@ void OnlineOverlayRenderer::RenderSinglePersistentOverlay(const PersistentOverla
          break;
      }
  
@@ -9953,7 +10230,7 @@ index 813d6a0..cdcff91 100644
      if (!persistentOverlayMoveMode_) {
          ImGui::SetNextWindowPos(ImVec2(posX, posY), ImGuiCond_Always);
      } else {
-@@ -813,7 +887,8 @@ void OnlineOverlayRenderer::RenderSinglePersistentOverlay(const PersistentOverla
+@@ -813,7 +897,8 @@ void OnlineOverlayRenderer::RenderSinglePersistentOverlay(const PersistentOverla
          if (hasHeader) {
              ImGui::PushStyleColor(ImGuiCol_Text, headerTextColor);
              ImGui::SetWindowFontScale(textScale * 1.1f);
@@ -9963,7 +10240,7 @@ index 813d6a0..cdcff91 100644
              RenderTruncatedOverlayText(headerText, headerTextColor, panelWidth - padding * 2.0f);
              ImGui::SetWindowFontScale(textScale);
              ImGui::PopStyleColor();
-@@ -821,7 +896,24 @@ void OnlineOverlayRenderer::RenderSinglePersistentOverlay(const PersistentOverla
+@@ -821,7 +906,24 @@ void OnlineOverlayRenderer::RenderSinglePersistentOverlay(const PersistentOverla
  
          ImGui::SetWindowFontScale(textScale);
  
@@ -9990,7 +10267,7 @@ index 813d6a0..cdcff91 100644
              const float availWidth = panelWidth - padding * 2.0f;
              const float nameWidth = (std::max)(40.0f * overlayScale, availWidth - countWidth);
 diff --git a/src/OnlineUI.cpp b/src/OnlineUI.cpp
-index de201b6..1fdacf0 100644
+index de201b6..89df874 100644
 --- a/src/OnlineUI.cpp
 +++ b/src/OnlineUI.cpp
 @@ -504,9 +504,9 @@ void OnlineUI::RenderStatusHeader(const OnlineSnapshot& snapshot) {
@@ -10033,7 +10310,7 @@ index de201b6..1fdacf0 100644
      ImGui::BeginGroup();
      ImGui::PushItemWidth(columnWidth);
      if (UIComponents::Toggle("Army", &settings.online_quick_overlay_show_army)) { PersistSettings(); ApplyLiveSettings(); }
-@@ -959,8 +968,18 @@ void OnlineUI::RenderPersistentOverlaySettings() {
+@@ -959,8 +968,20 @@ void OnlineUI::RenderPersistentOverlaySettings() {
          ImGui::EndGroup();
      }
  
@@ -10042,8 +10319,10 @@ index de201b6..1fdacf0 100644
 +    if (UIComponents::Toggle("Ort anzeigen", &settings.online_location_overlay_enabled)) { PersistSettings(); ApplyLiveSettings(); }
 +    if (UIComponents::Toggle("Fortbewegungsmittel anzeigen", &settings.online_transport_overlay_enabled)) { PersistSettings(); ApplyLiveSettings(); }
 +    if (UIComponents::Toggle("Pedslots anzeigen", &settings.online_pedslots_overlay_enabled)) { PersistSettings(); ApplyLiveSettings(); }
-+    if (UIComponents::Toggle("Ausdauer anzeigen", &settings.online_stamina_overlay_enabled)) { PersistSettings(); ApplyLiveSettings(); }
 +    if (ImGui::IsItemHovered()) { ImGui::SetTooltip("Anzahl anderer Spieler, die aktuell in deinem Stream geladen sind."); }
++    if (UIComponents::Toggle("Ausdauer anzeigen", &settings.online_stamina_overlay_enabled)) { PersistSettings(); ApplyLiveSettings(); }
++    if (UIComponents::Toggle("Use Cooldown & Nachwirkung anzeigen", &settings.online_drug_timers_overlay_enabled)) { PersistSettings(); ApplyLiveSettings(); }
++    if (ImGui::IsItemHovered()) { ImGui::SetTooltip("Zeigt Cooldown und Nachwirkung deines Drogenkonsums in Sekunden. Im Move-Modus wie die anderen Overlays verschiebbar."); }
 +    if (UIComponents::Toggle("Freunde anzeigen", &settings.online_friends_overlay_enabled)) { PersistSettings(); ApplyLiveSettings(); }
 +    if (UIComponents::Toggle("Feinde anzeigen", &settings.online_enemies_overlay_enabled)) { PersistSettings(); ApplyLiveSettings(); }
 +
@@ -10053,7 +10332,7 @@ index de201b6..1fdacf0 100644
      ImGui::PopStyleColor();
  
      UIComponents::EndCard();
-@@ -971,15 +990,16 @@ void OnlineUI::RenderPersistentOverlaySettings() {
+@@ -971,15 +992,16 @@ void OnlineUI::RenderPersistentOverlaySettings() {
      UIComponents::BeginCard("OverlayAppearanceCard", 0.0f, true);
      UIComponents::CardHeader("Darstellung", "Stil-Einstellungen f\xc3\xbc""r persistente Overlays");
  
@@ -10069,11 +10348,11 @@ index de201b6..1fdacf0 100644
  
 -    if (currentStyleTarget_ == OnlinePersistentStyleTarget::GangsOverview) {
 +    if (currentStyleTarget_ == OnlinePersistentStyleTarget::GeneralOverlays) {
-+        ImGui::TextWrapped("Gemeinsamer Stil f\xC3\xBC" "r eigene Fraktion, Gang-\xC3\x9C" "bersicht, Ort, Fortbewegungsmittel, Pedslots, Freunde-Radar und Feinde-Radar.");
++        ImGui::TextWrapped("Gemeinsamer Stil f\xC3\xBC" "r eigene Fraktion, Gang-\xC3\x9C" "bersicht, Ort, Fortbewegungsmittel, Pedslots, Ausdauer, Use Cooldown & Nachwirkung, Freunde-Radar und Feinde-Radar.");
          RenderPersistentOverlayStyleControls(
              settings.online_overlay_style,
              settings.online_overlay_opacity,
-@@ -1017,6 +1037,110 @@ void OnlineUI::RenderPersistentOverlaySettings() {
+@@ -1017,6 +1039,110 @@ void OnlineUI::RenderPersistentOverlaySettings() {
      UIComponents::EndCard();
  }
  
@@ -10184,7 +10463,7 @@ index de201b6..1fdacf0 100644
  // ---------------------------------------------------------------------------
  // Overlay settings tab (main entry)
  // ---------------------------------------------------------------------------
-@@ -1033,6 +1157,9 @@ void OnlineUI::RenderOverlaySettingsTab() {
+@@ -1033,6 +1159,9 @@ void OnlineUI::RenderOverlaySettingsTab() {
      if (UIComponents::SubTabItem("Dauerhaft", static_cast<int>(currentOverlaySection_) == 1)) {
          currentOverlaySection_ = OnlineOverlaySection::Persistent;
      }
@@ -10194,7 +10473,7 @@ index de201b6..1fdacf0 100644
      UIComponents::EndSubTabs();
  
      switch (currentOverlaySection_) {
-@@ -1045,6 +1172,9 @@ void OnlineUI::RenderOverlaySettingsTab() {
+@@ -1045,6 +1174,9 @@ void OnlineUI::RenderOverlaySettingsTab() {
          case OnlineOverlaySection::Appearance:
              RenderPersistentOverlaySettings();
              break;
@@ -13157,7 +13436,7 @@ index 72ce0e7..34f1bdd 100644
          incomingChatCallback_(text);
      }
 diff --git a/src/SettingsManager.cpp b/src/SettingsManager.cpp
-index 2398142..4f40d8d 100644
+index 2398142..ebbf792 100644
 --- a/src/SettingsManager.cpp
 +++ b/src/SettingsManager.cpp
 @@ -11,8 +11,12 @@
@@ -13283,7 +13562,7 @@ index 2398142..4f40d8d 100644
                      settings_.interface_editor_saved_presets.push_back(preset);
  
                      pos = objEnd + 1;
-@@ -1559,6 +1617,141 @@ bool SettingsManager::LoadFromJson(const std::string& json_content) {
+@@ -1559,6 +1617,148 @@ bool SettingsManager::LoadFromJson(const std::string& json_content) {
      // Assign selected_gangs now that parsing is complete
      settings_.online_quick_overlay_selected_gangs = DedupeGangSelection(std::move(online_quick_overlay_selected_gangs));
  
@@ -13310,6 +13589,7 @@ index 2398142..4f40d8d 100644
 +    if (!std::isfinite(settings_.forum_window_height)) settings_.forum_window_height = 760.0f;
 +    ParseBoolField(json_content, "\"forum_window_fullscreen\"", settings_.forum_window_fullscreen);
 +    ParseBoolField(json_content, "\"online_stamina_overlay_enabled\"", settings_.online_stamina_overlay_enabled);
++    ParseBoolField(json_content, "\"online_drug_timers_overlay_enabled\"", settings_.online_drug_timers_overlay_enabled);
 +    // Split the old shared radar position into two independently saved panels.
 +    // Keep friends at the old position and start enemies 120 px farther from
 +    // the same edge. Explicit new values below always take precedence.
@@ -13364,6 +13644,12 @@ index 2398142..4f40d8d 100644
 +    ParseFloatField(json_content, "\"online_stamina_overlay_offset_y\"", settings_.online_stamina_overlay_offset_y);
 +    if (!std::isfinite(settings_.online_pedslots_overlay_offset_y)) settings_.online_pedslots_overlay_offset_y = 12.0f;
 +    if (!std::isfinite(settings_.online_stamina_overlay_offset_y)) settings_.online_stamina_overlay_offset_y = 320.0f;
++    ParseStringField(json_content, "\"online_drug_timers_overlay_anchor\"", settings_.online_drug_timers_overlay_anchor);
++    settings_.online_drug_timers_overlay_anchor = NormalizeOnlineOverlayAnchor(settings_.online_drug_timers_overlay_anchor);
++    ParseHudFloatField(json_content, "\"online_drug_timers_overlay_offset_x\"", settings_.online_drug_timers_overlay_offset_x);
++    if (!std::isfinite(settings_.online_drug_timers_overlay_offset_x)) settings_.online_drug_timers_overlay_offset_x = 12.0f;
++    ParseHudFloatField(json_content, "\"online_drug_timers_overlay_offset_y\"", settings_.online_drug_timers_overlay_offset_y);
++    if (!std::isfinite(settings_.online_drug_timers_overlay_offset_y)) settings_.online_drug_timers_overlay_offset_y = 520.0f;
 +
 +    bool foundWeaponIconSettings = ParseBoolField(json_content, "\"weapon_icons_enabled\"", settings_.weapon_icons_enabled);
 +    settings_.weapon_icon_selections.clear();
@@ -13425,7 +13711,7 @@ index 2398142..4f40d8d 100644
      // Online: parse event_placeholders array
      {
          size_t phPos = json_content.find("\"online_event_placeholders\"");
-@@ -1829,7 +2022,7 @@ bool SettingsManager::LoadFromJson(const std::string& json_content) {
+@@ -1829,7 +2029,7 @@ bool SettingsManager::LoadFromJson(const std::string& json_content) {
          }
      }
  
@@ -13434,7 +13720,7 @@ index 2398142..4f40d8d 100644
          Logger::Info("[SettingsManager] Loaded settings (ui_primary=/%s, ui_secondary=/%s, ui_hotkey=%d, kill_tracker_enabled=%s, local_kill=%s, local_death=%s, server_kill=%s, server_death=%s, kill_tracker_track_damage=%s, kill_tracker_allow_manual_edits=%s, auto_hudscalefix=%s, auto_engine_start=%s, hitmarker_enabled=%s)",
              settings_.ui_open_command_primary.c_str(),
              settings_.ui_open_command_secondary.c_str(),
-@@ -1861,6 +2054,32 @@ bool SettingsManager::LoadFromJson(const std::string& json_content) {
+@@ -1861,6 +2061,32 @@ bool SettingsManager::LoadFromJson(const std::string& json_content) {
              settings_.hitmarker_enabled ? "true" : "false");
      }
  
@@ -13467,7 +13753,7 @@ index 2398142..4f40d8d 100644
      return true;
  }
  
-@@ -1875,69 +2094,74 @@ std::string SettingsManager::GetSettingsJson() const {
+@@ -1875,69 +2101,78 @@ std::string SettingsManager::GetSettingsJson() const {
          oss << "    \"ui_window_width\": " << settings_.ui_window_width << ",\n";
          oss << "    \"ui_window_height\": " << settings_.ui_window_height << ",\n";
      }
@@ -13488,6 +13774,7 @@ index 2398142..4f40d8d 100644
 +    oss << "    \"forum_window_height\": " << settings_.forum_window_height << ",\n";
 +    oss << "    \"forum_window_fullscreen\": " << (settings_.forum_window_fullscreen ? "true" : "false") << ",\n";
 +    oss << "    \"online_stamina_overlay_enabled\": " << (settings_.online_stamina_overlay_enabled ? "true" : "false") << ",\n";
++    oss << "    \"online_drug_timers_overlay_enabled\": " << (settings_.online_drug_timers_overlay_enabled ? "true" : "false") << ",\n";
 +    oss << "    \"online_friends_overlay_anchor\": \"" << EscapeJsonString(settings_.online_friends_overlay_anchor) << "\",\n";
 +    oss << "    \"online_friends_overlay_offset_x\": " << settings_.online_friends_overlay_offset_x << ",\n";
 +    oss << "    \"online_friends_overlay_offset_y\": " << settings_.online_friends_overlay_offset_y << ",\n";
@@ -13506,6 +13793,9 @@ index 2398142..4f40d8d 100644
 +    oss << "    \"online_stamina_overlay_offset_x\": " << settings_.online_stamina_overlay_offset_x << ",\n";
 +    oss << "    \"online_pedslots_overlay_offset_y\": " << settings_.online_pedslots_overlay_offset_y << ",\n";
 +    oss << "    \"online_stamina_overlay_offset_y\": " << settings_.online_stamina_overlay_offset_y << ",\n";
++    oss << "    \"online_drug_timers_overlay_anchor\": \"" << EscapeJsonString(settings_.online_drug_timers_overlay_anchor) << "\",\n";
++    oss << "    \"online_drug_timers_overlay_offset_x\": " << settings_.online_drug_timers_overlay_offset_x << ",\n";
++    oss << "    \"online_drug_timers_overlay_offset_y\": " << settings_.online_drug_timers_overlay_offset_y << ",\n";
 +    oss << "    \"online_player_markers\": [";
 +    bool firstMarker = true;
 +    for (const auto& marker : settings_.online_player_markers) {
@@ -13588,7 +13878,7 @@ index 2398142..4f40d8d 100644
      oss << "    \"quickmap_enabled\": " << (settings_.quickmap_enabled ? "true" : "false") << ",\n";
      oss << "    \"quickmap_hotkey\": " << NormalizeQuickMapHotkey(settings_.quickmap_hotkey) << ",\n";
      oss << "    \"quickmap_mode\": \"" << EscapeJsonString(settings_.quickmap_mode) << "\",\n";
-@@ -1972,6 +2196,24 @@ std::string SettingsManager::GetSettingsJson() const {
+@@ -1972,6 +2207,24 @@ std::string SettingsManager::GetSettingsJson() const {
      oss << "    \"interface_editor_active_preset_index\": " << settings_.interface_editor_active_preset_index << ",\n";
      oss << "    \"crosshair_enabled\": " << (settings_.crosshair_enabled ? "true" : "false") << ",\n";
      oss << "    \"crosshair_texture_path\": \"" << EscapeJsonString(settings_.crosshair_texture_path) << "\",\n";
@@ -13613,7 +13903,7 @@ index 2398142..4f40d8d 100644
      oss << "    \"squaremap_enabled\": " << (settings_.squaremap_enabled ? "true" : "false") << ",\n";
      oss << "    \"quickmap_radar_pack\": \"" << EscapeJsonString(settings_.quickmap_radar_pack) << "\",\n";
      oss << "    \"fist_texture_path\": \"" << EscapeJsonString(settings_.fist_texture_path) << "\",\n";
-@@ -2180,8 +2422,19 @@ std::string SettingsManager::GetSettingsJson() const {
+@@ -2180,8 +2433,19 @@ std::string SettingsManager::GetSettingsJson() const {
              << ", \"armor_number_pos_x\": " << preset.armor_number_pos_x
              << ", \"armor_number_pos_y\": " << preset.armor_number_pos_y
              << ", \"hp_number_scale\": " << preset.hp_number_scale
@@ -13635,7 +13925,7 @@ index 2398142..4f40d8d 100644
          interfacePresetsFirst = false;
      }
      if (!settings_.interface_editor_saved_presets.empty()) oss << "\n    ";
-@@ -2224,6 +2477,28 @@ std::string SettingsManager::GetSettingsJson() const {
+@@ -2224,6 +2488,28 @@ std::string SettingsManager::GetSettingsJson() const {
  
      oss << "    \"kill_tracker_death_count\": " << settings_.kill_tracker_death_count << ",\n";
  
@@ -17346,6 +17636,133 @@ index 0000000..a3fb7d2
 +    std::printf("DamageLogRegressionTests: %d checks, %d failures\n", checks, failed);
 +    return failed;
 +}
+diff --git a/tests/DrugUseTrackerTests.cpp b/tests/DrugUseTrackerTests.cpp
+new file mode 100644
+index 0000000..2464454
+--- /dev/null
++++ b/tests/DrugUseTrackerTests.cpp
+@@ -0,0 +1,121 @@
++#include "../include/DrugUseTracker.h"
++#include <chrono>
++#include <cstdio>
++
++namespace {
++int checks = 0, failures = 0;
++#define CHECK(x) do { ++checks; if (!(x)) { ++failures; std::printf("[FAIL] DrugUseTracker: %s at %d\n", #x, __LINE__); } } while (0)
++using Tracker = keybinder::DrugUseTracker;
++using namespace std::chrono;
++const Tracker::TimePoint start = Tracker::TimePoint{} + hours(10);
++
++void OnlyExactOwnConsumptionStartsTimers() {
++    Tracker tracker;
++    CHECK(!tracker.ObserveChat("Other nimmt Kokain zu sich.", "Local", start));
++    CHECK(!tracker.ObserveChat("NotLocal nimmt Kokain zu sich.", "Local", start));
++    CHECK(!tracker.ObserveChat("LocalOther nimmt Kokain zu sich.", "Local", start));
++    CHECK(!tracker.ObserveChat("Local: Local nimmt Kokain zu sich.", "Local", start));
++    CHECK(!tracker.ObserveChat("Other: Local nimmt Kokain zu sich.", "Local", start));
++    CHECK(!tracker.ObserveChat("[f] Local nimmt Kokain zu sich.", "Local", start));
++    CHECK(!tracker.ObserveChat("Local nimmt Kokain zu sich. irgendwas", "Local", start));
++    CHECK(!tracker.ObserveChat("Local nimmt unbekannt zu sich.", "Local", start));
++    CHECK(!tracker.ObserveChat("Local nimmt Kokain zu sich.", "", start));
++    CHECK(tracker.Snapshot(start).empty());
++    CHECK(tracker.ObserveChat("Local nimmt Kokain zu sich.", "Local", start));
++    CHECK(tracker.Snapshot(start).size() == 1);
++    CHECK(tracker.Snapshot(start)[0].displayName == "Kokain");
++    CHECK(tracker.Snapshot(start)[0].cooldownSeconds == 120);
++    CHECK(tracker.Snapshot(start)[0].aftereffectSeconds == 120);
++    CHECK(!tracker.ObserveChat("Local nimmt Kokain zu sich.", "Different_Name", start + seconds(2)));
++    tracker.Reset();
++    CHECK(tracker.ObserveChat("Different_Name nimmt Heroin zu sich.", "Different_Name", start));
++    CHECK(tracker.Snapshot(start)[0].displayName == "Heroin");
++    tracker.Reset();
++    CHECK(tracker.ObserveChat("[22:13:03] {33CCFF}Different_Name{FFFFFF} nimmt Heroin zu sich.\r\n", "Different_Name", start));
++    CHECK(!tracker.ObserveChat("{NOHEXX}Different_Name nimmt Heroin zu sich.", "Different_Name", start));
++}
++
++void EveryConfiguredDrugHasExactParallelDurations() {
++    struct Expected { const char* name; int cooldown; int aftereffect; };
++    for (const Expected expected : {
++        Expected{"Kokain",120,120}, {"Heroin",120,60}, {"Speed",180,180},
++        {"Ecstasy",180,60}, {"Cannabis",0,40}, {"Adrenalin",45,0}, {"Morphium",45,45}}) {
++        Tracker tracker;
++        CHECK(tracker.ObserveChat(std::string("Player nimmt ") + expected.name + " zu sich.", "Player", start));
++        auto snapshot = tracker.Snapshot(start);
++        CHECK(snapshot.size() == 1);
++        CHECK(snapshot[0].displayName == expected.name);
++        CHECK(snapshot[0].cooldownSeconds == expected.cooldown);
++        CHECK(snapshot[0].aftereffectSeconds == expected.aftereffect);
++        CHECK(snapshot[0].cooldownDuration == expected.cooldown);
++        CHECK(snapshot[0].aftereffectDuration == expected.aftereffect);
++        snapshot = tracker.Snapshot(start + milliseconds(1500));
++        CHECK(snapshot[0].cooldownSeconds == (expected.cooldown ? expected.cooldown - 1 : 0));
++        CHECK(snapshot[0].aftereffectSeconds == (expected.aftereffect ? expected.aftereffect - 1 : 0));
++        CHECK(tracker.TakeReadyDrugs(start + seconds(500)).size() == (expected.cooldown ? 1u : 0u));
++        CHECK(tracker.TakeReadyDrugs(start + seconds(501)).empty());
++        CHECK(tracker.Snapshot(start + seconds(500)).empty());
++    }
++    Tracker alias;
++    CHECK(alias.ObserveChat("Player nimmt Ectasy zu sich.", "Player", start));
++    CHECK(alias.Snapshot(start)[0].displayName == "Ecstasy");
++    CHECK(alias.Snapshot(start)[0].cooldownSeconds == 180);
++    CHECK(alias.Snapshot(start)[0].aftereffectSeconds == 60);
++}
++
++void DeadlinesAreRoundedUpAndCompletionIsNotConsumedByRendering() {
++    Tracker tracker;
++    CHECK(tracker.ObserveChat("Player nimmt Heroin zu sich.", "Player", start));
++    CHECK(tracker.Snapshot(start + milliseconds(1))[0].cooldownSeconds == 120);
++    CHECK(tracker.Snapshot(start + milliseconds(999))[0].cooldownSeconds == 120);
++    CHECK(tracker.Snapshot(start + seconds(1))[0].cooldownSeconds == 119);
++    CHECK(tracker.Snapshot(start + seconds(60))[0].aftereffectSeconds == 0);
++    CHECK(tracker.Snapshot(start + seconds(60))[0].cooldownSeconds == 60);
++    CHECK(tracker.Snapshot(start + milliseconds(119999))[0].cooldownSeconds == 1);
++    CHECK(tracker.TakeReadyDrugs(start + milliseconds(119999)).empty());
++    CHECK(tracker.Snapshot(start + seconds(120)).empty());
++    CHECK(tracker.Snapshot(start + seconds(121)).empty());
++    auto ready = tracker.TakeReadyDrugs(start + seconds(121));
++    CHECK(ready.size() == 1 && ready[0] == "Heroin");
++    CHECK(tracker.TakeReadyDrugs(start + seconds(121)).empty());
++    CHECK(tracker.TakeReadyDrugs(start + hours(10)).empty());
++    tracker.Reset();
++    CHECK(tracker.ObserveChat("Player nimmt Kokain zu sich.", "Player", start));
++    CHECK(tracker.Snapshot(start - seconds(1))[0].cooldownSeconds == 120);
++    CHECK(tracker.TakeReadyDrugs(start - seconds(1)).empty());
++}
++
++void DuplicateHooksAndSeparateDrugsDoNotResetEachOther() {
++    Tracker tracker;
++    CHECK(tracker.ObserveChat("Player nimmt Speed zu sich.", "Player", start));
++    CHECK(!tracker.ObserveChat("Player nimmt Speed zu sich.", "Player", start));
++    CHECK(!tracker.ObserveChat("{FFFFFF}Player nimmt Speed zu sich.", "Player", start + milliseconds(999)));
++    CHECK(tracker.ObserveChat("Player nimmt Morphium zu sich.", "Player", start + seconds(30)));
++    CHECK(tracker.Snapshot(start + seconds(30)).size() == 2);
++    CHECK(tracker.Snapshot(start + seconds(30))[0].cooldownSeconds == 150);
++    CHECK(tracker.Snapshot(start + seconds(30))[1].cooldownSeconds == 45);
++    CHECK(tracker.ObserveChat("Player nimmt Speed zu sich.", "Player", start + seconds(60)));
++    CHECK(tracker.Snapshot(start + seconds(60))[0].cooldownSeconds == 180);
++    CHECK(tracker.Snapshot(start + seconds(60))[1].cooldownSeconds == 15);
++    auto ready = tracker.TakeReadyDrugs(start + seconds(75));
++    CHECK(ready.size() == 1 && ready[0] == "Morphium");
++    CHECK(tracker.Snapshot(start + seconds(75)).size() == 1);
++    ready = tracker.TakeReadyDrugs(start + seconds(240));
++    CHECK(ready.size() == 1 && ready[0] == "Speed");
++    CHECK(tracker.TakeReadyDrugs(start + seconds(240)).empty());
++    CHECK(tracker.ObserveChat("Player nimmt Adrenalin zu sich.", "Player", start + seconds(250)));
++    tracker.Reset();
++    CHECK(tracker.Snapshot(start + seconds(251)).empty());
++    CHECK(tracker.TakeReadyDrugs(start + seconds(500)).empty());
++}
++}
++
++int RunDrugUseTrackerTests() {
++    checks = failures = 0;
++    OnlyExactOwnConsumptionStartsTimers();
++    EveryConfiguredDrugHasExactParallelDurations();
++    DeadlinesAreRoundedUpAndCompletionIsNotConsumedByRendering();
++    DuplicateHooksAndSeparateDrugsDoNotResetEachOther();
++    std::printf("DrugUseTrackerTests: %d checks, %d failures\n", checks, failures);
++    return failures;
++}
 diff --git a/tests/GpsNativeAdapterTests.cpp b/tests/GpsNativeAdapterTests.cpp
 new file mode 100644
 index 0000000..f8f94c9
@@ -18470,10 +18887,10 @@ index 1aca855..abd30e5 100644
  }
  
 diff --git a/tests/KeybindTests.cpp b/tests/KeybindTests.cpp
-index 7f489f8..6f80f1f 100644
+index 7f489f8..ebde2c0 100644
 --- a/tests/KeybindTests.cpp
 +++ b/tests/KeybindTests.cpp
-@@ -5,10 +5,30 @@
+@@ -5,10 +5,31 @@
  #include "KeybindTests.h"
  
  int RunActionExecutorTests();
@@ -18481,6 +18898,7 @@ index 7f489f8..6f80f1f 100644
 +int RunR16FeatureTests();
 +int RunR17FeatureTests();
 +int RunR18FeatureTests();
++int RunDrugUseTrackerTests();
 +int RunReconnectTests();
 +int RunKillMessageTestTests();
 +int RunLocationVariableTests();
@@ -18504,7 +18922,7 @@ index 7f489f8..6f80f1f 100644
  int RunImGuiOverlayTests();
  int RunHitmarkerTests();
  int RunHitsoundTests();
-@@ -35,7 +55,9 @@ int RunSourceContractTests();
+@@ -35,7 +56,9 @@ int RunSourceContractTests();
  
  #include <stdio.h>
  
@@ -18515,7 +18933,7 @@ index 7f489f8..6f80f1f 100644
      auto log_line = [](const char* message) {
          printf("%s\n", message);
          fflush(stdout);
-@@ -50,6 +72,8 @@ int main() {
+@@ -50,6 +73,8 @@ int main() {
  
      const int keybind_failures = run_suite("Running KeybindTests...", RunKeybindTests);
      const int executor_failures = run_suite("Running ActionExecutorTests...", RunActionExecutorTests);
@@ -18524,7 +18942,7 @@ index 7f489f8..6f80f1f 100644
      const int interface_editor_failures = run_suite("Running InterfaceEditorTests...", RunInterfaceEditorTests);
      const int input_failures = run_suite("Running InputManagerTests...", RunInputManagerTests);
      const int regression_failures = run_suite("Running RegressionTests...", RunRegressionTests);
-@@ -78,6 +102,25 @@ int main() {
+@@ -78,6 +103,26 @@ int main() {
      const int hud_sprite_failures = run_suite("Running HudSpriteManagerTests...", RunHudSpriteManagerTests);
      const int source_contract_failures = run_suite("Running SourceContractTests...", RunSourceContractTests);
  
@@ -18545,7 +18963,8 @@ index 7f489f8..6f80f1f 100644
 +        + run_suite("Running DamageLogRegressionTests...", RunDamageLogRegressionTests)
 +        + run_suite("Running R16FeatureTests...", RunR16FeatureTests)
 +        + run_suite("Running R17FeatureTests...", RunR17FeatureTests)
-+        + run_suite("Running R18FeatureTests...", RunR18FeatureTests);
++        + run_suite("Running R18FeatureTests...", RunR18FeatureTests)
++        + run_suite("Running DrugUseTrackerTests...", RunDrugUseTrackerTests);
 +    if (r4_failures != 0) return r4_failures;
      log_line("All tests finished.");
 -    return keybind_failures + executor_failures + interface_editor_failures + input_failures + regression_failures + samp_bridge_failures + imgui_overlay_failures + hitmarker_failures + hitsound_failures + theme_failures + quickmap_failures + job_registry_failures + job_chat_adapter_failures + job_event_store_failures + job_parser_failures + job_tracker_lifecycle_failures + main_window_jobs_nav_failures + jobs_ui_failures + jobs_correction_failures + job_adjustment_failures + online_ui_failures + online_data_manager_failures + online_settings_failures + online_overlay_renderer_failures + online_event_detector_failures + ui_components_failures + squaremap_failures + hud_sprite_failures + source_contract_failures;
@@ -18877,10 +19296,18 @@ index 9d61aa9..8231626 100644
      ASSERT_EQ(factionBuckets[0].playerNames[0], std::string("alpha"));
      ASSERT_EQ(factionBuckets[0].playerNames[1], std::string("bravo"));
 diff --git a/tests/OnlineOverlayRendererTests.cpp b/tests/OnlineOverlayRendererTests.cpp
-index 5d18d7e..3d06168 100644
+index 5d18d7e..3e84d10 100644
 --- a/tests/OnlineOverlayRendererTests.cpp
 +++ b/tests/OnlineOverlayRendererTests.cpp
-@@ -79,9 +79,9 @@ struct ImGuiScope {
+@@ -12,6 +12,7 @@
+ #include "../include/imgui-1.92.7/imgui_internal.h"
+ 
+ #include <cstdio>
++#include <cmath>
+ #include <string>
+ #include <vector>
+ 
+@@ -79,9 +80,9 @@ struct ImGuiScope {
          }
      }
  
@@ -18892,7 +19319,7 @@ index 5d18d7e..3d06168 100644
          io.DeltaTime = 1.0f / 60.0f;
          ImGui::NewFrame();
      }
-@@ -626,6 +626,346 @@ bool TestWantedOverlayDisabledByDefault() {
+@@ -626,6 +627,460 @@ bool TestWantedOverlayDisabledByDefault() {
      return true;
  }
  
@@ -19196,6 +19623,120 @@ index 5d18d7e..3d06168 100644
 +    return true;
 +}
 +
++bool TestDrugTimersUseSharedStyleVerticalRowsAndExistingMoveMode() {
++    SettingsManager settings;
++    auto& s = settings.GetMutable();
++    s.online_drug_timers_overlay_enabled = true;
++    s.online_drug_timers_overlay_anchor = "top_left";
++    s.online_drug_timers_overlay_offset_x = 45.0f;
++    s.online_drug_timers_overlay_offset_y = 365.0f;
++    s.online_overlay_style = "dense";
++    s.online_overlay_scale = 1.2f;
++    s.online_overlay_opacity = 0.6f;
++    s.online_overlay_custom_text_color_enabled = true;
++    s.online_overlay_text_color_r = 0.25f;
++    OnlineDataManager manager;
++    PopulateUsableSnapshot(manager);
++    OnlineGameOverlayState game;
++    game.connected = true;
++    OnlineOverlayController controller;
++    controller.Initialize(&settings, &manager);
++    controller.SetGameStateProvider([&]() { return game; });
++    controller.Update(0.0f);
++    ASSERT_TRUE(controller.GetGameOverlays().empty());
++
++    OnlineOverlayRenderer renderer;
++    renderer.Initialize(&settings, &manager);
++    renderer.SetOverlayController(&controller);
++    int saves = 0;
++    renderer.SetSettingsPersistCallback([&]() { ++saves; });
++    ImGuiScope scope;
++    scope.BeginFrame();
++    renderer.RenderPersistentOverlays();
++    scope.EndFrame();
++    ASSERT_TRUE(FindWindow("##PersistentOverlay_Use Cooldown & Nachwirkung") == nullptr);
++
++    const auto preview = controller.GetDrugTimerOverlayPreview();
++    const std::vector<std::string> previewRows{"Cooldown: 0 s", "Abklingzeit: 0 s"};
++    ASSERT_EQ(preview.playerNames, previewRows);
++    ASSERT_TRUE(preview.visible);
++    ASSERT_EQ(preview.kind, PersistentOverlayKind::DrugTimers);
++    ASSERT_EQ(preview.style, OnlineOverlayStyle::Dense);
++    ASSERT_EQ(preview.scale, 1.2f);
++    ASSERT_EQ(preview.opacity, 0.6f);
++    ASSERT_TRUE(preview.customTextColorEnabled);
++    ASSERT_EQ(preview.textColorR, 0.25f);
++    renderer.SetPersistentOverlayMoveMode(true);
++    scope.BeginFrame();
++    renderer.RenderPersistentOverlays();
++    auto* window = FindWindow("##PersistentOverlay_Use Cooldown & Nachwirkung");
++    ASSERT_TRUE(window != nullptr);
++    ASSERT_EQ(window->Pos.x, 45.0f);
++    ASSERT_EQ(window->Pos.y, 365.0f);
++    ASSERT_TRUE((window->Flags & ImGuiWindowFlags_NoMove) == 0);
++    ASSERT_TRUE((window->Flags & ImGuiWindowFlags_NoMouseInputs) == 0);
++    const ImVec2 size = window->Size;
++    renderer.PersistMovedOverlayPositionForTesting(preview, ImVec2(1300.0f, 800.0f), size);
++    ASSERT_EQ(s.online_drug_timers_overlay_anchor, std::string("bottom_right"));
++    ASSERT_EQ(s.online_drug_timers_overlay_offset_x, 620.0f - size.x);
++    ASSERT_EQ(s.online_drug_timers_overlay_offset_y, 280.0f - size.y);
++    ASSERT_EQ(s.online_stamina_overlay_offset_y, 320.0f);
++    scope.EndFrame();
++
++    ImGui::GetIO().AddKeyEvent(ImGuiKey_Escape, true);
++    controller.Update(0.0f);
++    scope.BeginFrame();
++    renderer.RenderPersistentOverlays();
++    scope.EndFrame();
++    ASSERT_TRUE(!renderer.IsPersistentOverlayMoveModeActive());
++    ASSERT_EQ(saves, 1);
++    ASSERT_TRUE(!window->Active); // Closing move mode removes the idle preview immediately.
++    SettingsManager reloaded;
++    ASSERT_TRUE(reloaded.LoadFromJson(settings.GetSettingsJson()));
++    ASSERT_EQ(reloaded.Get().online_drug_timers_overlay_anchor, std::string("bottom_right"));
++    ASSERT_EQ(reloaded.Get().online_drug_timers_overlay_offset_x, s.online_drug_timers_overlay_offset_x);
++    ASSERT_EQ(reloaded.Get().online_drug_timers_overlay_offset_y, s.online_drug_timers_overlay_offset_y);
++
++    const std::vector<std::string> rows{"Kokain", "Cooldown: 120 s", "Abklingzeit: 120 s"};
++    controller.SetDrugTimerLines(rows);
++    controller.Update(0.0f);
++    const auto& data = controller.GetGameOverlays()[0];
++    ASSERT_EQ(data.playerNames, rows);
++    ASSERT_EQ(data.playerCount, 3);
++    ASSERT_TRUE(!data.showPlayerCount);
++    ASSERT_EQ(data.style, preview.style);
++    ASSERT_EQ(data.scale, preview.scale);
++    ASSERT_EQ(data.opacity, preview.opacity);
++    ASSERT_TRUE(data.minimumWidth > 0.0f); // One column keeps both timers on separate rows.
++    scope.BeginFrame();
++    renderer.RenderPersistentOverlays();
++    scope.EndFrame();
++    ASSERT_TRUE(window->Active);
++    ASSERT_TRUE((window->Flags & ImGuiWindowFlags_NoMove) != 0);
++    ASSERT_TRUE(window->Size.y > size.y);
++    ASSERT_EQ(window->Pos.x, 1300.0f);
++    // ImGui truncates both requested size and position to pixels separately.
++    // A fractional scaled panel height can leave one extra pixel at this edge.
++    const float anchoredY = 1080.0f - window->Size.y - s.online_drug_timers_overlay_offset_y;
++    ASSERT_TRUE(std::fabs(window->Pos.y - anchoredY) <= 1.0f);
++
++    s.online_drug_timers_overlay_enabled = false;
++    controller.Update(0.0f);
++    ASSERT_TRUE(controller.GetGameOverlays().empty());
++    s.online_drug_timers_overlay_enabled = true;
++    controller.SetDrugTimerLines({});
++    controller.Update(0.0f);
++    ASSERT_TRUE(controller.GetGameOverlays().empty());
++    scope.BeginFrame();
++    renderer.RenderPersistentOverlays();
++    scope.EndFrame();
++    ASSERT_TRUE(!window->Active);
++    game.connected = false;
++    controller.Update(0.6f);
++    ASSERT_TRUE(controller.GetGameOverlays().empty());
++    return true;
++}
++
 +bool TestRedCountyBrotherhoodMembershipAndQuickFilter() {
 +    SettingsManager settings;
 +    Settings& s = settings.GetMutable();
@@ -19239,7 +19780,7 @@ index 5d18d7e..3d06168 100644
  } // namespace
  
  int RunOnlineOverlayRendererTests() {
-@@ -647,6 +987,13 @@ int RunOnlineOverlayRendererTests() {
+@@ -647,6 +1102,14 @@ int RunOnlineOverlayRendererTests() {
      RUN_TEST(TestWantedOverlayMaxZeroMeansNoUpperLimit);
      RUN_TEST(TestWantedOverlaySwapsInvertedRange);
      RUN_TEST(TestWantedOverlayDisabledByDefault);
@@ -19249,15 +19790,24 @@ index 5d18d7e..3d06168 100644
 +    RUN_TEST(TestNewGameHudRemainsInsideSmallViewportWithTwentyMarkers);
 +    RUN_TEST(TestPlayerAffiliationAlwaysUsesCurrentSnapshotRatherThanSavedNotes);
 +    RUN_TEST(TestFriendAndEnemyRadarMoveAndPersistIndependently);
++    RUN_TEST(TestDrugTimersUseSharedStyleVerticalRowsAndExistingMoveMode);
 +    RUN_TEST(TestRedCountyBrotherhoodMembershipAndQuickFilter);
      std::printf("OnlineOverlayRendererTests: %d passed, %d failed\n", g_state.passed, g_state.failed);
      return g_state.failed;
  }
 diff --git a/tests/OnlineSettingsTests.cpp b/tests/OnlineSettingsTests.cpp
-index c647f19..d28265e 100644
+index c647f19..e16d2ea 100644
 --- a/tests/OnlineSettingsTests.cpp
 +++ b/tests/OnlineSettingsTests.cpp
-@@ -484,6 +484,139 @@ bool TestWantedOverlayDefaultsWhenAbsent() {
+@@ -9,6 +9,7 @@
+ #include <cstdio>
+ #include <cmath>
+ #include <cstring>
++#include <limits>
+ #include <string>
+ #include <vector>
+ 
+@@ -484,6 +485,172 @@ bool TestWantedOverlayDefaultsWhenAbsent() {
      return true;
  }
  
@@ -19394,10 +19944,43 @@ index c647f19..d28265e 100644
 +    return true;
 +}
 +
++bool TestDrugTimerOverlayDefaultsRoundtripAndInvalidCoordinates() {
++    SettingsManager defaults;
++    ASSERT_TRUE(!defaults.Get().online_drug_timers_overlay_enabled);
++    ASSERT_EQ(defaults.Get().online_drug_timers_overlay_anchor, std::string("top_left"));
++    ASSERT_EQ(defaults.Get().online_drug_timers_overlay_offset_x, 12.0f);
++    ASSERT_EQ(defaults.Get().online_drug_timers_overlay_offset_y, 520.0f);
++
++    auto& settings = defaults.GetMutable();
++    settings.online_drug_timers_overlay_enabled = true;
++    settings.online_drug_timers_overlay_anchor = "bottom_left";
++    settings.online_drug_timers_overlay_offset_x = 43.5f;
++    settings.online_drug_timers_overlay_offset_y = 1.25e-5f;
++    SettingsManager reloaded;
++    ASSERT_TRUE(reloaded.LoadFromJson(defaults.GetSettingsJson()));
++    ASSERT_TRUE(reloaded.Get().online_drug_timers_overlay_enabled);
++    ASSERT_EQ(reloaded.Get().online_drug_timers_overlay_anchor, std::string("bottom_left"));
++    ASSERT_EQ(reloaded.Get().online_drug_timers_overlay_offset_x, 43.5f);
++    ASSERT_NEAR(reloaded.Get().online_drug_timers_overlay_offset_y, 1.25e-5f, 0.0000001f);
++
++    reloaded.GetMutable().online_drug_timers_overlay_offset_x = std::numeric_limits<float>::quiet_NaN();
++    reloaded.GetMutable().online_drug_timers_overlay_offset_y = std::numeric_limits<float>::infinity();
++    ASSERT_TRUE(reloaded.LoadFromJson(R"({"online_drug_timers_overlay_anchor":"invalid"})"));
++    ASSERT_EQ(reloaded.Get().online_drug_timers_overlay_anchor, std::string("top_right"));
++    ASSERT_EQ(reloaded.Get().online_drug_timers_overlay_offset_x, 12.0f);
++    ASSERT_EQ(reloaded.Get().online_drug_timers_overlay_offset_y, 520.0f);
++
++    ASSERT_TRUE(reloaded.LoadFromJson(R"({"online_drug_timers_overlay_anchor":" BOTTOM_RIGHT ","online_drug_timers_overlay_offset_x":null,"online_drug_timers_overlay_offset_y":365})"));
++    ASSERT_EQ(reloaded.Get().online_drug_timers_overlay_anchor, std::string("bottom_right"));
++    ASSERT_EQ(reloaded.Get().online_drug_timers_overlay_offset_x, 12.0f);
++    ASSERT_EQ(reloaded.Get().online_drug_timers_overlay_offset_y, 365.0f);
++    return true;
++}
++
  int RunOnlineSettingsTests() {
      std::printf("\n=== Online Settings Tests ===\n");
      RUN_TEST(TestOnlineDefaultsWhenEmpty);
-@@ -506,6 +639,10 @@ int RunOnlineSettingsTests() {
+@@ -506,6 +673,11 @@ int RunOnlineSettingsTests() {
      RUN_TEST(TestWantedOverlayInvertedRangeNormalizesToSwapped);
      RUN_TEST(TestWantedOverlayMaxZeroPreservedAsNoLimit);
      RUN_TEST(TestWantedOverlayDefaultsWhenAbsent);
@@ -19405,6 +19988,7 @@ index c647f19..d28265e 100644
 +    RUN_TEST(TestPlayerMarkersNormalizeDeduplicateAndLimitEntries);
 +    RUN_TEST(TestLegacyRadarSettingsOnlyMigrateDisplaySelections);
 +    RUN_TEST(TestSeparateRadarPositionsMigrateLegacyValuesAndRespectExplicitPlacements);
++    RUN_TEST(TestDrugTimerOverlayDefaultsRoundtripAndInvalidCoordinates);
      std::printf("Online Settings: %d passed, %d failed\n", g_state.passed, g_state.failed);
      return g_state.failed;
  }
@@ -25461,9 +26045,221 @@ index 0000000..41f8fed
 +actual GTA structures and replaced engine functions, without opening GTA.
 +'''
 +p.write_text(t,encoding='utf-8');print('Documented r18 coordination fixes and exact test limits')
+diff --git a/tools/document_revision19.py b/tools/document_revision19.py
+new file mode 100644
+index 0000000..968cd75
+--- /dev/null
++++ b/tools/document_revision19.py
+@@ -0,0 +1,206 @@
++"""Write the current r19 usage and review pages without rewriting earlier release notes."""
++from pathlib import Path
++import re
++R=Path(__file__).resolve().parents[1]
++
++NOTES='''# NLBinder v.0.1.1 by KOBiRO – r19
++
++## Use Cooldown & Nachwirkung
++
++Unter Online → Overlay-Einstellungen → Dauerhaft → Spielinformationen steht
++direkt unter „Ausdauer anzeigen“ der Schalter „Use Cooldown & Nachwirkung anzeigen“.
++Die Anzeige ist zunächst ausgeschaltet. Aktivieren startet die Erkennung für
++nachfolgende eigene Einnahmen. Deaktivieren entfernt laufende Timer und ausstehende
++Bereit-Meldungen.
++
++Der Binder erkennt die vollständige Aktionszeile „Name nimmt Droge zu sich.“ und
++vergleicht den Namen mit dem aktuellen lokalen Spielernamen. Fremde Einnahmen,
++zitierte Nachrichten und normaler Spielerchat starten keine eigenen Timer.
++Farbcodes werden bereinigt. Der Name ist nicht auf einen bestimmten Nutzer festgelegt.
++
++| Droge | Cooldown | Abklingzeit |
++| --- | ---: | ---: |
++| Kokain | 120 s | 120 s |
++| Heroin | 120 s | 60 s |
++| Speed | 180 s | 180 s |
++| Ecstasy | 180 s | 60 s |
++| Cannabis | keine | 40 s |
++| Adrenalin | 45 s | keine |
++| Morphium | 45 s | 45 s |
++
++„Ectasy“ wird ebenfalls als Ecstasy erkannt. Cooldown und Abklingzeit beginnen
++gleichzeitig bei der Einnahme. Die verbleibenden Zeiten werden in Sekunden
++aufgerundet und nutzen eine monotone Uhr; schwankende Bildrate verlängert sie nicht.
++Mehrere Drogen bleiben unabhängig voneinander im selben Overlay sichtbar.
++
++Beispiel für Kokain, mit untereinander stehenden Zeilen:
++
++```text
++Kokain
++Cooldown: 120 s
++Abklingzeit: 120 s
++```
++
++Bei Cannabis entfällt die Cooldown-Zeile, bei Adrenalin die Abklingzeit-Zeile.
++Ein tatsächlich vorhandener Cooldown erzeugt beim Ablauf genau eine lokale
++NL-BINDER-Meldung mit der wieder konsumierbaren Droge. Sie wird nicht an den
++Serverchat geschickt. Cannabis erzeugt keine Cooldown-Bereit-Meldung.
++
++Ohne aktive Einnahme bleibt das Overlay unsichtbar. Beim vorhandenen
++„Move-Modus starten“ erscheint stattdessen eine Vorschau mit „Cooldown: 0 s“
++und „Abklingzeit: 0 s“. Mit der Maus verschieben, mit ESC die Position speichern.
++Danach verschwindet die Vorschau bis zur nächsten Einnahme. Hintergrund, Schrift,
++Skalierung und Farben verwenden denselben Stil wie die übrigen dauerhaften Overlays.
++Die Position ist unabhängig von Ausdauer und anderen Anzeigen gespeichert.
++
++Bei Verbindungsende oder Spielerwechsel werden die laufenden Einnahmen verworfen.
++Nach einem Relog erfindet der Binder keine bereits vergangenen Konsumereignisse.
++
++## Installation
++
++GTA vollständig schließen, NLBinder.asi ersetzen und das Spiel neu starten.
++Browserdateien werden weiterhin bei Bedarf automatisch unter Dokumente/GTA San
++Andreas User Files/NLBinder/Browser angelegt. Kein Browserordner muss mitgesendet werden.
++Der bisherige Quellcode, alle früheren Änderungen und vollständiger TXT-Changelog
++sind enthalten. Im Desktop-Export wird der bisherige r18-Ordner als Sicherung erhalten.
++
++## Prüfung
++
++[Aktueller Prüfumfang](https://github.com/Kobiro57/PerkysBinderChangelog/blob/v0.1.1-r19/docs/review/r19-PRUEFUNG-DE.md),
++[maschineller Nachweis](https://github.com/Kobiro57/PerkysBinderChangelog/blob/v0.1.1-r19/docs/review/r19-validation.json),
++[gesamter Changelog](CHANGELOG-GESAMT.txt).
++Die automatisierten Prüfungen belegen die getesteten Abläufe. Eine noch nicht
++erfolgte Sichtprüfung dieser Erweiterung im laufenden GTA wird nicht behauptet.
++'''
++
++REVIEW='''# Prüfumfang r19 – 9. November 2026
++
++r19 ergänzt das eigene Drogen-Cooldown-/Nachwirkungs-Overlay. Alle Zeitangaben
++der sieben Drogen werden in Sekunden geprüft. Die Tests behandeln den dynamischen
++lokalen Namen, Ablehnung fremder oder zitierter Zeilen, Ecstasy/Ectasy, gleichzeitige
++Timer, Grenzzeitpunkte, doppelte Zeilen und einmalige lokale Bereit-Meldungen.
++
++Die Settings-Prüfungen behandeln Default-Aus, JSON-Roundtrip und ungültige
++Koordinaten. Der vorhandene ImGui-Test prüft das neue mehrzeilige Panel,
++gemeinsamen Stil, unabhängiges Verschieben und Speichern über den vorhandenen
++Move-Modus. Vorschau ohne aktive Einnahme und spätere Unsichtbarkeit werden
++gesondert berücksichtigt.
++
++Der [maschinelle Nachweis](https://github.com/Kobiro57/PerkysBinderChangelog/blob/v0.1.1-r19/docs/review/r19-validation.json) entsteht erst aus erfolgreichen
++Gesamttests und Release-Build. Der PE-Nachweis prüft x86-DLL, eingebettete Helfer
++300/301 auf Bytegleichheit mit den gebauten EXE-Dateien, eingebettete ZIP-Lizenz
++302 sowie fehlende externe C++-Debug-Runtime und kein libcef im Spielprozess.
++Der native Reconnect-Worker wird nach dem finalen Build separat geprüft.
++
++Browser-, GPS-, Installer- und Reconnect-Helferquellen werden vor dem Paketbau
++gegen den veröffentlichten r18-Stand b3ca24e43a8603d98215ca6b559adad16f3d41fe
++auf unveränderten Inhalt geprüft. Der Browserstand bleibt cef156-r1. Die früheren
++[Browser-/GPS-Nachweise](https://github.com/Kobiro57/PerkysBinderChangelog/blob/v0.1.1-r19/docs/review/r18-validation.json) und der genau abgegrenzte
++[vorläufige Live-Test](https://github.com/Kobiro57/PerkysBinderChangelog/blob/v0.1.1-r19/docs/review/r18-live-validation.json) bleiben historisch erhalten.
++Diese aufwendigen Download-/Browser-Integrationstests werden für r19 nicht als
++erneut ausgeführt dargestellt.
++
++Kein r19-Sichttest im laufenden Spiel wird vor einer tatsächlichen Bestätigung
++behauptet. Keine persönlichen Profile, Einstellungen, Chatlogs oder Zugangsdaten
++gehören zur Veröffentlichung.
++
++[Bedienung und Zeiten](https://github.com/Kobiro57/PerkysBinderChangelog/blob/v0.1.1-r19/docs/NLBinder-0.1.1-r19-DE.md) ·
++[Vollständiger Changelog](https://github.com/Kobiro57/PerkysBinderChangelog/blob/v0.1.1-r19/docs/review/CHANGELOG-DE.md)
++'''
++
++README='''# PerkysBinderChangelog
++
++Aktueller Stand: **NLBinder v.0.1.1 by KOBiRO, r19**.
++Ursprüngliche Urheberhinweise und bisherige Veröffentlichungen bleiben erhalten.
++
++r19 ergänzt unter Online → Overlay-Einstellungen → Dauerhaft direkt unter
++Ausdauer ein aktivierbares „Use Cooldown & Nachwirkung“-Overlay. Eigene
++Konsumaktionen starten unabhängige Countdown-Zeilen in Sekunden; die Abklingzeit
++beginnt parallel zum Cooldown. Nach dem Cooldown kommt einmalig eine lokale
++Bereit-Meldung. Die Anzeige nutzt denselben Stil und Move-Modus mit ESC wie die
++vorhandenen Overlays. Ohne aktive Timer bleibt sie unsichtbar; im Move-Modus
++hilft eine Vorschau beim Positionieren.
++
++## Prüfung und Quellcode
++
++- [Vollständiger Changelog](docs/review/CHANGELOG-DE.md), auch [als TXT](docs/CHANGELOG-GESAMT.txt)
++- [Bedienung und alle Zeiten](docs/NLBinder-0.1.1-r19-DE.md)
++- [Tatsächlicher r19-Prüfumfang](docs/review/r19-PRUEFUNG-DE.md)
++- [Maschinenlesbarer r19-Nachweis](docs/review/r19-validation.json)
++- [Dateivergleich zum Original](docs/review/DATEIVERGLEICH.md)
++- [Abhängigkeiten und Lizenzen](docs/review/DEPENDENCIES.md)
++- [Änderungen seit r18](https://github.com/Kobiro57/PerkysBinderChangelog/compare/v0.1.1-r18...v0.1.1-r19)
++- [Alle Programmänderungen](https://github.com/Kobiro57/PerkysBinderChangelog/compare/build-dependencies-baseline...v0.1.1-r19)
++
++Vollständige Quellen unter src/, include/, browser/, res/, tests/, tools/ und
++third_party/. Originalimport, SDK-Basis und frühere Revisionspatches bleiben
++unverändert nachvollziehbar. Keine persönlichen Laufzeitdateien enthalten.
++
++## Fertiger Binder
++
++- [r19-Paket herunterladen](https://github.com/Kobiro57/PerkysBinderChangelog/releases/tag/v0.1.1-r19)
++- [NLBinder.asi](dist/NLBinder-0.1.1-r19/NLBinder.asi)
++- [Installation und Bedienung](dist/NLBinder-0.1.1-r19/LIESMICH.md)
++- [Build- und Prüfangaben](dist/NLBinder-0.1.1-r19/BUILD-INFO.txt)
++- [ASI und eingebettete Helfer](dist/NLBinder-0.1.1-r19/PRUEFBERICHT.json)
++
++GTA vollständig beenden, ASI ersetzen und neu starten. Der Browser wird beim
++ersten /forum weiterhin automatisch unter Dokumente eingerichtet. Frühere
++Browser-/GPS-Integrationstests bleiben getrennt dokumentiert; ein r19-Live-Test
++wird erst nach tatsächlicher Beobachtung als bestanden angegeben.
++
++[Ursprüngliche Beschreibung](docs/ORIGINAL-README.md) · [Build-Anleitung](docs/BUILD-README.md)
++'''
++
++HISTORY='''
++## 25. Nachtrag r19 – 9. November 2026
++
++- Unter Online → Overlay-Einstellungen → Dauerhaft → Spielinformationen direkt
++  unter „Ausdauer anzeigen“ den Schalter „Use Cooldown & Nachwirkung anzeigen“ ergänzt.
++- Nur die vollständige eigene Konsum-Aktionszeile anhand des aktuellen lokalen
++  Spielernamens auswerten. Fremde Namen, normaler Spielerchat und zitierte Texte
++  starten keine Timer. Ecstasy und Ectasy bezeichnen denselben Eintrag.
++- Cooldown/Abklingzeit in Sekunden: Kokain 120/120, Heroin 120/60,
++  Speed 180/180, Ecstasy 180/60, Cannabis ohne Cooldown/40,
++  Adrenalin 45/ohne Abklingzeit und Morphium 45/45.
++- Beide Zeiten beginnen parallel bei der Einnahme; unabhängige Drogen können
++  gleichzeitig laufen. Monotone Zeit und aufgerundete Restsekunden verhindern
++  eine Verlängerung durch schwankende Bildraten.
++- Cooldown und Abklingzeit pro Droge untereinander im selben Overlay anzeigen.
++  Nicht vorhandene Timer weglassen. Nach Ablauf eines vorhandenen Cooldowns
++  einmalig lokal melden, welche Droge wieder konsumiert werden kann.
++- Gleichen Stil, Farben, Skalierung und bestehenden Move-Modus mit ESC-Speichern
++  nutzen; Position unabhängig von Ausdauer und anderen Overlays sichern.
++- Ohne aktive Einnahme im normalen Spiel unsichtbar. Im Move-Modus nur eine
++  Vorschau mit „Cooldown: 0 s“ und „Abklingzeit: 0 s“ anzeigen; ESC speichert
++  und versteckt sie wieder bis zum nächsten aktiven Konsum.
++- Deaktivieren, Verbindungsende und Spielerwechsel entfernen laufende Timer
++  und ausstehende Bereit-Meldungen. Keine nachträglichen Ereignisse erfinden.
++- Gezielte Timer-, Settings- und Overlay-/Move-Prüfungen ergänzt. Tatsächliche
++  Prüfergebnisse stehen im separaten r19-Nachweis; früheren Browser-/GPS-Testumfang
++  nicht als neu ausgeführten r19-Live-Test darstellen.
++'''
++
++def main():
++    (R/'docs/NLBinder-0.1.1-r19-DE.md').write_text(NOTES,encoding='utf-8')
++    (R/'docs/review/r19-PRUEFUNG-DE.md').write_text(REVIEW,encoding='utf-8')
++    (R/'build').mkdir(exist_ok=True)
++    (R/'build/README-GITHUB-r19.md').write_text(README,encoding='utf-8')
++    (R/'docs/review/README-GITHUB.md').write_text(
++        re.sub(r'\]\((docs/|dist/|res/)',r'](../../\1',README),encoding='utf-8')
++    review=R/'docs/review/PRUEFUNG-DE.md'
++    text=review.read_text(encoding='utf-8-sig')
++    if '## Aktueller Stand r19' not in text:
++        text=text.replace('## Aktueller Stand r18','## Vorheriger Stand r18',1)
++        first,separator,rest=text.partition('\n')
++        text=first+'\n\n## Aktueller Stand r19 – 9. November 2026\n\n'+(
++            'Der aktuelle Prüfumfang des Drogen-Cooldown-/Nachwirkungs-Overlays\n'
++            'steht in [r19-PRUEFUNG-DE.md](r19-PRUEFUNG-DE.md), die Ergebnisse\n'
++            'in [r19-validation.json](r19-validation.json). Frühere Prüfungen\n'
++            'bleiben nachstehend mit ihrem tatsächlich beobachteten Stand erhalten.\n')+rest
++        review.write_text(text,encoding='utf-8')
++    p=R/'docs/review/CHANGELOG-DE.md';text=p.read_text(encoding='utf-8-sig')
++    if '## 25. Nachtrag r19' not in text:p.write_text(text.rstrip()+'\n'+HISTORY,encoding='utf-8')
++    print('Documented r19 usage, exact scope and full history section 25')
++
++if __name__=='__main__':main()
 diff --git a/tools/export_full_changelog.py b/tools/export_full_changelog.py
 new file mode 100644
-index 0000000..76a96f2
+index 0000000..5b26dea
 --- /dev/null
 +++ b/tools/export_full_changelog.py
 @@ -0,0 +1,34 @@
@@ -25491,12 +26287,12 @@ index 0000000..76a96f2
 +    source = root / "docs/review/CHANGELOG-DE.md"
 +    target = root / "docs/CHANGELOG-GESAMT.txt"
 +    text = source.read_text(encoding="utf-8")
-+    required = {f"## {number}. " for number in range(1, 25)}
++    required = {f"## {number}. " for number in range(1, 26)}
 +    if not all(marker in text for marker in required):
-+        raise ValueError("Complete change history sections 1-24 required")
++        raise ValueError("Complete change history sections 1-25 required")
 +    result = render(text)
 +    target.write_text(result, encoding="utf-8-sig", newline="\n")
-+    print(f"Full changelog: {len(result.splitlines())} lines, sections 1-24, {target.name}")
++    print(f"Full changelog: {len(result.splitlines())} lines, sections 1-25, {target.name}")
 +
 +
 +if __name__ == "__main__":
@@ -25646,6 +26442,197 @@ index 0000000..de24a3f
 +    runtime = json.loads(exported['BROWSER-RUNTIME.json'].decode('utf-8'))
 +    runtime_files = {}
 +    # r18 installs the pinned browser automatically into Documents on first /forum.
++    require(exported["Keybinder.vcxproj"].count(b"<TargetName>NLBinder</TargetName>") == 2,
++            "Release/Debug project names are not both NLBinder")
++    folded = [relative.casefold() for relative in exported]
++    require(len(folded) == len(set(folded)), "Case-insensitive destination path collision")
++    require(git(repo, "rev-parse", "--verify", "--end-of-options", args.revision + "^{commit}").decode().strip() == commit,
++            "Source revision changed during snapshot reading")
++    # All input and publication checks finish before the first destination write.
++    destination.mkdir()
++    for relative, data in sorted(exported.items()):
++        target = destination / relative
++        require(target.resolve().is_relative_to(destination), "Export escaped the destination")
++        target.parent.mkdir(parents=True, exist_ok=True)
++        target.write_bytes(data)
++    import shutil
++    for relative, source in runtime_files.items():
++        target = destination / relative
++        target.parent.mkdir(parents=True, exist_ok=True)
++        shutil.copyfile(source, target)
++    actual = {path.relative_to(destination).as_posix(): path for path in destination.rglob("*") if path.is_file()}
++    require(set(actual) == set(exported) | set(runtime_files), "Exported file set differs")
++    for relative, data in exported.items():
++        require(actual[relative].read_bytes() == data, "Exported file differs: " + relative)
++        require(not actual[relative].is_symlink(), "Unexpected exported symlink: " + relative)
++    for relative, source in runtime_files.items():
++        with source.open('rb') as stream: before = hashlib.file_digest(stream, 'sha256').hexdigest()
++        with actual[relative].open('rb') as stream: after = hashlib.file_digest(stream, 'sha256').hexdigest()
++        require(before == after, 'Exported runtime differs: ' + relative)
++    manifest = {
++        "release": RELEASE, "source_commit": commit, "destination": str(destination),
++        "exported_files": len(exported) + len(runtime_files),
++        "exported_bytes": sum(map(len, exported.values())) + sum(p.stat().st_size for p in runtime_files.values()),
++        "browser_runtime_files": len(runtime_files),
++        "source_files": len(selected), "all_files_verified": True,
++        "historical_release_binaries_in_export": 0, "private_runtime_files": 0,
++        "asi_bytes": len(binary), "asi_sha256": digest(binary),
++        "changelog_sha256": digest(exported["CHANGELOG-GESAMT.txt"]),
++        "root_file_sources": extras,
++        "files": {relative: digest(data) for relative, data in sorted(exported.items())},
++    }
++    manifest_path.parent.mkdir(parents=True, exist_ok=True)
++    manifest_path.write_text(json.dumps(manifest, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
++    print(json.dumps({key: value for key, value in manifest.items() if key != "files"}, indent=2, ensure_ascii=False))
++
++
++if __name__ == "__main__":
++    main()
+diff --git a/tools/export_source_bundle_revision19.py b/tools/export_source_bundle_revision19.py
+new file mode 100644
+index 0000000..4063634
+--- /dev/null
++++ b/tools/export_source_bundle_revision19.py
+@@ -0,0 +1,185 @@
++"""Export a verified r19 source snapshot, ASI, automatic-browser manifest and full changelog.
++
++Reads Git blobs without changing Git or the game installation. The destination
++must not exist. Historical release binaries, Git metadata, local build outputs
++and private runtime files are excluded. The proof manifest stays under build/.
++"""
++from pathlib import Path, PurePosixPath
++import argparse
++import hashlib
++import json
++import re
++import subprocess
++
++
++ROOT = Path(__file__).resolve().parents[1]
++RELEASE = "v0.1.1-r19"
++PACKAGE = "dist/NLBinder-0.1.1-r19"
++PRIVATE_PARTS = {
++    ".git", ".vs", ".aws", ".codex", ".agents", "__pycache__", "build",
++    "output", "debug", "release", "obj", "cmakefiles", ".venv", "venv",
++}
++PRIVATE_NAMES = {
++    "keybinder.json", "jobs_data.json", "imgui.ini", ".env", ".git-credentials",
++    "credentials", "id_rsa", "id_ed25519", "nul", "gps.xml",
++}
++PRIVATE_SUFFIXES = {".log", ".obj", ".pdb", ".ilk", ".exp", ".pyc", ".suo", ".user", ".o"}
++
++
++def require(ok, message):
++    if not ok:
++        raise ValueError(message)
++
++
++def digest(data):
++    return hashlib.sha256(data).hexdigest()
++
++
++def git(repo, *args):
++    return subprocess.check_output(["git", *args], cwd=repo)
++
++
++def safe_source_path(relative):
++    path = PurePosixPath(relative)
++    require(path.parts and not path.is_absolute() and ".." not in path.parts,
++            "Unsafe source path: " + relative)
++    require("\\" not in relative and ":" not in relative, "Invalid source path: " + relative)
++    require(not any(part.lower() in PRIVATE_PARTS for part in path.parts[:-1]),
++            "Private/build directory in source snapshot: " + relative)
++    require(path.name.lower() not in PRIVATE_NAMES and path.suffix.lower() not in PRIVATE_SUFFIXES,
++            "Private/runtime file in source snapshot: " + relative)
++
++
++def source_entries(repo, commit):
++    entries = {}
++    for entry in git(repo, "ls-tree", "-r", "-z", commit).split(b"\0"):
++        if not entry:
++            continue
++        metadata, raw_path = entry.split(b"\t", 1)
++        mode, kind, oid = metadata.split()
++        relative = raw_path.decode("utf-8")
++        require(kind == b"blob" and mode in {b"100644", b"100755"},
++                "Unsupported symlink/submodule: " + relative)
++        entries[relative] = oid
++    return entries
++
++
++def read_blobs(repo, entries):
++    oids = sorted(set(entries.values()))
++    process = subprocess.Popen(["git", "cat-file", "--batch"], cwd=repo,
++                               stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
++    output, errors = process.communicate(b"\n".join(oids) + b"\n")
++    require(process.returncode == 0, "Cannot read Git source objects: " + errors.decode("utf-8", "replace"))
++    offset, blobs = 0, {}
++    for oid in oids:
++        end_header = output.find(b"\n", offset)
++        require(end_header >= offset, "Truncated Git source header")
++        header = output[offset:end_header].split()
++        require(len(header) == 3 and header[0] == oid and header[1] == b"blob", "Unexpected source object")
++        size = int(header[2])
++        start, end = end_header + 1, end_header + 1 + size
++        require(output[end:end + 1] == b"\n", "Truncated source file")
++        blobs[oid] = output[start:end]
++        offset = end + 1
++    require(offset == len(output), "Unexpected trailing Git source data")
++    return {relative: blobs[oid] for relative, oid in entries.items()}
++
++
++def main():
++    parser = argparse.ArgumentParser(description=__doc__)
++    parser.add_argument("--destination", required=True, type=Path)
++    parser.add_argument("--repository", type=Path, default=ROOT / "build/github-publication/repository")
++    parser.add_argument("--revision", default="HEAD")
++    parser.add_argument("--binary", type=Path, default=ROOT / "build/Release/NLBinder.asi")
++    parser.add_argument("--manifest", type=Path, default=ROOT / "build/source-export-r19.json")
++    args = parser.parse_args()
++    repo = args.repository.resolve(strict=True)
++    destination = args.destination.resolve()
++    manifest_path = args.manifest.resolve()
++    require(not destination.exists(), "Destination already exists; nothing will be overwritten: " + str(destination))
++    require(destination.parent.is_dir(), "Destination parent must already exist")
++    require(not destination.is_relative_to(repo), "Export must be outside the publication checkout")
++    require(not manifest_path.is_relative_to(destination), "Manifest must remain outside the source export")
++    commit = git(repo, "rev-parse", "--verify", "--end-of-options", args.revision + "^{commit}").decode().strip()
++    require(re.fullmatch("[0-9a-f]{40}", commit), "Unexpected Git revision")
++    entries = source_entries(repo, commit)
++    selected = {}
++    for relative, oid in entries.items():
++        if PurePosixPath(relative).parts[0] == "dist":
++            continue  # Prior ASIs/ZIPs are available through the Git history.
++        safe_source_path(relative)
++        selected[relative] = oid
++    extras = {
++        "NLBinder.asi": PACKAGE + "/NLBinder.asi",
++        "CHANGELOG-GESAMT.txt": "docs/CHANGELOG-GESAMT.txt",
++        "README.md": "docs/BUILD-README.md",
++        "LIESMICH-DE.md": PACKAGE + "/LIESMICH.md",
++        "BUILD-INFO.txt": PACKAGE + "/BUILD-INFO.txt",
++        "PRUEFBERICHT.json": PACKAGE + "/PRUEFBERICHT.json",
++        "SHA256SUMS.txt": PACKAGE + "/SHA256SUMS.txt",
++        "RECONNECT-TEST.json": PACKAGE + "/RECONNECT-TEST.json",
++        "BROWSER-RUNTIME.json": PACKAGE + "/BROWSER-RUNTIME.json",
++    }
++    for source in extras.values():
++        require(source in entries, "Verified r19 publication file missing: " + source)
++    read_entries = dict(selected)
++    read_entries.update({source: entries[source] for source in extras.values()})
++    files = read_blobs(repo, read_entries)
++    exported = {relative: files[relative] for relative in selected}
++    for target, source in extras.items():
++        exported[target] = files[source]
++    binary = exported["NLBinder.asi"]
++    require(binary == args.binary.read_bytes(), "Published ASI differs from the locally built NLBinder.asi")
++    report = json.loads(exported["PRUEFBERICHT.json"].decode("utf-8-sig"))
++    require(report.get("revision") == RELEASE and report.get("asi") == "NLBinder.asi" and report.get("sha256") == digest(binary)
++            and report.get("bytes") == len(binary) and report.get("embedded_helper_matches") is True,
++            "r19 artifact verification is missing or stale")
++    runtime = json.loads(exported['BROWSER-RUNTIME.json'].decode('utf-8'))
++    runtime_files = {}
++    # r19 installs the pinned browser automatically into Documents on first /forum.
 +    require(exported["Keybinder.vcxproj"].count(b"<TargetName>NLBinder</TargetName>") == 2,
 +            "Release/Debug project names are not both NLBinder")
 +    folded = [relative.casefold() for relative in exported]
@@ -25952,6 +26939,83 @@ index 0000000..b5dd6bf
 +    print(json.dumps(result,indent=2))
 +
 +if __name__=='__main__':main()
+diff --git a/tools/finalize_revision19.py b/tools/finalize_revision19.py
+new file mode 100644
+index 0000000..f9ce0b8
+--- /dev/null
++++ b/tools/finalize_revision19.py
+@@ -0,0 +1,71 @@
++"""Export the verified r19 source and automatic-browser manifest to the user's requested Desktop folder.
++
++The previous folder is retained intact. No GTA process is stopped or restarted.
++"""
++from pathlib import Path
++import hashlib
++import json
++import subprocess
++import sys
++
++ROOT=Path(__file__).resolve().parents[1]
++
++def require(ok,message):
++    if not ok:raise ValueError(message)
++
++def sha(path):
++    with path.open('rb') as stream:return hashlib.file_digest(stream,'sha256').hexdigest()
++
++def main():
++    desktop=Path.home()/'Desktop'
++    require(desktop.resolve(strict=True)==ROOT.parent.resolve(strict=True),'Unexpected Desktop location')
++    target=desktop/'NLBinder-masterNEW'
++    prepared=desktop/'NLBinder-masterNEW-r19-prepared-20261109'
++    backup=desktop/'NLBinder-masterNEW-r18-backup-20261109'
++    # Verify every computed absolute path before any recursive rename or export.
++    for path in [target,prepared,backup]:
++        require(path.parent.resolve(strict=True)==desktop.resolve(strict=True) and path.resolve().parent==desktop.resolve(strict=True),
++                'Folder must be directly inside the intended Desktop')
++        require(not path.is_symlink() and not path.is_junction(),'Refusing redirected Desktop folder')
++    require(target.is_dir() and (target/'Keybinder.vcxproj').is_file(),'Original latest source folder missing')
++    require(not prepared.exists() and not backup.exists(),'A previous export/backup exists; refusing overwrite')
++    previous=json.loads((target/'PRUEFBERICHT.json').read_text(encoding='utf-8-sig'))
++    require(previous['revision']=='v0.1.1-r18' and previous['sha256']=='4eec175d23397a51d4da28877b8f1109044cce8523cbcb06c7a70aa6cbf837b9', 'Unexpected prior snapshot')
++    if (target/'NLBinder.asi').exists():
++        require(sha(target/'NLBinder.asi')==previous['sha256'], 'Previous ASI has user changes')
++    # Users may have moved the loose ASI into GTA. Verify the actual source
++    # snapshot independently instead of requiring that moved file to exist.
++    import export_source_bundle_revision19 as snapshot
++    repository=ROOT/'build/github-publication/repository'
++    entries=snapshot.source_entries(repository,'v0.1.1-r18')
++    selected={name:oid for name,oid in entries.items() if name.startswith(('src/','tests/','res/'))
++        or name.startswith('include/') and len(Path(name).parts)==2
++        or name in {'Keybinder.vcxproj','Keybinder.rc','Keybinder.sln'}}
++    for name,data in snapshot.read_blobs(repository,selected).items():
++        path=target/name
++        require(path.is_file(), 'Prior source missing: '+name)
++        current=path.read_bytes()
++        if path.suffix.lower() in {'.cpp','.h','.rc','.vcxproj','.sln','.json'}:
++            current=current.replace(b'\r\n',b'\n');data=data.replace(b'\r\n',b'\n')
++        require(current==data,'User source changed: '+name)
++    publication=json.loads((ROOT/'build/revision19-published.json').read_text())
++    proof=json.loads((ROOT/'build/revision19-package.json').read_text())
++    require(publication['published'] and publication['asi_sha256']==proof['asi_sha256'],'Verified publication missing')
++    subprocess.run([sys.executable,str(ROOT/'tools/export_source_bundle_revision19.py'),'--destination',str(prepared),
++        '--revision',publication['commit']],cwd=ROOT,check=True)
++    require(sha(prepared/'NLBinder.asi')==proof['asi_sha256'],'Prepared ASI differs')
++    require(sha(prepared/'CHANGELOG-GESAMT.txt')==proof['changelog_sha256'],'Prepared changelog differs')
++    runtime=json.loads((prepared/'BROWSER-RUNTIME.json').read_text())
++    require(runtime['runtime_id']=='cef156-r1' and runtime['archive_sha256']=='01fc7f1d4dcec644a191e9c63da7088a73aa81a63c9a4c207001f7038a70ff45', 'Automatic browser manifest differs')
++    # Atomic directory renames preserve the whole supplied r18 tree as a backup.
++    require(target.resolve().parent==desktop.resolve() and backup.resolve().parent==desktop.resolve(),'Unsafe final rename')
++    target.rename(backup)
++    prepared.rename(target)
++    result={'revision':'v0.1.1-r19','desktop_source':str(target),'original_backup':str(backup),
++      'source_commit':publication['commit'],'asi_sha256':sha(target/'NLBinder.asi'),
++      'all_source_files_verified':True,'browser_automatic_download_manifest_verified':True,
++      'game_installation_modified':False}
++    (ROOT/'build/revision19-desktop-export.json').write_text(json.dumps(result,indent=2)+'\n')
++    print(json.dumps(result,indent=2))
++
++if __name__=='__main__':main()
 diff --git a/tools/install_revision18.py b/tools/install_revision18.py
 new file mode 100644
 index 0000000..59ef2ce
@@ -26005,6 +27069,59 @@ index 0000000..59ef2ce
 +    os.replace(temporary,target);require(sha(target)==proof['sha256'],'Installed ASI differs')
 +    result={'revision':'v0.1.1-r18','installed':True,'asi_sha256':proof['sha256'],'game_file':str(target),'previous_backup':str(backup),'game_was_closed':True}
 +    (R/'build/revision18-installed.json').write_text(json.dumps(result,indent=2)+'\n',encoding='utf-8');print(json.dumps(result,indent=2))
++if __name__=='__main__':main()
+diff --git a/tools/install_revision19.py b/tools/install_revision19.py
+new file mode 100644
+index 0000000..63fff8e
+--- /dev/null
++++ b/tools/install_revision19.py
+@@ -0,0 +1,47 @@
++"""Install only the verified ASI into the explicitly named GTA folder when closed."""
++from pathlib import Path
++from ctypes import wintypes as w
++import ctypes as c
++import hashlib,json,os,shutil,uuid
++R=Path(__file__).resolve().parents[1]
++GAME=Path.home()/'Desktop/Grand Theft Auto (OPENMP)'
++def require(ok,text):
++    if not ok:raise ValueError(text)
++def sha(path):
++    with path.open('rb') as f:return hashlib.file_digest(f,'sha256').hexdigest()
++def running_game_pids():
++    k=c.WinDLL('kernel32',use_last_error=True)
++    class Process(c.Structure):
++        _fields_=[('size',w.DWORD),('usage',w.DWORD),('pid',w.DWORD),('heap',c.c_size_t),('module',w.DWORD),('threads',w.DWORD),('parent',w.DWORD),('priority',w.LONG),('flags',w.DWORD),('name',w.WCHAR*260)]
++    k.CreateToolhelp32Snapshot.argtypes=[w.DWORD,w.DWORD];k.CreateToolhelp32Snapshot.restype=w.HANDLE
++    k.Process32FirstW.argtypes=[w.HANDLE,c.POINTER(Process)];k.Process32NextW.argtypes=[w.HANDLE,c.POINTER(Process)];k.CloseHandle.argtypes=[w.HANDLE]
++    handle=k.CreateToolhelp32Snapshot(2,0);require(handle and handle!=w.HANDLE(-1).value,'Cannot verify whether GTA is closed')
++    entry=Process();entry.size=c.sizeof(entry);pids=[]
++    try:
++        require(bool(k.Process32FirstW(handle,c.byref(entry))),'Cannot read game process list')
++        while True:
++            if entry.name.casefold()=='gta_sa.exe':pids.append(entry.pid)
++            if not k.Process32NextW(handle,c.byref(entry)):break
++    finally:k.CloseHandle(handle)
++    return pids
++def main():
++    pids=running_game_pids()
++    if pids:
++        print(json.dumps({'installed':False,'reason':'GTA is still running; no game file changed','processes':len(pids)}));return
++    require(GAME.is_dir() and GAME.resolve()==GAME.absolute() and not GAME.is_junction(),'Unexpected GTA target')
++    source=R/'build/Release/NLBinder.asi';target=GAME/'NLBinder.asi';temporary=GAME/'NLBinder.asi.r19.tmp'
++    for path in [target,temporary]:require(path.resolve().parent==GAME.resolve() and not path.is_symlink(),'Redirected game file refused')
++    proof=json.loads((R/'build/revision19-artifact.json').read_text(encoding='utf-8'))
++    require(proof['revision']=='v0.1.1-r19' and sha(source)==proof['sha256'] and proof['embedded_browser_setup_matches'],'ASI proof does not match')
++    backup=R/'build/game-asi-backups'/uuid.uuid4().hex/'NLBinder.asi'
++    if target.exists():
++        old=sha(target)
++        require(old in {'4eec175d23397a51d4da28877b8f1109044cce8523cbcb06c7a70aa6cbf837b9',proof['sha256']},'Unknown installed ASI; left untouched')
++        backup.parent.mkdir(parents=True);shutil.copy2(target,backup)
++    require(not temporary.exists(),'A previous temporary game file exists')
++    shutil.copyfile(source,temporary);require(sha(temporary)==proof['sha256'],'Copied ASI differs')
++    require(not running_game_pids(),'GTA started during preparation; installation stopped')
++    os.replace(temporary,target);require(sha(target)==proof['sha256'],'Installed ASI differs')
++    result={'revision':'v0.1.1-r19','installed':True,'asi_sha256':proof['sha256'],'game_file':str(target),'previous_backup':str(backup),'game_was_closed':True}
++    (R/'build/revision19-installed.json').write_text(json.dumps(result,indent=2)+'\n',encoding='utf-8');print(json.dumps(result,indent=2))
 +if __name__=='__main__':main()
 diff --git a/tools/launch_samp_03dl.ps1 b/tools/launch_samp_03dl.ps1
 index accd434..86bfde7 100644
@@ -27198,6 +28315,108 @@ index 0000000..8b2158b
 +        'browser_download_url':lock['download_url'],'browser_download_sha256':lock['archive_sha256'],'browser_download_bytes':lock['archive_bytes']}
 +    for target in ['build/revision18-package.json','docs/review/r18-validation.json']:(R/target).write_text(json.dumps(proof,indent=2)+'\n',encoding='utf-8')
 +    print(json.dumps(proof,indent=2))
++if __name__=='__main__':main()
+diff --git a/tools/package_revision19.py b/tools/package_revision19.py
+new file mode 100644
+index 0000000..4c2a25e
+--- /dev/null
++++ b/tools/package_revision19.py
+@@ -0,0 +1,96 @@
++"""Package the tested r19 ASI and record only checks actually run for this release."""
++from pathlib import Path
++import hashlib,json,re,shutil,subprocess,zipfile
++R=Path(__file__).resolve().parents[1]
++PREVIOUS='b3ca24e43a8603d98215ca6b559adad16f3d41fe'
++
++def check(ok,why):
++    if not ok:raise ValueError(why)
++
++def sha(path):
++    with path.open('rb') as stream:return hashlib.file_digest(stream,'sha256').hexdigest()
++
++def main():
++    tag='v0.1.1-r19';package=R/'dist/NLBinder-0.1.1-r19';archive=R/'dist/NLBinder-v0.1.1-KOBiRO-r19.zip'
++    check(not package.exists() and not archive.exists(),'Existing r19 package is preserved; do not overwrite')
++    log_path=R/'build/revision19-tests.log'
++    log=log_path.read_text(encoding='utf-8-sig',errors='replace')
++    check(re.search(r'^Test exit code: 0\s*$',log,re.M) and '[FAIL]' not in log,'Full tests not passing')
++    check('RELEASE_BUILD_EXIT_CODE=0' in (R/'build/revision19-build.log').read_text(errors='replace'),'Release build not passing')
++    suites={}
++    for suite in ['DrugUseTracker','R18Feature','R17Feature','R16Feature','DamageLogRegression','StartupStatsSync','CombatChatBridge']:
++        found=re.search(suite+r'Tests: (\d+) checks, 0 failures',log)
++        check(found is not None,'Missing passing suite '+suite);suites[suite]=int(found[1])
++    for name,pattern in [('OnlineSettings',r'Online Settings: (\d+) passed, 0 failed'),
++                         ('OnlineOverlayRenderer',r'OnlineOverlayRendererTests: (\d+) passed, 0 failed')]:
++        found=re.search(pattern,log);check(found is not None,'Missing passing suite '+name);suites[name]=int(found[1])
++    artifact=json.loads((R/'build/revision19-artifact.json').read_text(encoding='utf-8'))
++    asi=R/'build/Release/NLBinder.asi'
++    check(artifact['revision']==tag and sha(asi)==artifact['sha256'] and artifact['embedded_helper_matches']
++          and artifact['embedded_browser_setup_matches'],'Artifact proof stale')
++    check(artifact['embedded_browser_setup_sha256']==sha(R/'build/BrowserSetup.exe'),'Installer proof stale')
++    check('libcef.dll' not in [x.lower() for x in artifact['imports']],'CEF must remain outside GTA')
++    worker_path=R/'build/reconnect-worker-tests/result.json';worker=json.loads(worker_path.read_text(encoding='utf-8'))
++    check(worker['failures']==0 and worker['checks']>=83 and worker['nova_cases']==6,'Native reconnect regression failed')
++    check(worker_path.stat().st_mtime>=(R/'build/ReconnectHelper.exe').stat().st_mtime,'Reconnect test predates helper build')
++    lock=json.loads((R/'res/browser-runtime.json').read_text(encoding='utf-8'))
++    check(lock['archive_sha256']=='01fc7f1d4dcec644a191e9c63da7088a73aa81a63c9a4c207001f7038a70ff45',
++          'Browser runtime pin changed')
++    unchanged=['browser/ForumBrowserHost.cpp','src/ForumBrowser.cpp','src/GpsGameAdapter.cpp','src/GpsManager.cpp',
++               'tools/BrowserSetup.cpp','tools/ReconnectHelper.cpp','include/BrowserSetupProtocol.h',
++               'include/BrowserRuntimeLock.h','res/browser-runtime.json']
++    repo=R/'build/github-publication/repository'
++    for name in unchanged:
++        before=subprocess.check_output(['git','show',PREVIOUS+':'+name],cwd=repo)
++        check((R/name).read_bytes().replace(b'\r\n',b'\n')==before.replace(b'\r\n',b'\n'),
++              'Previously tested browser/GPS/helper source changed: '+name)
++    history=(R/'docs/review/CHANGELOG-DE.md').read_text(encoding='utf-8')
++    check(all(f'## {n}. ' in history for n in range(1,26)),'Full history sections 1-25 required')
++    package.mkdir(parents=True)
++    shutil.copyfile(asi,package/'NLBinder.asi')
++    for source,target in [('docs/NLBinder-0.1.1-r19-DE.md','LIESMICH.md'),('docs/CHANGELOG-GESAMT.txt','CHANGELOG-GESAMT.txt'),
++        ('third_party/miniz/LICENSE','MINIZ-LICENSE.txt'),('res/browser-runtime.json','BROWSER-RUNTIME.json'),
++        ('build/reconnect-worker-tests/result.json','RECONNECT-TEST.json'),('docs/review/r19-PRUEFUNG-DE.md','PRUEFUMFANG.md')]:
++        shutil.copyfile(R/source,package/target)
++    public=dict(artifact,asi='NLBinder.asi')
++    (package/'PRUEFBERICHT.json').write_text(json.dumps(public,indent=2)+'\n',encoding='utf-8')
++    (package/'SHA256SUMS.txt').write_text(sha(asi)+'  NLBinder.asi\n',encoding='ascii')
++    (package/'BUILD-INFO.txt').write_text(f'''NLBinder {tag}
++NLBinder.asi (x86): {asi.stat().st_size} Bytes
++SHA256: {sha(asi)}
++
++Use Cooldown & Nachwirkung: lokale eigene Einnahmen, parallele Echtzeit-Timer
++in Sekunden, eigene Overlay-Position, bestehender Move-Modus mit ESC-Speichern.
++Ohne aktive Timer unsichtbar; im Move-Modus eine verschiebbare Vorschau.
++Gesamttests und Release-Build Exitcode 0. DrugUseTracker: {suites['DrugUseTracker']} Checks.
++Online Settings: {suites['OnlineSettings']} Checks. Overlay Renderer: {suites['OnlineOverlayRenderer']} Checks.
++Nativer Reconnect-Helfer: {worker['checks']} Checks, {worker['nova_cases']} Nova-Faelle.
++ASI-Ressourcen 300/301 stimmen mit den gebauten nativen Helfern ueberein.
++Browser-/GPS-/Helferquellen und Browsermanifest sind gegen r18 unveraendert geprueft.
++Die frueheren Browser-Download-/GPS-Tests stehen getrennt unter docs/review/r18-validation.json.
++Diese Integrationstests wurden fuer r19 nicht erneut ausgefuehrt. Kein r19-GTA-Live-Test behauptet.
++
++Nur NLBinder.asi bei beendetem GTA ersetzen. Browserdateien weiterhin automatisch
++unter Dokumente/GTA San Andreas User Files/NLBinder/Browser; kein Browserordner mitzusenden.
++Browser-Download SHA256: {lock['archive_sha256']}
++''',encoding='utf-8-sig')
++    with zipfile.ZipFile(archive,'w',zipfile.ZIP_DEFLATED,compresslevel=6) as zipped:
++        for path in sorted(package.iterdir()):zipped.write(path,package.name+'/'+path.name)
++    with zipfile.ZipFile(archive) as zipped:
++        check(zipped.testzip() is None,'ZIP integrity failed')
++        check(hashlib.sha256(zipped.read(package.name+'/NLBinder.asi')).hexdigest()==sha(asi),'Zipped ASI differs')
++        check(not any('/Browser/' in x or x.lower().endswith('.log') for x in zipped.namelist()),'Private runtime data in package')
++    proof={'revision':tag,'date':'2026-11-09','asi_bytes':asi.stat().st_size,'asi_sha256':sha(asi),
++        'embedded_browser_setup_sha256':artifact['embedded_browser_setup_sha256'],
++        'full_test_suite_exit_code':0,'full_test_log_sha256':sha(log_path),'release_build_exit_code':0,
++        'focused_checks':suites,'native_reconnect_checks':worker['checks'],'native_reconnect_nova_cases':worker['nova_cases'],
++        'unchanged_prior_tested_sources':unchanged,'unchanged_sources_baseline':PREVIOUS,
++        'previous_browser_gps_validation':'r18-validation.json','browser_gps_native_integration_rerun':False,
++        'live_gta_gameplay_test_performed':False,'changelog_sections':25,'changelog_sha256':sha(R/'docs/CHANGELOG-GESAMT.txt'),
++        'archive':archive.name,'archive_bytes':archive.stat().st_size,'archive_sha256':sha(archive),'archive_integrity_checked':True,
++        'browser_download_url':lock['download_url'],'browser_download_sha256':lock['archive_sha256'],'browser_download_bytes':lock['archive_bytes']}
++    for target in ['build/revision19-package.json','docs/review/r19-validation.json']:
++        (R/target).write_text(json.dumps(proof,indent=2)+'\n',encoding='utf-8')
++    print(json.dumps(proof,indent=2))
++
 +if __name__=='__main__':main()
 diff --git a/tools/package_revision4.ps1 b/tools/package_revision4.ps1
 new file mode 100644
@@ -28987,6 +30206,269 @@ index 0000000..56f1e8f
 +    args=parser.parse_args()
 +    if args.prepare:stage()
 +    else:publish()
+diff --git a/tools/publish_revision19.py b/tools/publish_revision19.py
+new file mode 100644
+index 0000000..c77831b
+--- /dev/null
++++ b/tools/publish_revision19.py
+@@ -0,0 +1,257 @@
++"""Prepare/publish only the authorized r19 update to Kobiro57/PerkysBinderChangelog.
++
++Uses the existing Git credential manager in memory; never logs or stores tokens.
++Large Chromium binaries belong in the release asset, not Git history.
++"""
++from pathlib import Path, PurePosixPath
++import argparse
++import hashlib
++import json
++import os
++import re
++import shutil
++import subprocess
++import urllib.request
++import urllib.error
++
++ROOT=Path(__file__).resolve().parents[1]
++REPO=ROOT/'build/github-publication/repository'
++URL='https://github.com/Kobiro57/PerkysBinderChangelog'
++API='https://api.github.com/repos/Kobiro57/PerkysBinderChangelog'
++TAG='v0.1.1-r19'
++PREVIOUS='b3ca24e43a8603d98215ca6b559adad16f3d41fe'
++PACKAGE='dist/NLBinder-0.1.1-r19'
++BASE='original-archive-92ce219'
++GENERATED={'docs/review/SOURCE-COMPARISON.json','docs/review/DATEIVERGLEICH.md',
++ 'docs/review/DIFFSTAT.txt','docs/review/first-party-changes.patch',
++ 'docs/review/REVISION19-DIFFSTAT.txt','docs/review/revision19-changes.patch'}
++PRIVATE_DIRS={'.git','.vs','__pycache__','output','debug','release','obj','cmakefiles','.codex','.agents','.aws'}
++PRIVATE_NAMES={'keybinder.json','jobs_data.json','imgui.ini','gps.xml','.env','.git-credentials','nul'}
++PRIVATE_SUFFIXES={'.obj','.pdb','.ilk','.exp','.log','.pyc','.suo','.user','.o'}
++PROGRAM=['src','browser','tests','tools','res','include/*.h','Keybinder.rc','Keybinder.vcxproj','Keybinder.sln']
++
++def require(ok,message):
++    if not ok:raise ValueError(message)
++
++def digest(data):return hashlib.sha256(data).hexdigest()
++
++def filehash(path):
++    with path.open('rb') as f:return hashlib.file_digest(f,'sha256').hexdigest()
++
++def git(*args,input=None):
++    p=subprocess.run(['git',*args],cwd=REPO,input=input,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
++    if p.returncode:raise RuntimeError('Git failed: '+str(args[:3])+': '+p.stderr.decode('utf-8','replace')[:1500])
++    return p.stdout
++
++def write(relative,data):
++    p=REPO/relative;p.parent.mkdir(parents=True,exist_ok=True)
++    p.write_bytes(data.encode('utf-8') if isinstance(data,str) else data)
++
++def paths(revision):
++    entries={}
++    if revision==':':
++        records=git('ls-files','--stage','-z').split(b'\0')
++        for record in records:
++            if not record:continue
++            meta,name=record.split(b'\t',1);mode,oid,stage=meta.split()
++            require(stage==b'0' and mode in {b'100644',b'100755'},'Unmerged/link entry')
++            entries[name.decode()]=oid
++    else:
++        for record in git('ls-tree','-r','-z',revision).split(b'\0'):
++            if not record:continue
++            meta,name=record.split(b'\t',1);mode,kind,oid=meta.split()
++            require(kind==b'blob' and mode in {b'100644',b'100755'},'Submodule/link entry')
++            entries[name.decode()]=oid
++    return entries
++
++def blobs(entries):
++    oids=sorted(set(entries.values()))
++    process=subprocess.Popen(['git','cat-file','--batch'],cwd=REPO,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
++    raw,err=process.communicate(b'\n'.join(oids)+b'\n')
++    require(process.returncode==0,'Cannot read source blobs')
++    values={};at=0
++    for oid in oids:
++        end=raw.index(b'\n',at);header=raw[at:end].split()
++        require(header[0]==oid and header[1]==b'blob','Invalid blob batch')
++        size=int(header[2]);at=end+1;values[oid]=raw[at:at+size];at+=size+1
++    require(at==len(raw),'Trailing source bytes')
++    return {name:values[oid] for name,oid in entries.items()}
++
++def allowed(relative):
++    p=PurePosixPath(relative)
++    return not (p.is_absolute() or '..' in p.parts or ':' in relative or '\\' in relative
++      or any(x.lower() in PRIVATE_DIRS for x in p.parts[:-1])
++      or p.name.lower() in PRIVATE_NAMES or p.suffix.lower() in PRIVATE_SUFFIXES)
++
++def historical(relative):
++    return bool(re.fullmatch(r'docs/review/(REVISION(?:[4-9]|1[0-8])-DIFFSTAT\.txt|revision(?:[4-9]|1[0-8])-changes\.patch)',relative))
++
++def stage():
++    require(git('remote','get-url','origin').decode().strip().removesuffix('.git')==URL,'Wrong target repository')
++    require(git('rev-parse','HEAD').decode().strip()==PREVIOUS,'Publication must start on the known r18 commit')
++    if git('status','--porcelain'):
++        # Resume only an explicitly recorded, inspected preparation tree.
++        checkpoint=json.loads((ROOT/'build/revision19-staged-owned.json').read_text())
++        require(git('write-tree').decode().strip()==checkpoint['staged_tree'] and not git('diff','--name-only'),
++                'Publication checkout changed outside the recorded preparation')
++    proof=json.loads((ROOT/'build/revision19-package.json').read_text())
++    require(proof['revision']==TAG and filehash(ROOT/'build/Release/NLBinder.asi')==proof['asi_sha256'],'Package proof stale')
++    original_entries=paths(BASE)
++    previous_entries=paths('HEAD')
++    for start in ['src','tests','tools','docs','res','browser','third_party/miniz']:
++        for parent,dirs,names in os.walk(ROOT/start):
++            dirs[:]=[x for x in dirs if x.lower() not in PRIVATE_DIRS]
++            for name in names:
++                path=Path(parent)/name;relative=path.relative_to(ROOT).as_posix()
++                if relative in GENERATED or historical(relative) or not allowed(relative):continue
++                require(not path.is_symlink() and path.stat().st_size<90*1024*1024,'Unexpected source link/large binary: '+relative)
++                require(path.suffix.lower() not in {'.asi','.exe','.dll','.lib'},'Binary in first-party source: '+relative)
++                write(relative,path.read_bytes())
++    for path in (ROOT/'include').glob('*.h'):write(path.relative_to(ROOT).as_posix(),path.read_bytes())
++    for relative in previous_entries:
++        if relative.startswith(('include/','third_party/')) and len(PurePosixPath(relative).parts)>2:
++            source=ROOT/relative
++            require(source.is_file() and allowed(relative),'Missing required dependency '+relative)
++            write(relative,source.read_bytes())
++    for name in ['.gitignore','.gitattributes','Keybinder.rc','Keybinder.sln','Keybinder.vcxproj']:
++        write(name,(ROOT/name).read_bytes())
++    write('README.md',(ROOT/'build/README-GITHUB-r19.md').read_bytes())
++    for path in (ROOT/PACKAGE).iterdir():
++        if path.is_file():write(PACKAGE+'/'+path.name,path.read_bytes())
++    publication=json.loads((ROOT/'docs/review/PUBLICATION.json').read_text())
++    publication.update(release=TAG,previous_release='v0.1.1-r18',previous_published_commit=PREVIOUS,
++      asi_sha256=proof['asi_sha256'],history_note='Original and dependency imports remain intact. r19 is a subsequent update; no history is rewritten.',
++      complete_runtime_asset=proof['archive'],complete_runtime_sha256=proof['archive_sha256'])
++    write('docs/review/PUBLICATION.json',json.dumps(publication,indent=2)+'\n')
++    git('add','--all')
++    # Patches describe program changes and avoid recursively including their own bytes.
++    write('docs/review/first-party-changes.patch',git('diff','--cached','--binary','build-dependencies-baseline','--',*PROGRAM))
++    write('docs/review/DIFFSTAT.txt',git('diff','--cached','--stat','build-dependencies-baseline','--',*PROGRAM))
++    write('docs/review/revision19-changes.patch',git('diff','--cached','--binary',PREVIOUS,'--',*PROGRAM))
++    write('docs/review/REVISION19-DIFFSTAT.txt',git('diff','--cached','--stat',PREVIOUS,'--',*PROGRAM))
++    git('add','--all')
++    current_entries=paths(':')
++    selected=lambda name:not name.startswith('dist/') and name not in GENERATED and not historical(name)
++    before=blobs({p:o for p,o in original_entries.items() if selected(p)})
++    after=blobs({p:o for p,o in current_entries.items() if selected(p)})
++    changes=[]
++    for name in sorted(before.keys()|after.keys()):
++        b=before.get(name);a=after.get(name)
++        if a==b:continue
++        changes.append({'path':name,'status':'added' if b is None else 'deleted' if a is None else 'modified',
++          'dependency':name.startswith(('include/plugin-sdk/','include/RakHook/','third_party/miniz/')),
++          'line_endings_only':a is not None and b is not None and a.replace(b'\r\n',b'\n')==b.replace(b'\r\n',b'\n'),
++          'before_sha256':digest(b) if b is not None else None,'after_sha256':digest(a) if a is not None else None})
++    record={'original_archive':'NLBinder-master.zip','original_sha256':'a328e78eea63420e9bfe9c084883100177fe0fd9c2d62c4fcaef38c0a44801e9',
++      'original_archive_commit_comment':'92ce21971bee2d166d830e23ad20950f1dc98921','release':TAG,'release_asi_sha256':proof['asi_sha256'],
++      'baseline_tag':BASE,'baseline_commit':git('rev-parse',BASE+'^{commit}').decode().strip(),
++      'hash_scope':'Exact Git blob bytes in original tag versus staged r19 source; generated comparisons and release binaries excluded.',
++      'generated_paths_excluded':sorted(GENERATED),'historical_revision_patches_excluded':True,
++      'baseline_files':len(before),'current_files':len(after),'changes':changes}
++    write('docs/review/SOURCE-COMPARISON.json',json.dumps(record,indent=2,ensure_ascii=False)+'\n')
++    relevant=[x for x in changes if not x['dependency'] and not x['line_endings_only']]
++    lines=['# Dateivergleich zum Original','',
++      'Verglichen werden die unveränderlichen Git-Blobs des Tags `original-archive-92ce219` mit den gestagten r19-Quellen.',
++      'Die Archivherkunft bleibt dokumentiert; diese Hashes beziehen sich ausdrücklich auf Git-Blobs, nicht neu eingelesene ZIP-Rohbytes.',
++      'Generierte Vergleichsdateien, alte Revisionspatches und Binärpakete sind aus diesem rekursionsfreien Vergleich ausgeschlossen.',
++      'Alle betrachteten Änderungen stehen in [SOURCE-COMPARISON.json](SOURCE-COMPARISON.json).','',
++      '| Status | Datei |','| --- | --- |']
++    for item in relevant:lines.append('| '+item['status']+' | ['+item['path']+'](../../'+item['path']+') |')
++    write('docs/review/DATEIVERGLEICH.md','\n'.join(lines)+'\n')
++    git('add','--all')
++    verify_index(previous_entries)
++    result={'prepared':True,'previous_commit':PREVIOUS,'staged_tree':git('write-tree').decode().strip(),
++      'source_changes':len(changes),'first_party_content_changes':len(relevant),'asi_sha256':proof['asi_sha256'],
++      'changed_paths':len(git('diff','--cached','--name-only').decode().splitlines())}
++    (ROOT/'build/revision19-publication-ready.json').write_text(json.dumps(result,indent=2)+'\n')
++    (ROOT/'build/revision19-staged-owned.json').write_text(json.dumps({'staged_tree':result['staged_tree'],
++        'reason':'Successfully prepared and verified r19 source tree; safe resume requires this exact tree.'},indent=2)+'\n')
++    print(json.dumps(result,indent=2))
++
++def verify_index(previous_entries=None):
++    entries=paths(':')
++    previous_entries=previous_entries or paths(PREVIOUS)
++    for name in entries:
++        require(allowed(name),'Private or generated build data in publication: '+name)
++        require(not name.startswith('NLBinder/Browser/'),'Loose Chromium runtime must not enter Git')
++        if historical(name):require(entries[name]==previous_entries[name],'Historical review patch changed: '+name)
++    proof=json.loads((ROOT/'build/revision19-package.json').read_text())
++    require(digest(git('show',':'+PACKAGE+'/NLBinder.asi'))==proof['asi_sha256'],'Published ASI differs')
++    require(git('show',':docs/CHANGELOG-GESAMT.txt')==(ROOT/'docs/CHANGELOG-GESAMT.txt').read_bytes(),'Published full changelog differs')
++    for name in ['include/DrugUseTracker.h','tests/DrugUseTrackerTests.cpp','src/Main.cpp',
++                 'include/SettingsManager.h','src/SettingsManager.cpp','include/OnlineOverlayController.h',
++                 'src/OnlineOverlayController.cpp','src/OnlineOverlayRenderer.cpp','src/OnlineUI.cpp',
++                 'tests/OnlineOverlayRendererTests.cpp','tests/OnlineSettingsTests.cpp']:
++        require(git('show',':'+name)==(ROOT/name).read_bytes().replace(b'\r\n',b'\n'),'Published source differs: '+name)
++    # The pinned upstream miniz sources retain their original formatting/hash.
++    git('diff','--cached','--check','--','.',':(exclude)*.patch',':(exclude)third_party/miniz')
++    require(not git('ls-files','--others','--exclude-standard'),'Unexpected untracked publication file')
++
++def credential():
++    env=dict(os.environ,GCM_INTERACTIVE='Never',GIT_TERMINAL_PROMPT='0')
++    p=subprocess.run(['git','credential','fill'],cwd=REPO,input=b'protocol=https\nhost=github.com\n\n',
++        stdout=subprocess.PIPE,stderr=subprocess.PIPE,env=env)
++    require(p.returncode==0,'Existing GitHub credential not available')
++    fields=dict(line.split('=',1) for line in p.stdout.decode().splitlines() if '=' in line)
++    require(fields.get('password'),'Credential manager returned no token')
++    return fields['password']
++
++def api(token,url,method='GET',data=None,content_type='application/json'):
++    require(url.startswith(('https://api.github.com/','https://uploads.github.com/repos/Kobiro57/PerkysBinderChangelog/')),'Unexpected API host')
++    body=json.dumps(data).encode() if data is not None and content_type=='application/json' else data
++    req=urllib.request.Request(url,data=body,method=method,headers={'Authorization':'Bearer '+token,
++      'Accept':'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28','User-Agent':'NLBinder-authorized-r19-publication','Content-Type':content_type})
++    try:
++        with urllib.request.urlopen(req,timeout=600) as response:return json.load(response)
++    except urllib.error.HTTPError as e:
++        raise RuntimeError('GitHub API status '+str(e.code)+' for '+url.split('?')[0]) from None
++
++def publish():
++    proof=json.loads((ROOT/'build/revision19-package.json').read_text())
++    prepared=json.loads((ROOT/'build/revision19-publication-ready.json').read_text())
++    token=credential()
++    user=api(token,'https://api.github.com/user')
++    require(user['login'].casefold()=='kobiro57','Wrong GitHub account')
++    head=git('rev-parse','HEAD').decode().strip()
++    if head==PREVIOUS:
++        require(git('write-tree').decode().strip()==prepared['staged_tree'],'Staged source changed after review')
++        verify_index()
++        email=str(user['id'])+'+'+user['login']+'@users.noreply.github.com'
++        git('-c','user.name='+user['login'],'-c','user.email='+email,'commit','-m',
++          'r19: add own drug use cooldown and aftereffect overlay with saved move position')
++        head=git('rev-parse','HEAD').decode().strip()
++    require(git('rev-parse','HEAD^').decode().strip()==PREVIOUS,'Unexpected parent commit')
++    require(not git('status','--porcelain'),'Publication checkout not clean')
++    tag_exists=subprocess.run(['git','rev-parse','--verify','refs/tags/'+TAG],cwd=REPO,stdout=subprocess.PIPE,stderr=subprocess.PIPE).returncode==0
++    if not tag_exists:git('tag',TAG,head)
++    require(git('rev-parse',TAG+'^{commit}').decode().strip()==head,'Release tag points elsewhere')
++    git('push','--atomic','origin','HEAD:main','refs/tags/'+TAG)
++    require(api(token,API+'/commits/main')['sha']==head,'Remote main commit differs')
++    releases=api(token,API+'/releases?per_page=100')
++    release=next((r for r in releases if r['tag_name']==TAG),None)
++    body='NLBinder v.0.1.1 by KOBiRO – r19\n\n- Neuer Schalter Online > Overlay-Einstellungen > Dauerhaft > Spielinformationen:\n  Use Cooldown & Nachwirkung anzeigen, direkt unter Ausdauer.\n- Ganze eigene Konsumzeile anhand des aktuellen lokalen Namens erkennen.\n- Sieben Drogen mit Cooldown und paralleler Abklingzeit, alle Werte in Sekunden.\n- Kokain 120/120, Heroin 120/60, Speed 180/180, Ecstasy 180/60,\n  Cannabis ohne Cooldown/40, Adrenalin 45/ohne Abklingzeit, Morphium 45/45.\n- Mehrere Drogen im selben Panel untereinander; lokale einmalige Bereit-Meldung.\n- Gleicher Stil und Maus-Move-Modus mit ESC-Speichern und eigener Position.\n- Ohne aktive Einnahme unsichtbar; im Move-Modus erscheint eine Vorschau.\n- Deaktivieren, Disconnect und Spielerwechsel setzen die laufenden Timer zurueck.\n\nNur NLBinder.asi bei vollstaendig beendetem GTA ersetzen und neu starten.\nBrowserdateien werden weiterhin automatisch unter Dokumente/GTA San Andreas\nUser Files/NLBinder/Browser eingerichtet.\n\nGesamttests, gezielte Timer-/Settings-/Overlay-/Move-Pruefungen und Release-Build\nsowie nativer Reconnect-Worker geprueft. Browser-/GPS-/Helferquellen gegen r18\nunveraendert geprueft. Historische Browser-/GPS-Pruefungen werden nicht als neu\nausgefuehrte r19-Tests dargestellt. Kein r19-GTA-Live-Test behauptet.\n\nVollstaendiger Quellcode, Gesamt-Changelog und Pruefberichte enthalten.\nOriginalimport und saemtliche fruehere Revisionspatches/Historie bleiben erhalten.\n'
++    body+='\nASI SHA-256: `'+proof['asi_sha256']+'`\n\nZIP SHA-256: `'+proof['archive_sha256']+'`\n'
++    if release is None:release=api(token,API+'/releases','POST',{'tag_name':TAG,'target_commitish':head,'name':'NLBinder v0.1.1 by KOBiRO – r19','body':body,'draft':False,'prerelease':False})
++    archive=ROOT/'dist'/proof['archive']
++    require(filehash(archive)==proof['archive_sha256'],'Release ZIP changed')
++    assets=api(token,API+'/releases/'+str(release['id'])+'/assets')
++    asset=next((a for a in assets if a['name']==archive.name),None)
++    if asset is None:
++        upload='https://uploads.github.com/repos/Kobiro57/PerkysBinderChangelog/releases/'+str(release['id'])+'/assets?name='+archive.name
++        asset=api(token,upload,'POST',archive.read_bytes(),'application/zip')
++    require(asset['state']=='uploaded' and asset['size']==archive.stat().st_size,'Release asset incomplete')
++    remote_digest=asset.get('digest')
++    require(remote_digest=='sha256:'+proof['archive_sha256'],'GitHub release asset digest differs')
++    result={'published':True,'repository':URL,'commit':head,'commit_url':URL+'/commit/'+head,
++      'tag':TAG,'release_url':release['html_url'],'download_url':asset['browser_download_url'],
++      'asset_bytes':asset['size'],'asset_sha256_verified':True,'asi_sha256':proof['asi_sha256']}
++    (ROOT/'build/revision19-published.json').write_text(json.dumps(result,indent=2)+'\n')
++    print(json.dumps(result,indent=2))
++
++if __name__=='__main__':
++    parser=argparse.ArgumentParser(description=__doc__)
++    modes=parser.add_mutually_exclusive_group(required=True)
++    modes.add_argument('--prepare',action='store_true');modes.add_argument('--publish',action='store_true')
++    args=parser.parse_args()
++    if args.prepare:stage()
++    else:publish()
 diff --git a/tools/record_gps_native_test.py b/tools/record_gps_native_test.py
 new file mode 100644
 index 0000000..7b40c5d
@@ -29052,6 +30534,22 @@ index 0000000..2b03157
 +important=[line for line in lines if '[FAIL]' in line or 'error C' in line or 'error L' in line or 'fatal error' in line]
 +for line in important[:12]:print(line)
 +for line in lines[-8:]:print(line)
+diff --git a/tools/report_revision19_log.py b/tools/report_revision19_log.py
+new file mode 100644
+index 0000000..a9f35e3
+--- /dev/null
++++ b/tools/report_revision19_log.py
+@@ -0,0 +1,10 @@
++"""Show a compact result from the fixed r19 log paths."""
++from pathlib import Path
++import sys
++root=Path(__file__).resolve().parents[1]
++mode=sys.argv[1]
++if mode not in {'tests','build'}:raise ValueError('Unexpected log kind')
++lines=(root/('build/revision19-'+mode+'.log')).read_text(encoding='utf-8-sig',errors='replace').splitlines()
++important=[line for line in lines if '[FAIL]' in line or 'error ' in line.lower() or 'DrugUseTrackerTests:' in line
++           or 'Online Settings:' in line or 'OnlineOverlayRendererTests:' in line or 'Test exit code:' in line]
++for line in (important if mode=='tests' else lines[-10:]):print(line)
 diff --git a/tools/run_revision16.bat b/tools/run_revision16.bat
 new file mode 100644
 index 0000000..aa47ba3
@@ -29304,8 +30802,88 @@ index 0000000..a68a676
 +"%NLBINDER_PYTHON%" tools\install_revision18.py
 +set "NLBINDER_RESULT=%ERRORLEVEL%"
 +goto finish
+diff --git a/tools/run_revision19.bat b/tools/run_revision19.bat
+new file mode 100644
+index 0000000..bf3fbd4
+--- /dev/null
++++ b/tools/run_revision19.bat
+@@ -0,0 +1,74 @@
++@echo off
++setlocal
++pushd "%~dp0.." || exit /b 2
++if not exist build mkdir build
++if not defined NLBINDER_PYTHON set "NLBINDER_PYTHON=%USERPROFILE%\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe"
++if /i "%~1"=="tests" goto tests
++if /i "%~1"=="build" goto build
++if /i "%~1"=="worker" goto worker
++if /i "%~1"=="document" goto document
++if /i "%~1"=="package" goto package
++if /i "%~1"=="prepare-publication" goto preparepublication
++if /i "%~1"=="publish" goto publish
++if /i "%~1"=="verify-public" goto verifypublic
++if /i "%~1"=="export" goto export
++if /i "%~1"=="install" goto install
++set "NLBINDER_RESULT=2"
++goto finish
++:tests
++call tools\run_tests.bat > build\revision19-tests.log 2>&1
++set "NLBINDER_RESULT=%ERRORLEVEL%"
++"%NLBINDER_PYTHON%" tools\report_revision19_log.py tests
++goto finish
++:build
++call tools\build_release.bat > build\revision19-build.log 2>&1
++set "NLBINDER_RESULT=%ERRORLEVEL%"
++>>build\revision19-build.log echo RELEASE_BUILD_EXIT_CODE=%NLBINDER_RESULT%
++"%NLBINDER_PYTHON%" tools\report_revision19_log.py build
++goto finish
++:worker
++"%NLBINDER_PYTHON%" tools\test_reconnect_worker.py > build\revision19-reconnect.log 2>&1
++set "NLBINDER_RESULT=%ERRORLEVEL%"
++type build\revision19-reconnect.log
++goto finish
++:document
++"%NLBINDER_PYTHON%" tools\document_revision19.py
++if errorlevel 1 goto failed
++"%NLBINDER_PYTHON%" tools\export_full_changelog.py
++set "NLBINDER_RESULT=%ERRORLEVEL%"
++goto finish
++:package
++"%NLBINDER_PYTHON%" tools\verify_revision19_artifact.py
++if errorlevel 1 goto failed
++"%NLBINDER_PYTHON%" tools\document_revision19.py
++if errorlevel 1 goto failed
++"%NLBINDER_PYTHON%" tools\export_full_changelog.py
++if errorlevel 1 goto failed
++"%NLBINDER_PYTHON%" tools\package_revision19.py
++set "NLBINDER_RESULT=%ERRORLEVEL%"
++goto finish
++:preparepublication
++"%NLBINDER_PYTHON%" tools\publish_revision19.py --prepare
++set "NLBINDER_RESULT=%ERRORLEVEL%"
++goto finish
++:publish
++"%NLBINDER_PYTHON%" tools\publish_revision19.py --publish
++set "NLBINDER_RESULT=%ERRORLEVEL%"
++goto finish
++:export
++"%NLBINDER_PYTHON%" tools\finalize_revision19.py
++set "NLBINDER_RESULT=%ERRORLEVEL%"
++goto finish
++:verifypublic
++"%NLBINDER_PYTHON%" tools\verify_revision19_public.py
++set "NLBINDER_RESULT=%ERRORLEVEL%"
++goto finish
++:install
++"%NLBINDER_PYTHON%" tools\install_revision19.py
++set "NLBINDER_RESULT=%ERRORLEVEL%"
++goto finish
++:failed
++set "NLBINDER_RESULT=2"
++:finish
++popd
++exit /b %NLBINDER_RESULT%
 diff --git a/tools/run_tests.bat b/tools/run_tests.bat
-index 546d340..cf2fd44 100644
+index 546d340..dccbbcb 100644
 --- a/tools/run_tests.bat
 +++ b/tools/run_tests.bat
 @@ -1,5 +1,16 @@
@@ -29343,7 +30921,7 @@ index 546d340..cf2fd44 100644
      echo /I"%~dp0..\include\plugin-sdk\plugin_sa\game_sa\rw"
      echo /I"%~dp0..\include\plugin-sdk\hooking"
      echo /I"%~dp0..\include\plugin-sdk\injector"
-@@ -36,6 +48,12 @@ set "KEYBINDER_TEST_RSP=%~dp0..\build\KeybinderTests.rsp"
+@@ -36,6 +48,13 @@ set "KEYBINDER_TEST_RSP=%~dp0..\build\KeybinderTests.rsp"
      echo "%~dp0..\tests\InputManagerTests.cpp"
      echo "%~dp0..\tests\RegressionTests.cpp"
      echo "%~dp0..\tests\SAMPBridgeTests.cpp"
@@ -29353,10 +30931,11 @@ index 546d340..cf2fd44 100644
 +    echo "%~dp0..\tests\R16FeatureTests.cpp"
 +    echo "%~dp0..\tests\R17FeatureTests.cpp"
 +    echo "%~dp0..\tests\R18FeatureTests.cpp"
++    echo "%~dp0..\tests\DrugUseTrackerTests.cpp"
      echo "%~dp0..\tests\ImGuiOverlayTests.cpp"
      echo "%~dp0..\tests\HitmarkerTests.cpp"
      echo "%~dp0..\tests\HitsoundTests.cpp"
-@@ -59,13 +77,40 @@ set "KEYBINDER_TEST_RSP=%~dp0..\build\KeybinderTests.rsp"
+@@ -59,13 +78,40 @@ set "KEYBINDER_TEST_RSP=%~dp0..\build\KeybinderTests.rsp"
      echo "%~dp0..\tests\SquareMapTests.cpp"
      echo "%~dp0..\tests\HudSpriteManagerTests.cpp"
      echo "%~dp0..\tests\SourceContractTests.cpp"
@@ -29397,7 +30976,7 @@ index 546d340..cf2fd44 100644
      echo "%~dp0..\\src\\InputManager.cpp"
      echo "%~dp0..\\src\\ImGuiOverlay.cpp"
      echo "%~dp0..\\src\\SettingsManager.cpp"
-@@ -119,7 +164,10 @@ set "KEYBINDER_TEST_RSP=%~dp0..\build\KeybinderTests.rsp"
+@@ -119,7 +165,10 @@ set "KEYBINDER_TEST_RSP=%~dp0..\build\KeybinderTests.rsp"
      echo "%~dp0..\\include\\pugixml\\pugixml.cpp"
      echo "%~dp0..\\include\\plugin-sdk\\shared\\Other.cpp"
      echo "%~dp0..\\include\\SAMP-API\\src\\sampapi\\sampapi.cpp"
@@ -29408,7 +30987,7 @@ index 546d340..cf2fd44 100644
      echo "%~dp0..\\include\\imgui-1.92.7\\imgui.cpp"
      echo "%~dp0..\include\imgui-1.92.7\imgui_draw.cpp"
      echo "%~dp0..\include\imgui-1.92.7\imgui_tables.cpp"
-@@ -127,7 +175,7 @@ set "KEYBINDER_TEST_RSP=%~dp0..\build\KeybinderTests.rsp"
+@@ -127,7 +176,7 @@ set "KEYBINDER_TEST_RSP=%~dp0..\build\KeybinderTests.rsp"
      echo "%~dp0..\include\imgui-1.92.7\backends\imgui_impl_dx9.cpp"
      echo "%~dp0..\include\imgui-1.92.7\backends\imgui_impl_win32.cpp"
      echo "%~dp0..\include\imgui-1.92.7\misc\cpp\imgui_stdlib.cpp"
@@ -29417,7 +30996,7 @@ index 546d340..cf2fd44 100644
  ) > "%KEYBINDER_TEST_RSP%"
  cl.exe @"%KEYBINDER_TEST_RSP%"
  if %ERRORLEVEL% NEQ 0 (
-@@ -146,6 +194,7 @@ cl.exe /nologo /EHsc /std:c++latest /W3 /MT /DKEYBINDER_TESTING /DWIN32 /D_CRT_S
+@@ -146,6 +195,7 @@ cl.exe /nologo /EHsc /std:c++latest /W3 /MT /DKEYBINDER_TESTING /DWIN32 /D_CRT_S
      /I"%~dp0..\include\plugin-sdk\shared\game" ^
      /I"%~dp0..\include\plugin-sdk\plugin_sa" ^
      /I"%~dp0..\include\plugin-sdk\plugin_sa\game_sa" ^
@@ -31090,6 +32669,104 @@ index 0000000..5cb6dd2
 +
 +if __name__ == "__main__":
 +    main()
+diff --git a/tools/verify_revision19_artifact.py b/tools/verify_revision19_artifact.py
+new file mode 100644
+index 0000000..33cb97f
+--- /dev/null
++++ b/tools/verify_revision19_artifact.py
+@@ -0,0 +1,51 @@
++"""Verify the r19 PE and embedded helpers without loading executable code."""
++import hashlib,json
++from pathlib import Path
++import sys
++from verify_revision18_artifact import PE, require
++
++def main():
++    root = Path(__file__).resolve().parents[1]
++    asi = PE(sys.argv[1] if len(sys.argv) > 1 else root / "build/Release/NLBinder.asi")
++    helper = PE(root / "build/ReconnectHelper.exe")
++    require(asi.machine == helper.machine == 0x14C, "Expected both binaries to be x86")
++    require(asi.characteristics & 0x2000, "ASI must be a DLL")
++    require(not helper.characteristics & 0x2000, "Worker must be an executable")
++    require(asi.resource(10, 300) == helper.data, "Embedded helper differs from built helper")
++    setup = PE(root / "build/BrowserSetup.exe")
++    require(setup.machine == 0x14C and not setup.characteristics & 0x2000, "Installer must be x86 EXE")
++    require(asi.resource(10, 301) == setup.data, "Embedded browser installer differs")
++    require(b"asInvoker" in setup.resource(24, 1), "Browser installer must not request elevation")
++    require(asi.resource(10, 302) == (root / "third_party/miniz/LICENSE").read_bytes(), "Missing embedded miniz notice")
++    imports = asi.imports()
++    require("libcef.dll" not in [name.lower() for name in imports], "Chromium must remain out of the game process")
++    require(not any(name.lower().startswith(("vcruntime", "msvcp", "ucrtbased")) for name in imports),
++            "Unexpected external C++ runtime dependency")
++    try:
++        display_path = asi.path.resolve().relative_to(root).as_posix()
++    except ValueError:
++        display_path = asi.path.name
++    result = {
++        "revision": "v0.1.1-r19",
++        "asi": display_path,
++        "bytes": len(asi.data),
++        "format": "PE32 x86 DLL",
++        "sha256": hashlib.sha256(asi.data).hexdigest(),
++        "imports": imports,
++        "embedded_helper_id": 300,
++        "embedded_helper_bytes": len(helper.data),
++        "helper_sha256": hashlib.sha256(helper.data).hexdigest(),
++        "embedded_helper_matches": True,
++        "embedded_browser_setup_id": 301,
++        "embedded_browser_setup_bytes": len(setup.data),
++        "embedded_browser_setup_sha256": hashlib.sha256(setup.data).hexdigest(),
++        "embedded_browser_setup_matches": True,
++        "browser_setup_as_invoker": True,
++    }
++    report = json.dumps(result, indent=2)
++    (root / "build/revision19-artifact.json").write_text(report + "\n", encoding="utf-8")
++    print(report)
++
++
++if __name__ == "__main__":
++    main()
+diff --git a/tools/verify_revision19_public.py b/tools/verify_revision19_public.py
+new file mode 100644
+index 0000000..5524900
+--- /dev/null
++++ b/tools/verify_revision19_public.py
+@@ -0,0 +1,35 @@
++"""Verify the published r19 viewer and release metadata without using a credential."""
++from pathlib import Path
++import json,posixpath,re,urllib.request
++R=Path(__file__).resolve().parents[1]
++BASE='https://api.github.com/repos/Kobiro57/PerkysBinderChangelog'
++
++def get(path):
++    request=urllib.request.Request(BASE+path,headers={'User-Agent':'NLBinder-r19-anonymous-verification',
++        'Accept':'application/vnd.github+json'})
++    with urllib.request.urlopen(request,timeout=45) as response:return json.load(response)
++
++def require(ok,message):
++    if not ok:raise ValueError(message)
++
++def main():
++    publication=json.loads((R/'build/revision19-published.json').read_text(encoding='utf-8'))
++    proof=json.loads((R/'build/revision19-package.json').read_text(encoding='utf-8'))
++    require(get('')['private'] is False,'Repository is not anonymously readable')
++    require(get('/commits/main')['sha']==publication['commit'],'Remote main differs')
++    release=get('/releases/tags/v0.1.1-r19')
++    asset=next(a for a in release['assets'] if a['name']==proof['archive'])
++    require(asset['digest']=='sha256:'+proof['archive_sha256'] and asset['size']==proof['archive_bytes'],
++            'Release asset digest or size differs')
++    repository=R/'build/github-publication/repository'
++    for name in ['README.md','docs/NLBinder-0.1.1-r19-DE.md','docs/review/r19-PRUEFUNG-DE.md']:
++        for href in re.findall(r'\]\(([^)]+)\)',(repository/name).read_text(encoding='utf-8-sig')):
++            if href.startswith(('http:','https:','#')):continue
++            path=posixpath.normpath(posixpath.join(posixpath.dirname(name),href.split('#')[0]))
++            require((repository/path).exists(),'Broken review link: '+name+' -> '+href)
++    result={'anonymous_viewer_access':True,'main_commit_verified':True,'release_asset_sha256_verified':True,
++        'review_document_links_verified':True,'release_url':release['html_url']}
++    (R/'build/revision19-public-access.json').write_text(json.dumps(result,indent=2)+'\n',encoding='utf-8')
++    print(json.dumps(result,indent=2))
++
++if __name__=='__main__':main()
 diff --git a/tools/verify_revision4_artifact.py b/tools/verify_revision4_artifact.py
 new file mode 100644
 index 0000000..f60c5e6

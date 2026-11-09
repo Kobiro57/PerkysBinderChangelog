@@ -1,6 +1,13 @@
 # Hinweise zur Prüfung durch die Projektleitung
 
-## Aktueller Stand r18 – 3. November 2026
+## Aktueller Stand r19 – 9. November 2026
+
+Der aktuelle Prüfumfang des Drogen-Cooldown-/Nachwirkungs-Overlays
+steht in [r19-PRUEFUNG-DE.md](r19-PRUEFUNG-DE.md), die Ergebnisse
+in [r19-validation.json](r19-validation.json). Frühere Prüfungen
+bleiben nachstehend mit ihrem tatsächlich beobachteten Stand erhalten.
+
+## Vorheriger Stand r18 – 3. November 2026
 
 Ein vorläufiger r18-Stand wurde inzwischen im Spiel bestätigt: Der Nutzer
 meldete den angefragten Forum-/GPS-Test als funktionierend. Die konkrete

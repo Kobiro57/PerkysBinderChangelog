@@ -12,6 +12,7 @@
 #include "../include/imgui-1.92.7/imgui_internal.h"
 
 #include <cstdio>
+#include <cmath>
 #include <string>
 #include <vector>
 
@@ -926,6 +927,120 @@ bool TestFriendAndEnemyRadarMoveAndPersistIndependently() {
     return true;
 }
 
+bool TestDrugTimersUseSharedStyleVerticalRowsAndExistingMoveMode() {
+    SettingsManager settings;
+    auto& s = settings.GetMutable();
+    s.online_drug_timers_overlay_enabled = true;
+    s.online_drug_timers_overlay_anchor = "top_left";
+    s.online_drug_timers_overlay_offset_x = 45.0f;
+    s.online_drug_timers_overlay_offset_y = 365.0f;
+    s.online_overlay_style = "dense";
+    s.online_overlay_scale = 1.2f;
+    s.online_overlay_opacity = 0.6f;
+    s.online_overlay_custom_text_color_enabled = true;
+    s.online_overlay_text_color_r = 0.25f;
+    OnlineDataManager manager;
+    PopulateUsableSnapshot(manager);
+    OnlineGameOverlayState game;
+    game.connected = true;
+    OnlineOverlayController controller;
+    controller.Initialize(&settings, &manager);
+    controller.SetGameStateProvider([&]() { return game; });
+    controller.Update(0.0f);
+    ASSERT_TRUE(controller.GetGameOverlays().empty());
+
+    OnlineOverlayRenderer renderer;
+    renderer.Initialize(&settings, &manager);
+    renderer.SetOverlayController(&controller);
+    int saves = 0;
+    renderer.SetSettingsPersistCallback([&]() { ++saves; });
+    ImGuiScope scope;
+    scope.BeginFrame();
+    renderer.RenderPersistentOverlays();
+    scope.EndFrame();
+    ASSERT_TRUE(FindWindow("##PersistentOverlay_Use Cooldown & Nachwirkung") == nullptr);
+
+    const auto preview = controller.GetDrugTimerOverlayPreview();
+    const std::vector<std::string> previewRows{"Cooldown: 0 s", "Abklingzeit: 0 s"};
+    ASSERT_EQ(preview.playerNames, previewRows);
+    ASSERT_TRUE(preview.visible);
+    ASSERT_EQ(preview.kind, PersistentOverlayKind::DrugTimers);
+    ASSERT_EQ(preview.style, OnlineOverlayStyle::Dense);
+    ASSERT_EQ(preview.scale, 1.2f);
+    ASSERT_EQ(preview.opacity, 0.6f);
+    ASSERT_TRUE(preview.customTextColorEnabled);
+    ASSERT_EQ(preview.textColorR, 0.25f);
+    renderer.SetPersistentOverlayMoveMode(true);
+    scope.BeginFrame();
+    renderer.RenderPersistentOverlays();
+    auto* window = FindWindow("##PersistentOverlay_Use Cooldown & Nachwirkung");
+    ASSERT_TRUE(window != nullptr);
+    ASSERT_EQ(window->Pos.x, 45.0f);
+    ASSERT_EQ(window->Pos.y, 365.0f);
+    ASSERT_TRUE((window->Flags & ImGuiWindowFlags_NoMove) == 0);
+    ASSERT_TRUE((window->Flags & ImGuiWindowFlags_NoMouseInputs) == 0);
+    const ImVec2 size = window->Size;
+    renderer.PersistMovedOverlayPositionForTesting(preview, ImVec2(1300.0f, 800.0f), size);
+    ASSERT_EQ(s.online_drug_timers_overlay_anchor, std::string("bottom_right"));
+    ASSERT_EQ(s.online_drug_timers_overlay_offset_x, 620.0f - size.x);
+    ASSERT_EQ(s.online_drug_timers_overlay_offset_y, 280.0f - size.y);
+    ASSERT_EQ(s.online_stamina_overlay_offset_y, 320.0f);
+    scope.EndFrame();
+
+    ImGui::GetIO().AddKeyEvent(ImGuiKey_Escape, true);
+    controller.Update(0.0f);
+    scope.BeginFrame();
+    renderer.RenderPersistentOverlays();
+    scope.EndFrame();
+    ASSERT_TRUE(!renderer.IsPersistentOverlayMoveModeActive());
+    ASSERT_EQ(saves, 1);
+    ASSERT_TRUE(!window->Active); // Closing move mode removes the idle preview immediately.
+    SettingsManager reloaded;
+    ASSERT_TRUE(reloaded.LoadFromJson(settings.GetSettingsJson()));
+    ASSERT_EQ(reloaded.Get().online_drug_timers_overlay_anchor, std::string("bottom_right"));
+    ASSERT_EQ(reloaded.Get().online_drug_timers_overlay_offset_x, s.online_drug_timers_overlay_offset_x);
+    ASSERT_EQ(reloaded.Get().online_drug_timers_overlay_offset_y, s.online_drug_timers_overlay_offset_y);
+
+    const std::vector<std::string> rows{"Kokain", "Cooldown: 120 s", "Abklingzeit: 120 s"};
+    controller.SetDrugTimerLines(rows);
+    controller.Update(0.0f);
+    const auto& data = controller.GetGameOverlays()[0];
+    ASSERT_EQ(data.playerNames, rows);
+    ASSERT_EQ(data.playerCount, 3);
+    ASSERT_TRUE(!data.showPlayerCount);
+    ASSERT_EQ(data.style, preview.style);
+    ASSERT_EQ(data.scale, preview.scale);
+    ASSERT_EQ(data.opacity, preview.opacity);
+    ASSERT_TRUE(data.minimumWidth > 0.0f); // One column keeps both timers on separate rows.
+    scope.BeginFrame();
+    renderer.RenderPersistentOverlays();
+    scope.EndFrame();
+    ASSERT_TRUE(window->Active);
+    ASSERT_TRUE((window->Flags & ImGuiWindowFlags_NoMove) != 0);
+    ASSERT_TRUE(window->Size.y > size.y);
+    ASSERT_EQ(window->Pos.x, 1300.0f);
+    // ImGui truncates both requested size and position to pixels separately.
+    // A fractional scaled panel height can leave one extra pixel at this edge.
+    const float anchoredY = 1080.0f - window->Size.y - s.online_drug_timers_overlay_offset_y;
+    ASSERT_TRUE(std::fabs(window->Pos.y - anchoredY) <= 1.0f);
+
+    s.online_drug_timers_overlay_enabled = false;
+    controller.Update(0.0f);
+    ASSERT_TRUE(controller.GetGameOverlays().empty());
+    s.online_drug_timers_overlay_enabled = true;
+    controller.SetDrugTimerLines({});
+    controller.Update(0.0f);
+    ASSERT_TRUE(controller.GetGameOverlays().empty());
+    scope.BeginFrame();
+    renderer.RenderPersistentOverlays();
+    scope.EndFrame();
+    ASSERT_TRUE(!window->Active);
+    game.connected = false;
+    controller.Update(0.6f);
+    ASSERT_TRUE(controller.GetGameOverlays().empty());
+    return true;
+}
+
 bool TestRedCountyBrotherhoodMembershipAndQuickFilter() {
     SettingsManager settings;
     Settings& s = settings.GetMutable();
@@ -993,6 +1108,7 @@ int RunOnlineOverlayRendererTests() {
     RUN_TEST(TestNewGameHudRemainsInsideSmallViewportWithTwentyMarkers);
     RUN_TEST(TestPlayerAffiliationAlwaysUsesCurrentSnapshotRatherThanSavedNotes);
     RUN_TEST(TestFriendAndEnemyRadarMoveAndPersistIndependently);
+    RUN_TEST(TestDrugTimersUseSharedStyleVerticalRowsAndExistingMoveMode);
     RUN_TEST(TestRedCountyBrotherhoodMembershipAndQuickFilter);
     std::printf("OnlineOverlayRendererTests: %d passed, %d failed\n", g_state.passed, g_state.failed);
     return g_state.failed;

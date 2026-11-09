@@ -58,6 +58,7 @@ void OnlineOverlayController::Shutdown() {
     gameOverlays_.clear();
     markerStates_.clear();
     gameState_ = {};
+    drugTimerLines_.clear();
     gamePlayerIndices_.clear();
     gameStateProvider_ = nullptr;
     gameRefreshSeconds_ = 0.0f;
@@ -81,6 +82,30 @@ void OnlineOverlayController::Update(float deltaTimeSeconds) {
 void OnlineOverlayController::SetGameStateProvider(std::function<OnlineGameOverlayState()> provider) {
     gameStateProvider_ = std::move(provider);
     gameRefreshSeconds_ = 0.0f;
+}
+
+void OnlineOverlayController::SetDrugTimerLines(std::vector<std::string> lines) {
+    drugTimerLines_ = std::move(lines);
+}
+
+PersistentOverlayData OnlineOverlayController::GetDrugTimerOverlayPreview() const {
+    PersistentOverlayData data = localOverlay_;
+    data.kind = PersistentOverlayKind::DrugTimers;
+    data.visible = false;
+    data.title = "Use Cooldown & Nachwirkung";
+    data.playerNames = {"Cooldown: 0 s", "Abklingzeit: 0 s"};
+    data.countRows.clear();
+    data.playerCount = static_cast<int>(data.playerNames.size());
+    data.showPlayerCount = false;
+    data.minimumWidth = 240.0f;
+    if (settingsManager_ != nullptr) {
+        const auto& settings = settingsManager_->Get();
+        data.visible = settings.online_enabled && settings.online_drug_timers_overlay_enabled && gameState_.connected;
+        data.anchor = ParseAnchor(settings.online_drug_timers_overlay_anchor);
+        data.offsetX = settings.online_drug_timers_overlay_offset_x;
+        data.offsetY = settings.online_drug_timers_overlay_offset_y;
+    }
+    return data;
 }
 
 std::string OnlineOverlayController::NormalizeMarkerName(const std::string& name) {
@@ -225,6 +250,13 @@ void OnlineOverlayController::UpdateGameOverlays(float deltaTimeSeconds) {
     if (settings.online_stamina_overlay_enabled && !gameOverlays_.empty()) {
         gameOverlays_.back().stamina = stamina;
         gameOverlays_.back().minimumWidth = 112.0f;
+    }
+
+    if (settings.online_drug_timers_overlay_enabled && !drugTimerLines_.empty()) {
+        PersistentOverlayData data = GetDrugTimerOverlayPreview();
+        data.playerNames = drugTimerLines_;
+        data.playerCount = static_cast<int>(data.playerNames.size());
+        gameOverlays_.push_back(std::move(data));
     }
 
     std::vector<std::string> savedNames;

@@ -592,8 +592,13 @@ void OnlineOverlayRenderer::RenderPersistentOverlays() {
         RenderSinglePersistentOverlay(wantedData, scale, stackedOffsetY);
     }
 
+    bool hasDrugTimerOverlay = false;
     for (const auto& data : overlayController_->GetGameOverlays()) {
         RenderSinglePersistentOverlay(data, scale, 0.0f);
+        if (data.kind == PersistentOverlayKind::DrugTimers && data.visible) hasDrugTimerOverlay = true;
+    }
+    if (persistentOverlayMoveMode_ && !hasDrugTimerOverlay) {
+        RenderSinglePersistentOverlay(overlayController_->GetDrugTimerOverlayPreview(), scale, 0.0f);
     }
 
     if (persistentOverlayMovedSinceSave_ && ImGui::IsMouseReleased(ImGuiMouseButton_Left)) {
@@ -649,7 +654,7 @@ void OnlineOverlayRenderer::PersistMovedOverlayPosition(const PersistentOverlayD
         if (overlayController_ == nullptr) return 0.0f;
         if (data.kind == PersistentOverlayKind::Location || data.kind == PersistentOverlayKind::Transport
             || data.kind == PersistentOverlayKind::Stamina || data.kind == PersistentOverlayKind::Pedslots || data.kind == PersistentOverlayKind::FriendsRadar
-            || data.kind == PersistentOverlayKind::EnemiesRadar) return 0.0f;
+            || data.kind == PersistentOverlayKind::EnemiesRadar || data.kind == PersistentOverlayKind::DrugTimers) return 0.0f;
         if (data.kind == PersistentOverlayKind::LocalAffiliation) return 0.0f;
         const PersistentOverlayData& local = overlayController_->GetLocalOverlayData();
         const PersistentOverlayData& own = overlayController_->GetOwnGangOverlayData();
@@ -703,6 +708,11 @@ void OnlineOverlayRenderer::PersistMovedOverlayPosition(const PersistentOverlayD
         storedX = &settings.online_stamina_overlay_offset_x;
         storedY = &settings.online_stamina_overlay_offset_y;
         anchor = &settings.online_stamina_overlay_anchor;
+        break;
+    case PersistentOverlayKind::DrugTimers:
+        storedX = &settings.online_drug_timers_overlay_offset_x;
+        storedY = &settings.online_drug_timers_overlay_offset_y;
+        anchor = &settings.online_drug_timers_overlay_anchor;
         break;
     case PersistentOverlayKind::FriendsRadar:
         storedX = &settings.online_friends_overlay_offset_x;
@@ -784,7 +794,7 @@ void OnlineOverlayRenderer::RenderSinglePersistentOverlay(const PersistentOverla
     const bool isRadar = data.kind == PersistentOverlayKind::FriendsRadar || data.kind == PersistentOverlayKind::EnemiesRadar;
     const bool boundToViewport = data.kind == PersistentOverlayKind::Location
         || data.kind == PersistentOverlayKind::Transport || data.kind == PersistentOverlayKind::Stamina || data.kind == PersistentOverlayKind::Pedslots
-        || isRadar;
+        || data.kind == PersistentOverlayKind::DrugTimers || isRadar;
     if (isRadar && rowHeight > 0.0f) {
         const float availableHeight = (std::max)(rowHeight, viewport->Size.y - headerHeight - padding * 2.0f);
         const int maxRowsPerColumn = (std::max)(1, static_cast<int>(availableHeight / rowHeight));

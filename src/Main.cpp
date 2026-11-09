@@ -26,6 +26,7 @@
 #include "../include/ImGuiOverlay.h"
 #include "../include/GpsManager.h"
 #include "../include/ForumBrowser.h"
+#include "../include/DrugUseTracker.h"
 #include "../include/InputManager.h"
 #include "../include/InterfaceEditor.h"
 #include "../include/NativeHudEditor.h"
@@ -382,6 +383,8 @@ public:
         interfaceEditor_.RestoreOriginalValues();
         onlineOverlayRenderer_.Shutdown();
         onlineOverlayController_.Shutdown();
+        drugUseTracker_.Reset();
+        drugTimerPlayerName_.clear();
         onlineEventDetector_.Shutdown();
         quickMap_.Shutdown();
         speedometerManager_.Shutdown();
@@ -698,6 +701,9 @@ public:
         onlineOverlayRenderer_.SetOverlayController(&onlineOverlayController_);
         bridge_.SetIncomingChatCallback([&](const std::string& text) {
             onlineEventDetector_.OnChatLine(text);
+            if (RefreshDrugTimerSession()) {
+                drugUseTracker_.ObserveChat(text, drugTimerPlayerName_, keybinder::DrugUseTracker::Clock::now());
+            }
         });
 
         rssFeedManager_.Initialize();
@@ -942,6 +948,24 @@ public:
             static auto previousOnlineUpdateTime = onlineUpdateTime;
             const float onlineDelta = std::chrono::duration<float>(onlineUpdateTime - previousOnlineUpdateTime).count();
             previousOnlineUpdateTime = onlineUpdateTime;
+            std::vector<std::string> drugTimerLines;
+            if (RefreshDrugTimerSession()) {
+                for (const auto& drug : drugUseTracker_.TakeReadyDrugs(onlineUpdateTime)) {
+                    // This notice belongs to the current session; do not leave
+                    // a deferred chat message behind if the connection ends.
+                    bridge_.SendLocalMessage("{33CCFF}[NL-BINDER]{FFFFFF} Du kannst " + drug + " wieder konsumieren.");
+                }
+                for (const auto& timer : drugUseTracker_.Snapshot(onlineUpdateTime)) {
+                    drugTimerLines.push_back(timer.displayName);
+                    if (timer.cooldownDuration > 0) {
+                        drugTimerLines.push_back("Cooldown: " + std::to_string(timer.cooldownSeconds) + " s");
+                    }
+                    if (timer.aftereffectDuration > 0) {
+                        drugTimerLines.push_back("Abklingzeit: " + std::to_string(timer.aftereffectSeconds) + " s");
+                    }
+                }
+            }
+            onlineOverlayController_.SetDrugTimerLines(std::move(drugTimerLines));
             onlineOverlayController_.Update(onlineDelta);
 
             bool overlayVisible = overlay_.IsVisible();
@@ -1137,6 +1161,9 @@ private:
     static keybinder::OnlineOverlayRenderer onlineOverlayRenderer_;
     static keybinder::OnlineEventDetector onlineEventDetector_;
     static keybinder::OnlineOverlayController onlineOverlayController_;
+    static keybinder::DrugUseTracker drugUseTracker_;
+    static std::string drugTimerPlayerName_;
+    static bool RefreshDrugTimerSession();
     static keybinder::TextDrawAdapter textDrawAdapter_;
     static keybinder::GpsManager gps_;
     static keybinder::ForumBrowser forumBrowser_;
@@ -1169,12 +1196,30 @@ keybinder::QuickMap Keybinder::quickMap_{};
 keybinder::OnlineOverlayRenderer Keybinder::onlineOverlayRenderer_{};
 keybinder::OnlineEventDetector Keybinder::onlineEventDetector_{};
 keybinder::OnlineOverlayController Keybinder::onlineOverlayController_{};
+keybinder::DrugUseTracker Keybinder::drugUseTracker_{};
+std::string Keybinder::drugTimerPlayerName_{};
 keybinder::TextDrawAdapter Keybinder::textDrawAdapter_{};
 keybinder::GpsManager Keybinder::gps_{};
 keybinder::ForumBrowser Keybinder::forumBrowser_{};
 keybinder::SpeedometerManager Keybinder::speedometerManager_{};
 keybinder::SpeedometerUI Keybinder::speedometerUI_{};
 Keybinder plugin_instance{};
+
+bool Keybinder::RefreshDrugTimerSession() {
+    const auto& settings = settingsManager_.Get();
+    const auto* netGame = bridge_.GetNetGame();
+    const bool enabled = settings.online_enabled && settings.online_drug_timers_overlay_enabled;
+    const std::string playerName = enabled && netGame
+        && netGame->m_nGameState == sampapi::v03dl::CNetGame::GAME_MODE_CONNECTED
+        ? bridge_.GetLocalPlayerName() : std::string{};
+    // Do not carry another account's deadlines or completion messages through
+    // a disconnect, account switch, or disabling this feature.
+    if (playerName.empty() || playerName != drugTimerPlayerName_) {
+        drugUseTracker_.Reset();
+        drugTimerPlayerName_ = playerName;
+    }
+    return !playerName.empty();
+}
 
 // Definition of DoEmergencyShutdown - must be after Keybinder class definition
 // so EmergencyShutdown() can access the static members.

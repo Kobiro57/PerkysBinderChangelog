@@ -1,0 +1,26 @@
+ Keybinder.vcxproj                        |   1 +
+ include/DrugUseTracker.h                 | 157 +++++++++++++++++++
+ include/OnlineOverlayController.h        |   4 +
+ include/SettingsManager.h                |   4 +
+ src/Main.cpp                             |  45 ++++++
+ src/OnlineOverlayController.cpp          |  32 ++++
+ src/OnlineOverlayRenderer.cpp            |  14 +-
+ src/OnlineUI.cpp                         |   6 +-
+ src/SettingsManager.cpp                  |  11 ++
+ tests/DrugUseTrackerTests.cpp            | 121 +++++++++++++++
+ tests/KeybindTests.cpp                   |   4 +-
+ tests/OnlineOverlayRendererTests.cpp     | 116 ++++++++++++++
+ tests/OnlineSettingsTests.cpp            |  35 +++++
+ tools/document_revision19.py             | 206 +++++++++++++++++++++++++
+ tools/export_full_changelog.py           |   6 +-
+ tools/export_source_bundle_revision19.py | 185 ++++++++++++++++++++++
+ tools/finalize_revision19.py             |  71 +++++++++
+ tools/install_revision19.py              |  47 ++++++
+ tools/package_revision19.py              |  96 ++++++++++++
+ tools/publish_revision19.py              | 257 +++++++++++++++++++++++++++++++
+ tools/report_revision19_log.py           |  10 ++
+ tools/run_revision19.bat                 |  74 +++++++++
+ tools/run_tests.bat                      |   1 +
+ tools/verify_revision19_artifact.py      |  51 ++++++
+ tools/verify_revision19_public.py        |  35 +++++
+ 25 files changed, 1581 insertions(+), 8 deletions(-)

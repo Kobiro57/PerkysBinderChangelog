@@ -37,6 +37,7 @@ enum class PersistentOverlayKind {
     Stamina,
     FriendsRadar,
     EnemiesRadar,
+    DrugTimers,
 };
 
 struct OnlineMarkerPlayer {
@@ -126,6 +127,8 @@ public:
     const std::vector<OnlineMarkerState>& GetMarkerStates() const { return markerStates_; }
     const OnlineGameOverlayState& GetGameState() const { return gameState_; }
     void SetGameStateProvider(std::function<OnlineGameOverlayState()> provider);
+    void SetDrugTimerLines(std::vector<std::string> lines);
+    PersistentOverlayData GetDrugTimerOverlayPreview() const;
     static OnlineGameOverlayState CaptureGameState(SAMPBridge* bridge);
     static std::string NormalizeMarkerName(const std::string& name);
     static std::string ResolveMarkerAffiliation(const OnlineSnapshot& snapshot, const std::string& name);
@@ -161,6 +164,7 @@ private:
     std::function<OnlineGameOverlayState()> gameStateProvider_;
     float gameRefreshSeconds_ = 0.0f;
     StaminaGauge staminaGauge_;
+    std::vector<std::string> drugTimerLines_;
 
     // Cached settings
     bool localOverlayEnabled_ = false;

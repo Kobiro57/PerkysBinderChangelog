@@ -1056,3 +1056,30 @@ Live-Tests dieser beiden Todesursachen werden nicht behauptet.
 - Auf zusätzlichen Nutzerwunsch `/afk` beim Öffnen des Forumfensters und `/back` beim Schließen ergänzt. Übergänge werden einmal ausgewertet, einschließlich ESC, Button, Einrichtungsabbruch und Fehler.
 
 Der Nutzer bestätigte nach Einspielen des vorläufigen r18-Stands, dass der angefragte Forum-/GPS-Test funktioniert. Das ist vom anschließenden Zusatz der expliziten Renderfreigabe und der neuen AFK-/Back-Umschaltung zu unterscheiden. Die Bestätigung wird mit der tatsächlich getesteten ASI-Prüfsumme separat dokumentiert; keine Rohlogs oder privaten Profile werden veröffentlicht.
+
+## 25. Nachtrag r19 – 9. November 2026
+
+- Unter Online → Overlay-Einstellungen → Dauerhaft → Spielinformationen direkt
+  unter „Ausdauer anzeigen“ den Schalter „Use Cooldown & Nachwirkung anzeigen“ ergänzt.
+- Nur die vollständige eigene Konsum-Aktionszeile anhand des aktuellen lokalen
+  Spielernamens auswerten. Fremde Namen, normaler Spielerchat und zitierte Texte
+  starten keine Timer. Ecstasy und Ectasy bezeichnen denselben Eintrag.
+- Cooldown/Abklingzeit in Sekunden: Kokain 120/120, Heroin 120/60,
+  Speed 180/180, Ecstasy 180/60, Cannabis ohne Cooldown/40,
+  Adrenalin 45/ohne Abklingzeit und Morphium 45/45.
+- Beide Zeiten beginnen parallel bei der Einnahme; unabhängige Drogen können
+  gleichzeitig laufen. Monotone Zeit und aufgerundete Restsekunden verhindern
+  eine Verlängerung durch schwankende Bildraten.
+- Cooldown und Abklingzeit pro Droge untereinander im selben Overlay anzeigen.
+  Nicht vorhandene Timer weglassen. Nach Ablauf eines vorhandenen Cooldowns
+  einmalig lokal melden, welche Droge wieder konsumiert werden kann.
+- Gleichen Stil, Farben, Skalierung und bestehenden Move-Modus mit ESC-Speichern
+  nutzen; Position unabhängig von Ausdauer und anderen Overlays sichern.
+- Ohne aktive Einnahme im normalen Spiel unsichtbar. Im Move-Modus nur eine
+  Vorschau mit „Cooldown: 0 s“ und „Abklingzeit: 0 s“ anzeigen; ESC speichert
+  und versteckt sie wieder bis zum nächsten aktiven Konsum.
+- Deaktivieren, Verbindungsende und Spielerwechsel entfernen laufende Timer
+  und ausstehende Bereit-Meldungen. Keine nachträglichen Ereignisse erfinden.
+- Gezielte Timer-, Settings- und Overlay-/Move-Prüfungen ergänzt. Tatsächliche
+  Prüfergebnisse stehen im separaten r19-Nachweis; früheren Browser-/GPS-Testumfang
+  nicht als neu ausgeführten r19-Live-Test darstellen.
