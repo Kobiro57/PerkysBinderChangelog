@@ -25,7 +25,10 @@ public:
 
     bool ObserveChat(const std::string& line, const std::string& localName, TimePoint now) {
         if (localName.empty()) return false;
-        const std::string text = NormalizeLine(line);
+        std::string text = NormalizeLine(line);
+        // Nova prefixes server action messages with "*** ". Strip only this
+        // leading marker; the actor and the complete action still must match.
+        if (text.compare(0, 4, "*** ") == 0) text.erase(0, 4);
         const std::string prefix = localName + " nimmt ";
         const std::string suffix = " zu sich.";
         if (text.size() <= prefix.size() + suffix.size()

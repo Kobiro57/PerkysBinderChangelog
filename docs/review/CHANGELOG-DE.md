@@ -1102,3 +1102,18 @@ Der Nutzer bestätigte nach Einspielen des vorläufigen r18-Stands, dass der ang
   Einstellungen, Zugangsdaten und Chatlogs werden nicht mitverteilt.
 - Tatsächlich ausgeführte automatisierte Prüfungen und ASI-Prüfsummen getrennt
   dokumentiert; keinen noch nicht erfolgten GTA-Live-Test behauptet.
+
+## 27. Nachtrag v0.1.2 / r21 – 9. November 2026
+
+- Tatsächliches Serverformat `*** Name nimmt Droge zu sich.` berücksichtigt:
+  das führende Aktionspräfix `*** ` vor der Namensprüfung genau einmal entfernen.
+- Dynamische eigene Namensprüfung und vollständige Aktionszeile beibehalten;
+  fremde Spieler, Namensvorsilben und zitierte Chatzeilen bleiben ausgeschlossen.
+- Konkreten Fehler mit `*** KOBiRO nimmt Heroin zu sich.` abgesichert; Heroin
+  startet mit 120 Sekunden Cooldown und parallelen 60 Sekunden Abklingzeit.
+- Bisherige Schreibweise ohne Sterne, alle sieben Drogen und Ecstasy/Ectasy,
+  Farb-/Zeitstempelbereinigung und einmalige Bereit-Ereignisse nachgeprüft.
+- Version 0.1.2, Credits, übrige Overlay-Funktionen, Forum-Installationsunterlagen
+  und die Browser-Runtime bleiben erhalten. Source/ASI/Texte als r21 aktualisiert.
+- Automatisierte Prüfergebnisse getrennt von einer noch ausstehenden erneuten
+  Nutzerbeobachtung im laufenden Spiel dokumentiert.

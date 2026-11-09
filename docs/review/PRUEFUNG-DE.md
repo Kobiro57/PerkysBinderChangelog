@@ -1,6 +1,12 @@
 # Hinweise zur Prüfung durch die Projektleitung
 
-## Aktueller Stand v0.1.2 / r20 – 9. November 2026
+## Aktueller Stand v0.1.2 / r21 – 9. November 2026
+
+Der konkrete Serverpräfix-Fehler ist im [r21-Prüfumfang](r21-PRUEFUNG-DE.md)
+und [Prüfnachweis](r21-validation.json) dokumentiert. Frühere Ergebnisse
+bleiben nachstehend erhalten.
+
+## Vorheriger Stand v0.1.2 / r20 – 9. November 2026
 
 Version, Urheberhinweise und transparente Forum-Einrichtung sind im
 [r20-Prüfumfang](r20-PRUEFUNG-DE.md) und

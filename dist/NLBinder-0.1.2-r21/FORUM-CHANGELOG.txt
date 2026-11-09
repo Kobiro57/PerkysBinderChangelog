@@ -1,0 +1,103 @@
+NLBinder v.0.1.2 – by perkys & edited by KOBiRO
+
+Hier ist das aktuelle NLBinder-Release mit fertiger ASI und nachvollziehbarer Änderungsübersicht. Der vollständige Binder-Quellcode steht im Repository und im zusammengestellten Quellcodeordner zur Einsicht bereit.
+
+NEU IN DIESEM PAKET
+
+Hotfix r21: Die tatsächlichen Konsummeldungen mit dem serverseitigen Präfix „*** “ werden jetzt erkannt, zum Beispiel „*** KOBiRO nimmt Heroin zu sich.“. Der Name bleibt dynamisch an den eigenen Spieler gebunden. Heroin startet damit 120 s Cooldown und 60 s Abklingzeit; die Korrektur gilt auch für die übrigen Drogen. Fremde Konsummeldungen und zitierter Spielerchat starten keine Timer.
+
+Die Startmeldung lautet jetzt:
+NLBinder v.0.1.2 by perkys & edited by KOBiRO wurde erfolgreich gestartet!
+
+Version und Urheberhinweis sind auch im Hauptmenü angepasst. Zusätzlich enthält das Paket eine eigene Dokumentation der /forum-Einrichtung, die vollständige Liste der dabei installierten Runtime-Dateien mit Größen und SHA-256-Prüfsummen sowie einen übersichtlichen Ordner mit dem zugehörigen eigenen Quellcode. Die bisherige Browser-Runtime bleibt unverändert.
+
+ZULETZT ERGÄNZT: USE COOLDOWN & NACHWIRKUNG
+
+Unter Online -> Overlay-Einstellungen -> Dauerhaft -> Spielinformationen kann direkt unter „Ausdauer anzeigen“ die Option „Use Cooldown & Nachwirkung anzeigen“ eingeschaltet werden.
+
+Eine eigene Aktionsmeldung „*** Name nimmt Droge zu sich.“ startet die passenden Timer. Das Format ohne Sternpräfix wird ebenfalls unterstützt. Der Binder verwendet den tatsächlichen eigenen Spielernamen. Konsum anderer Spieler und normale Chatnachrichten starten keine eigenen Timer.
+
+Alle Zeiten werden in Sekunden angezeigt:
+- Kokain: Cooldown 120 s / Abklingzeit 120 s
+- Heroin: Cooldown 120 s / Abklingzeit 60 s
+- Speed: Cooldown 180 s / Abklingzeit 180 s
+- Ecstasy: Cooldown 180 s / Abklingzeit 60 s
+- Cannabis: kein Cooldown / Abklingzeit 40 s
+- Adrenalin: Cooldown 45 s / keine Abklingzeit
+- Morphium: Cooldown 45 s / Abklingzeit 45 s
+
+Cooldown und Abklingzeit laufen parallel und stehen untereinander im selben Overlay. Mehrere Drogen können gleichzeitig angezeigt werden. Bei Ablauf eines vorhandenen Cooldowns erscheint einmalig eine lokale NL-BINDER-Meldung, welche Droge wieder konsumiert werden kann. Diese Meldung wird nicht in den Serverchat gesendet.
+
+Ohne aktiven Konsum bleibt die Anzeige unsichtbar. Im vorhandenen Move-Modus erscheint eine Vorschau mit „Cooldown: 0 s“ und „Abklingzeit: 0 s“. Die Vorschau lässt sich mit der Maus verschieben. ESC speichert die Position und blendet sie wieder aus. Beim nächsten Konsum erscheint dort der echte Countdown. Stil, Farben und Skalierung entsprechen den vorhandenen dauerhaften Overlays.
+
+WEITERE BEREITS ENTHALTENE ÄNDERUNGEN
+
+- Jobs: Holzfäller und Bauarbeiter mit Skilltrees; Auslesen der Jobskill-Punkte über /jobskills bei der Synchronisation. Akkord-Anteile fließen in die vorhandene Jobverdienst-Auswertung ein.
+- Spielinformationen: Ausdaueranzeige aus der tatsächlichen Spielreserve sowie Anzeigen für Ort, Fortbewegungsmittel und Pedslots.
+- Online: getrennte Freunde- und Feinde-Overlays, automatische Fraktionszuordnung und Red County Brotherhood. Die früheren Online-Watcher-/Alarm-/Entfernungsfunktionen wurden entfernt.
+- Kill-/Todeszähler: überarbeitete Erkennung und Synchronisation der Gesamtwerte, frei wählbarer Killtext, Testkill und eigene lokale Zählermeldungen. Doppelzählungen beim Tod und nach einem Relog im Friedhof wurden behandelt.
+- Variablen: bereinigte Auswahl, getrennte Stadt/Bezirk-Angaben und {input} für eine manuelle Texteingabe bei Bind-Aktionen.
+- Gameplay: überarbeiteter automatischer Motorstart mit Berücksichtigung des serverseitigen Motorstart-Addons; Damagelog für HP-/Westenschaden einschließlich Fallschaden und Explosionen.
+- Einstellungen: manuelle Synchronisation des aktuellen Spielstands sowie die vorhandenen Tacho-Einstellungen.
+- Mods: eigene Waffenicons je Waffe und die verbliebenen Interface-Anpassungen mit dem vorhandenen Move-System.
+- /speed: automatischer Ablauf durch den serverseitigen Wanted-Dialog für die Geschwindigkeitsüberschreitung; ID sowie eindeutige Spielernamen/-teile werden unterstützt.
+- /reconnect: überarbeiteter Neustart-Ablauf für Nova Launcher beziehungsweise OpenMP.
+- GPS: /setgps speichert Ziele; /gpslist erlaubt Navigation und Löschen. Navigation setzt einen roten Welt-Checkpoint und einen Minimap-Punkt, mit einmaliger lokaler Ankunftsmeldung.
+- /forum: echtes Nova-Forum im Binderfenster, wiederholtes Öffnen/Schließen und überarbeitete automatische Einrichtung. Beim Öffnen wird einmal /afk, beim Schließen einmal /back gesendet.
+
+Die vollständige Entwicklung einschließlich der einzelnen Korrekturen steht in CHANGELOG-GESAMT.txt. Diese Übersicht fasst den aktuellen Gesamtstand zusammen; die zuletzt genannten Funktionen wurden über mehrere frühere Bearbeitungsstände ergänzt.
+
+WAS PASSIERT BEIM ERSTEN /FORUM?
+
+Zur normalen Verwendung muss nur NLBinder.asi installiert werden. Beim ersten /forum richtet der Binder bei Bedarf die festgelegten Browserdateien ein. Geeignete vorhandene Dateien werden übernommen. Andernfalls wird das Browserpaket einmalig von einem GitHub-Release dieses Projekts heruntergeladen.
+
+Download: 188.258.850 Bytes, ungefähr 188 MB.
+Entpackte Runtime: 236 Dateien mit insgesamt 429.252.102 Bytes, ungefähr 429 MB.
+Während der Einrichtung oder Reparatur können zusätzliche temporäre Dateien und Sicherungen entstehen.
+
+Browserprogramm und Ressourcen:
+<Windows-Dokumente>\GTA San Andreas User Files\NLBinder\Browser\cef156-r1\
+
+Downloadcache und vorübergehende Einrichtungsdateien:
+<Windows-Dokumente>\GTA San Andreas User Files\NLBinder\Browser\
+Der native Installationshelfer wird vorübergehend als BrowserSetup-<PID><GUID>.exe direkt in diesem Browser-Verzeichnis abgelegt.
+
+Separates Browserprofil mit Cookies, gespeicherter Sitzung und Webcache:
+%LOCALAPPDATA%\NLBinder\Browser\Forum\
+
+Das Profil bleibt über das Schließen des Fensters hinaus erhalten, damit eine Forum-Anmeldung erhalten bleiben kann. Beim tatsächlichen Surfen entstehen die üblichen Verbindungen und Browserdaten der aufgerufenen Webseite und ihrer eingebundenen Inhalte.
+
+Die Forumansicht nutzt Chromium Embedded Framework (CEF) als separaten 64-Bit-Prozess. Für /forum wird ein 64-Bit-Windows benötigt. Das heruntergeladene Archiv und die Runtime-Dateien werden vor der erstmaligen Aktivierung gegen die festgelegten Prüfsummen kontrolliert. Unveränderte, bereits geprüfte Dateien können bei späteren Starts schneller wiederverwendet werden.
+
+Der Quellcode des selbst entwickelten Installers, Browserhosts und der Binder-Anbindung ist enthalten. CEF/Chromium und andere mitgelieferte Fremdkomponenten sind vorgebaute Abhängigkeiten; deren vollständige Upstream-Quellen sind nicht Bestandteil dieses Binderpakets. Herkunft, Quellcode-Verweise und Lizenzhinweise sind in der Installationsdokumentation aufgeführt.
+
+IM VOLLSTÄNDIGEN QUELLCODEORDNER ZUR EINSICHT
+
+- NLBinder.asi: fertiger Binder.
+- src/, include/, browser/, tools/, res/ und third_party/: vollständiger veröffentlichter Binder-Quellcode und vorhandene Abhängigkeiten.
+- FORUM-INSTALLATION-QUELLCODE/: gesonderte Zusammenstellung der eigenen /forum-Einrichtung und Browser-Anbindung.
+- FORUM-INSTALLATION.txt: Speicherorte, Ablauf, Browserdaten, Herkunft und Quellcode-Verweise.
+- FORUM-DATEILISTE.txt: alle 236 Runtime-Dateien mit Größe und SHA-256.
+- CHANGELOG-GESAMT.txt: vollständiger Änderungsverlauf.
+- FORUM-CHANGELOG.txt: dieser Text zum Weitergeben oder Posten.
+
+QUELLCODE, PRÜFBERICHTE UND DOWNLOAD
+
+Repository:
+https://github.com/Kobiro57/PerkysBinderChangelog
+
+Dieses Release:
+https://github.com/Kobiro57/PerkysBinderChangelog/releases/tag/v0.1.2-r21
+
+Das ASI-Downloadpaket enthält den fertigen Binder, die Dokumentation und den gesonderten Installer-Quellcodeauszug. Den vollständigen Binder-Quellbaum gibt es im Repository beziehungsweise über die „Source code“-Downloads des Releases. Der zusammengestellte Desktop-Ordner enthält zusätzlich die fertige ASI.
+
+Dokumentation der /forum-Einrichtung:
+https://github.com/Kobiro57/PerkysBinderChangelog/blob/v0.1.2-r20/docs/FORUM-INSTALLATION-DE.md
+
+Die automatisierten Prüfberichte sind im Repository nachvollziehbar. Sie werden von tatsächlichen Rückmeldungen aus dem laufenden Spiel getrennt dokumentiert.
+
+INSTALLATION / UPDATE
+
+GTA vollständig beenden und NLBinder.asi in den GTA-Hauptordner neben gta_sa.exe kopieren. Eine vorhandene Binder-Version vorher sichern und ersetzen. Nur eine Binder-Version gleichzeitig laden. Anschließend GTA starten und die gewünschten Funktionen in den Einstellungen aktivieren.
+
+Der Quellcode-Ordner ist für Einsicht und eigene Builds gedacht; zur Nutzung muss er nicht in den GTA-Ordner kopiert werden.

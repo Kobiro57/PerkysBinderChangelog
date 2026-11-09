@@ -8,7 +8,7 @@
  include/CombatChatParser.h                |   29 +
  include/DamageRPCAdapter.h                |    8 +-
  include/DeathMessageRPCAdapter.h          |    3 +
- include/DrugUseTracker.h                  |  157 +++
+ include/DrugUseTracker.h                  |  160 +++
  include/ForumAfkSession.h                 |   32 +
  include/ForumBrowser.h                    |   33 +
  include/ForumBrowserProtocol.h            |   51 +
@@ -104,7 +104,7 @@
  tests/CombatChatBridgeTests.cpp           |  639 ++++++++++
  tests/CombatChatParserTests.cpp           |   84 ++
  tests/DamageLogRegressionTests.cpp        |  711 +++++++++++
- tests/DrugUseTrackerTests.cpp             |  121 ++
+ tests/DrugUseTrackerTests.cpp             |  165 +++
  tests/GpsNativeAdapterTests.cpp           |   62 +
  tests/ImGuiOverlayTests.cpp               |  104 ++
  tests/InterfaceEditorTests.cpp            |  157 +++
@@ -154,20 +154,24 @@
  tools/document_revision18.py              |  238 ++++
  tools/document_revision19.py              |  206 +++
  tools/document_revision20.py              |  174 +++
+ tools/document_revision21.py              |  134 ++
  tools/export_forum_installation_review.py |  189 +++
  tools/export_full_changelog.py            |   34 +
  tools/export_source_bundle.py             |  185 +++
  tools/export_source_bundle_revision19.py  |  185 +++
  tools/export_source_bundle_revision20.py  |  192 +++
+ tools/export_source_bundle_revision21.py  |  192 +++
  tools/fetch_cef_runtime.py                |   55 +
  tools/finalize_revision16.py              |   56 +
  tools/finalize_revision17.py              |   54 +
  tools/finalize_revision18.py              |   71 ++
  tools/finalize_revision19.py              |   71 ++
  tools/finalize_revision20.py              |   54 +
+ tools/finalize_revision21.py              |   77 ++
  tools/install_revision18.py               |   48 +
  tools/install_revision19.py               |   47 +
  tools/install_revision20.py               |   48 +
+ tools/install_revision21.py               |   48 +
  tools/launch_samp_03dl.ps1                |   17 +-
  tools/package_revision10.ps1              |  136 ++
  tools/package_revision11.ps1              |  138 ++
@@ -180,6 +184,7 @@
  tools/package_revision18.py               |   94 ++
  tools/package_revision19.py               |   96 ++
  tools/package_revision20.py               |  138 ++
+ tools/package_revision21.py               |  141 ++
  tools/package_revision4.ps1               |   97 ++
  tools/package_revision5.ps1               |   96 ++
  tools/package_revision6.ps1               |   93 ++
@@ -195,17 +200,20 @@
  tools/publish_revision18.py               |  278 ++++
  tools/publish_revision19.py               |  257 ++++
  tools/publish_revision20.py               |  272 ++++
+ tools/publish_revision21.py               |  273 ++++
  tools/record_gps_native_test.py           |   11 +
  tools/report_revision16_log.py            |   10 +
  tools/report_revision17_log.py            |   10 +
  tools/report_revision18_log.py            |   10 +
  tools/report_revision19_log.py            |   10 +
  tools/report_revision20_log.py            |   10 +
+ tools/report_revision21_log.py            |   10 +
  tools/run_revision16.bat                  |   87 ++
  tools/run_revision17.bat                  |   71 ++
  tools/run_revision18.bat                  |   76 ++
  tools/run_revision19.bat                  |   74 ++
  tools/run_revision20.bat                  |   74 ++
+ tools/run_revision21.bat                  |   74 ++
  tools/run_tests.bat                       |   56 +-
  tools/setup_msvc.bat                      |   16 +
  tools/test_browser_restart.py             |   57 +
@@ -226,10 +234,12 @@
  tools/verify_revision19_public.py         |   35 +
  tools/verify_revision20_artifact.py       |   58 +
  tools/verify_revision20_public.py         |   35 +
+ tools/verify_revision21_artifact.py       |   58 +
+ tools/verify_revision21_public.py         |   35 +
  tools/verify_revision4_artifact.py        |  115 ++
  tools/verify_revision5_artifact.py        |  115 ++
  tools/verify_revision6_artifact.py        |  115 ++
  tools/verify_revision7_artifact.py        |  115 ++
  tools/verify_revision8_artifact.py        |  115 ++
  tools/verify_revision9_artifact.py        |  115 ++
- 234 files changed, 28515 insertions(+), 1472 deletions(-)
+ 244 files changed, 29604 insertions(+), 1472 deletions(-)

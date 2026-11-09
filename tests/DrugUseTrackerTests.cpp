@@ -108,6 +108,49 @@ void DuplicateHooksAndSeparateDrugsDoNotResetEachOther() {
     CHECK(tracker.Snapshot(start + seconds(251)).empty());
     CHECK(tracker.TakeReadyDrugs(start + seconds(500)).empty());
 }
+
+void ServerActionPrefixStartsOwnHeroinAndRejectsQuotedChat() {
+    Tracker tracker;
+    // Actual server line reported by the user, including its action prefix.
+    const bool matched = tracker.ObserveChat("*** KOBiRO nimmt Heroin zu sich.", "KOBiRO", start);
+    CHECK(matched);
+    if (!matched) return;
+    auto display = tracker.Snapshot(start);
+    CHECK(display.size() == 1);
+    CHECK(display[0].displayName == "Heroin");
+    CHECK(display[0].cooldownSeconds == 120);
+    CHECK(display[0].aftereffectSeconds == 60);
+    CHECK(tracker.TakeReadyDrugs(start + seconds(119)).empty());
+    auto ready = tracker.TakeReadyDrugs(start + seconds(120));
+    CHECK(ready.size() == 1 && ready[0] == "Heroin");
+    CHECK(tracker.TakeReadyDrugs(start + seconds(121)).empty());
+
+    tracker.Reset();
+    CHECK(!tracker.ObserveChat("*** Other nimmt Heroin zu sich.", "KOBiRO", start));
+    CHECK(!tracker.ObserveChat("*** KOBiRO_2 nimmt Heroin zu sich.", "KOBiRO", start));
+    CHECK(!tracker.ObserveChat("Other: *** KOBiRO nimmt Heroin zu sich.", "KOBiRO", start));
+    CHECK(!tracker.ObserveChat("*** Other: KOBiRO nimmt Heroin zu sich.", "KOBiRO", start));
+    CHECK(!tracker.ObserveChat("*** *** KOBiRO nimmt Heroin zu sich.", "KOBiRO", start));
+    CHECK(!tracker.ObserveChat("*** KOBiRO nimmt Heroin zu sich.", "", start));
+    CHECK(tracker.Snapshot(start).empty());
+    CHECK(tracker.ObserveChat("[22:13:03] {C2A2DA}*** Different_Name{FFFFFF} nimmt Heroin zu sich.", "Different_Name", start));
+    CHECK(!tracker.ObserveChat("Different_Name nimmt Heroin zu sich.", "Different_Name", start + milliseconds(500)));
+    CHECK(tracker.Snapshot(start + seconds(1))[0].cooldownSeconds == 119);
+
+    for (const char* drug : {"Kokain", "Heroin", "Speed", "Ecstasy", "Cannabis", "Adrenalin", "Morphium", "Ectasy"}) {
+        Tracker prefixed, plain;
+        const std::string action = std::string("Local_Player nimmt ") + drug + " zu sich.";
+        CHECK(prefixed.ObserveChat("*** " + action, "Local_Player", start));
+        CHECK(plain.ObserveChat(action, "Local_Player", start));
+        const auto withPrefix = prefixed.Snapshot(start);
+        const auto withoutPrefix = plain.Snapshot(start);
+        CHECK(withPrefix.size() == withoutPrefix.size());
+        if (withPrefix.empty() || withoutPrefix.empty()) continue;
+        CHECK(withPrefix[0].displayName == withoutPrefix[0].displayName);
+        CHECK(withPrefix[0].cooldownSeconds == withoutPrefix[0].cooldownSeconds);
+        CHECK(withPrefix[0].aftereffectSeconds == withoutPrefix[0].aftereffectSeconds);
+    }
+}
 }
 
 int RunDrugUseTrackerTests() {
@@ -116,6 +159,7 @@ int RunDrugUseTrackerTests() {
     EveryConfiguredDrugHasExactParallelDurations();
     DeadlinesAreRoundedUpAndCompletionIsNotConsumedByRendering();
     DuplicateHooksAndSeparateDrugsDoNotResetEachOther();
+    ServerActionPrefixStartsOwnHeroinAndRejectsQuotedChat();
     std::printf("DrugUseTrackerTests: %d checks, %d failures\n", checks, failures);
     return failures;
 }

@@ -4,6 +4,8 @@ Hier ist das aktuelle NLBinder-Release mit fertiger ASI und nachvollziehbarer Ä
 
 NEU IN DIESEM PAKET
 
+Hotfix r21: Die tatsächlichen Konsummeldungen mit dem serverseitigen Präfix „*** “ werden jetzt erkannt, zum Beispiel „*** KOBiRO nimmt Heroin zu sich.“. Der Name bleibt dynamisch an den eigenen Spieler gebunden. Heroin startet damit 120 s Cooldown und 60 s Abklingzeit; die Korrektur gilt auch für die übrigen Drogen. Fremde Konsummeldungen und zitierter Spielerchat starten keine Timer.
+
 Die Startmeldung lautet jetzt:
 NLBinder v.0.1.2 by perkys & edited by KOBiRO wurde erfolgreich gestartet!
 
@@ -13,7 +15,7 @@ ZULETZT ERGÄNZT: USE COOLDOWN & NACHWIRKUNG
 
 Unter Online -> Overlay-Einstellungen -> Dauerhaft -> Spielinformationen kann direkt unter „Ausdauer anzeigen“ die Option „Use Cooldown & Nachwirkung anzeigen“ eingeschaltet werden.
 
-Eine eigene Aktionsmeldung „Name nimmt Droge zu sich.“ startet die passenden Timer. Der Binder verwendet den tatsächlichen eigenen Spielernamen. Konsum anderer Spieler und normale Chatnachrichten starten keine eigenen Timer.
+Eine eigene Aktionsmeldung „*** Name nimmt Droge zu sich.“ startet die passenden Timer. Das Format ohne Sternpräfix wird ebenfalls unterstützt. Der Binder verwendet den tatsächlichen eigenen Spielernamen. Konsum anderer Spieler und normale Chatnachrichten starten keine eigenen Timer.
 
 Alle Zeiten werden in Sekunden angezeigt:
 - Kokain: Cooldown 120 s / Abklingzeit 120 s
@@ -85,7 +87,7 @@ Repository:
 https://github.com/Kobiro57/PerkysBinderChangelog
 
 Dieses Release:
-https://github.com/Kobiro57/PerkysBinderChangelog/releases/tag/v0.1.2-r20
+https://github.com/Kobiro57/PerkysBinderChangelog/releases/tag/v0.1.2-r21
 
 Das ASI-Downloadpaket enthält den fertigen Binder, die Dokumentation und den gesonderten Installer-Quellcodeauszug. Den vollständigen Binder-Quellbaum gibt es im Repository beziehungsweise über die „Source code“-Downloads des Releases. Der zusammengestellte Desktop-Ordner enthält zusätzlich die fertige ASI.
 
