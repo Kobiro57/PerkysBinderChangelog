@@ -1,12 +1,15 @@
 #define KEYBINDER_TESTING
 
 #include "../include/QuickMap.h"
+#include "../include/ClaimSpots.h"
+#include "../include/TextureManager.h"
 #include "../include/SettingsManager.h"
 #include "../include/RadarSpriteResources.h"
 #include "../include/ResourceIds.h"
 #include "../include/plugin-sdk/plugin_sa/game_sa/CRadar.h"
 
 #include <cmath>
+#include <cstdint>
 #include <cstdio>
 #include <string>
 
@@ -795,6 +798,216 @@ bool TestGangZoneOutlineThicknessSettingClampsAndPersists() {
     return true;
 }
 
+bool TestClaimSpotsMatchAllTwentyEightUserSaves() {
+    const float expected[][3] = {
+        {1583.9396f,33.5867f,26.9868f}, {1927.8734f,168.8767f,40.1172f},
+        {2160.4473f,-107.1974f,2.7599f}, {2239.8594f,-86.8115f,27.8548f},
+        {2311.3462f,-17.4462f,32.5313f}, {2330.9189f,80.9126f,32.0073f},
+        {2547.1592f,93.7197f,29.8577f}, {1297.6686f,182.1735f,20.4670f},
+        {1297.8884f,308.8936f,27.5555f}, {1287.1136f,270.3256f,23.7625f},
+        {1247.1160f,367.3232f,22.7848f}, {1488.7997f,361.4571f,21.9852f},
+        {1371.5627f,471.9797f,23.1484f}, {760.6830f,381.3502f,26.0898f},
+        {752.6452f,259.9708f,29.7391f}, {863.5613f,-23.6717f,66.2610f},
+        {645.8249f,-519.8103f,21.1673f}, {743.5359f,-588.8473f,20.5990f},
+        {803.7162f,-564.1726f,21.3363f}, {1072.5286f,-291.1361f,76.8663f},
+        {252.7985f,-292.9166f,1.5836f}, {193.9769f,-229.6732f,7.0782f},
+        {206.3966f,-179.7932f,5.0786f}, {172.4167f,-161.3612f,6.7786f},
+        {183.5547f,-108.0306f,2.0234f}, {355.0618f,-76.3290f,1.3705f},
+        {-437.4864f,-59.2712f,62.0269f}, {-549.7010f,-202.3125f,80.4654f},
+    };
+    ASSERT_EQ(kRcbClaimSpots.size(), static_cast<std::size_t>(28));
+    for (std::size_t i = 0; i < kRcbClaimSpots.size(); ++i) {
+        ASSERT_EQ(kRcbClaimSpots[i].x, expected[i][0]);
+        ASSERT_EQ(kRcbClaimSpots[i].y, expected[i][1]);
+        ASSERT_EQ(kRcbClaimSpots[i].z, expected[i][2]);
+        ASSERT_TRUE(kRcbClaimSpots[i].name != nullptr && kRcbClaimSpots[i].name[0] != '\0');
+    }
+    return true;
+}
+
+bool TestClaimsRequireExplicitToggleAndPreserveServerMarkers() {
+    SettingsManager settings;
+    settings.GetMutable().quickmap_enabled = true;
+    QuickMap map;
+    map.Initialize(&settings, nullptr);
+    QuickMapRenderData data;
+    data.hasCheckpoint = true;
+    data.checkpoint.worldX = 1000.0f;
+    data.checkpoint.worldY = 2000.0f;
+    data.mapIcons.push_back({});
+    data.mapIcons[0].worldX = -200.0f;
+    data.mapIcons[0].radarSprite = RADAR_SPRITE_POLICE;
+    map.SetRenderData(data);
+    ASSERT_TRUE(!map.AreClaimsVisible());
+    ASSERT_TRUE(!map.ToggleClaims());
+    ASSERT_TRUE(map.ProjectClaimsForTesting(ImVec2(), ImVec2(600,600)).empty());
+    map.SetClaimsAllowed(true);
+    ASSERT_TRUE(!map.AreClaimsVisible());
+    ASSERT_TRUE(map.ToggleClaims());
+    ASSERT_TRUE(map.AreClaimsVisible());
+    ASSERT_TRUE(!map.IsVisible()); // /claims does not itself open the map.
+    ASSERT_EQ(map.GetRenderData().mapIcons.size(), static_cast<std::size_t>(1));
+    ASSERT_EQ(map.GetRenderData().mapIcons[0].radarSprite, static_cast<unsigned char>(RADAR_SPRITE_POLICE));
+    ASSERT_EQ(map.GetRenderData().mapIcons[0].worldX, -200.0f);
+    ASSERT_TRUE(map.GetRenderData().hasCheckpoint);
+    ASSERT_EQ(map.GetRenderData().checkpoint.worldX, 1000.0f);
+    map.Show();
+    map.Hide();
+    ASSERT_TRUE(map.AreClaimsVisible());
+    map.OnDeviceLost();
+    map.OnDeviceReset(nullptr);
+    ASSERT_TRUE(map.AreClaimsVisible());
+    ASSERT_TRUE(map.ToggleClaims());
+    ASSERT_TRUE(!map.AreClaimsVisible());
+    ASSERT_EQ(map.GetRenderData().mapIcons.size(), static_cast<std::size_t>(1));
+    ASSERT_TRUE(map.ToggleClaims());
+    map.SetClaimsAllowed(false);
+    ASSERT_TRUE(!map.AreClaimsVisible());
+    ASSERT_TRUE(!map.ToggleClaims());
+    map.SetClaimsAllowed(true);
+    ASSERT_TRUE(!map.AreClaimsVisible()); // Regaining membership never auto-enables.
+    ASSERT_TRUE(map.ToggleClaims());
+    map.Shutdown();
+    ASSERT_TRUE(!map.AreClaimsVisible());
+    ASSERT_TRUE(!map.ToggleClaims());
+    return true;
+}
+
+bool TestClaimsUseTheCurrentZoomAndDoNotClampOffscreenFlags() {
+    SettingsManager settings;
+    settings.GetMutable().quickmap_enabled = true;
+    settings.GetMutable().quickmap_auto_zoom = false;
+    settings.GetMutable().quickmap_follow_player = true;
+    settings.GetMutable().quickmap_focus_marker = false;
+    QuickMap map;
+    map.Initialize(&settings, nullptr);
+    map.SetDisplaySizeForTesting(ImVec2(600,600));
+    map.Show();
+    map.SetZoomLevel(QuickMapZoomLevel::Far);
+    map.SetClaimsAllowed(true);
+    ASSERT_TRUE(map.ToggleClaims());
+    auto claims = map.ProjectClaimsForTesting(ImVec2(10,20), ImVec2(600,600));
+    ASSERT_EQ(claims.size(), static_cast<std::size_t>(28));
+    for (const auto& claim : claims) {
+        ASSERT_TRUE(claim.visible);
+        ASSERT_EQ(claim.radarSprite, static_cast<unsigned char>(RADAR_SPRITE_ENEMYATTACK));
+        ASSERT_TRUE(!claim.emphasize);
+    }
+    ASSERT_TRUE(AssertVec2Near(claims[0].position, ImVec2(468.39396f,316.64133f)));
+    QuickMapRenderData data;
+    data.hasLocalPlayer = true;
+    data.localPlayer.worldX = 2500.0f;
+    data.localPlayer.worldY = -2500.0f;
+    map.SetRenderData(data);
+    map.SetZoomLevel(QuickMapZoomLevel::Ultra);
+    claims = map.ProjectClaimsForTesting(ImVec2(10,20), ImVec2(600,600));
+    ASSERT_TRUE(!claims[0].visible); // Montgomery is outside this zoomed view.
+    ASSERT_TRUE(claims[17].visible); // Dillimore remains at its actual position.
+    ASSERT_TRUE(!claims[27].visible); // Left-of-view flags do not pile at the edge.
+    ASSERT_TRUE(claims[17].position.x >= 10.0f && claims[17].position.x <= 610.0f);
+    ASSERT_TRUE(claims[17].position.y >= 20.0f && claims[17].position.y <= 620.0f);
+    data.localPlayer.worldX = -500.0f;
+    data.localPlayer.worldY = -200.0f;
+    map.SetRenderData(data);
+    claims = map.ProjectClaimsForTesting(ImVec2(10,20), ImVec2(600,600));
+    ASSERT_TRUE(claims[27].visible);
+    ASSERT_TRUE(!claims[0].visible);
+    map.SetClaimsAllowed(false);
+    ASSERT_TRUE(map.ProjectClaimsForTesting(ImVec2(10,20), ImVec2(600,600)).empty());
+    return true;
+}
+
+struct ClaimDrawContext {
+    ImGuiContext* previous = ImGui::GetCurrentContext();
+    ImGuiContext* context = ImGui::CreateContext();
+    ClaimDrawContext() {
+        ImGuiIO& io = ImGui::GetIO();
+        io.DisplaySize = ImVec2(1000,1000);
+        io.DeltaTime = 1.0f / 60.0f;
+        io.IniFilename = nullptr;
+        unsigned char* pixels = nullptr;
+        int width = 0, height = 0;
+        io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);
+        io.Fonts->SetTexID(static_cast<ImTextureID>(1));
+    }
+    ~ClaimDrawContext() {
+        ImGui::DestroyContext(context);
+        ImGui::SetCurrentContext(previous);
+    }
+};
+
+bool TestClaimRenderingUsesBothExistingFlagPacksAndDrawsPlayerLast() {
+    for (const auto pack : {RadarSpritePack::Radar1, RadarSpritePack::Radar2}) {
+        ClaimDrawContext context;
+        SettingsManager settings;
+        auto& configured = settings.GetMutable();
+        configured.quickmap_enabled = true;
+        configured.quickmap_follow_player = false;
+        configured.quickmap_focus_marker = false;
+        configured.quickmap_auto_zoom = false;
+        configured.quickmap_radar_pack = pack == RadarSpritePack::Radar1 ? "radar1" : "radar2";
+        QuickMap map;
+        map.Initialize(&settings, nullptr);
+        std::vector<WORD> requested;
+        const WORD flagId = pack == RadarSpritePack::Radar1 ? IDR_RADAR_ENEMYATTACK : IDR_RADAR2_ENEMYATTACK;
+        TextureInfo flag;
+        flag.texture = reinterpret_cast<IDirect3DTexture9*>(static_cast<std::uintptr_t>(0x10000 + flagId));
+        flag.width = flag.height = 32;
+        QuickMap::TestingHooks hooks;
+        hooks.getRadarSpriteTextureByResource = [&](WORD resource) -> TextureInfo* {
+            requested.push_back(resource);
+            return resource == flagId ? &flag : nullptr;
+        };
+        map.SetTestingHooks(hooks);
+        QuickMapRenderData data;
+        data.hasLocalPlayer = true;
+        data.localPlayer.type = QuickMapMarkerType::LocalPlayer;
+        data.localPlayer.worldX = -2000.0f;
+        data.localPlayer.worldY = 2200.0f;
+        QuickMapMarker serverIcon;
+        serverIcon.worldX = -2300.0f;
+        serverIcon.worldY = 2000.0f;
+        serverIcon.radarSprite = RADAR_SPRITE_POLICE;
+        data.mapIcons.push_back(serverIcon);
+        map.SetRenderData(data);
+        map.Show();
+        map.SetZoomLevel(QuickMapZoomLevel::Far);
+        map.SetClaimsAllowed(true);
+        ASSERT_TRUE(map.ToggleClaims());
+        ImGui::NewFrame();
+        ImDrawList* drawList = ImGui::GetForegroundDrawList();
+        map.Render(drawList, ImVec2(100,100), ImVec2(600,600));
+        unsigned int flagIndices = 0;
+        for (const ImDrawCmd& command : drawList->CmdBuffer) {
+            if (command.GetTexID() == reinterpret_cast<ImTextureID>(flag.texture)) {
+                flagIndices += command.ElemCount;
+                ASSERT_EQ(command.ClipRect.x, 100.0f);
+                ASSERT_EQ(command.ClipRect.y, 100.0f);
+                ASSERT_EQ(command.ClipRect.z, 700.0f);
+                ASSERT_EQ(command.ClipRect.w, 700.0f);
+            }
+        }
+        ASSERT_EQ(flagIndices, static_cast<unsigned int>(28 * 6));
+        ASSERT_EQ(requested.size(), static_cast<std::size_t>(30));
+        ASSERT_EQ(requested.front(), static_cast<WORD>(ResolveRadarSpriteResourceId(*FindRadarSpriteResource(RADAR_SPRITE_POLICE), pack)));
+        ASSERT_EQ(requested.back(), static_cast<WORD>(IDR_RADAR_CENTRE));
+        for (std::size_t i = 1; i <= 28; ++i) ASSERT_EQ(requested[i], flagId);
+        ImGui::Render();
+        ASSERT_TRUE(map.ToggleClaims());
+        requested.clear();
+        ImGui::NewFrame();
+        drawList = ImGui::GetForegroundDrawList();
+        map.Render(drawList, ImVec2(100,100), ImVec2(600,600));
+        for (const ImDrawCmd& command : drawList->CmdBuffer) {
+            ASSERT_TRUE(command.GetTexID() != reinterpret_cast<ImTextureID>(flag.texture));
+        }
+        ASSERT_EQ(requested.size(), static_cast<std::size_t>(2));
+        ASSERT_EQ(map.GetRenderData().mapIcons.size(), static_cast<std::size_t>(1));
+        ImGui::Render();
+    }
+    return true;
+}
+
 } // namespace
 
 int RunQuickMapTests() {
@@ -841,6 +1054,10 @@ int RunQuickMapTests() {
     RUN_TEST(TestGangZoneOutlineColorPreservesBrightZone);
     RUN_TEST(TestGangZoneOutlineColorBlackFillFallsBackToWhite);
     RUN_TEST(TestGangZoneOutlineThicknessSettingClampsAndPersists);
+    RUN_TEST(TestClaimSpotsMatchAllTwentyEightUserSaves);
+    RUN_TEST(TestClaimsRequireExplicitToggleAndPreserveServerMarkers);
+    RUN_TEST(TestClaimsUseTheCurrentZoomAndDoNotClampOffscreenFlags);
+    RUN_TEST(TestClaimRenderingUsesBothExistingFlagPacksAndDrawsPlayerLast);
 
     std::printf("QuickMapTests: %d passed, %d failed\n", g_state.passed, g_state.failed);
     return g_state.failed;

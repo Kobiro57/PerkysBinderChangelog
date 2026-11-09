@@ -1,0 +1,164 @@
+{
+  "format_version": 1,
+  "scope": "Own forum installer/host/controller source, pinned runtime manifest and miniz; no browser binaries or private runtime data.",
+  "line_endings": "LF",
+  "runtime_manifest_sha256": "0329308b6f4d5c33ad5d879d7b4d353396cda38f91e7220679c12d7f7b8f7a3f",
+  "files": {
+    "Keybinder.rc": {
+      "bytes": 8013,
+      "sha256": "b4a76008d891c0ed7dc6edced0ea0cc86e7a3c12ec1311f02373ac6c06436a40"
+    },
+    "Keybinder.vcxproj": {
+      "bytes": 35827,
+      "sha256": "a6f5c5b49056b2688e2a4abed34d11c04b5cdc2cebf063d479d9b57db87a2d91"
+    },
+    "README.md": {
+      "bytes": 2529,
+      "sha256": "e661e6e0d2e563932f8472f66146fb2b07609973e8c36f5c729b835eebcba661"
+    },
+    "browser/CMakeLists.txt": {
+      "bytes": 1388,
+      "sha256": "8463eb1b66c2f9853b1a91b0f923359fa912b6b88ffc118c7049ab5ad227fea9"
+    },
+    "browser/ForumBrowserHost.cpp": {
+      "bytes": 16654,
+      "sha256": "afa5eded6ff55074aabb8a44d248e8ef91147ada97ad4d3636516f056568e591"
+    },
+    "docs/FORUM-DATEILISTE.txt": {
+      "bytes": 23452,
+      "sha256": "086f77875f4c293b314fb9c37eb2c15638571de87c3f72dac35e712acc64f34c"
+    },
+    "docs/FORUM-INSTALLATION-DE.md": {
+      "bytes": 10166,
+      "sha256": "065b3829e5189b3580ffdbaed711e2103fc8b20bc54cef6b7873bbee207c4924"
+    },
+    "include/BrowserRuntimeLock.h": {
+      "bytes": 25950,
+      "sha256": "3723855f4c389dd1772a28ad7fcde6bb17030534ce27215fa0163454c4b010b4"
+    },
+    "include/BrowserSetupProtocol.h": {
+      "bytes": 670,
+      "sha256": "f6716bf29788a75fbbabc0c6c5291abccac957ed823da6ffa3f5dbad05266e73"
+    },
+    "include/ForumAfkSession.h": {
+      "bytes": 952,
+      "sha256": "f5e6d2fcbaa0d2022c59c3bd292a673ead261e03421897013c0305f979ab6b2e"
+    },
+    "include/ForumBrowser.h": {
+      "bytes": 877,
+      "sha256": "de1def9f1b83c766e5a63b14a242d4cd2054675cffd0187260f9f5490784308a"
+    },
+    "include/ForumBrowserProtocol.h": {
+      "bytes": 2074,
+      "sha256": "bae6eec75be4316a31f04dee035bee0272d8bbad9389dabe300a1eb00ed981c5"
+    },
+    "include/PersistentPaths.h": {
+      "bytes": 563,
+      "sha256": "dc219449e120723044d5fba07d3dbfd84e7b8b2479280a657c440f6b9451ed9a"
+    },
+    "include/ResourceIds.h": {
+      "bytes": 4156,
+      "sha256": "921eab91c7c1d481cdd3e0da8246d0b96eac14f9c525261fe72c1dc8bb23918b"
+    },
+    "include/Version.h": {
+      "bytes": 174,
+      "sha256": "a31a560c17b35d2be964b63b8c5910433ea194bfe5347802a6d83c6b5746ed4d"
+    },
+    "res/browser-runtime.json": {
+      "bytes": 37019,
+      "sha256": "0329308b6f4d5c33ad5d879d7b4d353396cda38f91e7220679c12d7f7b8f7a3f"
+    },
+    "src/ForumBrowser.cpp": {
+      "bytes": 42595,
+      "sha256": "84795725bd021bf9a1b62d6603b0329dd20325dbad69cca85aec146dc02f6c86"
+    },
+    "src/Main.cpp": {
+      "bytes": 59469,
+      "sha256": "5da7c080112e9d895ac896230e103c654e17dea00121cf7f4362af0948997c8f"
+    },
+    "src/PersistentPaths.cpp": {
+      "bytes": 7304,
+      "sha256": "ca7d96cc12ba4dd6a55af863f5e48d72c331ab8c0d38c8a64c67607830d89e37"
+    },
+    "third_party/miniz/LICENSE": {
+      "bytes": 1162,
+      "sha256": "6f20fa7672b00e2e975c291df737cf227addf3ad32e36fef3fe0f416e4664d3d"
+    },
+    "third_party/miniz/NLBINDER-PROVENANCE.json": {
+      "bytes": 1026,
+      "sha256": "fa8c7491224a6816e1c5e1281b292b52a267ae19766c6579b473bd25c13f56df"
+    },
+    "third_party/miniz/miniz.c": {
+      "bytes": 25991,
+      "sha256": "f23204efee2bfaffb72a974d2e28c64c3c1d9787144b5c5890f129c465e467bd"
+    },
+    "third_party/miniz/miniz.h": {
+      "bytes": 28290,
+      "sha256": "f0b67217bdd8e45b74eb9b7c2c7ae20ed6760a1d76f3276b93617039ebd082df"
+    },
+    "third_party/miniz/miniz_common.h": {
+      "bytes": 2529,
+      "sha256": "f1ba29821c8caef83585b328196aa346c5da7c82890a70a3d10d77c6cec0ed39"
+    },
+    "third_party/miniz/miniz_export.h": {
+      "bytes": 34,
+      "sha256": "195259dc89fb3f83a96426a90ee03dc45acef113150cd3475ea9cfbf1f7784f3"
+    },
+    "third_party/miniz/miniz_tdef.h": {
+      "bytes": 10733,
+      "sha256": "d62da02953c3834dfcbde4db026c6d9345013ef9b0e53185131016a3a4e48c33"
+    },
+    "third_party/miniz/miniz_tinfl.c": {
+      "bytes": 40637,
+      "sha256": "2296ebd21ef9af5ebbefd5b454d4bb67d8fb4af2d24945e7fb32114374f75a76"
+    },
+    "third_party/miniz/miniz_tinfl.h": {
+      "bytes": 8695,
+      "sha256": "da4850920fdf09f8877d9affabe1ebba1852ce4b1ebbd121f2ba7a7ea8e57e5d"
+    },
+    "third_party/miniz/miniz_zip.c": {
+      "bytes": 208249,
+      "sha256": "b70e502c425e2a31146178c1466dccaf1874390009950774be2be9bd4ec908a9"
+    },
+    "third_party/miniz/miniz_zip.h": {
+      "bytes": 26742,
+      "sha256": "b062a5def545445c73fd1d664e35a89165dfb0d996ab848f507244e819cfcf04"
+    },
+    "tools/BrowserSetup.cpp": {
+      "bytes": 20999,
+      "sha256": "6e66450c6b28cc18c7978f380e05ba25c24edc49255996059de690b4ccbc744e"
+    },
+    "tools/build_browser_setup.bat": {
+      "bytes": 476,
+      "sha256": "0ce4a53760d0de33a06b5e8d2ba340851d4e3ca79d96115bfe7e97d17e8e3c1e"
+    },
+    "tools/build_forum_browser.bat": {
+      "bytes": 1434,
+      "sha256": "ac75d1321ce540057011aaf41b110a8ed5dc0f8c443d53004a65a36dbdbc3207"
+    },
+    "tools/cef-runtime.lock.json": {
+      "bytes": 582,
+      "sha256": "3eef8a518c7763d0ab6c80c37178b5d6aa768460a43387b8118d694eed1b2827"
+    },
+    "tools/export_forum_installation_review.py": {
+      "bytes": 10225,
+      "sha256": "835fbecda24a42954b69aabee5b72df9c0f110893786dafc70ab6b13ae11bc28"
+    },
+    "tools/fetch_cef_runtime.py": {
+      "bytes": 2844,
+      "sha256": "7074ecaae2c9e50fe7317340662275084ba099e1fe4342e0afe066a3d798d02b"
+    },
+    "tools/prepare_browser_autoinstall.py": {
+      "bytes": 2618,
+      "sha256": "1478d39ec7a31e6057daa679158bb2a3dc8dbae1ce4d24d65ef762382d98fc2d"
+    },
+    "tools/prepare_browser_runtime.py": {
+      "bytes": 1802,
+      "sha256": "6fd1341694568ad108a0f5ac04e9478a31f927ae0d6655dd7e7c8e249eb70474"
+    },
+    "tools/setup_msvc.bat": {
+      "bytes": 800,
+      "sha256": "60847a4a1b58bfc30a7b2eccd7bdb47292a7badf3fd36d90607360a086101d74"
+    }
+  }
+}

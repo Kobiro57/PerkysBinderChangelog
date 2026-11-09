@@ -7,6 +7,7 @@
 #include <chrono>
 #include <map>
 #include <mutex>
+#include <optional>
 #include <string>
 #include <thread>
 #include <vector>
@@ -116,6 +117,9 @@ public:
     // Current immutable snapshot
     OnlineSnapshot GetSnapshot() const { return GetSnapshotCopy(); }
     OnlineSnapshot GetSnapshotCopy() const;
+    // A small current-name lookup for local command eligibility. Stale or
+    // failed fetches never become a new authorization result.
+    std::optional<OnlineAffiliation> GetLiveAffiliationFor(const std::string& playerName) const;
 
     // Force fetch-status recalculation from wall clock
     void RefreshFetchStatus();

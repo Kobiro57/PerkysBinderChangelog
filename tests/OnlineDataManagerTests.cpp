@@ -195,6 +195,8 @@ bool TestNormalizeFactionMatchesAliasesCaseInsensitively() {
     ASSERT_EQ(OnlineDataManager::NormalizeFaction("lspd"), std::string("LSPD"));
     ASSERT_EQ(OnlineDataManager::NormalizeFaction("Los Santos Police Department"), std::string("LSPD"));
     ASSERT_EQ(OnlineDataManager::NormalizeFaction("Police Department"), std::string("LSPD"));
+    ASSERT_EQ(OnlineDataManager::NormalizeFaction("SAPD"), std::string("LSPD"));
+    ASSERT_EQ(OnlineDataManager::NormalizeFaction("San Andreas Police Department"), std::string("LSPD"));
     ASSERT_EQ(OnlineDataManager::NormalizeFaction("NATIONAL GUARD"), std::string("Army"));
     ASSERT_EQ(OnlineDataManager::NormalizeFaction("San Andreas Army"), std::string("Army"));
     ASSERT_EQ(OnlineDataManager::NormalizeFaction("Fire Department"), std::string("Fire Department"));
@@ -532,6 +534,30 @@ bool TestSnapshotCopyRemainsImmutableAfterSubsequentUpdate() {
 
 } // namespace
 
+bool TestLiveAffiliationUsesFreshNamedPlayerRatherThanCachedOwnLabel() {
+    OnlineDataManager manager;
+    ASSERT_TRUE(!manager.GetLiveAffiliationFor("Finn"));
+    auto snapshot = BuildSnapshotSecondsAgo(0);
+    snapshot.localAffiliation = {true, "LSPD", {}}; // Wrong cached account label must be ignored.
+    snapshot.players[0].isFaction = true;
+    snapshot.players[0].isGang = false;
+    snapshot.players[0].affiliation = "Red County Brotherhood";
+    manager.SetSnapshotForTesting(snapshot);
+    const auto own = manager.GetLiveAffiliationFor(" fINN ");
+    ASSERT_TRUE(own.has_value());
+    ASSERT_TRUE(own->isFaction);
+    ASSERT_EQ(own->name, std::string("Red County Brotherhood"));
+    ASSERT_TRUE(!manager.GetLiveAffiliationFor("Different_Player"));
+    ASSERT_TRUE(!manager.GetLiveAffiliationFor(""));
+    snapshot.snapshotTime = std::chrono::steady_clock::now() - std::chrono::seconds(21);
+    manager.SetSnapshotForTesting(snapshot);
+    ASSERT_TRUE(!manager.GetLiveAffiliationFor("Finn"));
+    snapshot.snapshotTime = std::chrono::steady_clock::now() - std::chrono::seconds(61);
+    manager.SetSnapshotForTesting(snapshot);
+    ASSERT_TRUE(!manager.GetLiveAffiliationFor("Finn"));
+    return true;
+}
+
 int RunOnlineDataManagerTests() {
     g_state = {};
 
@@ -551,6 +577,7 @@ int RunOnlineDataManagerTests() {
     RUN_TEST(TestRefreshFetchStatusTransitionsToStaleAndOffline);
     RUN_TEST(TestOldSuccessfulSnapshotTransitionsToOfflineAfterFailure);
     RUN_TEST(TestSnapshotCopyRemainsImmutableAfterSubsequentUpdate);
+    RUN_TEST(TestLiveAffiliationUsesFreshNamedPlayerRatherThanCachedOwnLabel);
 
     std::printf("OnlineDataManagerTests: %d passed, %d failed\n", g_state.passed, g_state.failed);
     return g_state.failed;

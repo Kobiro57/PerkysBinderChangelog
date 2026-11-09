@@ -1,4 +1,5 @@
 #include "../include/QuickMap.h"
+#include "../include/ClaimSpots.h"
 
 #include "../include/RadarSpriteResources.h"
 #include "../include/ResourceIds.h"
@@ -369,6 +370,8 @@ void QuickMap::Initialize(SettingsManager* settings, TextureManager* textures, S
     textureManager_ = textures;
     bridge_ = bridge;
     visible_ = false;
+    claimsAllowed_ = false;
+    claimsVisible_ = false;
     hotkeyWasDown_ = false;
     UpdateViewState();
     RefreshSettings();
@@ -376,6 +379,8 @@ void QuickMap::Initialize(SettingsManager* settings, TextureManager* textures, S
 
 void QuickMap::Shutdown() {
     visible_ = false;
+    claimsAllowed_ = false;
+    claimsVisible_ = false;
     hotkeyWasDown_ = false;
     zoomLevel_ = QuickMapZoomLevel::Far;
     manualZoomLevel_ = QuickMapZoomLevel::Far;
@@ -529,6 +534,17 @@ void QuickMap::SetRenderCallback(std::function<void()> callback) {
     renderCallback_ = std::move(callback);
 }
 
+void QuickMap::SetClaimsAllowed(bool allowed) {
+    claimsAllowed_ = allowed;
+    if (!allowed) claimsVisible_ = false;
+}
+
+bool QuickMap::ToggleClaims() {
+    if (!claimsAllowed_) return false;
+    claimsVisible_ = !claimsVisible_;
+    return true;
+}
+
 void QuickMap::Render() {
     if (!visible_ || !renderCallback_) {
         return;
@@ -559,6 +575,14 @@ void QuickMap::Render(ImDrawList* drawList, const ImVec2& displayPos, const ImVe
 
     for (const QuickMapMarker& icon : renderData_.mapIcons) {
         DrawMarker(drawList, ProjectMarkerForCurrentView(icon, displayPos, displaySize));
+    }
+
+    if (AreClaimsVisible()) {
+        drawList->PushClipRect(displayPos, ImVec2(displayPos.x + displaySize.x, displayPos.y + displaySize.y), true);
+        for (const MapMarker& claim : ProjectClaimsForCurrentView(displayPos, displaySize)) {
+            DrawMarker(drawList, claim);
+        }
+        drawList->PopClipRect();
     }
 
     if (renderData_.hasLocalPlayer) {
@@ -1161,16 +1185,18 @@ RadarSpritePack QuickMap::GetActiveRadarSpritePack() const {
 }
 
 TextureInfo* QuickMap::GetRadarSpriteTexture(unsigned char radarSprite) const {
-    if (textureManager_ == nullptr) {
-        return nullptr;
-    }
-
     const RadarSpriteResource* const resource = FindRadarSpriteResource(radarSprite);
     if (resource == nullptr) {
         return nullptr;
     }
 
     const int resourceId = ResolveRadarSpriteResourceId(*resource, GetActiveRadarSpritePack());
+#ifdef KEYBINDER_TESTING
+    if (testingHooks_.getRadarSpriteTextureByResource) {
+        return testingHooks_.getRadarSpriteTextureByResource(static_cast<WORD>(resourceId));
+    }
+#endif
+    if (textureManager_ == nullptr) return nullptr;
     const std::string textureKey = TextureManager::GetResourceTextureKey(static_cast<WORD>(resourceId));
     return textureManager_->GetTexture(textureKey);
 }
@@ -1367,6 +1393,22 @@ MapMarker QuickMap::ProjectMarkerForCurrentView(const QuickMapMarker& marker, co
         displayPos,
         displaySize);
     return projected;
+}
+
+std::vector<MapMarker> QuickMap::ProjectClaimsForCurrentView(const ImVec2& displayPos, const ImVec2& displaySize) const {
+    std::vector<MapMarker> claims;
+    if (!AreClaimsVisible()) return claims;
+    claims.reserve(kRcbClaimSpots.size());
+    for (const ClaimSpot& spot : kRcbClaimSpots) {
+        QuickMapMarker marker;
+        marker.worldX = spot.x;
+        marker.worldY = spot.y;
+        marker.color = IM_COL32(225, 25, 35, 255);
+        marker.size = 12.0f;
+        marker.radarSprite = RADAR_SPRITE_ENEMYATTACK;
+        claims.push_back(ProjectMarkerForCurrentView(marker, displayPos, displaySize));
+    }
+    return claims;
 }
 
 GangZoneRect QuickMap::ProjectGangZoneForCurrentView(const QuickMapGangZone& zone, const ImVec2& displayPos, const ImVec2& displaySize) const {

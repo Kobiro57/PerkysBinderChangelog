@@ -443,6 +443,7 @@ void TestSpeedCommandPerformsThreeExactDialogRepliesAndSubmitsOnlyOnce() {
     hooks.getPlayerName = [](int id) { return id == 57 ? std::string("KOBiRO") : std::string(); };
     SAMPBridge::SetTestingHooks(hooks);
     SAMPBridge bridge;
+    bridge.SetLocalFactionProvider([]() { return std::string("LSPD"); });
     CHECK(bridge.Initialize());
     bridge.Update();
     std::string error;
@@ -475,6 +476,95 @@ void TestSpeedCommandPerformsThreeExactDialogRepliesAndSubmitsOnlyOnce() {
     bridge.Shutdown();
     SAMPBridge::ResetTestingHooks();
     }
+}
+
+void TestSpeedRequiresPoliceBeforeCommandsAndRevokesQueuedDialogReplies() {
+    Context context;
+    SAMPBridge::SetTestingHooks(context.Hooks());
+    SAMPBridge bridge;
+    std::string faction;
+    bridge.SetLocalFactionProvider([&]() { return faction; });
+    CHECK(bridge.GetLocalFaction().empty());
+    CHECK(bridge.Initialize());
+    bridge.Update();
+    std::string error;
+    for (const char* denied : {"", "Zivilist", "Red County Brotherhood", "Army", "Not LSPD", "LSPD Freunde"}) {
+        faction = denied;
+        CHECK(!bridge.RequestSpeedTicket("57", error));
+        CHECK(error == "Du bist kein Polizist.");
+        CHECK(context.commands.empty() && context.replies.empty());
+    }
+    faction = "SAPD";
+    CHECK(bridge.RequestSpeedTicket("57", error));
+    CHECK(context.commands == std::vector<std::string>{"/su"});
+    CHECK(DeliverDialog(bridge, context, 550, 2, "Staat \xBB Wantedkatalog", "Ordnungswidrigkeit\nVergehen\nVerbrechen"));
+    faction = "Red County Brotherhood"; // Revoke before consuming the queued catalogue.
+    bridge.Update();
+    CHECK(context.replies.empty() && context.hidden == 0);
+    CHECK(context.localMessages.back().find("Du bist kein Polizist.") != std::string::npos);
+    const auto notices = context.localMessages.size();
+    bridge.Update();
+    CHECK(context.localMessages.size() == notices);
+    CHECK(!bridge.RequestSpeedTicket("57", error) && error == "Du bist kein Polizist.");
+    context.dialog.get()->m_bIsActive = FALSE;
+    faction = "San Andreas Police Department";
+    CHECK(bridge.RequestSpeedTicket("58", error)); // The old flow no longer blocks a fresh valid request.
+    CHECK(context.commands == (std::vector<std::string>{"/su", "/su"}));
+    faction.clear();
+    bridge.Update();
+    CHECK(context.replies.empty());
+    bridge.SetLocalFactionProvider([]() -> std::string { throw 1; });
+    CHECK(bridge.GetLocalFaction().empty());
+    CHECK(!bridge.RequestSpeedTicket("57", error) && error == "Du bist kein Polizist.");
+    bridge.Shutdown();
+    SAMPBridge::ResetTestingHooks();
+}
+
+void TestSynchronizedFactionIsBoundToOwnNameServerAndCurrentConnection() {
+    Context context;
+    context.ready = true;
+    SAMPBridge::SetTestingHooks(context.Hooks());
+    keybinder::SettingsManager settings;
+    auto& cached = settings.GetMutable().synchronized_player_stats;
+    cached.playerName = context.name;
+    cached.serverAddress = "127.0.0.1";
+    cached.serverPort = 7777;
+    cached.kills = 41; cached.deaths = 19; cached.faction = "LSPD";
+    SAMPBridge bridge;
+    bridge.SetSettingsManager(&settings);
+    CHECK(bridge.Initialize());
+    CHECK(bridge.GetSynchronizedFaction().empty()); // A persisted snapshot never grants access.
+    bridge.Update();
+    CHECK(bridge.GetSynchronizedFaction().empty());
+    CHECK(DeliverDialog(bridge, context, 560, 0, "Statistiken \xBB SyncPlayer",
+        "Name: SyncPlayer\nKills: 41\nTode: 19\nFraktion: Red County Brotherhood\nFraktionsrang: Hand"));
+    bridge.Update();
+    CHECK(bridge.AreStatsSynchronized());
+    CHECK(bridge.GetSynchronizedFaction() == "Red County Brotherhood");
+    CHECK(bridge.GetLocalFaction() == "Red County Brotherhood");
+    bridge.SetLocalFactionProvider([]() { return std::string("SAPD"); });
+    CHECK(bridge.GetLocalFaction() == "SAPD");
+    CHECK(bridge.GetSynchronizedFaction() == "Red County Brotherhood"); // Fallback getter is independent.
+    bridge.SetLocalFactionProvider({});
+    context.name = "Other_Player";
+    CHECK(bridge.GetSynchronizedFaction().empty());
+    context.name = "SyncPlayer";
+    context.network.get()->m_nPort = 8888;
+    CHECK(bridge.GetSynchronizedFaction().empty());
+    context.network.get()->m_nPort = 7777;
+    std::strcpy(context.network.get()->m_szHostAddress, "192.0.2.1");
+    CHECK(bridge.GetSynchronizedFaction().empty());
+    std::strcpy(context.network.get()->m_szHostAddress, "127.0.0.1");
+    CHECK(bridge.GetSynchronizedFaction() == "Red County Brotherhood");
+    context.network.get()->m_nGameState = sampapi::v03dl::CNetGame::GAME_MODE_WAITCONNECT;
+    CHECK(bridge.GetSynchronizedFaction().empty() && bridge.GetLocalFaction().empty());
+    bridge.Update();
+    CHECK(!bridge.GetSynchronizedStats().faction);
+    context.network.get()->m_nGameState = sampapi::v03dl::CNetGame::GAME_MODE_CONNECTED;
+    bridge.Update();
+    CHECK(bridge.GetSynchronizedFaction().empty());
+    bridge.Shutdown();
+    SAMPBridge::ResetTestingHooks();
 }
 
 void TestStartupSynchronizesStatsThenJobSkillsAndKeepsExistingEarnings() {
@@ -852,6 +942,8 @@ int RunStartupStatsSyncTests() {
     TestManualStatsRecoversAfterTimeoutAndOtherDialogsStayOpen();
     TestObservedNovaScreenshotLayoutThroughCompressedRpcWithDynamicPlayerName();
     TestSpeedCommandPerformsThreeExactDialogRepliesAndSubmitsOnlyOnce();
+    TestSpeedRequiresPoliceBeforeCommandsAndRevokesQueuedDialogReplies();
+    TestSynchronizedFactionIsBoundToOwnNameServerAndCurrentConnection();
     TestStartupSynchronizesStatsThenJobSkillsAndKeepsExistingEarnings();
     TestManualFullSyncReusesPipelineAndImportsFreshValuesWithoutNewKills();
     TestManualSyncTimeoutPreservesValuesAndCanBeRetried();

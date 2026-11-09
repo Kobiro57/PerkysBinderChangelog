@@ -1,4 +1,5 @@
 #include "../include/SAMPBridge.h"
+#include "../include/FactionAccess.h"
 #include "../include/RakHook/include/RakNet/BitStream.h"
 #ifndef KEYBINDER_TESTING
 #include "../include/RakHook/include/RakHook/rakhook.hpp"
@@ -42,6 +43,10 @@ bool SAMPBridge::RequestSpeedTicket(const std::string& arguments, std::string& e
         error = "Du bist noch nicht mit dem Server verbunden.";
         return false;
     }
+    if (!keybinder::IsPoliceMember(GetLocalFaction())) {
+        error = "Du bist kein Polizist.";
+        return false;
+    }
     if (IsDialogOpen()) { error = "Bitte zuerst den offenen Dialog schließen."; return false; }
     if (speedTicketFlow_.IsActive()) { error = "Ein /speed-Ablauf ist bereits aktiv."; return false; }
     int target = -1;
@@ -83,6 +88,7 @@ bool SAMPBridge::RequestSpeedTicket(const std::string& arguments, std::string& e
 }
 
 bool SAMPBridge::SendSpeedDialogChoice(const keybinder::SpeedTicketAction& action) {
+    if (!keybinder::IsPoliceMember(GetLocalFaction())) return false;
     if (action.dialogId < 0 || action.dialogId > 32767 || action.row < -1 || action.row > 32767) return false;
     const std::string text = SpeedToGameText(action.input);
     if (text.size() > 255 || text.find('\0') != std::string::npos) return false;
@@ -108,6 +114,17 @@ bool SAMPBridge::SendSpeedDialogChoice(const keybinder::SpeedTicketAction& actio
 void SAMPBridge::UpdateSpeedTicketFlow(unsigned long now) {
     const auto* network = GetNetGame();
     const bool connected = network && network->m_nGameState == sampapi::v03dl::CNetGame::GAME_MODE_CONNECTED;
+    if (speedTicketFlow_.IsActive() && connected && !keybinder::IsPoliceMember(GetLocalFaction())) {
+        speedTicketFlow_.Reset();
+        captureSpeedDialogs_.store(false, std::memory_order_release);
+        pendingSpeedDialogs_.clear();
+        {
+            std::lock_guard<std::mutex> lock(startupStatsMutex_);
+            speedTicketDialogs_.clear();
+        }
+        SendLocalMessage("{FF6600}[NL-BINDER]{FFFFFF} Du bist kein Polizist.");
+        return;
+    }
     auto notice = speedTicketFlow_.Update(now, connected);
     if (notice.kind == keybinder::SpeedTicketAction::Kind::Cancelled)
         QueueLocalMessage("{FF6600}[NL-BINDER]{FFFFFF} " + notice.notice);
@@ -136,7 +153,9 @@ void SAMPBridge::UpdateSpeedTicketFlow(unsigned long now) {
         if (notice.kind == keybinder::SpeedTicketAction::Kind::SelectRow || notice.kind == keybinder::SpeedTicketAction::Kind::SubmitInput) {
             if (!SendSpeedDialogChoice(notice)) {
                 speedTicketFlow_.Reset();
-                QueueLocalMessage("{FF6600}[NL-BINDER]{FFFFFF} /speed abgebrochen: Die Dialogantwort konnte nicht gesendet werden.");
+                QueueLocalMessage(!keybinder::IsPoliceMember(GetLocalFaction())
+                    ? "{FF6600}[NL-BINDER]{FFFFFF} Du bist kein Polizist."
+                    : "{FF6600}[NL-BINDER]{FFFFFF} /speed abgebrochen: Die Dialogantwort konnte nicht gesendet werden.");
                 break;
             }
         }

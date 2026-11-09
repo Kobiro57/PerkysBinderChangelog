@@ -9,6 +9,7 @@
 #include <chrono>
 #include <atomic>
 #include <cstdio>
+#include <cstring>
 #include <ctime>
 #include <string>
 #include <vector>
@@ -27,6 +28,7 @@
 #include "../include/GpsManager.h"
 #include "../include/ForumBrowser.h"
 #include "../include/DrugUseTracker.h"
+#include "../include/LocalFactionAccess.h"
 #include "../include/InputManager.h"
 #include "../include/InterfaceEditor.h"
 #include "../include/NativeHudEditor.h"
@@ -388,6 +390,7 @@ public:
         drugTimerPlayerName_.clear();
         onlineEventDetector_.Shutdown();
         quickMap_.Shutdown();
+        claimsSessionIdentity_.clear();
         speedometerManager_.Shutdown();
         textDrawAdapter_.Shutdown();
         
@@ -700,6 +703,7 @@ public:
             return keybinder::OnlineOverlayController::CaptureGameState(&bridge_);
         });
         onlineOverlayRenderer_.SetOverlayController(&onlineOverlayController_);
+        bridge_.SetLocalFactionProvider([]() { return ResolveCurrentLocalFaction(); });
         bridge_.SetIncomingChatCallback([&](const std::string& text) {
             onlineEventDetector_.OnChatLine(text);
             if (RefreshDrugTimerSession()) {
@@ -748,6 +752,17 @@ public:
                 }, error)) {
                 bridge_.SendLocalMessage("{FF6600}[NL-BINDER]{FFFFFF} " + error);
             }
+        });
+
+        bridge_.RegisterCommand("claims", [&](const std::string&) {
+            RefreshClaimsAccess(true);
+            if (!quickMap_.ToggleClaims()) {
+                bridge_.SendLocalMessage("{FF6600}[NL-BINDER]{FFFFFF} Du bist kein Mitglied der Red County Brotherhood.");
+                return;
+            }
+            bridge_.SendLocalMessage(quickMap_.AreClaimsVisible()
+                ? "{33CCFF}[NL-BINDER]{FFFFFF} Die 28 RCB-Flaggen werden auf der Quick Map angezeigt."
+                : "{33CCFF}[NL-BINDER]{FFFFFF} Die RCB-Flaggen auf der Quick Map wurden ausgeblendet.");
         });
 
         bridge_.RegisterCommand("speed", [&](const std::string& params) {
@@ -917,6 +932,7 @@ public:
 
             bridge_.Initialize();
             bridge_.Update();
+            RefreshClaimsAccess();
             forumBrowser_.Update();
             gps_.Update();
             if (const auto* netGame = bridge_.GetNetGame(); netGame
@@ -1165,6 +1181,10 @@ private:
     static keybinder::DrugUseTracker drugUseTracker_;
     static std::string drugTimerPlayerName_;
     static bool RefreshDrugTimerSession();
+    static std::string ResolveCurrentLocalFaction();
+    static void RefreshClaimsAccess(bool force = false);
+    static std::string claimsSessionIdentity_;
+    static std::chrono::steady_clock::time_point nextClaimsAccessRefresh_;
     static keybinder::TextDrawAdapter textDrawAdapter_;
     static keybinder::GpsManager gps_;
     static keybinder::ForumBrowser forumBrowser_;
@@ -1199,12 +1219,52 @@ keybinder::OnlineEventDetector Keybinder::onlineEventDetector_{};
 keybinder::OnlineOverlayController Keybinder::onlineOverlayController_{};
 keybinder::DrugUseTracker Keybinder::drugUseTracker_{};
 std::string Keybinder::drugTimerPlayerName_{};
+std::string Keybinder::claimsSessionIdentity_{};
+std::chrono::steady_clock::time_point Keybinder::nextClaimsAccessRefresh_{};
 keybinder::TextDrawAdapter Keybinder::textDrawAdapter_{};
 keybinder::GpsManager Keybinder::gps_{};
 keybinder::ForumBrowser Keybinder::forumBrowser_{};
 keybinder::SpeedometerManager Keybinder::speedometerManager_{};
 keybinder::SpeedometerUI Keybinder::speedometerUI_{};
 Keybinder plugin_instance{};
+
+std::string Keybinder::ResolveCurrentLocalFaction() {
+    if (g_shutdown_phase.load() != 0) return {};
+    const auto* network = bridge_.GetNetGame();
+    const std::string playerName = bridge_.GetLocalPlayerName();
+    if (!network || network->m_nGameState != sampapi::v03dl::CNetGame::GAME_MODE_CONNECTED || playerName.empty()) return {};
+    const std::string ownFaction = bridge_.GetSynchronizedFaction();
+    if (keybinder::ClassifyFaction(ownFaction) == keybinder::FactionRole::Unknown) return {};
+    std::optional<std::string> liveFaction;
+    if (const auto affiliation = onlineDataManager_.GetLiveAffiliationFor(playerName)) {
+        // A gang with a faction-like name does not grant faction membership.
+        liveFaction = affiliation->isFaction ? affiliation->name : "Zivilist";
+    }
+    return keybinder::ReconcileLocalFaction(ownFaction, liveFaction);
+}
+
+void Keybinder::RefreshClaimsAccess(bool force) {
+    const auto* network = bridge_.GetNetGame();
+    const std::string playerName = bridge_.GetLocalPlayerName();
+    if (!network || network->m_nGameState != sampapi::v03dl::CNetGame::GAME_MODE_CONNECTED || playerName.empty()) {
+        quickMap_.SetClaimsAllowed(false);
+        claimsSessionIdentity_.clear();
+        return;
+    }
+    const std::string identity = std::string(network->m_szHostAddress, strnlen(network->m_szHostAddress, 257))
+        + ":" + std::to_string(network->m_nPort) + "/"
+        + keybinder::OnlineOverlayController::NormalizeMarkerName(playerName);
+    if (identity != claimsSessionIdentity_) {
+        quickMap_.SetClaimsAllowed(false);
+        claimsSessionIdentity_ = identity;
+        nextClaimsAccessRefresh_ = {};
+    }
+    if (!force && !quickMap_.AreClaimsVisible()) return;
+    const auto now = std::chrono::steady_clock::now();
+    if (!force && now < nextClaimsAccessRefresh_) return;
+    quickMap_.SetClaimsAllowed(keybinder::IsRcbMember(bridge_.GetLocalFaction()));
+    nextClaimsAccessRefresh_ = now + std::chrono::milliseconds(250);
+}
 
 bool Keybinder::RefreshDrugTimerSession() {
     const auto& settings = settingsManager_.Get();

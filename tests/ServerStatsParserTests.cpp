@@ -1,4 +1,5 @@
 #include "../include/ServerStatsSnapshot.h"
+#include "../include/FactionAccess.h"
 
 #include <cstdio>
 #include <limits>
@@ -198,6 +199,65 @@ void TestDialogBoundsAndCombinedCounters() {
     STATS_CHECK(!collector.ConsumeDialog("Stats", std::string(keybinder::ServerStatsCollector::kMaximumDialogBytes + 1, 'x'), "Own_Player", 1000, true));
     STATS_CHECK(collector.Snapshot().kills == 42 && collector.Snapshot().deaths == 20);
 }
+
+void TestOwnFactionKeepsMultiWordNamesAndRejectsRanksOrForeignPlayers() {
+    keybinder::ServerStatsCollector collector;
+    STATS_CHECK(!collector.ConsumeLine("Fraktion: Red County Brotherhood", "Own_Player", 1000));
+    STATS_CHECK(!collector.Snapshot().faction);
+    STATS_CHECK(collector.ConsumeLine("*** Own_Player ***", "Own_Player", 1000));
+    STATS_CHECK(collector.ConsumeLine("Fraktion: {FFCC00}Red County Brotherhood", "Own_Player", 1001));
+    STATS_CHECK(collector.Snapshot().faction == "Red County Brotherhood");
+    STATS_CHECK(!collector.ConsumeLine("Fraktionsrang: Polizist", "Own_Player", 1002));
+    STATS_CHECK(collector.Snapshot().faction == "Red County Brotherhood");
+    STATS_CHECK(collector.ConsumeLine("Gang: LSPD", "Own_Player", 1003));
+    STATS_CHECK(collector.Snapshot().faction == "Red County Brotherhood");
+    STATS_CHECK(!collector.ConsumeLine("Other: Fraktion: LSPD", "Own_Player", 1004));
+    STATS_CHECK(collector.Snapshot().faction == "Red County Brotherhood");
+    STATS_CHECK(!collector.ConsumeLine("*** Other_Player ***", "Own_Player", 1005));
+    STATS_CHECK(!collector.Snapshot().faction);
+
+    const std::string body = "Name: Own_Player\nKills: 41\nTode: 19\nFraktion: Red County Brotherhood\nFraktionsrang: Hand";
+    STATS_CHECK(collector.ConsumeDialog("Statistiken \xC2\xBB Own_Player", body, "Own_Player", 2000, true));
+    STATS_CHECK(collector.Snapshot().faction == "Red County Brotherhood");
+    STATS_CHECK(!collector.ConsumeDialog("Statistiken \xC2\xBB Other_Player", body, "Own_Player", 2001, true));
+    STATS_CHECK(collector.Snapshot().faction == "Red County Brotherhood");
+    STATS_CHECK(!collector.ConsumeDialog("Statistiken", body, "Own_Player", 2002, false));
+    STATS_CHECK(collector.Snapshot().faction == "Red County Brotherhood");
+    for (const char* row : {"Fraktion: [LSPD] Gang: [-]", "Fraktion:\t(SAPD)",
+                           "Fraktion: Los Santos Police Department | Fraktionsrang: Officer",
+                           "Fraktion: Red County Brotherhood Fraktionsrang: Hand",
+                           "Kills: [41] Tode: [19] Fraktion: [Red County Brotherhood] Gang: [-]"}) {
+        collector.Reset();
+        STATS_CHECK(collector.ConsumeDialog("Stats", std::string("Kills: 41\nTode: 19\n") + row, "Own_Player", 3000, true));
+        STATS_CHECK(collector.Snapshot().faction.has_value());
+        STATS_CHECK(keybinder::ClassifyFaction(*collector.Snapshot().faction) != keybinder::FactionRole::Other);
+    }
+    collector.Reset();
+    STATS_CHECK(collector.ConsumeDialog("Stats", "Kills: 41\nTode: 19\nFraktionsrang: LSPD\nGang: Red County Brotherhood", "Own_Player", 4000, true));
+    STATS_CHECK(!collector.Snapshot().faction);
+    STATS_CHECK(collector.ConsumeDialog("Stats", "Kills: 41\nTode: 19\nFraktion: Zivilist", "Own_Player", 4001, true));
+    STATS_CHECK(collector.Snapshot().faction == "Zivilist");
+    STATS_CHECK(!keybinder::IsPoliceMember(*collector.Snapshot().faction));
+    STATS_CHECK(!keybinder::IsRcbMember(*collector.Snapshot().faction));
+}
+
+void TestFactionAliasesAreExactAndDoNotGrantLookalikes() {
+    for (const char* faction : {"LSPD", "sapd", " LOS SANTOS POLICE DEPARTMENT ",
+                              "San Andreas Police Department", "Police Department", "{FFFFFF}LsPd"}) {
+        STATS_CHECK(keybinder::IsPoliceMember(faction));
+        STATS_CHECK(!keybinder::IsRcbMember(faction));
+    }
+    for (const char* faction : {"Red County Brotherhood", " rCb ", "redcounty brotherhood", "RED  COUNTY\tBROTHERHOOD"}) {
+        STATS_CHECK(keybinder::IsRcbMember(faction));
+        STATS_CHECK(!keybinder::IsPoliceMember(faction));
+    }
+    STATS_CHECK(keybinder::ClassifyFaction("") == keybinder::FactionRole::Unknown);
+    for (const char* faction : {"Zivilist", "Army", "Not LSPD", "LSPD Freunde", "RCB Gang", "Not Red County Brotherhood", "Gang: LSPD"}) {
+        STATS_CHECK(keybinder::ClassifyFaction(faction) == keybinder::FactionRole::Other);
+        STATS_CHECK(!keybinder::IsRcbMember(faction));
+        STATS_CHECK(!keybinder::IsPoliceMember(faction));
+    }
+}
 } // namespace
 
 int RunServerStatsParserTests() {
@@ -211,6 +271,8 @@ int RunServerStatsParserTests() {
     TestLongTabbedDialogReadsCountersBeyondLegacyChatBudget();
     TestStatsCaptionAndOwnIdentityVariantsRejectForeignPlayers();
     TestDialogBoundsAndCombinedCounters();
+    TestOwnFactionKeepsMultiWordNamesAndRejectsRanksOrForeignPlayers();
+    TestFactionAliasesAreExactAndDoNotGrantLookalikes();
     std::printf("ServerStatsParserTests: %d checks, %d failures\n", checks, failures);
     return failures;
 }

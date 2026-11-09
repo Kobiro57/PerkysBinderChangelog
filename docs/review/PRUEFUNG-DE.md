@@ -1,6 +1,12 @@
 # Hinweise zur Prüfung durch die Projektleitung
 
-## Aktueller Stand v0.1.2 / r21 – 9. November 2026
+## Aktueller Stand v0.1.2 / r22 – 9. November 2026
+
+RCB-Claims und die lokale Fraktionsprüfung für /speed stehen im
+[r22-Prüfumfang](r22-PRUEFUNG-DE.md) und
+[Prüfnachweis](r22-validation.json). Frühere Ergebnisse bleiben erhalten.
+
+## Vorheriger Stand v0.1.2 / r21 – 9. November 2026
 
 Der konkrete Serverpräfix-Fehler ist im [r21-Prüfumfang](r21-PRUEFUNG-DE.md)
 und [Prüfnachweis](r21-validation.json) dokumentiert. Frühere Ergebnisse

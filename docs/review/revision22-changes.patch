@@ -1,0 +1,2414 @@
+diff --git a/Keybinder.vcxproj b/Keybinder.vcxproj
+index 9f91555..9a44e51 100644
+--- a/Keybinder.vcxproj
++++ b/Keybinder.vcxproj
+@@ -550,6 +550,9 @@
+     <ClInclude Include="include\OnlineEventDetector.h" />
+     <ClInclude Include="include\OnlineOverlayController.h" />
+     <ClInclude Include="include\DrugUseTracker.h" />
++    <ClInclude Include="include\FactionAccess.h" />
++    <ClInclude Include="include\LocalFactionAccess.h" />
++    <ClInclude Include="include\ClaimSpots.h" />
+     <ClInclude Include="include\\StatsStorage.h" />
+     <ClInclude Include="include\\JobsTypes.h" />
+     <ClInclude Include="include\\JobRegistry.h" />
+diff --git a/include/ClaimSpots.h b/include/ClaimSpots.h
+new file mode 100644
+index 0000000..66472a5
+--- /dev/null
++++ b/include/ClaimSpots.h
+@@ -0,0 +1,48 @@
++#pragma once
++
++#include <array>
++
++namespace keybinder {
++
++struct ClaimSpot {
++    const char* name;
++    float x;
++    float y;
++    float z;
++};
++
++// Fixed RCB flag positions supplied as AddPlayerClass saves. The map uses X/Y;
++// height is retained for source review. Ped model, heading and weapons do not
++// describe the map location and are deliberately not used as game actions.
++inline constexpr std::array<ClaimSpot, 28> kRcbClaimSpots{{
++    {"Montgomery", 1583.9396f, 33.5867f, 26.9868f},
++    {"Palomino Creek", 1927.8734f, 168.8767f, 40.1172f},
++    {"Palomino Creek Strand", 2160.4473f, -107.1974f, 2.7599f},
++    {"Palomino Creek Friedhof", 2239.8594f, -86.8115f, 27.8548f},
++    {"Palomino Creek Dach 1", 2311.3462f, -17.4462f, 32.5313f},
++    {"Palomino Creek Dach 2", 2330.9189f, 80.9126f, 32.0073f},
++    {"Palomino Creek Dach 3", 2547.1592f, 93.7197f, 29.8577f},
++    {"Montgomery Schrottplatz", 1297.6686f, 182.1735f, 20.4670f},
++    {"Montgomery Brauerrei 1", 1297.8884f, 308.8936f, 27.5555f},
++    {"Montgomery Brauerrei 2", 1287.1136f, 270.3256f, 23.7625f},
++    {"Montgomery Brauerrei 3", 1247.1160f, 367.3232f, 22.7848f},
++    {"Montgomery Brauerrei 4", 1488.7997f, 361.4571f, 21.9852f},
++    {"Montgomery Tanke", 1371.5627f, 471.9797f, 23.1484f},
++    {"Blueberry Wohnwagen 1", 760.6830f, 381.3502f, 26.0898f},
++    {"Blueberry Wohnwagen 2", 752.6452f, 259.9708f, 29.7391f},
++    {"Fern Ridge J\xC3\xA4" "ger", 863.5613f, -23.6717f, 66.2610f},
++    {"Dillimore", 645.8249f, -519.8103f, 21.1673f},
++    {"Dillimore Seppli Haus", 743.5359f, -588.8473f, 20.5990f},
++    {"Dillimore Dach 2", 803.7162f, -564.1726f, 21.3363f},
++    {"Dillimore Hiltop", 1072.5286f, -291.1361f, 76.8663f},
++    {"Blueberry Wohnwagen West", 252.7985f, -292.9166f, 1.5836f},
++    {"Blueberry Papierrei", 193.9769f, -229.6732f, 7.0782f},
++    {"Blueberry Pizzastack", 206.3966f, -179.7932f, 5.0786f},
++    {"Blueberry Sprunk", 172.4167f, -161.3612f, 6.7786f},
++    {"Blueberry Hinterhof", 183.5547f, -108.0306f, 2.0234f},
++    {"Blueberry Gasse", 355.0618f, -76.3290f, 1.3705f},
++    {"Blueberry Holzf\xC3\xA4" "ller 1", -437.4864f, -59.2712f, 62.0269f},
++    {"Blueberry Holzf\xC3\xA4" "ller 2", -549.7010f, -202.3125f, 80.4654f},
++}};
++
++} // namespace keybinder
+diff --git a/include/FactionAccess.h b/include/FactionAccess.h
+new file mode 100644
+index 0000000..87b5b05
+--- /dev/null
++++ b/include/FactionAccess.h
+@@ -0,0 +1,51 @@
++#pragma once
++
++#include <cctype>
++#include <string>
++
++namespace keybinder {
++
++enum class FactionRole { Unknown, Other, Police, RedCountyBrotherhood };
++
++inline std::string NormalizeFactionName(const std::string& value) {
++    std::string normalized;
++    bool pendingSpace = false;
++    for (std::size_t at = 0; at < value.size();) {
++        if (value[at] == '{') {
++            const auto close = value.find('}', at + 1);
++            if (close != std::string::npos && (close - at == 7 || close - at == 9)) {
++                bool hex = true;
++                for (std::size_t digit = at + 1; digit < close; ++digit)
++                    hex = hex && std::isxdigit(static_cast<unsigned char>(value[digit]));
++                if (hex) { at = close + 1; continue; }
++            }
++        }
++        const unsigned char ch = static_cast<unsigned char>(value[at++]);
++        if (std::isspace(ch)) { pendingSpace = !normalized.empty(); continue; }
++        if (pendingSpace) normalized.push_back(' ');
++        pendingSpace = false;
++        normalized.push_back(ch < 128 ? static_cast<char>(std::tolower(ch)) : static_cast<char>(ch));
++    }
++    return normalized;
++}
++
++inline FactionRole ClassifyFaction(const std::string& faction) {
++    const std::string name = NormalizeFactionName(faction);
++    if (name.empty()) return FactionRole::Unknown;
++    if (name == "red county brotherhood" || name == "rcb" || name == "redcounty brotherhood")
++        return FactionRole::RedCountyBrotherhood;
++    if (name == "lspd" || name == "sapd" || name == "los santos police department"
++        || name == "san andreas police department" || name == "police department")
++        return FactionRole::Police;
++    return FactionRole::Other;
++}
++
++inline bool IsRcbMember(const std::string& faction) {
++    return ClassifyFaction(faction) == FactionRole::RedCountyBrotherhood;
++}
++
++inline bool IsPoliceMember(const std::string& faction) {
++    return ClassifyFaction(faction) == FactionRole::Police;
++}
++
++} // namespace keybinder
+diff --git a/include/LocalFactionAccess.h b/include/LocalFactionAccess.h
+new file mode 100644
+index 0000000..ea2cec8
+--- /dev/null
++++ b/include/LocalFactionAccess.h
+@@ -0,0 +1,21 @@
++#pragma once
++
++#include "FactionAccess.h"
++#include <optional>
++#include <string>
++
++namespace keybinder {
++
++// A current-server own-statistics reading is required. An API entry alone is
++// not bound to the active game server, even when the nickname matches.
++// Conflicting known roles require a fresh synchronization.
++inline std::string ReconcileLocalFaction(const std::string& synchronizedFaction,
++                                        const std::optional<std::string>& liveFaction) {
++    const auto synchronizedRole = ClassifyFaction(synchronizedFaction);
++    if (synchronizedRole == FactionRole::Unknown) return {};
++    const auto liveRole = liveFaction ? ClassifyFaction(*liveFaction) : FactionRole::Unknown;
++    if (liveRole != FactionRole::Unknown && synchronizedRole != liveRole) return {};
++    return synchronizedFaction;
++}
++
++} // namespace keybinder
+diff --git a/include/OnlineDataManager.h b/include/OnlineDataManager.h
+index 59fecea..5a87276 100644
+--- a/include/OnlineDataManager.h
++++ b/include/OnlineDataManager.h
+@@ -7,6 +7,7 @@
+ #include <chrono>
+ #include <map>
+ #include <mutex>
++#include <optional>
+ #include <string>
+ #include <thread>
+ #include <vector>
+@@ -116,6 +117,9 @@ public:
+     // Current immutable snapshot
+     OnlineSnapshot GetSnapshot() const { return GetSnapshotCopy(); }
+     OnlineSnapshot GetSnapshotCopy() const;
++    // A small current-name lookup for local command eligibility. Stale or
++    // failed fetches never become a new authorization result.
++    std::optional<OnlineAffiliation> GetLiveAffiliationFor(const std::string& playerName) const;
+ 
+     // Force fetch-status recalculation from wall clock
+     void RefreshFetchStatus();
+diff --git a/include/QuickMap.h b/include/QuickMap.h
+index 241ccdd..d772237 100644
+--- a/include/QuickMap.h
++++ b/include/QuickMap.h
+@@ -97,6 +97,9 @@ public:
+     struct TestingHooks {
+         std::function<bool(int)> isKeyDown;
+         std::function<bool()> isInputGated;
++#ifdef KEYBINDER_TESTING
++        std::function<TextureInfo*(WORD)> getRadarSpriteTextureByResource;
++#endif
+     };
+ 
+     static constexpr float kWorldMin = -3000.0f;
+@@ -127,6 +130,9 @@ public:
+     void Show();
+     void Hide();
+     void Toggle();
++    void SetClaimsAllowed(bool allowed);
++    bool ToggleClaims();
++    bool AreClaimsVisible() const { return claimsAllowed_ && claimsVisible_; }
+ 
+     void SetRenderCallback(std::function<void()> callback);
+     void Render();
+@@ -139,6 +145,9 @@ public:
+     void SetTestingHooks(const TestingHooks& hooks);
+ 
+ #ifdef KEYBINDER_TESTING
++    std::vector<MapMarker> ProjectClaimsForTesting(const ImVec2& displayPos, const ImVec2& displaySize) const {
++        return ProjectClaimsForCurrentView(displayPos, displaySize);
++    }
+     float GetCurrentZoomFactorForTesting() const { return currentZoomFactor_; }
+     ImVec2 GetCurrentFocusWorldForTesting() const { return currentFocusWorld_; }
+     QuickMapZoomLevel GetZoomLevelForTesting() const { return zoomLevel_; }
+@@ -180,6 +189,7 @@ private:
+     void DrawRadarSpriteMarker(ImDrawList* drawList, const MapMarker& marker, TextureInfo* texture) const;
+     void DrawZoomIndicator(ImDrawList* drawList, const ImVec2& displayPos, const ImVec2& displaySize) const;
+     MapMarker ProjectMarkerForCurrentView(const QuickMapMarker& marker, const ImVec2& displayPos, const ImVec2& displaySize) const;
++    std::vector<MapMarker> ProjectClaimsForCurrentView(const ImVec2& displayPos, const ImVec2& displaySize) const;
+     GangZoneRect ProjectGangZoneForCurrentView(const QuickMapGangZone& zone, const ImVec2& displayPos, const ImVec2& displaySize) const;
+ 
+     SettingsManager* settingsManager_ = nullptr;
+@@ -189,6 +199,8 @@ private:
+     ImVec2 lastDisplayPos_{};
+     ImVec2 lastDisplaySize_{};
+     bool visible_ = false;
++    bool claimsAllowed_ = false;
++    bool claimsVisible_ = false;
+     QuickMapMode mode_ = QuickMapMode::Toggle;
+     int hotkey_ = 'M';
+     QuickMapZoomLevel zoomLevel_ = QuickMapZoomLevel::Far;
+diff --git a/include/SAMPBridge.h b/include/SAMPBridge.h
+index 590d55f..2b65ddb 100644
+--- a/include/SAMPBridge.h
++++ b/include/SAMPBridge.h
+@@ -67,6 +67,9 @@ public:
+     void ObserveStatsCommand(const std::string& cmd) const;
+     bool SendSimulatedKillMessage(const std::string& text, std::string& error) const;
+     bool RequestSpeedTicket(const std::string& arguments, std::string& error);
++    std::string GetLocalFaction() const;
++    std::string GetSynchronizedFaction() const;
++    void SetLocalFactionProvider(std::function<std::string()> provider) { localFactionProvider_ = std::move(provider); }
+ 
+     bool IsChatOpen() const;
+     bool IsDialogOpen() const;
+@@ -512,6 +515,7 @@ private:
+     keybinder::ServerStatsCollector startupStatsCollector_;
+     std::unique_ptr<keybinder::StatsDialogRPCAdapter> statsDialogAdapter_;
+     keybinder::ServerStatsSnapshot synchronizedStats_;
++    std::function<std::string()> localFactionProvider_;
+     std::function<bool(const keybinder::ServerStatsSnapshot&)> statsSynchronizedCallback_;
+     bool startupStatsConnected_ = false;
+     bool startupStatsRequested_ = false;
+diff --git a/include/ServerStatsSnapshot.h b/include/ServerStatsSnapshot.h
+index 64d7800..cc8fd88 100644
+--- a/include/ServerStatsSnapshot.h
++++ b/include/ServerStatsSnapshot.h
+@@ -19,6 +19,7 @@ struct ServerStatsSnapshot {
+     std::optional<int> kills, deaths, level, gold, eventcoins, wantedPoints;
+     std::optional<long long> cash, bank, wealth;
+     std::optional<int> experience, nextLevelExperience, nextPaydayMinutes;
++    std::optional<std::string> faction;
+ 
+     bool HasCounters() const { return kills.has_value() && deaths.has_value(); }
+     bool HasCore() const { return HasCounters() && cash.has_value() && bank.has_value(); }
+@@ -83,8 +84,7 @@ public:
+             if (value < line.size() && (line[value] == '[' || line[value] == '(' || line[value] == '+' || line[value] == '-' || line[value] == '$'
+                 || std::isdigit(static_cast<unsigned char>(line[value])))) return true;
+         }
+-        // Remaining server-statistic rows contain descriptive data, not
+-        // numbers needed by the Binder. Recognize them without inventing values.
++        // Descriptive rows are accepted only inside the verified own context.
+         constexpr const char* descriptiveLabels[] = {"fraktion", "gang", "geschlecht", "alter", "offene rechnungen",
+             "führerscheine", "fuehrerscheine", "lizenzen", "waffenschein", "waffenscheine", "führerschein", "fuehrerschein"};
+         for (const char* label : descriptiveLabels) {
+@@ -267,6 +267,45 @@ private:
+         }
+         return {};
+     }
++    static std::optional<std::string> FindFaction(const std::string& line) {
++        const std::string lower = Lower(line);
++        constexpr std::size_t labelSize = 8; // "Fraktion", never "Fraktionsrang".
++        std::size_t at = 0;
++        while ((at = lower.find("fraktion", at)) != std::string::npos) {
++            const bool begins = at == 0 || std::isspace(static_cast<unsigned char>(line[at - 1])) || line[at - 1] == '|';
++            std::size_t value = at + labelSize;
++            if (!begins || !FieldBoundary(line, value)) { at += labelSize; continue; }
++            SkipSpaceAndColon(line, value);
++            if (value >= line.size()) return {};
++            if (line[value] == '[' || line[value] == '(') {
++                const auto end = line.find(line[value] == '[' ? ']' : ')', value + 1);
++                if (end == std::string::npos) return {};
++                const std::string faction = Trim(std::string_view(line).substr(value + 1, end - value - 1));
++                return faction.empty() ? std::optional<std::string>{} : faction;
++            }
++            std::size_t end = line.find_first_of("|\t", value);
++            if (end == std::string::npos) end = line.size();
++            // Older chat blocks combine columns on one line without brackets.
++            // Keep a multi-word faction intact, but stop before the next field.
++            for (const char* next : {"fraktionsrang", "gang", "level", "kills", "tode", "gold", "eventcoins",
++                    "wantedpunkte", "bargeld", "kontostand", "nächster zahltag in", "naechster zahltag in"}) {
++                const auto length = std::char_traits<char>::length(next);
++                std::size_t candidate = value;
++                while ((candidate = lower.find(next, candidate)) != std::string::npos && candidate < end) {
++                    if (candidate > value && std::isspace(static_cast<unsigned char>(line[candidate - 1]))
++                        && FieldBoundary(line, candidate + length)) {
++                        std::size_t after = candidate + length;
++                        while (after < line.size() && std::isspace(static_cast<unsigned char>(line[after]))) ++after;
++                        if (after < line.size() && (line[after] == ':' || line[after] == '[')) { end = candidate; break; }
++                    }
++                    candidate += length;
++                }
++            }
++            const std::string faction = Trim(std::string_view(line).substr(value, end - value));
++            return faction.empty() ? std::optional<std::string>{} : faction;
++        }
++        return {};
++    }
+     static std::optional<long long> Integer(std::string value, bool signedValue = true) {
+         value = Trim(value);
+         if (!value.empty() && value.front() == '$') value.erase(value.begin());
+@@ -309,6 +348,7 @@ private:
+         return static_cast<int>(*parsed);
+     }
+     void ParseValues(const std::string& line) {
++        if (const auto faction = FindFaction(line)) snapshot_.faction = *faction;
+         const auto readSmallInteger = [&](const char* label, std::optional<int>& output) {
+             if (const auto value = FindField(line, label)) if (const auto parsed = SmallInteger(*value)) output = parsed;
+         };
+@@ -357,7 +397,8 @@ private:
+     }
+     bool HasAnyValue() const {
+         return snapshot_.kills || snapshot_.deaths || snapshot_.level || snapshot_.gold || snapshot_.eventcoins || snapshot_.wantedPoints
+-            || snapshot_.cash || snapshot_.bank || snapshot_.wealth || snapshot_.experience || snapshot_.nextLevelExperience || snapshot_.nextPaydayMinutes;
++            || snapshot_.cash || snapshot_.bank || snapshot_.wealth || snapshot_.experience || snapshot_.nextLevelExperience || snapshot_.nextPaydayMinutes
++            || snapshot_.faction;
+     }
+ 
+     ServerStatsSnapshot snapshot_;
+diff --git a/src/Main.cpp b/src/Main.cpp
+index d3f0ba5..853118f 100644
+--- a/src/Main.cpp
++++ b/src/Main.cpp
+@@ -9,6 +9,7 @@
+ #include <chrono>
+ #include <atomic>
+ #include <cstdio>
++#include <cstring>
+ #include <ctime>
+ #include <string>
+ #include <vector>
+@@ -27,6 +28,7 @@
+ #include "../include/GpsManager.h"
+ #include "../include/ForumBrowser.h"
+ #include "../include/DrugUseTracker.h"
++#include "../include/LocalFactionAccess.h"
+ #include "../include/InputManager.h"
+ #include "../include/InterfaceEditor.h"
+ #include "../include/NativeHudEditor.h"
+@@ -388,6 +390,7 @@ public:
+         drugTimerPlayerName_.clear();
+         onlineEventDetector_.Shutdown();
+         quickMap_.Shutdown();
++        claimsSessionIdentity_.clear();
+         speedometerManager_.Shutdown();
+         textDrawAdapter_.Shutdown();
+         
+@@ -700,6 +703,7 @@ public:
+             return keybinder::OnlineOverlayController::CaptureGameState(&bridge_);
+         });
+         onlineOverlayRenderer_.SetOverlayController(&onlineOverlayController_);
++        bridge_.SetLocalFactionProvider([]() { return ResolveCurrentLocalFaction(); });
+         bridge_.SetIncomingChatCallback([&](const std::string& text) {
+             onlineEventDetector_.OnChatLine(text);
+             if (RefreshDrugTimerSession()) {
+@@ -750,6 +754,17 @@ public:
+             }
+         });
+ 
++        bridge_.RegisterCommand("claims", [&](const std::string&) {
++            RefreshClaimsAccess(true);
++            if (!quickMap_.ToggleClaims()) {
++                bridge_.SendLocalMessage("{FF6600}[NL-BINDER]{FFFFFF} Du bist kein Mitglied der Red County Brotherhood.");
++                return;
++            }
++            bridge_.SendLocalMessage(quickMap_.AreClaimsVisible()
++                ? "{33CCFF}[NL-BINDER]{FFFFFF} Die 28 RCB-Flaggen werden auf der Quick Map angezeigt."
++                : "{33CCFF}[NL-BINDER]{FFFFFF} Die RCB-Flaggen auf der Quick Map wurden ausgeblendet.");
++        });
++
+         bridge_.RegisterCommand("speed", [&](const std::string& params) {
+             std::string error;
+             if (!bridge_.RequestSpeedTicket(params, error))
+@@ -917,6 +932,7 @@ public:
+ 
+             bridge_.Initialize();
+             bridge_.Update();
++            RefreshClaimsAccess();
+             forumBrowser_.Update();
+             gps_.Update();
+             if (const auto* netGame = bridge_.GetNetGame(); netGame
+@@ -1165,6 +1181,10 @@ private:
+     static keybinder::DrugUseTracker drugUseTracker_;
+     static std::string drugTimerPlayerName_;
+     static bool RefreshDrugTimerSession();
++    static std::string ResolveCurrentLocalFaction();
++    static void RefreshClaimsAccess(bool force = false);
++    static std::string claimsSessionIdentity_;
++    static std::chrono::steady_clock::time_point nextClaimsAccessRefresh_;
+     static keybinder::TextDrawAdapter textDrawAdapter_;
+     static keybinder::GpsManager gps_;
+     static keybinder::ForumBrowser forumBrowser_;
+@@ -1199,6 +1219,8 @@ keybinder::OnlineEventDetector Keybinder::onlineEventDetector_{};
+ keybinder::OnlineOverlayController Keybinder::onlineOverlayController_{};
+ keybinder::DrugUseTracker Keybinder::drugUseTracker_{};
+ std::string Keybinder::drugTimerPlayerName_{};
++std::string Keybinder::claimsSessionIdentity_{};
++std::chrono::steady_clock::time_point Keybinder::nextClaimsAccessRefresh_{};
+ keybinder::TextDrawAdapter Keybinder::textDrawAdapter_{};
+ keybinder::GpsManager Keybinder::gps_{};
+ keybinder::ForumBrowser Keybinder::forumBrowser_{};
+@@ -1206,6 +1228,44 @@ keybinder::SpeedometerManager Keybinder::speedometerManager_{};
+ keybinder::SpeedometerUI Keybinder::speedometerUI_{};
+ Keybinder plugin_instance{};
+ 
++std::string Keybinder::ResolveCurrentLocalFaction() {
++    if (g_shutdown_phase.load() != 0) return {};
++    const auto* network = bridge_.GetNetGame();
++    const std::string playerName = bridge_.GetLocalPlayerName();
++    if (!network || network->m_nGameState != sampapi::v03dl::CNetGame::GAME_MODE_CONNECTED || playerName.empty()) return {};
++    const std::string ownFaction = bridge_.GetSynchronizedFaction();
++    if (keybinder::ClassifyFaction(ownFaction) == keybinder::FactionRole::Unknown) return {};
++    std::optional<std::string> liveFaction;
++    if (const auto affiliation = onlineDataManager_.GetLiveAffiliationFor(playerName)) {
++        // A gang with a faction-like name does not grant faction membership.
++        liveFaction = affiliation->isFaction ? affiliation->name : "Zivilist";
++    }
++    return keybinder::ReconcileLocalFaction(ownFaction, liveFaction);
++}
++
++void Keybinder::RefreshClaimsAccess(bool force) {
++    const auto* network = bridge_.GetNetGame();
++    const std::string playerName = bridge_.GetLocalPlayerName();
++    if (!network || network->m_nGameState != sampapi::v03dl::CNetGame::GAME_MODE_CONNECTED || playerName.empty()) {
++        quickMap_.SetClaimsAllowed(false);
++        claimsSessionIdentity_.clear();
++        return;
++    }
++    const std::string identity = std::string(network->m_szHostAddress, strnlen(network->m_szHostAddress, 257))
++        + ":" + std::to_string(network->m_nPort) + "/"
++        + keybinder::OnlineOverlayController::NormalizeMarkerName(playerName);
++    if (identity != claimsSessionIdentity_) {
++        quickMap_.SetClaimsAllowed(false);
++        claimsSessionIdentity_ = identity;
++        nextClaimsAccessRefresh_ = {};
++    }
++    if (!force && !quickMap_.AreClaimsVisible()) return;
++    const auto now = std::chrono::steady_clock::now();
++    if (!force && now < nextClaimsAccessRefresh_) return;
++    quickMap_.SetClaimsAllowed(keybinder::IsRcbMember(bridge_.GetLocalFaction()));
++    nextClaimsAccessRefresh_ = now + std::chrono::milliseconds(250);
++}
++
+ bool Keybinder::RefreshDrugTimerSession() {
+     const auto& settings = settingsManager_.Get();
+     const auto* netGame = bridge_.GetNetGame();
+diff --git a/src/OnlineDataManager.cpp b/src/OnlineDataManager.cpp
+index cdb9595..392cf43 100644
+--- a/src/OnlineDataManager.cpp
++++ b/src/OnlineDataManager.cpp
+@@ -44,11 +44,11 @@ bool CaseInsensitiveEqual(const std::string& a, const std::string& b) {
+ // ---------------------------------------------------------------------------
+ struct FactionAlias {
+     const char* canonicalName;
+-    const char* aliases[4]; // max 4 aliases per faction, terminated by nullptr
++    const char* aliases[6]; // terminated by nullptr
+ };
+ 
+ constexpr FactionAlias kFactionAliases[] = {
+-    {"LSPD",              {"lspd", "los santos police department", "police department", nullptr}},
++    {"LSPD",              {"lspd", "sapd", "los santos police department", "san andreas police department", "police department", nullptr}},
+     {"Army",              {"army", "national guard", "san andreas army", nullptr}},
+     {"Fire Department",   {"fire department", "feuerwehr", "lsfd", nullptr}},
+     {"Red County Brotherhood", {"red county brotherhood", "rcb", "redcounty brotherhood", nullptr}},
+@@ -230,6 +230,17 @@ OnlineSnapshot OnlineDataManager::GetSnapshotCopy() const {
+     return snapshot_;
+ }
+ 
++std::optional<OnlineAffiliation> OnlineDataManager::GetLiveAffiliationFor(const std::string& playerName) const {
++    const auto first = playerName.find_first_not_of(" \t\r\n");
++    if (first == std::string::npos) return {};
++    const std::string ownName = playerName.substr(first, playerName.find_last_not_of(" \t\r\n") - first + 1);
++    std::lock_guard<std::mutex> lock(snapshotMutex_);
++    if (ResolveFetchStatusLocked() != OnlineFetchStatus::Live) return {};
++    auto affiliation = ResolveLocalAffiliation(snapshot_.players, ownName);
++    if (affiliation.name.empty()) return {};
++    return affiliation;
++}
++
+ // ---------------------------------------------------------------------------
+ // RefreshFetchStatus — recalculate Live/Stale/Offline from wall clock
+ // ---------------------------------------------------------------------------
+diff --git a/src/QuickMap.cpp b/src/QuickMap.cpp
+index b64db2b..1ca3c38 100644
+--- a/src/QuickMap.cpp
++++ b/src/QuickMap.cpp
+@@ -1,4 +1,5 @@
+ #include "../include/QuickMap.h"
++#include "../include/ClaimSpots.h"
+ 
+ #include "../include/RadarSpriteResources.h"
+ #include "../include/ResourceIds.h"
+@@ -369,6 +370,8 @@ void QuickMap::Initialize(SettingsManager* settings, TextureManager* textures, S
+     textureManager_ = textures;
+     bridge_ = bridge;
+     visible_ = false;
++    claimsAllowed_ = false;
++    claimsVisible_ = false;
+     hotkeyWasDown_ = false;
+     UpdateViewState();
+     RefreshSettings();
+@@ -376,6 +379,8 @@ void QuickMap::Initialize(SettingsManager* settings, TextureManager* textures, S
+ 
+ void QuickMap::Shutdown() {
+     visible_ = false;
++    claimsAllowed_ = false;
++    claimsVisible_ = false;
+     hotkeyWasDown_ = false;
+     zoomLevel_ = QuickMapZoomLevel::Far;
+     manualZoomLevel_ = QuickMapZoomLevel::Far;
+@@ -529,6 +534,17 @@ void QuickMap::SetRenderCallback(std::function<void()> callback) {
+     renderCallback_ = std::move(callback);
+ }
+ 
++void QuickMap::SetClaimsAllowed(bool allowed) {
++    claimsAllowed_ = allowed;
++    if (!allowed) claimsVisible_ = false;
++}
++
++bool QuickMap::ToggleClaims() {
++    if (!claimsAllowed_) return false;
++    claimsVisible_ = !claimsVisible_;
++    return true;
++}
++
+ void QuickMap::Render() {
+     if (!visible_ || !renderCallback_) {
+         return;
+@@ -561,6 +577,14 @@ void QuickMap::Render(ImDrawList* drawList, const ImVec2& displayPos, const ImVe
+         DrawMarker(drawList, ProjectMarkerForCurrentView(icon, displayPos, displaySize));
+     }
+ 
++    if (AreClaimsVisible()) {
++        drawList->PushClipRect(displayPos, ImVec2(displayPos.x + displaySize.x, displayPos.y + displaySize.y), true);
++        for (const MapMarker& claim : ProjectClaimsForCurrentView(displayPos, displaySize)) {
++            DrawMarker(drawList, claim);
++        }
++        drawList->PopClipRect();
++    }
++
+     if (renderData_.hasLocalPlayer) {
+         DrawMarker(drawList, ProjectMarkerForCurrentView(renderData_.localPlayer, displayPos, displaySize));
+     }
+@@ -1161,16 +1185,18 @@ RadarSpritePack QuickMap::GetActiveRadarSpritePack() const {
+ }
+ 
+ TextureInfo* QuickMap::GetRadarSpriteTexture(unsigned char radarSprite) const {
+-    if (textureManager_ == nullptr) {
+-        return nullptr;
+-    }
+-
+     const RadarSpriteResource* const resource = FindRadarSpriteResource(radarSprite);
+     if (resource == nullptr) {
+         return nullptr;
+     }
+ 
+     const int resourceId = ResolveRadarSpriteResourceId(*resource, GetActiveRadarSpritePack());
++#ifdef KEYBINDER_TESTING
++    if (testingHooks_.getRadarSpriteTextureByResource) {
++        return testingHooks_.getRadarSpriteTextureByResource(static_cast<WORD>(resourceId));
++    }
++#endif
++    if (textureManager_ == nullptr) return nullptr;
+     const std::string textureKey = TextureManager::GetResourceTextureKey(static_cast<WORD>(resourceId));
+     return textureManager_->GetTexture(textureKey);
+ }
+@@ -1369,6 +1395,22 @@ MapMarker QuickMap::ProjectMarkerForCurrentView(const QuickMapMarker& marker, co
+     return projected;
+ }
+ 
++std::vector<MapMarker> QuickMap::ProjectClaimsForCurrentView(const ImVec2& displayPos, const ImVec2& displaySize) const {
++    std::vector<MapMarker> claims;
++    if (!AreClaimsVisible()) return claims;
++    claims.reserve(kRcbClaimSpots.size());
++    for (const ClaimSpot& spot : kRcbClaimSpots) {
++        QuickMapMarker marker;
++        marker.worldX = spot.x;
++        marker.worldY = spot.y;
++        marker.color = IM_COL32(225, 25, 35, 255);
++        marker.size = 12.0f;
++        marker.radarSprite = RADAR_SPRITE_ENEMYATTACK;
++        claims.push_back(ProjectMarkerForCurrentView(marker, displayPos, displaySize));
++    }
++    return claims;
++}
++
+ GangZoneRect QuickMap::ProjectGangZoneForCurrentView(const QuickMapGangZone& zone, const ImVec2& displayPos, const ImVec2& displaySize) const {
+     const float minWorldX = (std::min)(zone.minWorldX, zone.maxWorldX);
+     const float maxWorldX = (std::max)(zone.minWorldX, zone.maxWorldX);
+diff --git a/src/SAMPBridge.cpp b/src/SAMPBridge.cpp
+index 2d5e944..fbbadd1 100644
+--- a/src/SAMPBridge.cpp
++++ b/src/SAMPBridge.cpp
+@@ -2168,6 +2168,36 @@ std::string SAMPBridge::GetLocalPlayerName() const {
+ #endif
+ }
+ 
++std::string SAMPBridge::GetLocalFaction() const {
++    const auto* network = GetNetGame();
++    if (!initialized_ || !network || network->m_nGameState != sampapi::v03dl::CNetGame::GAME_MODE_CONNECTED)
++        return {};
++    const std::string ownName = GetLocalPlayerName();
++    if (ownName.empty()) return {};
++    if (localFactionProvider_) {
++        try { return localFactionProvider_(); }
++        catch (...) { return {}; }
++    }
++    return GetSynchronizedFaction();
++}
++
++std::string SAMPBridge::GetSynchronizedFaction() const {
++    const auto* network = GetNetGame();
++    if (!initialized_ || !network || network->m_nGameState != sampapi::v03dl::CNetGame::GAME_MODE_CONNECTED)
++        return {};
++    const std::string ownName = GetLocalPlayerName();
++    if (ownName.empty()) return {};
++    const auto identity = [](std::string value) {
++        std::transform(value.begin(), value.end(), value.begin(), [](unsigned char ch) { return static_cast<char>(std::tolower(ch)); });
++        return value;
++    };
++    if (!startupStatsComplete_ || !synchronizedStats_.faction
++        || identity(synchronizedStats_.playerName) != identity(ownName)
++        || synchronizedStats_.serverAddress != std::string(network->m_szHostAddress, strnlen(network->m_szHostAddress, 257))
++        || synchronizedStats_.serverPort != network->m_nPort) return {};
++    return *synchronizedStats_.faction;
++}
++
+ float SAMPBridge::GetLocalPlayerHP() const {
+     float health = 0.0f, armour = 0.0f;
+     int source = 0;
+diff --git a/src/SpeedTicketBridge.cpp b/src/SpeedTicketBridge.cpp
+index c6902be..71a287e 100644
+--- a/src/SpeedTicketBridge.cpp
++++ b/src/SpeedTicketBridge.cpp
+@@ -1,4 +1,5 @@
+ #include "../include/SAMPBridge.h"
++#include "../include/FactionAccess.h"
+ #include "../include/RakHook/include/RakNet/BitStream.h"
+ #ifndef KEYBINDER_TESTING
+ #include "../include/RakHook/include/RakHook/rakhook.hpp"
+@@ -42,6 +43,10 @@ bool SAMPBridge::RequestSpeedTicket(const std::string& arguments, std::string& e
+         error = "Du bist noch nicht mit dem Server verbunden.";
+         return false;
+     }
++    if (!keybinder::IsPoliceMember(GetLocalFaction())) {
++        error = "Du bist kein Polizist.";
++        return false;
++    }
+     if (IsDialogOpen()) { error = "Bitte zuerst den offenen Dialog schließen."; return false; }
+     if (speedTicketFlow_.IsActive()) { error = "Ein /speed-Ablauf ist bereits aktiv."; return false; }
+     int target = -1;
+@@ -83,6 +88,7 @@ bool SAMPBridge::RequestSpeedTicket(const std::string& arguments, std::string& e
+ }
+ 
+ bool SAMPBridge::SendSpeedDialogChoice(const keybinder::SpeedTicketAction& action) {
++    if (!keybinder::IsPoliceMember(GetLocalFaction())) return false;
+     if (action.dialogId < 0 || action.dialogId > 32767 || action.row < -1 || action.row > 32767) return false;
+     const std::string text = SpeedToGameText(action.input);
+     if (text.size() > 255 || text.find('\0') != std::string::npos) return false;
+@@ -108,6 +114,17 @@ bool SAMPBridge::SendSpeedDialogChoice(const keybinder::SpeedTicketAction& actio
+ void SAMPBridge::UpdateSpeedTicketFlow(unsigned long now) {
+     const auto* network = GetNetGame();
+     const bool connected = network && network->m_nGameState == sampapi::v03dl::CNetGame::GAME_MODE_CONNECTED;
++    if (speedTicketFlow_.IsActive() && connected && !keybinder::IsPoliceMember(GetLocalFaction())) {
++        speedTicketFlow_.Reset();
++        captureSpeedDialogs_.store(false, std::memory_order_release);
++        pendingSpeedDialogs_.clear();
++        {
++            std::lock_guard<std::mutex> lock(startupStatsMutex_);
++            speedTicketDialogs_.clear();
++        }
++        SendLocalMessage("{FF6600}[NL-BINDER]{FFFFFF} Du bist kein Polizist.");
++        return;
++    }
+     auto notice = speedTicketFlow_.Update(now, connected);
+     if (notice.kind == keybinder::SpeedTicketAction::Kind::Cancelled)
+         QueueLocalMessage("{FF6600}[NL-BINDER]{FFFFFF} " + notice.notice);
+@@ -136,7 +153,9 @@ void SAMPBridge::UpdateSpeedTicketFlow(unsigned long now) {
+         if (notice.kind == keybinder::SpeedTicketAction::Kind::SelectRow || notice.kind == keybinder::SpeedTicketAction::Kind::SubmitInput) {
+             if (!SendSpeedDialogChoice(notice)) {
+                 speedTicketFlow_.Reset();
+-                QueueLocalMessage("{FF6600}[NL-BINDER]{FFFFFF} /speed abgebrochen: Die Dialogantwort konnte nicht gesendet werden.");
++                QueueLocalMessage(!keybinder::IsPoliceMember(GetLocalFaction())
++                    ? "{FF6600}[NL-BINDER]{FFFFFF} Du bist kein Polizist."
++                    : "{FF6600}[NL-BINDER]{FFFFFF} /speed abgebrochen: Die Dialogantwort konnte nicht gesendet werden.");
+                 break;
+             }
+         }
+diff --git a/src/StartupStatsSync.cpp b/src/StartupStatsSync.cpp
+index ea5ea5c..562ab58 100644
+--- a/src/StartupStatsSync.cpp
++++ b/src/StartupStatsSync.cpp
+@@ -41,10 +41,10 @@ std::string VisibleStatsCaption(const std::string& value) {
+ bool EqualStats(const keybinder::ServerStatsSnapshot& first, const keybinder::ServerStatsSnapshot& second) {
+     return std::tie(first.playerName, first.serverAddress, first.serverPort, first.kills, first.deaths,
+         first.cash, first.bank, first.wealth, first.level, first.gold, first.eventcoins,
+-        first.wantedPoints, first.experience, first.nextLevelExperience, first.nextPaydayMinutes)
++        first.wantedPoints, first.experience, first.nextLevelExperience, first.nextPaydayMinutes, first.faction)
+         == std::tie(second.playerName, second.serverAddress, second.serverPort, second.kills, second.deaths,
+         second.cash, second.bank, second.wealth, second.level, second.gold, second.eventcoins,
+-        second.wantedPoints, second.experience, second.nextLevelExperience, second.nextPaydayMinutes);
++        second.wantedPoints, second.experience, second.nextLevelExperience, second.nextPaydayMinutes, second.faction);
+ }
+ 
+ std::string StatsGameTextToUtf8(const char* text, std::size_t maximum) {
+@@ -64,6 +64,7 @@ std::string StatsGameTextToUtf8(const char* text, std::size_t maximum) {
+ } // namespace
+ 
+ void SAMPBridge::ResetStartupStats() {
++    synchronizedStats_.faction.reset(); // Never authorize from a saved previous session.
+     captureStartupStats_.store(false, std::memory_order_release);
+     startupStatsConnected_ = startupStatsRequested_ = startupStatsComplete_ = startupStatsFailed_ = false;
+     startupStatsIdentity_.clear();
+diff --git a/tests/KeybindTests.cpp b/tests/KeybindTests.cpp
+index ebde2c0..7f614dd 100644
+--- a/tests/KeybindTests.cpp
++++ b/tests/KeybindTests.cpp
+@@ -10,6 +10,7 @@ int RunR16FeatureTests();
+ int RunR17FeatureTests();
+ int RunR18FeatureTests();
+ int RunDrugUseTrackerTests();
++int RunLocalFactionAccessTests();
+ int RunReconnectTests();
+ int RunKillMessageTestTests();
+ int RunLocationVariableTests();
+@@ -121,7 +122,8 @@ int main(int argc, char** argv) {
+         + run_suite("Running R16FeatureTests...", RunR16FeatureTests)
+         + run_suite("Running R17FeatureTests...", RunR17FeatureTests)
+         + run_suite("Running R18FeatureTests...", RunR18FeatureTests)
+-        + run_suite("Running DrugUseTrackerTests...", RunDrugUseTrackerTests);
++        + run_suite("Running DrugUseTrackerTests...", RunDrugUseTrackerTests)
++        + run_suite("Running LocalFactionAccessTests...", RunLocalFactionAccessTests);
+     if (r4_failures != 0) return r4_failures;
+     log_line("All tests finished.");
+     return reconnect_failures + speedometer_failures + keybind_failures + executor_failures + interface_editor_failures + input_failures + regression_failures + samp_bridge_failures + imgui_overlay_failures + hitmarker_failures + hitsound_failures + theme_failures + quickmap_failures + job_registry_failures + job_chat_adapter_failures + job_event_store_failures + job_parser_failures + job_tracker_lifecycle_failures + main_window_jobs_nav_failures + jobs_ui_failures + jobs_correction_failures + job_adjustment_failures + online_ui_failures + online_data_manager_failures + online_settings_failures + online_overlay_renderer_failures + online_event_detector_failures + ui_components_failures + squaremap_failures + hud_sprite_failures + source_contract_failures;
+diff --git a/tests/LocalFactionAccessTests.cpp b/tests/LocalFactionAccessTests.cpp
+new file mode 100644
+index 0000000..3ce580c
+--- /dev/null
++++ b/tests/LocalFactionAccessTests.cpp
+@@ -0,0 +1,32 @@
++#include "../include/LocalFactionAccess.h"
++#include <cstdio>
++
++namespace {
++int checks = 0, failures = 0;
++#define CHECK(x) do { ++checks; if (!(x)) { ++failures; std::printf("[FAIL] LocalFactionAccess: %s at %d\n", #x, __LINE__); } } while (0)
++}
++
++int RunLocalFactionAccessTests() {
++    using namespace keybinder;
++    checks = failures = 0;
++    CHECK(ReconcileLocalFaction("", {}).empty());
++    CHECK(IsRcbMember(ReconcileLocalFaction("Red County Brotherhood", {})));
++    CHECK(ReconcileLocalFaction("", std::string("RCB")).empty()); // Same nickname on another server is insufficient.
++    CHECK(IsRcbMember(ReconcileLocalFaction("RCB", std::string("Red County Brotherhood"))));
++    CHECK(IsPoliceMember(ReconcileLocalFaction("SAPD", std::string("LSPD"))));
++    CHECK(ReconcileLocalFaction("", std::string("Los Santos Police Department")).empty());
++    CHECK(IsPoliceMember(ReconcileLocalFaction("San Andreas Police Department", {})));
++    CHECK(ReconcileLocalFaction("RCB", std::string("Zivilist")).empty());
++    CHECK(ReconcileLocalFaction("Zivilist", std::string("RCB")).empty());
++    CHECK(ReconcileLocalFaction("SAPD", std::string("RCB")).empty());
++    CHECK(ReconcileLocalFaction("RCB", std::string("SAPD")).empty());
++    CHECK(!IsRcbMember(ReconcileLocalFaction("Army", std::string("Zivilist"))));
++    CHECK(!IsPoliceMember(ReconcileLocalFaction("RCB", {})));
++    CHECK(!IsPoliceMember(ReconcileLocalFaction("Not LSPD", {})));
++    CHECK(!IsRcbMember(ReconcileLocalFaction("Red County Brotherhood Supporter", {})));
++    CHECK(!IsRcbMember(ReconcileLocalFaction("Zivilist", {})));
++    CHECK(IsRcbMember(ReconcileLocalFaction(" {FFFFFF}red county brotherhood ", {})));
++    CHECK(!IsPoliceMember(ReconcileLocalFaction("", {})));
++    std::printf("LocalFactionAccessTests: %d checks, %d failures\n", checks, failures);
++    return failures;
++}
+diff --git a/tests/OnlineDataManagerTests.cpp b/tests/OnlineDataManagerTests.cpp
+index 8231626..896b2a4 100644
+--- a/tests/OnlineDataManagerTests.cpp
++++ b/tests/OnlineDataManagerTests.cpp
+@@ -195,6 +195,8 @@ bool TestNormalizeFactionMatchesAliasesCaseInsensitively() {
+     ASSERT_EQ(OnlineDataManager::NormalizeFaction("lspd"), std::string("LSPD"));
+     ASSERT_EQ(OnlineDataManager::NormalizeFaction("Los Santos Police Department"), std::string("LSPD"));
+     ASSERT_EQ(OnlineDataManager::NormalizeFaction("Police Department"), std::string("LSPD"));
++    ASSERT_EQ(OnlineDataManager::NormalizeFaction("SAPD"), std::string("LSPD"));
++    ASSERT_EQ(OnlineDataManager::NormalizeFaction("San Andreas Police Department"), std::string("LSPD"));
+     ASSERT_EQ(OnlineDataManager::NormalizeFaction("NATIONAL GUARD"), std::string("Army"));
+     ASSERT_EQ(OnlineDataManager::NormalizeFaction("San Andreas Army"), std::string("Army"));
+     ASSERT_EQ(OnlineDataManager::NormalizeFaction("Fire Department"), std::string("Fire Department"));
+@@ -532,6 +534,30 @@ bool TestSnapshotCopyRemainsImmutableAfterSubsequentUpdate() {
+ 
+ } // namespace
+ 
++bool TestLiveAffiliationUsesFreshNamedPlayerRatherThanCachedOwnLabel() {
++    OnlineDataManager manager;
++    ASSERT_TRUE(!manager.GetLiveAffiliationFor("Finn"));
++    auto snapshot = BuildSnapshotSecondsAgo(0);
++    snapshot.localAffiliation = {true, "LSPD", {}}; // Wrong cached account label must be ignored.
++    snapshot.players[0].isFaction = true;
++    snapshot.players[0].isGang = false;
++    snapshot.players[0].affiliation = "Red County Brotherhood";
++    manager.SetSnapshotForTesting(snapshot);
++    const auto own = manager.GetLiveAffiliationFor(" fINN ");
++    ASSERT_TRUE(own.has_value());
++    ASSERT_TRUE(own->isFaction);
++    ASSERT_EQ(own->name, std::string("Red County Brotherhood"));
++    ASSERT_TRUE(!manager.GetLiveAffiliationFor("Different_Player"));
++    ASSERT_TRUE(!manager.GetLiveAffiliationFor(""));
++    snapshot.snapshotTime = std::chrono::steady_clock::now() - std::chrono::seconds(21);
++    manager.SetSnapshotForTesting(snapshot);
++    ASSERT_TRUE(!manager.GetLiveAffiliationFor("Finn"));
++    snapshot.snapshotTime = std::chrono::steady_clock::now() - std::chrono::seconds(61);
++    manager.SetSnapshotForTesting(snapshot);
++    ASSERT_TRUE(!manager.GetLiveAffiliationFor("Finn"));
++    return true;
++}
++
+ int RunOnlineDataManagerTests() {
+     g_state = {};
+ 
+@@ -551,6 +577,7 @@ int RunOnlineDataManagerTests() {
+     RUN_TEST(TestRefreshFetchStatusTransitionsToStaleAndOffline);
+     RUN_TEST(TestOldSuccessfulSnapshotTransitionsToOfflineAfterFailure);
+     RUN_TEST(TestSnapshotCopyRemainsImmutableAfterSubsequentUpdate);
++    RUN_TEST(TestLiveAffiliationUsesFreshNamedPlayerRatherThanCachedOwnLabel);
+ 
+     std::printf("OnlineDataManagerTests: %d passed, %d failed\n", g_state.passed, g_state.failed);
+     return g_state.failed;
+diff --git a/tests/QuickMapTests.cpp b/tests/QuickMapTests.cpp
+index 299f010..765683b 100644
+--- a/tests/QuickMapTests.cpp
++++ b/tests/QuickMapTests.cpp
+@@ -1,12 +1,15 @@
+ #define KEYBINDER_TESTING
+ 
+ #include "../include/QuickMap.h"
++#include "../include/ClaimSpots.h"
++#include "../include/TextureManager.h"
+ #include "../include/SettingsManager.h"
+ #include "../include/RadarSpriteResources.h"
+ #include "../include/ResourceIds.h"
+ #include "../include/plugin-sdk/plugin_sa/game_sa/CRadar.h"
+ 
+ #include <cmath>
++#include <cstdint>
+ #include <cstdio>
+ #include <string>
+ 
+@@ -795,6 +798,216 @@ bool TestGangZoneOutlineThicknessSettingClampsAndPersists() {
+     return true;
+ }
+ 
++bool TestClaimSpotsMatchAllTwentyEightUserSaves() {
++    const float expected[][3] = {
++        {1583.9396f,33.5867f,26.9868f}, {1927.8734f,168.8767f,40.1172f},
++        {2160.4473f,-107.1974f,2.7599f}, {2239.8594f,-86.8115f,27.8548f},
++        {2311.3462f,-17.4462f,32.5313f}, {2330.9189f,80.9126f,32.0073f},
++        {2547.1592f,93.7197f,29.8577f}, {1297.6686f,182.1735f,20.4670f},
++        {1297.8884f,308.8936f,27.5555f}, {1287.1136f,270.3256f,23.7625f},
++        {1247.1160f,367.3232f,22.7848f}, {1488.7997f,361.4571f,21.9852f},
++        {1371.5627f,471.9797f,23.1484f}, {760.6830f,381.3502f,26.0898f},
++        {752.6452f,259.9708f,29.7391f}, {863.5613f,-23.6717f,66.2610f},
++        {645.8249f,-519.8103f,21.1673f}, {743.5359f,-588.8473f,20.5990f},
++        {803.7162f,-564.1726f,21.3363f}, {1072.5286f,-291.1361f,76.8663f},
++        {252.7985f,-292.9166f,1.5836f}, {193.9769f,-229.6732f,7.0782f},
++        {206.3966f,-179.7932f,5.0786f}, {172.4167f,-161.3612f,6.7786f},
++        {183.5547f,-108.0306f,2.0234f}, {355.0618f,-76.3290f,1.3705f},
++        {-437.4864f,-59.2712f,62.0269f}, {-549.7010f,-202.3125f,80.4654f},
++    };
++    ASSERT_EQ(kRcbClaimSpots.size(), static_cast<std::size_t>(28));
++    for (std::size_t i = 0; i < kRcbClaimSpots.size(); ++i) {
++        ASSERT_EQ(kRcbClaimSpots[i].x, expected[i][0]);
++        ASSERT_EQ(kRcbClaimSpots[i].y, expected[i][1]);
++        ASSERT_EQ(kRcbClaimSpots[i].z, expected[i][2]);
++        ASSERT_TRUE(kRcbClaimSpots[i].name != nullptr && kRcbClaimSpots[i].name[0] != '\0');
++    }
++    return true;
++}
++
++bool TestClaimsRequireExplicitToggleAndPreserveServerMarkers() {
++    SettingsManager settings;
++    settings.GetMutable().quickmap_enabled = true;
++    QuickMap map;
++    map.Initialize(&settings, nullptr);
++    QuickMapRenderData data;
++    data.hasCheckpoint = true;
++    data.checkpoint.worldX = 1000.0f;
++    data.checkpoint.worldY = 2000.0f;
++    data.mapIcons.push_back({});
++    data.mapIcons[0].worldX = -200.0f;
++    data.mapIcons[0].radarSprite = RADAR_SPRITE_POLICE;
++    map.SetRenderData(data);
++    ASSERT_TRUE(!map.AreClaimsVisible());
++    ASSERT_TRUE(!map.ToggleClaims());
++    ASSERT_TRUE(map.ProjectClaimsForTesting(ImVec2(), ImVec2(600,600)).empty());
++    map.SetClaimsAllowed(true);
++    ASSERT_TRUE(!map.AreClaimsVisible());
++    ASSERT_TRUE(map.ToggleClaims());
++    ASSERT_TRUE(map.AreClaimsVisible());
++    ASSERT_TRUE(!map.IsVisible()); // /claims does not itself open the map.
++    ASSERT_EQ(map.GetRenderData().mapIcons.size(), static_cast<std::size_t>(1));
++    ASSERT_EQ(map.GetRenderData().mapIcons[0].radarSprite, static_cast<unsigned char>(RADAR_SPRITE_POLICE));
++    ASSERT_EQ(map.GetRenderData().mapIcons[0].worldX, -200.0f);
++    ASSERT_TRUE(map.GetRenderData().hasCheckpoint);
++    ASSERT_EQ(map.GetRenderData().checkpoint.worldX, 1000.0f);
++    map.Show();
++    map.Hide();
++    ASSERT_TRUE(map.AreClaimsVisible());
++    map.OnDeviceLost();
++    map.OnDeviceReset(nullptr);
++    ASSERT_TRUE(map.AreClaimsVisible());
++    ASSERT_TRUE(map.ToggleClaims());
++    ASSERT_TRUE(!map.AreClaimsVisible());
++    ASSERT_EQ(map.GetRenderData().mapIcons.size(), static_cast<std::size_t>(1));
++    ASSERT_TRUE(map.ToggleClaims());
++    map.SetClaimsAllowed(false);
++    ASSERT_TRUE(!map.AreClaimsVisible());
++    ASSERT_TRUE(!map.ToggleClaims());
++    map.SetClaimsAllowed(true);
++    ASSERT_TRUE(!map.AreClaimsVisible()); // Regaining membership never auto-enables.
++    ASSERT_TRUE(map.ToggleClaims());
++    map.Shutdown();
++    ASSERT_TRUE(!map.AreClaimsVisible());
++    ASSERT_TRUE(!map.ToggleClaims());
++    return true;
++}
++
++bool TestClaimsUseTheCurrentZoomAndDoNotClampOffscreenFlags() {
++    SettingsManager settings;
++    settings.GetMutable().quickmap_enabled = true;
++    settings.GetMutable().quickmap_auto_zoom = false;
++    settings.GetMutable().quickmap_follow_player = true;
++    settings.GetMutable().quickmap_focus_marker = false;
++    QuickMap map;
++    map.Initialize(&settings, nullptr);
++    map.SetDisplaySizeForTesting(ImVec2(600,600));
++    map.Show();
++    map.SetZoomLevel(QuickMapZoomLevel::Far);
++    map.SetClaimsAllowed(true);
++    ASSERT_TRUE(map.ToggleClaims());
++    auto claims = map.ProjectClaimsForTesting(ImVec2(10,20), ImVec2(600,600));
++    ASSERT_EQ(claims.size(), static_cast<std::size_t>(28));
++    for (const auto& claim : claims) {
++        ASSERT_TRUE(claim.visible);
++        ASSERT_EQ(claim.radarSprite, static_cast<unsigned char>(RADAR_SPRITE_ENEMYATTACK));
++        ASSERT_TRUE(!claim.emphasize);
++    }
++    ASSERT_TRUE(AssertVec2Near(claims[0].position, ImVec2(468.39396f,316.64133f)));
++    QuickMapRenderData data;
++    data.hasLocalPlayer = true;
++    data.localPlayer.worldX = 2500.0f;
++    data.localPlayer.worldY = -2500.0f;
++    map.SetRenderData(data);
++    map.SetZoomLevel(QuickMapZoomLevel::Ultra);
++    claims = map.ProjectClaimsForTesting(ImVec2(10,20), ImVec2(600,600));
++    ASSERT_TRUE(!claims[0].visible); // Montgomery is outside this zoomed view.
++    ASSERT_TRUE(claims[17].visible); // Dillimore remains at its actual position.
++    ASSERT_TRUE(!claims[27].visible); // Left-of-view flags do not pile at the edge.
++    ASSERT_TRUE(claims[17].position.x >= 10.0f && claims[17].position.x <= 610.0f);
++    ASSERT_TRUE(claims[17].position.y >= 20.0f && claims[17].position.y <= 620.0f);
++    data.localPlayer.worldX = -500.0f;
++    data.localPlayer.worldY = -200.0f;
++    map.SetRenderData(data);
++    claims = map.ProjectClaimsForTesting(ImVec2(10,20), ImVec2(600,600));
++    ASSERT_TRUE(claims[27].visible);
++    ASSERT_TRUE(!claims[0].visible);
++    map.SetClaimsAllowed(false);
++    ASSERT_TRUE(map.ProjectClaimsForTesting(ImVec2(10,20), ImVec2(600,600)).empty());
++    return true;
++}
++
++struct ClaimDrawContext {
++    ImGuiContext* previous = ImGui::GetCurrentContext();
++    ImGuiContext* context = ImGui::CreateContext();
++    ClaimDrawContext() {
++        ImGuiIO& io = ImGui::GetIO();
++        io.DisplaySize = ImVec2(1000,1000);
++        io.DeltaTime = 1.0f / 60.0f;
++        io.IniFilename = nullptr;
++        unsigned char* pixels = nullptr;
++        int width = 0, height = 0;
++        io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);
++        io.Fonts->SetTexID(static_cast<ImTextureID>(1));
++    }
++    ~ClaimDrawContext() {
++        ImGui::DestroyContext(context);
++        ImGui::SetCurrentContext(previous);
++    }
++};
++
++bool TestClaimRenderingUsesBothExistingFlagPacksAndDrawsPlayerLast() {
++    for (const auto pack : {RadarSpritePack::Radar1, RadarSpritePack::Radar2}) {
++        ClaimDrawContext context;
++        SettingsManager settings;
++        auto& configured = settings.GetMutable();
++        configured.quickmap_enabled = true;
++        configured.quickmap_follow_player = false;
++        configured.quickmap_focus_marker = false;
++        configured.quickmap_auto_zoom = false;
++        configured.quickmap_radar_pack = pack == RadarSpritePack::Radar1 ? "radar1" : "radar2";
++        QuickMap map;
++        map.Initialize(&settings, nullptr);
++        std::vector<WORD> requested;
++        const WORD flagId = pack == RadarSpritePack::Radar1 ? IDR_RADAR_ENEMYATTACK : IDR_RADAR2_ENEMYATTACK;
++        TextureInfo flag;
++        flag.texture = reinterpret_cast<IDirect3DTexture9*>(static_cast<std::uintptr_t>(0x10000 + flagId));
++        flag.width = flag.height = 32;
++        QuickMap::TestingHooks hooks;
++        hooks.getRadarSpriteTextureByResource = [&](WORD resource) -> TextureInfo* {
++            requested.push_back(resource);
++            return resource == flagId ? &flag : nullptr;
++        };
++        map.SetTestingHooks(hooks);
++        QuickMapRenderData data;
++        data.hasLocalPlayer = true;
++        data.localPlayer.type = QuickMapMarkerType::LocalPlayer;
++        data.localPlayer.worldX = -2000.0f;
++        data.localPlayer.worldY = 2200.0f;
++        QuickMapMarker serverIcon;
++        serverIcon.worldX = -2300.0f;
++        serverIcon.worldY = 2000.0f;
++        serverIcon.radarSprite = RADAR_SPRITE_POLICE;
++        data.mapIcons.push_back(serverIcon);
++        map.SetRenderData(data);
++        map.Show();
++        map.SetZoomLevel(QuickMapZoomLevel::Far);
++        map.SetClaimsAllowed(true);
++        ASSERT_TRUE(map.ToggleClaims());
++        ImGui::NewFrame();
++        ImDrawList* drawList = ImGui::GetForegroundDrawList();
++        map.Render(drawList, ImVec2(100,100), ImVec2(600,600));
++        unsigned int flagIndices = 0;
++        for (const ImDrawCmd& command : drawList->CmdBuffer) {
++            if (command.GetTexID() == reinterpret_cast<ImTextureID>(flag.texture)) {
++                flagIndices += command.ElemCount;
++                ASSERT_EQ(command.ClipRect.x, 100.0f);
++                ASSERT_EQ(command.ClipRect.y, 100.0f);
++                ASSERT_EQ(command.ClipRect.z, 700.0f);
++                ASSERT_EQ(command.ClipRect.w, 700.0f);
++            }
++        }
++        ASSERT_EQ(flagIndices, static_cast<unsigned int>(28 * 6));
++        ASSERT_EQ(requested.size(), static_cast<std::size_t>(30));
++        ASSERT_EQ(requested.front(), static_cast<WORD>(ResolveRadarSpriteResourceId(*FindRadarSpriteResource(RADAR_SPRITE_POLICE), pack)));
++        ASSERT_EQ(requested.back(), static_cast<WORD>(IDR_RADAR_CENTRE));
++        for (std::size_t i = 1; i <= 28; ++i) ASSERT_EQ(requested[i], flagId);
++        ImGui::Render();
++        ASSERT_TRUE(map.ToggleClaims());
++        requested.clear();
++        ImGui::NewFrame();
++        drawList = ImGui::GetForegroundDrawList();
++        map.Render(drawList, ImVec2(100,100), ImVec2(600,600));
++        for (const ImDrawCmd& command : drawList->CmdBuffer) {
++            ASSERT_TRUE(command.GetTexID() != reinterpret_cast<ImTextureID>(flag.texture));
++        }
++        ASSERT_EQ(requested.size(), static_cast<std::size_t>(2));
++        ASSERT_EQ(map.GetRenderData().mapIcons.size(), static_cast<std::size_t>(1));
++        ImGui::Render();
++    }
++    return true;
++}
++
+ } // namespace
+ 
+ int RunQuickMapTests() {
+@@ -841,6 +1054,10 @@ int RunQuickMapTests() {
+     RUN_TEST(TestGangZoneOutlineColorPreservesBrightZone);
+     RUN_TEST(TestGangZoneOutlineColorBlackFillFallsBackToWhite);
+     RUN_TEST(TestGangZoneOutlineThicknessSettingClampsAndPersists);
++    RUN_TEST(TestClaimSpotsMatchAllTwentyEightUserSaves);
++    RUN_TEST(TestClaimsRequireExplicitToggleAndPreserveServerMarkers);
++    RUN_TEST(TestClaimsUseTheCurrentZoomAndDoNotClampOffscreenFlags);
++    RUN_TEST(TestClaimRenderingUsesBothExistingFlagPacksAndDrawsPlayerLast);
+ 
+     std::printf("QuickMapTests: %d passed, %d failed\n", g_state.passed, g_state.failed);
+     return g_state.failed;
+diff --git a/tests/ServerStatsParserTests.cpp b/tests/ServerStatsParserTests.cpp
+index af3c749..e6f2d06 100644
+--- a/tests/ServerStatsParserTests.cpp
++++ b/tests/ServerStatsParserTests.cpp
+@@ -1,4 +1,5 @@
+ #include "../include/ServerStatsSnapshot.h"
++#include "../include/FactionAccess.h"
+ 
+ #include <cstdio>
+ #include <limits>
+@@ -198,6 +199,65 @@ void TestDialogBoundsAndCombinedCounters() {
+     STATS_CHECK(!collector.ConsumeDialog("Stats", std::string(keybinder::ServerStatsCollector::kMaximumDialogBytes + 1, 'x'), "Own_Player", 1000, true));
+     STATS_CHECK(collector.Snapshot().kills == 42 && collector.Snapshot().deaths == 20);
+ }
++
++void TestOwnFactionKeepsMultiWordNamesAndRejectsRanksOrForeignPlayers() {
++    keybinder::ServerStatsCollector collector;
++    STATS_CHECK(!collector.ConsumeLine("Fraktion: Red County Brotherhood", "Own_Player", 1000));
++    STATS_CHECK(!collector.Snapshot().faction);
++    STATS_CHECK(collector.ConsumeLine("*** Own_Player ***", "Own_Player", 1000));
++    STATS_CHECK(collector.ConsumeLine("Fraktion: {FFCC00}Red County Brotherhood", "Own_Player", 1001));
++    STATS_CHECK(collector.Snapshot().faction == "Red County Brotherhood");
++    STATS_CHECK(!collector.ConsumeLine("Fraktionsrang: Polizist", "Own_Player", 1002));
++    STATS_CHECK(collector.Snapshot().faction == "Red County Brotherhood");
++    STATS_CHECK(collector.ConsumeLine("Gang: LSPD", "Own_Player", 1003));
++    STATS_CHECK(collector.Snapshot().faction == "Red County Brotherhood");
++    STATS_CHECK(!collector.ConsumeLine("Other: Fraktion: LSPD", "Own_Player", 1004));
++    STATS_CHECK(collector.Snapshot().faction == "Red County Brotherhood");
++    STATS_CHECK(!collector.ConsumeLine("*** Other_Player ***", "Own_Player", 1005));
++    STATS_CHECK(!collector.Snapshot().faction);
++
++    const std::string body = "Name: Own_Player\nKills: 41\nTode: 19\nFraktion: Red County Brotherhood\nFraktionsrang: Hand";
++    STATS_CHECK(collector.ConsumeDialog("Statistiken \xC2\xBB Own_Player", body, "Own_Player", 2000, true));
++    STATS_CHECK(collector.Snapshot().faction == "Red County Brotherhood");
++    STATS_CHECK(!collector.ConsumeDialog("Statistiken \xC2\xBB Other_Player", body, "Own_Player", 2001, true));
++    STATS_CHECK(collector.Snapshot().faction == "Red County Brotherhood");
++    STATS_CHECK(!collector.ConsumeDialog("Statistiken", body, "Own_Player", 2002, false));
++    STATS_CHECK(collector.Snapshot().faction == "Red County Brotherhood");
++    for (const char* row : {"Fraktion: [LSPD] Gang: [-]", "Fraktion:\t(SAPD)",
++                           "Fraktion: Los Santos Police Department | Fraktionsrang: Officer",
++                           "Fraktion: Red County Brotherhood Fraktionsrang: Hand",
++                           "Kills: [41] Tode: [19] Fraktion: [Red County Brotherhood] Gang: [-]"}) {
++        collector.Reset();
++        STATS_CHECK(collector.ConsumeDialog("Stats", std::string("Kills: 41\nTode: 19\n") + row, "Own_Player", 3000, true));
++        STATS_CHECK(collector.Snapshot().faction.has_value());
++        STATS_CHECK(keybinder::ClassifyFaction(*collector.Snapshot().faction) != keybinder::FactionRole::Other);
++    }
++    collector.Reset();
++    STATS_CHECK(collector.ConsumeDialog("Stats", "Kills: 41\nTode: 19\nFraktionsrang: LSPD\nGang: Red County Brotherhood", "Own_Player", 4000, true));
++    STATS_CHECK(!collector.Snapshot().faction);
++    STATS_CHECK(collector.ConsumeDialog("Stats", "Kills: 41\nTode: 19\nFraktion: Zivilist", "Own_Player", 4001, true));
++    STATS_CHECK(collector.Snapshot().faction == "Zivilist");
++    STATS_CHECK(!keybinder::IsPoliceMember(*collector.Snapshot().faction));
++    STATS_CHECK(!keybinder::IsRcbMember(*collector.Snapshot().faction));
++}
++
++void TestFactionAliasesAreExactAndDoNotGrantLookalikes() {
++    for (const char* faction : {"LSPD", "sapd", " LOS SANTOS POLICE DEPARTMENT ",
++                              "San Andreas Police Department", "Police Department", "{FFFFFF}LsPd"}) {
++        STATS_CHECK(keybinder::IsPoliceMember(faction));
++        STATS_CHECK(!keybinder::IsRcbMember(faction));
++    }
++    for (const char* faction : {"Red County Brotherhood", " rCb ", "redcounty brotherhood", "RED  COUNTY\tBROTHERHOOD"}) {
++        STATS_CHECK(keybinder::IsRcbMember(faction));
++        STATS_CHECK(!keybinder::IsPoliceMember(faction));
++    }
++    STATS_CHECK(keybinder::ClassifyFaction("") == keybinder::FactionRole::Unknown);
++    for (const char* faction : {"Zivilist", "Army", "Not LSPD", "LSPD Freunde", "RCB Gang", "Not Red County Brotherhood", "Gang: LSPD"}) {
++        STATS_CHECK(keybinder::ClassifyFaction(faction) == keybinder::FactionRole::Other);
++        STATS_CHECK(!keybinder::IsRcbMember(faction));
++        STATS_CHECK(!keybinder::IsPoliceMember(faction));
++    }
++}
+ } // namespace
+ 
+ int RunServerStatsParserTests() {
+@@ -211,6 +271,8 @@ int RunServerStatsParserTests() {
+     TestLongTabbedDialogReadsCountersBeyondLegacyChatBudget();
+     TestStatsCaptionAndOwnIdentityVariantsRejectForeignPlayers();
+     TestDialogBoundsAndCombinedCounters();
++    TestOwnFactionKeepsMultiWordNamesAndRejectsRanksOrForeignPlayers();
++    TestFactionAliasesAreExactAndDoNotGrantLookalikes();
+     std::printf("ServerStatsParserTests: %d checks, %d failures\n", checks, failures);
+     return failures;
+ }
+diff --git a/tests/StartupStatsSyncTests.cpp b/tests/StartupStatsSyncTests.cpp
+index 71481f4..5bdcf38 100644
+--- a/tests/StartupStatsSyncTests.cpp
++++ b/tests/StartupStatsSyncTests.cpp
+@@ -443,6 +443,7 @@ void TestSpeedCommandPerformsThreeExactDialogRepliesAndSubmitsOnlyOnce() {
+     hooks.getPlayerName = [](int id) { return id == 57 ? std::string("KOBiRO") : std::string(); };
+     SAMPBridge::SetTestingHooks(hooks);
+     SAMPBridge bridge;
++    bridge.SetLocalFactionProvider([]() { return std::string("LSPD"); });
+     CHECK(bridge.Initialize());
+     bridge.Update();
+     std::string error;
+@@ -477,6 +478,95 @@ void TestSpeedCommandPerformsThreeExactDialogRepliesAndSubmitsOnlyOnce() {
+     }
+ }
+ 
++void TestSpeedRequiresPoliceBeforeCommandsAndRevokesQueuedDialogReplies() {
++    Context context;
++    SAMPBridge::SetTestingHooks(context.Hooks());
++    SAMPBridge bridge;
++    std::string faction;
++    bridge.SetLocalFactionProvider([&]() { return faction; });
++    CHECK(bridge.GetLocalFaction().empty());
++    CHECK(bridge.Initialize());
++    bridge.Update();
++    std::string error;
++    for (const char* denied : {"", "Zivilist", "Red County Brotherhood", "Army", "Not LSPD", "LSPD Freunde"}) {
++        faction = denied;
++        CHECK(!bridge.RequestSpeedTicket("57", error));
++        CHECK(error == "Du bist kein Polizist.");
++        CHECK(context.commands.empty() && context.replies.empty());
++    }
++    faction = "SAPD";
++    CHECK(bridge.RequestSpeedTicket("57", error));
++    CHECK(context.commands == std::vector<std::string>{"/su"});
++    CHECK(DeliverDialog(bridge, context, 550, 2, "Staat \xBB Wantedkatalog", "Ordnungswidrigkeit\nVergehen\nVerbrechen"));
++    faction = "Red County Brotherhood"; // Revoke before consuming the queued catalogue.
++    bridge.Update();
++    CHECK(context.replies.empty() && context.hidden == 0);
++    CHECK(context.localMessages.back().find("Du bist kein Polizist.") != std::string::npos);
++    const auto notices = context.localMessages.size();
++    bridge.Update();
++    CHECK(context.localMessages.size() == notices);
++    CHECK(!bridge.RequestSpeedTicket("57", error) && error == "Du bist kein Polizist.");
++    context.dialog.get()->m_bIsActive = FALSE;
++    faction = "San Andreas Police Department";
++    CHECK(bridge.RequestSpeedTicket("58", error)); // The old flow no longer blocks a fresh valid request.
++    CHECK(context.commands == (std::vector<std::string>{"/su", "/su"}));
++    faction.clear();
++    bridge.Update();
++    CHECK(context.replies.empty());
++    bridge.SetLocalFactionProvider([]() -> std::string { throw 1; });
++    CHECK(bridge.GetLocalFaction().empty());
++    CHECK(!bridge.RequestSpeedTicket("57", error) && error == "Du bist kein Polizist.");
++    bridge.Shutdown();
++    SAMPBridge::ResetTestingHooks();
++}
++
++void TestSynchronizedFactionIsBoundToOwnNameServerAndCurrentConnection() {
++    Context context;
++    context.ready = true;
++    SAMPBridge::SetTestingHooks(context.Hooks());
++    keybinder::SettingsManager settings;
++    auto& cached = settings.GetMutable().synchronized_player_stats;
++    cached.playerName = context.name;
++    cached.serverAddress = "127.0.0.1";
++    cached.serverPort = 7777;
++    cached.kills = 41; cached.deaths = 19; cached.faction = "LSPD";
++    SAMPBridge bridge;
++    bridge.SetSettingsManager(&settings);
++    CHECK(bridge.Initialize());
++    CHECK(bridge.GetSynchronizedFaction().empty()); // A persisted snapshot never grants access.
++    bridge.Update();
++    CHECK(bridge.GetSynchronizedFaction().empty());
++    CHECK(DeliverDialog(bridge, context, 560, 0, "Statistiken \xBB SyncPlayer",
++        "Name: SyncPlayer\nKills: 41\nTode: 19\nFraktion: Red County Brotherhood\nFraktionsrang: Hand"));
++    bridge.Update();
++    CHECK(bridge.AreStatsSynchronized());
++    CHECK(bridge.GetSynchronizedFaction() == "Red County Brotherhood");
++    CHECK(bridge.GetLocalFaction() == "Red County Brotherhood");
++    bridge.SetLocalFactionProvider([]() { return std::string("SAPD"); });
++    CHECK(bridge.GetLocalFaction() == "SAPD");
++    CHECK(bridge.GetSynchronizedFaction() == "Red County Brotherhood"); // Fallback getter is independent.
++    bridge.SetLocalFactionProvider({});
++    context.name = "Other_Player";
++    CHECK(bridge.GetSynchronizedFaction().empty());
++    context.name = "SyncPlayer";
++    context.network.get()->m_nPort = 8888;
++    CHECK(bridge.GetSynchronizedFaction().empty());
++    context.network.get()->m_nPort = 7777;
++    std::strcpy(context.network.get()->m_szHostAddress, "192.0.2.1");
++    CHECK(bridge.GetSynchronizedFaction().empty());
++    std::strcpy(context.network.get()->m_szHostAddress, "127.0.0.1");
++    CHECK(bridge.GetSynchronizedFaction() == "Red County Brotherhood");
++    context.network.get()->m_nGameState = sampapi::v03dl::CNetGame::GAME_MODE_WAITCONNECT;
++    CHECK(bridge.GetSynchronizedFaction().empty() && bridge.GetLocalFaction().empty());
++    bridge.Update();
++    CHECK(!bridge.GetSynchronizedStats().faction);
++    context.network.get()->m_nGameState = sampapi::v03dl::CNetGame::GAME_MODE_CONNECTED;
++    bridge.Update();
++    CHECK(bridge.GetSynchronizedFaction().empty());
++    bridge.Shutdown();
++    SAMPBridge::ResetTestingHooks();
++}
++
+ void TestStartupSynchronizesStatsThenJobSkillsAndKeepsExistingEarnings() {
+     Context context;
+     context.ready = context.jobSkillsReady = true;
+@@ -852,6 +942,8 @@ int RunStartupStatsSyncTests() {
+     TestManualStatsRecoversAfterTimeoutAndOtherDialogsStayOpen();
+     TestObservedNovaScreenshotLayoutThroughCompressedRpcWithDynamicPlayerName();
+     TestSpeedCommandPerformsThreeExactDialogRepliesAndSubmitsOnlyOnce();
++    TestSpeedRequiresPoliceBeforeCommandsAndRevokesQueuedDialogReplies();
++    TestSynchronizedFactionIsBoundToOwnNameServerAndCurrentConnection();
+     TestStartupSynchronizesStatsThenJobSkillsAndKeepsExistingEarnings();
+     TestManualFullSyncReusesPipelineAndImportsFreshValuesWithoutNewKills();
+     TestManualSyncTimeoutPreservesValuesAndCanBeRetried();
+diff --git a/tools/document_revision22.py b/tools/document_revision22.py
+new file mode 100644
+index 0000000..6419510
+--- /dev/null
++++ b/tools/document_revision22.py
+@@ -0,0 +1,189 @@
++"""Document fixed RCB claims and local faction guards without rewriting past releases."""
++from pathlib import Path
++import re
++R=Path(__file__).resolve().parents[1]
++NOTES = '''# NLBinder v.0.1.2 by perkys & edited by KOBiRO – r22
++
++## RCB-Flaggen auf der Quick Map
++
++`/claims` schaltet die 28 vom Nutzer vorgegebenen Flaggenorte der
++Red County Brotherhood auf der vorhandenen Quick Map ein. Ein erneuter Aufruf
++blendet sie wieder aus. Die Quick Map wird weiterhin mit ihrem bisherigen
++Hotkey geöffnet und bedient; die Flaggen folgen dem vorhandenen Zoom und
++Kartenausschnitt. In beiden Radar-Designs wird das vorhandene rote
++`radar_enemyAttack`-Flaggensymbol verwendet.
++
++Die gespeicherten Werte X und Y bestimmen den Kartenort. Z bleibt für die
++Nachvollziehbarkeit in `include/ClaimSpots.h` erhalten. Ped-Modell, Blickrichtung
++und Waffenangaben der ursprünglichen AddPlayerClass-Zeilen werden dafür nicht
++benötigt. Es werden keine Spielerklassen oder Weltobjekte erzeugt.
++
++Zum Einschalten muss die eigene Fraktion als Red County Brotherhood erkannt
++sein. Für andere oder nicht bestätigte Mitglieder erscheint ausschließlich lokal:
++
++```text
++Du bist kein Mitglied der Red County Brotherhood.
++```
++
++Ohne Einschalten gibt es keine Claims-Markierungen. Rollenverlust oder
++Verbindungsende entziehen die Freigabe; ein erneutes Einschalten ist dann nur
++mit bestätigter RCB-Mitgliedschaft möglich. Die bestehende Karte, Servermarker,
++Spieleranzeige und Navigation bleiben bedienbar.
++
++## /speed nur als Polizist
++
++Der automatische Wanted-Dialogablauf ist auf die eigene bestätigte
++SAPD-/LSPD-Mitgliedschaft begrenzt. Bei anderen oder nicht bekannten Fraktionen
++kommt lokal:
++
++```text
++Du bist kein Polizist.
++```
++
++Dabei wird weder `/su` gesendet noch ein Wanted-Dialog beantwortet. Der
++bisherige `/speed ID`- beziehungsweise eindeutige Spielernamen-Ablauf bleibt
++für berechtigte Polizisten erhalten. Bei Verlust der Berechtigung darf ein
++bereits laufender Ablauf keine weiteren Wanted-Antworten absenden.
++
++Die Fraktion benötigt die synchronisierte eigene Statistik der aktuellen Verbindung.
++Ein frischer Online-Eintrag desselben Namens allein erteilt keine Freigabe.
++Zusätzlich werden vorhandene frische Online-Fraktionsinformationen für den
++eigenen Spielernamen zum Abgleich verwendet. Es gibt
++keine manuelle Fraktionsfreigabe über ein frei editierbares Notizfeld und keine
++Berechtigung aus dem gewählten Skin.
++
++Wenn bekannte eigene Statistik und frische Online-Zuordnung einander widersprechen,
++wird keine Fraktionsfreigabe erteilt. Fehlen die Online-Daten, kann die gültige
++eigene Statistik verwendet werden. Nach einem Fraktionswechsel lässt sich der
++aktuelle Spielstand über den vorhandenen Synchronisationsbutton neu einlesen.
++
++## Fertige ASI und Quellcode
++
++Der neue Desktop-Ordner `NLBinder-v0.1.2-r22` enthält `NLBinder.asi`, den
++vollständigen veröffentlichten Binder-Quellcode, `CHANGELOG-GESAMT.txt`, den
++postbaren `FORUM-CHANGELOG.txt` und die bestehenden Unterlagen einschließlich
++`FORUM-INSTALLATION-QUELLCODE`. Vorhandene Desktop-Ordner werden erhalten.
++Der Spielordner wird durch diesen Export nicht geändert. Zum Übernehmen GTA
++vollständig beenden, die ASI ersetzen und das Spiel neu starten.
++
++Version und Credits bleiben v.0.1.2 by perkys & edited by KOBiRO. Die feste
++Browser-Runtime cef156-r1 bleibt erhalten; für die Claims-Funktion wird kein
++neues Browserpaket eingerichtet.
++
++[Prüfumfang](https://github.com/Kobiro57/PerkysBinderChangelog/blob/v0.1.2-r22/docs/review/r22-PRUEFUNG-DE.md) ·
++[Prüfnachweis](https://github.com/Kobiro57/PerkysBinderChangelog/blob/v0.1.2-r22/docs/review/r22-validation.json)
++'''
++
++REVIEW = '''# Prüfumfang r22 – 9. November 2026
++
++Die neuen Regressionen prüfen die 28 festen Flaggenkoordinaten, ausgeschalteten
++Anfangszustand, berechtigtes Umschalten, Entzug der Freigabe, bestehende
++Quick-Map-Projektion sowie unveränderte fremde Kartenmarker. Die verwendete
++Bildressource ist das bereits vorhandene rote ENEMYATTACK-Flaggensymbol aus
++beiden eingebetteten Radar-Paketen.
++
++Die Fraktionsprüfungen behandeln die eigene Identität, bestätigte und fehlende
++Fraktion, RCB sowie SAPD-/LSPD-Aliase, Fraktionswerte aus eigenen Statistiken
++und Abweisung fremder Statistiken. Zusätzliche reine Tests behandeln frische
++Online-Zuordnung, Stats-Fallback und Ablehnung widersprüchlicher bekannter Rollen. Negative /speed-Fälle dürfen weder den
++Wantedkatalog öffnen noch Dialogantworten auslösen; positive Fälle erhalten den
++bisherigen automatischen Ablauf. Neue Claims-Markierungen entstehen nur im
++Quick-Map-Zeichenpfad und nicht über GTA-/Server-Radar- oder Checkpoint-APIs.
++
++Der Paketbau verlangt erfolgreiche Gesamttests und Release-Build, zusätzliche
++Quick-Map- und Statistikparser-Prüfungen sowie den nach dem Helferbau geprüften
++nativen Reconnect-Worker. Der PE-Nachweis prüft x86-DLL, eingebettete Helfer auf
++Bytegleichheit, ZIP-Lizenz und die erhaltene v.0.1.2-Startmeldung.
++
++Unveränderte Browser-, GPS-, Drogenoverlay- und Helferquellen werden gegen den
++veröffentlichten r21-Commit c7b4cb0a55d80cc7a32582cf9d08ed4bb8566f44
++verglichen. Die neue Fraktions-/Speed-/Quick-Map-Integration ist ausdrücklich
++nicht als unveränderte Quelle behandelt. Die frühere aufwendige Browser-
++Download-/Liveprüfung wird für r22 nicht als erneut ausgeführt dargestellt.
++
++Der fokussierte Forum-Quellcodeauszug wird aus dem aktuellen Quellbaum neu
++gebildet und vollständig mit seinen SHA-256-Werten abgeglichen. Die Main-Datei
++enthält nun auch die neue Befehlsanbindung; dies ist eine Quelländerung des
++Prüfauszugs, kein neues Browser-Runtimepaket.
++
++Der neue Desktop-Ordner wird aus den unveränderlichen veröffentlichten Git-Blobs
++gelesen und dateiweise geprüft. Persönliche Konfigurationen, Profile und Logs
++werden nicht mitverteilt. Ein erfolgreicher neuer Sichttest im laufenden Spiel
++wird erst nach einer entsprechenden tatsächlichen Beobachtung dokumentiert.
++'''
++
++HISTORY = '''
++## 28. Nachtrag v0.1.2 / r22 – 9. November 2026
++
++- `/claims` zum Ein-/Ausblenden von 28 vorgegebenen RCB-Flaggenorten auf der
++  vorhandenen Quick Map ergänzt. Alle X/Y/Z-Koordinaten in ClaimSpots.h erhalten;
++  X/Y werden projiziert, AddPlayerClass-Modell/Blickrichtung/Waffen nicht benutzt.
++- Vorhandenes rotes `radar_enemyAttack`-Flaggensymbol in beiden Radar-Designs
++  verwendet. Zoom, Kartenausschnitt und bestehende Marker bleiben erhalten.
++- Aktivierung an die eigene bestätigte Red County Brotherhood-Mitgliedschaft
++  gebunden; andernfalls lokal „Du bist kein Mitglied der Red County Brotherhood.“.
++- Claims standardmäßig unsichtbar und nur nach explizitem Umschalten angezeigt.
++  Rollen-/Verbindungsverlust entzieht die Anzeige. Keine GTA-/Serverblips erzeugt.
++- `/speed` auf bestätigte SAPD-/LSPD-Mitglieder begrenzt; unberechtigt nur lokal
++  „Du bist kein Polizist.“, ohne /su oder Wanted-Dialogantwort. Laufenden Ablauf
++  bei Berechtigungsverlust stoppen.
++- Eigene synchronisierte Fraktionsinformation ergänzt und für die lokale
++  Berechtigungsprüfung verwendet; fremde Stats und Skin-Raten ausgeschlossen.
++- Zusätzliche Koordinaten-, Quick-Map-, Fraktions-/Stats- und Speed-Prüfungen
++  aufgenommen. Tatsächliche Zahlen stehen im r22-Nachweis; kein Live-Test erfunden.
++- Gesamten Quellcode, ASI und Texte als neuen Desktop-Ordner NLBinder-v0.1.2-r22
++  vorgesehen. Version/Credits und Browser-Runtime bleiben unverändert.
++'''
++
++README = '''# NLBinder – PerkysBinderChangelog
++
++Aktueller Stand: **NLBinder v.0.1.2 by perkys & edited by KOBiRO**, r22.
++
++`/claims` schaltet für RCB-Mitglieder 28 feste rote Flaggen auf der bestehenden
++Quick Map ein oder aus. `/speed` ist auf bestätigte SAPD-/LSPD-Mitglieder
++begrenzt; Abweisungen bleiben lokal. Die eigene Fraktionszuordnung wird für
++beide Befehle geprüft.
++
++- [Fertige ASI und Dokumentation](https://github.com/Kobiro57/PerkysBinderChangelog/releases/tag/v0.1.2-r22)
++- [NLBinder.asi](dist/NLBinder-0.1.2-r22/NLBinder.asi)
++- [Bedienung](docs/NLBinder-0.1.2-r22-DE.md)
++- [28 Flaggenorte](include/ClaimSpots.h)
++- [Gesamt-Changelog](docs/review/CHANGELOG-DE.md), [TXT](docs/CHANGELOG-GESAMT.txt)
++- [Forumtext zum Posten](docs/FORUM-CHANGELOG-v0.1.2.txt)
++- [Forum-Installation und Speicherorte](docs/FORUM-INSTALLATION-DE.md)
++- [Alle 236 Runtime-Dateien](docs/FORUM-DATEILISTE.txt)
++- [Eigener Installer-/Browsercode](dist/NLBinder-0.1.2-r22/FORUM-INSTALLATION-QUELLCODE/README.md)
++- [Prüfumfang](docs/review/r22-PRUEFUNG-DE.md), [Ergebnisse](docs/review/r22-validation.json)
++- [Änderungen seit r21](https://github.com/Kobiro57/PerkysBinderChangelog/compare/v0.1.2-r21...v0.1.2-r22)
++- [Originalvergleich](docs/review/DATEIVERGLEICH.md)
++
++Der neue Desktop-Ordner enthält vollständige Binder-Quellen, die fertige ASI
++und Changelogs. Vorherige Ordner und die ursprüngliche Git-Historie bleiben
++erhalten. Der Spielordner wird durch den Export nicht verändert.
++
++GTA vollständig schließen, ASI ersetzen und neu starten. Die Browser-Runtime
++cef156-r1 bleibt erhalten. Historische Browser-/GPS-Nachweise sind von den
++neuen r22-Prüfungen und einem noch ausstehenden Sichttest getrennt dokumentiert.
++'''
++
++def main():
++    (R/'docs/NLBinder-0.1.2-r22-DE.md').write_text(NOTES,encoding='utf-8',newline='\n')
++    (R/'docs/review/r22-PRUEFUNG-DE.md').write_text(REVIEW,encoding='utf-8',newline='\n')
++    (R/'build').mkdir(exist_ok=True)
++    (R/'build/README-GITHUB-r22.md').write_text(README,encoding='utf-8',newline='\n')
++    (R/'docs/review/README-GITHUB.md').write_text(re.sub(r'\]\((docs/|dist/|res/|include/)',r'](../../\1',README),encoding='utf-8',newline='\n')
++    path=R/'docs/review/CHANGELOG-DE.md';text=path.read_text(encoding='utf-8-sig')
++    if '## 28. Nachtrag v0.1.2 / r22' not in text:
++        path.write_text(text.rstrip()+'\n'+HISTORY,encoding='utf-8',newline='\n')
++    path=R/'docs/review/PRUEFUNG-DE.md';text=path.read_text(encoding='utf-8-sig')
++    if '## Aktueller Stand v0.1.2 / r22' not in text:
++        text=text.replace('## Aktueller Stand v0.1.2 / r21','## Vorheriger Stand v0.1.2 / r21',1)
++        first,_,rest=text.partition('\n')
++        text=first+'\n\n## Aktueller Stand v0.1.2 / r22 – 9. November 2026\n\n'+(
++            'RCB-Claims und die lokale Fraktionsprüfung für /speed stehen im\n'
++            '[r22-Prüfumfang](r22-PRUEFUNG-DE.md) und\n'
++            '[Prüfnachweis](r22-validation.json). Frühere Ergebnisse bleiben erhalten.\n')+rest
++        path.write_text(text,encoding='utf-8',newline='\n')
++    print('Documented RCB claims, police speed guard and history section 28')
++
++if __name__=='__main__':main()
+diff --git a/tools/export_full_changelog.py b/tools/export_full_changelog.py
+index d65d07c..19cf7eb 100644
+--- a/tools/export_full_changelog.py
++++ b/tools/export_full_changelog.py
+@@ -22,12 +22,12 @@ def main():
+     source = root / "docs/review/CHANGELOG-DE.md"
+     target = root / "docs/CHANGELOG-GESAMT.txt"
+     text = source.read_text(encoding="utf-8")
+-    required = {f"## {number}. " for number in range(1, 28)}
++    required = {f"## {number}. " for number in range(1, 29)}
+     if not all(marker in text for marker in required):
+-        raise ValueError("Complete change history sections 1-27 required")
++        raise ValueError("Complete change history sections 1-28 required")
+     result = render(text)
+     target.write_text(result, encoding="utf-8-sig", newline="\n")
+-    print(f"Full changelog: {len(result.splitlines())} lines, sections 1-27, {target.name}")
++    print(f"Full changelog: {len(result.splitlines())} lines, sections 1-28, {target.name}")
+ 
+ 
+ if __name__ == "__main__":
+diff --git a/tools/export_source_bundle_revision22.py b/tools/export_source_bundle_revision22.py
+new file mode 100644
+index 0000000..fc3ee2d
+--- /dev/null
++++ b/tools/export_source_bundle_revision22.py
+@@ -0,0 +1,192 @@
++"""Export a verified r22 source snapshot, ASI, automatic-browser manifest and full changelog.
++
++Reads Git blobs without changing Git or the game installation. The destination
++must not exist. Historical release binaries, Git metadata, local build outputs
++and private runtime files are excluded. The proof manifest stays under build/.
++"""
++from pathlib import Path, PurePosixPath
++import argparse
++import hashlib
++import json
++import re
++import subprocess
++
++
++ROOT = Path(__file__).resolve().parents[1]
++RELEASE = "v0.1.2-r22"
++PACKAGE = "dist/NLBinder-0.1.2-r22"
++PRIVATE_PARTS = {
++    ".git", ".vs", ".aws", ".codex", ".agents", "__pycache__", "build",
++    "output", "debug", "release", "obj", "cmakefiles", ".venv", "venv",
++}
++PRIVATE_NAMES = {
++    "keybinder.json", "jobs_data.json", "imgui.ini", ".env", ".git-credentials",
++    "credentials", "id_rsa", "id_ed25519", "nul", "gps.xml",
++}
++PRIVATE_SUFFIXES = {".log", ".obj", ".pdb", ".ilk", ".exp", ".pyc", ".suo", ".user", ".o"}
++
++
++def require(ok, message):
++    if not ok:
++        raise ValueError(message)
++
++
++def digest(data):
++    return hashlib.sha256(data).hexdigest()
++
++
++def git(repo, *args):
++    return subprocess.check_output(["git", *args], cwd=repo)
++
++
++def safe_source_path(relative):
++    path = PurePosixPath(relative)
++    require(path.parts and not path.is_absolute() and ".." not in path.parts,
++            "Unsafe source path: " + relative)
++    require("\\" not in relative and ":" not in relative, "Invalid source path: " + relative)
++    require(not any(part.lower() in PRIVATE_PARTS for part in path.parts[:-1]),
++            "Private/build directory in source snapshot: " + relative)
++    require(path.name.lower() not in PRIVATE_NAMES and path.suffix.lower() not in PRIVATE_SUFFIXES,
++            "Private/runtime file in source snapshot: " + relative)
++
++
++def source_entries(repo, commit):
++    entries = {}
++    for entry in git(repo, "ls-tree", "-r", "-z", commit).split(b"\0"):
++        if not entry:
++            continue
++        metadata, raw_path = entry.split(b"\t", 1)
++        mode, kind, oid = metadata.split()
++        relative = raw_path.decode("utf-8")
++        require(kind == b"blob" and mode in {b"100644", b"100755"},
++                "Unsupported symlink/submodule: " + relative)
++        entries[relative] = oid
++    return entries
++
++
++def read_blobs(repo, entries):
++    oids = sorted(set(entries.values()))
++    process = subprocess.Popen(["git", "cat-file", "--batch"], cwd=repo,
++                               stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
++    output, errors = process.communicate(b"\n".join(oids) + b"\n")
++    require(process.returncode == 0, "Cannot read Git source objects: " + errors.decode("utf-8", "replace"))
++    offset, blobs = 0, {}
++    for oid in oids:
++        end_header = output.find(b"\n", offset)
++        require(end_header >= offset, "Truncated Git source header")
++        header = output[offset:end_header].split()
++        require(len(header) == 3 and header[0] == oid and header[1] == b"blob", "Unexpected source object")
++        size = int(header[2])
++        start, end = end_header + 1, end_header + 1 + size
++        require(output[end:end + 1] == b"\n", "Truncated source file")
++        blobs[oid] = output[start:end]
++        offset = end + 1
++    require(offset == len(output), "Unexpected trailing Git source data")
++    return {relative: blobs[oid] for relative, oid in entries.items()}
++
++
++def main():
++    parser = argparse.ArgumentParser(description=__doc__)
++    parser.add_argument("--destination", required=True, type=Path)
++    parser.add_argument("--repository", type=Path, default=ROOT / "build/github-publication/repository")
++    parser.add_argument("--revision", default="HEAD")
++    parser.add_argument("--binary", type=Path, default=ROOT / "build/Release/NLBinder.asi")
++    parser.add_argument("--manifest", type=Path, default=ROOT / "build/source-export-r22.json")
++    args = parser.parse_args()
++    repo = args.repository.resolve(strict=True)
++    destination = args.destination.resolve()
++    manifest_path = args.manifest.resolve()
++    require(not destination.exists(), "Destination already exists; nothing will be overwritten: " + str(destination))
++    require(destination.parent.is_dir(), "Destination parent must already exist")
++    require(not destination.is_relative_to(repo), "Export must be outside the publication checkout")
++    require(not manifest_path.is_relative_to(destination), "Manifest must remain outside the source export")
++    commit = git(repo, "rev-parse", "--verify", "--end-of-options", args.revision + "^{commit}").decode().strip()
++    require(re.fullmatch("[0-9a-f]{40}", commit), "Unexpected Git revision")
++    entries = source_entries(repo, commit)
++    selected = {}
++    for relative, oid in entries.items():
++        if PurePosixPath(relative).parts[0] == "dist":
++            continue  # Prior ASIs/ZIPs are available through the Git history.
++        safe_source_path(relative)
++        selected[relative] = oid
++    extras = {
++        "NLBinder.asi": PACKAGE + "/NLBinder.asi",
++        "CHANGELOG-GESAMT.txt": "docs/CHANGELOG-GESAMT.txt",
++        "README.md": "docs/BUILD-README.md",
++        "LIESMICH-DE.md": PACKAGE + "/LIESMICH.md",
++        "BUILD-INFO.txt": PACKAGE + "/BUILD-INFO.txt",
++        "PRUEFBERICHT.json": PACKAGE + "/PRUEFBERICHT.json",
++        "SHA256SUMS.txt": PACKAGE + "/SHA256SUMS.txt",
++        "RECONNECT-TEST.json": PACKAGE + "/RECONNECT-TEST.json",
++        "BROWSER-RUNTIME.json": PACKAGE + "/BROWSER-RUNTIME.json",
++        "FORUM-CHANGELOG.txt": "docs/FORUM-CHANGELOG-v0.1.2.txt",
++        "FORUM-INSTALLATION.txt": "docs/FORUM-INSTALLATION-DE.md",
++        "FORUM-DATEILISTE.txt": "docs/FORUM-DATEILISTE.txt",
++    }
++    focus_prefix = PACKAGE + "/FORUM-INSTALLATION-QUELLCODE/"
++    focus_entries = {name[len(PACKAGE) + 1:]: name for name in entries if name.startswith(focus_prefix)}
++    require(focus_entries, "The verified focused forum installer sources are missing")
++    extras.update(focus_entries)
++    for source in extras.values():
++        require(source in entries, "Verified r22 publication file missing: " + source)
++    read_entries = dict(selected)
++    read_entries.update({source: entries[source] for source in extras.values()})
++    files = read_blobs(repo, read_entries)
++    exported = {relative: files[relative] for relative in selected}
++    for target, source in extras.items():
++        exported[target] = files[source]
++    binary = exported["NLBinder.asi"]
++    require(binary == args.binary.read_bytes(), "Published ASI differs from the locally built NLBinder.asi")
++    report = json.loads(exported["PRUEFBERICHT.json"].decode("utf-8-sig"))
++    require(report.get("revision") == RELEASE and report.get("asi") == "NLBinder.asi" and report.get("sha256") == digest(binary)
++            and report.get("bytes") == len(binary) and report.get("embedded_helper_matches") is True,
++            "r22 artifact verification is missing or stale")
++    runtime = json.loads(exported['BROWSER-RUNTIME.json'].decode('utf-8'))
++    runtime_files = {}
++    # r22 installs the pinned browser automatically into Documents on first /forum.
++    require(exported["Keybinder.vcxproj"].count(b"<TargetName>NLBinder</TargetName>") == 2,
++            "Release/Debug project names are not both NLBinder")
++    folded = [relative.casefold() for relative in exported]
++    require(len(folded) == len(set(folded)), "Case-insensitive destination path collision")
++    require(git(repo, "rev-parse", "--verify", "--end-of-options", args.revision + "^{commit}").decode().strip() == commit,
++            "Source revision changed during snapshot reading")
++    # All input and publication checks finish before the first destination write.
++    destination.mkdir()
++    for relative, data in sorted(exported.items()):
++        target = destination / relative
++        require(target.resolve().is_relative_to(destination), "Export escaped the destination")
++        target.parent.mkdir(parents=True, exist_ok=True)
++        target.write_bytes(data)
++    import shutil
++    for relative, source in runtime_files.items():
++        target = destination / relative
++        target.parent.mkdir(parents=True, exist_ok=True)
++        shutil.copyfile(source, target)
++    actual = {path.relative_to(destination).as_posix(): path for path in destination.rglob("*") if path.is_file()}
++    require(set(actual) == set(exported) | set(runtime_files), "Exported file set differs")
++    for relative, data in exported.items():
++        require(actual[relative].read_bytes() == data, "Exported file differs: " + relative)
++        require(not actual[relative].is_symlink(), "Unexpected exported symlink: " + relative)
++    for relative, source in runtime_files.items():
++        with source.open('rb') as stream: before = hashlib.file_digest(stream, 'sha256').hexdigest()
++        with actual[relative].open('rb') as stream: after = hashlib.file_digest(stream, 'sha256').hexdigest()
++        require(before == after, 'Exported runtime differs: ' + relative)
++    manifest = {
++        "release": RELEASE, "source_commit": commit, "destination": str(destination),
++        "exported_files": len(exported) + len(runtime_files),
++        "exported_bytes": sum(map(len, exported.values())) + sum(p.stat().st_size for p in runtime_files.values()),
++        "browser_runtime_files": len(runtime_files),
++        "source_files": len(selected), "all_files_verified": True,
++        "historical_release_binaries_in_export": 0, "private_runtime_files": 0,
++        "asi_bytes": len(binary), "asi_sha256": digest(binary),
++        "changelog_sha256": digest(exported["CHANGELOG-GESAMT.txt"]),
++        "root_file_sources": extras,
++        "files": {relative: digest(data) for relative, data in sorted(exported.items())},
++    }
++    manifest_path.parent.mkdir(parents=True, exist_ok=True)
++    manifest_path.write_text(json.dumps(manifest, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
++    print(json.dumps({key: value for key, value in manifest.items() if key != "files"}, indent=2, ensure_ascii=False))
++
++
++if __name__ == "__main__":
++    main()
+diff --git a/tools/finalize_revision22.py b/tools/finalize_revision22.py
+new file mode 100644
+index 0000000..3f2fd33
+--- /dev/null
++++ b/tools/finalize_revision22.py
+@@ -0,0 +1,54 @@
++"""Export v0.1.2 to a new Desktop folder, preserving every previous export."""
++from pathlib import Path
++import hashlib,json,subprocess,sys
++ROOT=Path(__file__).resolve().parents[1]
++
++def require(ok,message):
++    if not ok:raise ValueError(message)
++
++def sha(path):
++    with path.open('rb') as stream:return hashlib.file_digest(stream,'sha256').hexdigest()
++
++def main():
++    desktop=Path.home()/'Desktop'
++    require(desktop.resolve(strict=True)==ROOT.parent.resolve(strict=True),'Unexpected Desktop location')
++    target=desktop/'NLBinder-v0.1.2-r22'
++    prepared=desktop/'NLBinder-v0.1.2-r22-prepared-20261109'
++    for path in [target,prepared]:
++        require(path.parent.resolve(strict=True)==desktop.resolve(strict=True)
++                and path.resolve().parent==desktop.resolve(strict=True),'Unexpected export path')
++        require(not path.is_symlink() and not path.is_junction(),'Redirected Desktop folder refused')
++        require(not path.exists(),'Existing export is preserved: '+path.name)
++    publication=json.loads((ROOT/'build/revision22-published.json').read_text(encoding='utf-8'))
++    proof=json.loads((ROOT/'build/revision22-package.json').read_text(encoding='utf-8'))
++    require(publication['published'] and publication['tag']=='v0.1.2-r22'
++            and publication['asi_sha256']==proof['asi_sha256'],'Verified publication missing')
++    subprocess.run([sys.executable,str(ROOT/'tools/export_source_bundle_revision22.py'),
++        '--destination',str(prepared),'--revision',publication['commit']],cwd=ROOT,check=True)
++    require(sha(prepared/'NLBinder.asi')==proof['asi_sha256'],'Prepared ASI differs')
++    require(sha(prepared/'CHANGELOG-GESAMT.txt')==proof['changelog_sha256'],'Complete changelog differs')
++    require(sha(prepared/'FORUM-CHANGELOG.txt')==proof['forum_changelog_sha256'],'Postable forum changelog differs')
++    require(sha(prepared/'FORUM-INSTALLATION.txt')==proof['forum_installation_sha256'],'Installer disclosure differs')
++    require(sha(prepared/'FORUM-DATEILISTE.txt')==proof['forum_file_list_sha256'],'Runtime file list differs')
++    focus=prepared/'FORUM-INSTALLATION-QUELLCODE'
++    actual={p.relative_to(focus).as_posix():p for p in focus.rglob('*') if p.is_file()}
++    require(set(actual)==set(proof['forum_review_files']),'Focused installer source set differs')
++    for name,digest in proof['forum_review_files'].items():
++        require(actual[name].resolve().is_relative_to(focus.resolve()) and sha(actual[name])==digest,
++                'Focused installer file differs: '+name)
++    runtime=json.loads((prepared/'BROWSER-RUNTIME.json').read_text(encoding='utf-8'))
++    require(runtime['runtime_id']=='cef156-r1'
++            and runtime['archive_sha256']=='01fc7f1d4dcec644a191e9c63da7088a73aa81a63c9a4c207001f7038a70ff45',
++            'Unchanged automatic browser manifest differs')
++    require(prepared.resolve().parent==desktop.resolve() and target.resolve().parent==desktop.resolve(),
++            'Unsafe final rename')
++    prepared.rename(target)
++    result={'revision':'v0.1.2-r22','desktop_source':str(target),'source_commit':publication['commit'],
++        'asi_sha256':sha(target/'NLBinder.asi'),'all_source_files_verified':True,
++        'focused_forum_source_files_verified':len(actual),'forum_installation_paths_documented':True,
++        'postable_forum_changelog_verified':True,'previous_desktop_exports_modified':False,
++        'game_installation_modified':False}
++    (ROOT/'build/revision22-desktop-export.json').write_text(json.dumps(result,indent=2)+'\n',encoding='utf-8')
++    print(json.dumps(result,indent=2))
++
++if __name__=='__main__':main()
+diff --git a/tools/package_revision22.py b/tools/package_revision22.py
+new file mode 100644
+index 0000000..6981e83
+--- /dev/null
++++ b/tools/package_revision22.py
+@@ -0,0 +1,153 @@
++"""Package the verified v0.1.2 ASI, forum disclosure and inspectable installer sources."""
++from pathlib import Path
++import hashlib,json,re,shutil,subprocess,sys,zipfile
++R=Path(__file__).resolve().parents[1]
++PREVIOUS='c7b4cb0a55d80cc7a32582cf9d08ed4bb8566f44'
++TAG='v0.1.2-r22'
++
++def check(ok,why):
++    if not ok:raise ValueError(why)
++
++def sha(path):
++    with path.open('rb') as stream:return hashlib.file_digest(stream,'sha256').hexdigest()
++
++def main():
++    package=R/'dist/NLBinder-0.1.2-r22'
++    archive=R/'dist/NLBinder-v0.1.2-KOBiRO-r22.zip'
++    check(not package.exists() and not archive.exists(),'Existing v0.1.2 package is preserved; do not overwrite')
++    log_path=R/'build/revision22-tests.log'
++    log=log_path.read_text(encoding='utf-8-sig',errors='replace')
++    check(re.search(r'^Test exit code: 0\s*$',log,re.M) and '[FAIL]' not in log,'Full tests not passing')
++    check('RELEASE_BUILD_EXIT_CODE=0' in (R/'build/revision22-build.log').read_text(errors='replace'),'Release build not passing')
++    suites={}
++    for suite in ['DrugUseTracker','R18Feature','R17Feature','R16Feature','DamageLogRegression','StartupStatsSync','CombatChatBridge','ServerStatsParser','LocalFactionAccess']:
++        found=re.search(suite+r'Tests: (\d+) checks, 0 failures',log)
++        check(found is not None,'Missing passing suite '+suite);suites[suite]=int(found[1])
++    for name,pattern in [('OnlineSettings',r'Online Settings: (\d+) passed, 0 failed'),
++                         ('OnlineOverlayRenderer',r'OnlineOverlayRendererTests: (\d+) passed, 0 failed'),
++                         ('QuickMap',r'QuickMapTests: (\d+) passed, 0 failed')]:
++        found=re.search(pattern,log);check(found is not None,'Missing passing suite '+name);suites[name]=int(found[1])
++    check(suites['DrugUseTracker']>=207,'Existing drug parser regressions missing')
++    check(suites['QuickMap']>149,'Missing claims QuickMap regression checks')
++    check(suites['ServerStatsParser']>156,'Missing own-faction parsing regression checks')
++    check(suites['LocalFactionAccess']>=18,'Missing local/API faction reconciliation checks')
++    check(suites['StartupStatsSync']>401,'Missing speed command and role-loss regression checks')
++    for case in ['TestClaimSpotsMatchAllTwentyEightUserSaves','TestClaimsRequireExplicitToggleAndPreserveServerMarkers',
++                 'TestClaimsUseTheCurrentZoomAndDoNotClampOffscreenFlags',
++                 'TestClaimRenderingUsesBothExistingFlagPacksAndDrawsPlayerLast']:
++        check('[PASS] '+case in log,'Missing passing claims scenario: '+case)
++    check(re.search(r'std::array\s*<\s*ClaimSpot\s*,\s*28\s*>',
++                    (R/'include/ClaimSpots.h').read_text(encoding='utf-8')) is not None,'Expected 28 fixed claim locations')
++    artifact=json.loads((R/'build/revision22-artifact.json').read_text(encoding='utf-8'))
++    asi=R/'build/Release/NLBinder.asi'
++    check(artifact['revision']==TAG and sha(asi)==artifact['sha256'] and artifact['embedded_helper_matches']
++          and artifact['embedded_browser_setup_matches'] and artifact['requested_startup_message_present'],'Artifact proof stale')
++    check(artifact['embedded_browser_setup_sha256']==sha(R/'build/BrowserSetup.exe'),'Installer proof stale')
++    check('libcef.dll' not in [x.lower() for x in artifact['imports']],'CEF must remain outside GTA')
++    worker_path=R/'build/reconnect-worker-tests/result.json'
++    worker=json.loads(worker_path.read_text(encoding='utf-8'))
++    check(worker['failures']==0 and worker['checks']>=83 and worker['nova_cases']==6,'Native reconnect regression failed')
++    check(worker_path.stat().st_mtime>=(R/'build/ReconnectHelper.exe').stat().st_mtime,'Reconnect test predates helper build')
++    lock=json.loads((R/'res/browser-runtime.json').read_text(encoding='utf-8'))
++    check(lock['archive_sha256']=='01fc7f1d4dcec644a191e9c63da7088a73aa81a63c9a4c207001f7038a70ff45',
++          'Browser runtime pin changed')
++    check(len(lock['files'])==236 and sum(x['bytes'] for x in lock['files'])==429252102,'Runtime manifest file set changed')
++    unchanged=['browser/ForumBrowserHost.cpp','src/ForumBrowser.cpp','src/GpsGameAdapter.cpp','src/GpsManager.cpp',
++        'tools/BrowserSetup.cpp','tools/ReconnectHelper.cpp','include/BrowserSetupProtocol.h','include/BrowserRuntimeLock.h',
++        'res/browser-runtime.json','include/DrugUseTracker.h','src/OnlineOverlayController.cpp',
++        'src/OnlineOverlayRenderer.cpp','src/OnlineUI.cpp','src/SettingsManager.cpp',
++        'include/SettingsManager.h','src/MainWindowUI.cpp','include/Version.h']
++    repo=R/'build/github-publication/repository'
++    for name in unchanged:
++        before=subprocess.check_output(['git','show',PREVIOUS+':'+name],cwd=repo)
++        check((R/name).read_bytes().replace(b'\r\n',b'\n')==before.replace(b'\r\n',b'\n'),
++              'Previously tested runtime source changed: '+name)
++    history=(R/'docs/review/CHANGELOG-DE.md').read_text(encoding='utf-8')
++    check(all(f'## {n}. ' in history for n in range(1,29)),'Full history sections 1-28 required')
++    post=R/'docs/FORUM-CHANGELOG-v0.1.2.txt'
++    check('0.1.2' in post.read_text(encoding='utf-8-sig') and 'perkys & edited by KOBiRO' in post.read_text(encoding='utf-8-sig'),
++          'Postable forum changelog has the wrong version or credits')
++    file_list=R/'docs/FORUM-DATEILISTE.txt'
++    listed=file_list.read_text(encoding='utf-8-sig')
++    for item in lock['files']:
++        check(item['path'] in listed and item['sha256'] in listed,'Disclosed runtime file missing: '+item['path'])
++    review_parent=R/'build/revision22-forum-review'
++    review_parent.mkdir(parents=True,exist_ok=True)
++    review=review_parent/'FORUM-INSTALLATION-QUELLCODE'
++    subprocess.run([sys.executable,str(R/'tools/export_forum_installation_review.py'),
++                    '--destination',str(review)],cwd=R,check=True)
++    review_files={}
++    for path in review.rglob('*'):
++        check(not path.is_symlink() and not path.is_junction(),'Redirected focused review file')
++        if path.is_file():
++            check(path.suffix.lower() not in {'.asi','.exe','.dll','.log','.pyc','.obj'},'Unexpected binary/private focused file')
++            review_files[path.relative_to(review).as_posix()]=sha(path)
++    check('tools/BrowserSetup.cpp' in review_files and 'browser/ForumBrowserHost.cpp' in review_files
++          and 'SHA256SUMS.txt' in review_files and 'SOURCE-MANIFEST.json' in review_files,
++          'The focused own installer/browser sources or their checksums are missing')
++    package.mkdir(parents=True)
++    shutil.copyfile(asi,package/'NLBinder.asi')
++    for source,target in [('docs/NLBinder-0.1.2-r22-DE.md','LIESMICH.md'),('docs/CHANGELOG-GESAMT.txt','CHANGELOG-GESAMT.txt'),
++        ('docs/FORUM-CHANGELOG-v0.1.2.txt','FORUM-CHANGELOG.txt'),('docs/FORUM-INSTALLATION-DE.md','FORUM-INSTALLATION.txt'),
++        ('docs/FORUM-DATEILISTE.txt','FORUM-DATEILISTE.txt'),('third_party/miniz/LICENSE','MINIZ-LICENSE.txt'),
++        ('res/browser-runtime.json','BROWSER-RUNTIME.json'),('build/reconnect-worker-tests/result.json','RECONNECT-TEST.json'),
++        ('docs/review/r22-PRUEFUNG-DE.md','PRUEFUMFANG.md')]:
++        shutil.copyfile(R/source,package/target)
++    shutil.copytree(review,package/'FORUM-INSTALLATION-QUELLCODE')
++    public=dict(artifact,asi='NLBinder.asi')
++    (package/'PRUEFBERICHT.json').write_text(json.dumps(public,indent=2)+'\n',encoding='utf-8')
++    (package/'SHA256SUMS.txt').write_text(sha(asi)+'  NLBinder.asi\n',encoding='ascii')
++    (package/'BUILD-INFO.txt').write_text(f'''NLBinder v.0.1.2 by perkys & edited by KOBiRO (r22)
++NLBinder.asi (x86): {asi.stat().st_size} Bytes
++SHA256: {sha(asi)}
++
++Gewuenschte farbige Startmeldung ist im finalen PE enthalten.
++Gesamttests und Release-Build: Exitcode 0. Nativer Reconnect-Worker: {worker['checks']} Checks.
++ASI-Ressourcen 300/301 stimmen mit den gebauten nativen Helfern ueberein.
++Browser-/GPS-/Drogenoverlayquellen und Browsermanifest sind gegen r21 unveraendert geprueft.
++/claims zeigt 28 feste RCB-Flaggen nur auf der QuickMap; eigene Fraktionspruefung.
++/speed ist auf bestaetigte SAPD-/LSPD-Mitglieder begrenzt; Ablehnung bleibt lokal.
++Fruehere Browser-/GPS-Pruefungen sind separat historisch dokumentiert.
++Diese aufwendigen Integrationstests wurden fuer r22 nicht erneut ausgefuehrt.
++Ein neuer r22-GTA-Live-Test wird nicht behauptet.
++
++FORUM-INSTALLATION.txt beschreibt Einrichtung und Speicherorte. Die Dateiliste
++enthaelt alle 236 festgelegten Runtime-Dateien. FORUM-INSTALLATION-QUELLCODE
++enthaelt die eigenen Originalquellen und ihre SHA-256-Nachweise, keine privaten Profile.
++FORUM-CHANGELOG.txt ist der fertige Text fuer die Veroeffentlichung im Forum.
++Der vollstaendige Binder-Quellcode ist im neuen Desktop-Ordner und auf GitHub enthalten.
++Der komplette Drittanbieter-Chromium-/CEF-Upstreamcode wird nicht als enthalten ausgegeben.
++
++Nur NLBinder.asi bei beendetem GTA ersetzen. Browserstand unveraendert: cef156-r1.
++Browser-Download SHA256: {lock['archive_sha256']}
++''',encoding='utf-8-sig')
++    with zipfile.ZipFile(archive,'w',zipfile.ZIP_DEFLATED,compresslevel=6) as zipped:
++        for path in sorted(package.rglob('*')):
++            if path.is_file():zipped.write(path,package.name+'/'+path.relative_to(package).as_posix())
++    with zipfile.ZipFile(archive) as zipped:
++        check(zipped.testzip() is None,'ZIP integrity failed')
++        check(hashlib.sha256(zipped.read(package.name+'/NLBinder.asi')).hexdigest()==sha(asi),'Zipped ASI differs')
++        for name,digest in review_files.items():
++            check(hashlib.sha256(zipped.read(package.name+'/FORUM-INSTALLATION-QUELLCODE/'+name)).hexdigest()==digest,
++                  'Zipped focused installer source differs: '+name)
++        check(not any(x.lower().endswith(('.log','.dll','.exe','.obj','.pyc')) for x in zipped.namelist()),
++              'Runtime binary or private data in package')
++    proof={'revision':TAG,'date':'2026-11-09','asi_bytes':asi.stat().st_size,'asi_sha256':sha(asi),
++        'version_and_credit':artifact['version_and_credit'],'requested_startup_message_present':True,
++        'embedded_browser_setup_sha256':artifact['embedded_browser_setup_sha256'],
++        'full_test_suite_exit_code':0,'full_test_log_sha256':sha(log_path),'release_build_exit_code':0,
++        'focused_checks':suites,'claim_spot_count':28,'claims_quickmap_only':True,'local_faction_guards_tested':True,'native_reconnect_checks':worker['checks'],'native_reconnect_nova_cases':worker['nova_cases'],
++        'unchanged_prior_tested_sources':unchanged,'unchanged_sources_baseline':PREVIOUS,
++        'previous_browser_gps_validation':'r18-validation.json','browser_gps_native_integration_rerun':False,
++        'live_gta_gameplay_test_performed':False,'changelog_sections':28,'changelog_sha256':sha(R/'docs/CHANGELOG-GESAMT.txt'),
++        'forum_changelog_sha256':sha(post),'forum_installation_sha256':sha(R/'docs/FORUM-INSTALLATION-DE.md'),
++        'forum_file_list_sha256':sha(file_list),'forum_runtime_files_disclosed':len(lock['files']),
++        'forum_review_files':review_files,'forum_review_file_count':len(review_files),
++        'archive':archive.name,'archive_bytes':archive.stat().st_size,'archive_sha256':sha(archive),'archive_integrity_checked':True,
++        'browser_download_url':lock['download_url'],'browser_download_sha256':lock['archive_sha256'],'browser_download_bytes':lock['archive_bytes']}
++    for target in ['build/revision22-package.json','docs/review/r22-validation.json']:
++        (R/target).write_text(json.dumps(proof,indent=2)+'\n',encoding='utf-8')
++    compact=dict(proof,forum_review_files='Recorded '+str(len(review_files))+' verified source/document files')
++    print(json.dumps(compact,indent=2))
++
++if __name__=='__main__':main()
+diff --git a/tools/publish_revision22.py b/tools/publish_revision22.py
+new file mode 100644
+index 0000000..9250bcb
+--- /dev/null
++++ b/tools/publish_revision22.py
+@@ -0,0 +1,279 @@
++"""Prepare/publish only the authorized r22 update to Kobiro57/PerkysBinderChangelog.
++
++Uses the existing Git credential manager in memory; never logs or stores tokens.
++Large Chromium binaries belong in the release asset, not Git history.
++"""
++from pathlib import Path, PurePosixPath
++import argparse
++import hashlib
++import json
++import os
++import re
++import shutil
++import subprocess
++import urllib.request
++import urllib.error
++
++ROOT=Path(__file__).resolve().parents[1]
++REPO=ROOT/'build/github-publication/repository'
++URL='https://github.com/Kobiro57/PerkysBinderChangelog'
++API='https://api.github.com/repos/Kobiro57/PerkysBinderChangelog'
++TAG='v0.1.2-r22'
++PREVIOUS='c7b4cb0a55d80cc7a32582cf9d08ed4bb8566f44'
++PACKAGE='dist/NLBinder-0.1.2-r22'
++BASE='original-archive-92ce219'
++GENERATED={'docs/review/SOURCE-COMPARISON.json','docs/review/DATEIVERGLEICH.md',
++ 'docs/review/DIFFSTAT.txt','docs/review/first-party-changes.patch',
++ 'docs/review/REVISION22-DIFFSTAT.txt','docs/review/revision22-changes.patch'}
++PRIVATE_DIRS={'.git','.vs','__pycache__','output','debug','release','obj','cmakefiles','.codex','.agents','.aws'}
++PRIVATE_NAMES={'keybinder.json','jobs_data.json','imgui.ini','gps.xml','.env','.git-credentials','nul'}
++PRIVATE_SUFFIXES={'.obj','.pdb','.ilk','.exp','.log','.pyc','.suo','.user','.o'}
++PROGRAM=['src','browser','tests','tools','res','include/*.h','Keybinder.rc','Keybinder.vcxproj','Keybinder.sln']
++
++def require(ok,message):
++    if not ok:raise ValueError(message)
++
++def digest(data):return hashlib.sha256(data).hexdigest()
++
++def filehash(path):
++    with path.open('rb') as f:return hashlib.file_digest(f,'sha256').hexdigest()
++
++def git(*args,input=None):
++    p=subprocess.run(['git',*args],cwd=REPO,input=input,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
++    if p.returncode:raise RuntimeError('Git failed: '+str(args[:3])+': '+p.stderr.decode('utf-8','replace')[:1500])
++    return p.stdout
++
++def write(relative,data):
++    p=REPO/relative;p.parent.mkdir(parents=True,exist_ok=True)
++    p.write_bytes(data.encode('utf-8') if isinstance(data,str) else data)
++
++def paths(revision):
++    entries={}
++    if revision==':':
++        records=git('ls-files','--stage','-z').split(b'\0')
++        for record in records:
++            if not record:continue
++            meta,name=record.split(b'\t',1);mode,oid,stage=meta.split()
++            require(stage==b'0' and mode in {b'100644',b'100755'},'Unmerged/link entry')
++            entries[name.decode()]=oid
++    else:
++        for record in git('ls-tree','-r','-z',revision).split(b'\0'):
++            if not record:continue
++            meta,name=record.split(b'\t',1);mode,kind,oid=meta.split()
++            require(kind==b'blob' and mode in {b'100644',b'100755'},'Submodule/link entry')
++            entries[name.decode()]=oid
++    return entries
++
++def blobs(entries):
++    oids=sorted(set(entries.values()))
++    process=subprocess.Popen(['git','cat-file','--batch'],cwd=REPO,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
++    raw,err=process.communicate(b'\n'.join(oids)+b'\n')
++    require(process.returncode==0,'Cannot read source blobs')
++    values={};at=0
++    for oid in oids:
++        end=raw.index(b'\n',at);header=raw[at:end].split()
++        require(header[0]==oid and header[1]==b'blob','Invalid blob batch')
++        size=int(header[2]);at=end+1;values[oid]=raw[at:at+size];at+=size+1
++    require(at==len(raw),'Trailing source bytes')
++    return {name:values[oid] for name,oid in entries.items()}
++
++def allowed(relative):
++    p=PurePosixPath(relative)
++    return not (p.is_absolute() or '..' in p.parts or ':' in relative or '\\' in relative
++      or any(x.lower() in PRIVATE_DIRS for x in p.parts[:-1])
++      or p.name.lower() in PRIVATE_NAMES or p.suffix.lower() in PRIVATE_SUFFIXES)
++
++def historical(relative):
++    return bool(re.fullmatch(r'docs/review/(REVISION(?:[4-9]|1[0-9]|2[01])-DIFFSTAT\.txt|revision(?:[4-9]|1[0-9]|2[01])-changes\.patch)',relative))
++
++def stage():
++    require(git('remote','get-url','origin').decode().strip().removesuffix('.git')==URL,'Wrong target repository')
++    require(git('rev-parse','HEAD').decode().strip()==PREVIOUS,'Publication must start on the known r21 commit')
++    if git('status','--porcelain'):
++        # Resume only an explicitly recorded, inspected preparation tree.
++        checkpoint=json.loads((ROOT/'build/revision22-staged-owned.json').read_text())
++        require(git('write-tree').decode().strip()==checkpoint['staged_tree'] and not git('diff','--name-only'),
++                'Publication checkout changed outside the recorded preparation')
++    proof=json.loads((ROOT/'build/revision22-package.json').read_text())
++    require(proof['revision']==TAG and filehash(ROOT/'build/Release/NLBinder.asi')==proof['asi_sha256'],'Package proof stale')
++    original_entries=paths(BASE)
++    previous_entries=paths('HEAD')
++    for start in ['src','tests','tools','docs','res','browser','third_party/miniz']:
++        for parent,dirs,names in os.walk(ROOT/start):
++            dirs[:]=[x for x in dirs if x.lower() not in PRIVATE_DIRS]
++            for name in names:
++                path=Path(parent)/name;relative=path.relative_to(ROOT).as_posix()
++                if relative in GENERATED or historical(relative) or not allowed(relative):continue
++                require(not path.is_symlink() and path.stat().st_size<90*1024*1024,'Unexpected source link/large binary: '+relative)
++                require(path.suffix.lower() not in {'.asi','.exe','.dll','.lib'},'Binary in first-party source: '+relative)
++                write(relative,path.read_bytes())
++    for path in (ROOT/'include').glob('*.h'):write(path.relative_to(ROOT).as_posix(),path.read_bytes())
++    for relative in previous_entries:
++        if relative.startswith(('include/','third_party/')) and len(PurePosixPath(relative).parts)>2:
++            source=ROOT/relative
++            require(source.is_file() and allowed(relative),'Missing required dependency '+relative)
++            write(relative,source.read_bytes())
++    for name in ['.gitignore','.gitattributes','Keybinder.rc','Keybinder.sln','Keybinder.vcxproj']:
++        write(name,(ROOT/name).read_bytes())
++    write('README.md',(ROOT/'build/README-GITHUB-r22.md').read_bytes())
++    for path in (ROOT/PACKAGE).rglob('*'):
++        if path.is_file():
++            relative=path.relative_to(ROOT).as_posix()
++            require(allowed(relative) and not path.is_symlink(),'Unexpected packaged file: '+relative)
++            write(relative,path.read_bytes())
++    publication=json.loads((ROOT/'docs/review/PUBLICATION.json').read_text())
++    publication.update(release=TAG,previous_release='v0.1.2-r21',previous_published_commit=PREVIOUS,
++      asi_sha256=proof['asi_sha256'],history_note='Original and dependency imports remain intact. r22 is a subsequent update; no history is rewritten.',
++      complete_runtime_asset=proof['archive'],complete_runtime_sha256=proof['archive_sha256'])
++    write('docs/review/PUBLICATION.json',json.dumps(publication,indent=2)+'\n')
++    git('add','--all')
++    # Patches describe program changes and avoid recursively including their own bytes.
++    write('docs/review/first-party-changes.patch',git('diff','--cached','--binary','build-dependencies-baseline','--',*PROGRAM))
++    write('docs/review/DIFFSTAT.txt',git('diff','--cached','--stat','build-dependencies-baseline','--',*PROGRAM))
++    write('docs/review/revision22-changes.patch',git('diff','--cached','--binary',PREVIOUS,'--',*PROGRAM))
++    write('docs/review/REVISION22-DIFFSTAT.txt',git('diff','--cached','--stat',PREVIOUS,'--',*PROGRAM))
++    git('add','--all')
++    current_entries=paths(':')
++    selected=lambda name:not name.startswith('dist/') and name not in GENERATED and not historical(name)
++    before=blobs({p:o for p,o in original_entries.items() if selected(p)})
++    after=blobs({p:o for p,o in current_entries.items() if selected(p)})
++    changes=[]
++    for name in sorted(before.keys()|after.keys()):
++        b=before.get(name);a=after.get(name)
++        if a==b:continue
++        changes.append({'path':name,'status':'added' if b is None else 'deleted' if a is None else 'modified',
++          'dependency':name.startswith(('include/plugin-sdk/','include/RakHook/','third_party/miniz/')),
++          'line_endings_only':a is not None and b is not None and a.replace(b'\r\n',b'\n')==b.replace(b'\r\n',b'\n'),
++          'before_sha256':digest(b) if b is not None else None,'after_sha256':digest(a) if a is not None else None})
++    record={'original_archive':'NLBinder-master.zip','original_sha256':'a328e78eea63420e9bfe9c084883100177fe0fd9c2d62c4fcaef38c0a44801e9',
++      'original_archive_commit_comment':'92ce21971bee2d166d830e23ad20950f1dc98921','release':TAG,'release_asi_sha256':proof['asi_sha256'],
++      'baseline_tag':BASE,'baseline_commit':git('rev-parse',BASE+'^{commit}').decode().strip(),
++      'hash_scope':'Exact Git blob bytes in original tag versus staged r22 source; generated comparisons and release binaries excluded.',
++      'generated_paths_excluded':sorted(GENERATED),'historical_revision_patches_excluded':True,
++      'baseline_files':len(before),'current_files':len(after),'changes':changes}
++    write('docs/review/SOURCE-COMPARISON.json',json.dumps(record,indent=2,ensure_ascii=False)+'\n')
++    relevant=[x for x in changes if not x['dependency'] and not x['line_endings_only']]
++    lines=['# Dateivergleich zum Original','',
++      'Verglichen werden die unveränderlichen Git-Blobs des Tags `original-archive-92ce219` mit den gestagten r22-Quellen.',
++      'Die Archivherkunft bleibt dokumentiert; diese Hashes beziehen sich ausdrücklich auf Git-Blobs, nicht neu eingelesene ZIP-Rohbytes.',
++      'Generierte Vergleichsdateien, alte Revisionspatches und Binärpakete sind aus diesem rekursionsfreien Vergleich ausgeschlossen.',
++      'Alle betrachteten Änderungen stehen in [SOURCE-COMPARISON.json](SOURCE-COMPARISON.json).','',
++      '| Status | Datei |','| --- | --- |']
++    for item in relevant:lines.append('| '+item['status']+' | ['+item['path']+'](../../'+item['path']+') |')
++    write('docs/review/DATEIVERGLEICH.md','\n'.join(lines)+'\n')
++    git('add','--all')
++    verify_index(previous_entries)
++    result={'prepared':True,'previous_commit':PREVIOUS,'staged_tree':git('write-tree').decode().strip(),
++      'source_changes':len(changes),'first_party_content_changes':len(relevant),'asi_sha256':proof['asi_sha256'],
++      'changed_paths':len(git('diff','--cached','--name-only').decode().splitlines())}
++    (ROOT/'build/revision22-publication-ready.json').write_text(json.dumps(result,indent=2)+'\n')
++    (ROOT/'build/revision22-staged-owned.json').write_text(json.dumps({'staged_tree':result['staged_tree'],
++        'reason':'Successfully prepared and verified r22 source tree; safe resume requires this exact tree.'},indent=2)+'\n')
++    print(json.dumps(result,indent=2))
++
++def verify_index(previous_entries=None):
++    entries=paths(':')
++    previous_entries=previous_entries or paths(PREVIOUS)
++    for name in entries:
++        require(allowed(name),'Private or generated build data in publication: '+name)
++        require(not name.startswith('NLBinder/Browser/'),'Loose Chromium runtime must not enter Git')
++        if historical(name):require(entries[name]==previous_entries[name],'Historical review patch changed: '+name)
++    proof=json.loads((ROOT/'build/revision22-package.json').read_text())
++    require(digest(git('show',':'+PACKAGE+'/NLBinder.asi'))==proof['asi_sha256'],'Published ASI differs')
++    require(git('show',':docs/CHANGELOG-GESAMT.txt')==(ROOT/'docs/CHANGELOG-GESAMT.txt').read_bytes(),'Published full changelog differs')
++    for name in ['include/LocalFactionAccess.h','tests/LocalFactionAccessTests.cpp',
++                 'include/OnlineDataManager.h','src/OnlineDataManager.cpp','tests/OnlineDataManagerTests.cpp',
++                 'src/StartupStatsSync.cpp','tests/StartupStatsSyncTests.cpp',
++                 'include/ClaimSpots.h','include/FactionAccess.h','include/QuickMap.h','src/QuickMap.cpp',
++                 'include/SAMPBridge.h','src/SpeedTicketBridge.cpp','include/ServerStatsSnapshot.h',
++                 'tests/QuickMapTests.cpp','tests/SAMPBridgeTests.cpp','tests/ServerStatsParserTests.cpp',
++                 'include/Version.h','src/SAMPBridge.cpp','src/MainWindowUI.cpp',
++                 'include/DrugUseTracker.h','tests/DrugUseTrackerTests.cpp',
++                 'tools/BrowserSetup.cpp','browser/ForumBrowserHost.cpp','tools/export_forum_installation_review.py',
++                 'docs/FORUM-INSTALLATION-DE.md','docs/FORUM-DATEILISTE.txt','docs/FORUM-CHANGELOG-v0.1.2.txt',
++                 'include/DrugUseTracker.h','tests/DrugUseTrackerTests.cpp','src/Main.cpp',
++                 'include/SettingsManager.h','src/SettingsManager.cpp','include/OnlineOverlayController.h',
++                 'src/OnlineOverlayController.cpp','src/OnlineOverlayRenderer.cpp','src/OnlineUI.cpp',
++                 'tests/OnlineOverlayRendererTests.cpp','tests/OnlineSettingsTests.cpp']:
++        require(git('show',':'+name)==(ROOT/name).read_bytes().replace(b'\r\n',b'\n'),'Published source differs: '+name)
++    prefix=PACKAGE+'/FORUM-INSTALLATION-QUELLCODE/'
++    focused={name:oid for name,oid in entries.items() if name.startswith(prefix)}
++    require({name[len(prefix):] for name in focused}==set(proof['forum_review_files']),
++            'Published focused source file set differs')
++    for name,data in blobs(focused).items():
++        require(digest(data)==proof['forum_review_files'][name[len(prefix):]],
++                'Published focused original source differs: '+name)
++    # These are checksum-verified copies of existing original sources. Keep
++    # their formatting intact instead of rewriting inherited whitespace.
++    git('diff','--cached','--check','--','.',':(exclude)*.patch',':(exclude)third_party/miniz',
++        ':(exclude)dist/NLBinder-0.1.2-r22/FORUM-INSTALLATION-QUELLCODE')
++    require(not git('ls-files','--others','--exclude-standard'),'Unexpected untracked publication file')
++
++def credential():
++    env=dict(os.environ,GCM_INTERACTIVE='Never',GIT_TERMINAL_PROMPT='0')
++    p=subprocess.run(['git','credential','fill'],cwd=REPO,input=b'protocol=https\nhost=github.com\n\n',
++        stdout=subprocess.PIPE,stderr=subprocess.PIPE,env=env)
++    require(p.returncode==0,'Existing GitHub credential not available')
++    fields=dict(line.split('=',1) for line in p.stdout.decode().splitlines() if '=' in line)
++    require(fields.get('password'),'Credential manager returned no token')
++    return fields['password']
++
++def api(token,url,method='GET',data=None,content_type='application/json'):
++    require(url.startswith(('https://api.github.com/','https://uploads.github.com/repos/Kobiro57/PerkysBinderChangelog/')),'Unexpected API host')
++    body=json.dumps(data).encode() if data is not None and content_type=='application/json' else data
++    req=urllib.request.Request(url,data=body,method=method,headers={'Authorization':'Bearer '+token,
++      'Accept':'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28','User-Agent':'NLBinder-authorized-r22-publication','Content-Type':content_type})
++    try:
++        with urllib.request.urlopen(req,timeout=600) as response:return json.load(response)
++    except urllib.error.HTTPError as e:
++        raise RuntimeError('GitHub API status '+str(e.code)+' for '+url.split('?')[0]) from None
++
++def publish():
++    proof=json.loads((ROOT/'build/revision22-package.json').read_text())
++    prepared=json.loads((ROOT/'build/revision22-publication-ready.json').read_text())
++    token=credential()
++    user=api(token,'https://api.github.com/user')
++    require(user['login'].casefold()=='kobiro57','Wrong GitHub account')
++    head=git('rev-parse','HEAD').decode().strip()
++    if head==PREVIOUS:
++        require(git('write-tree').decode().strip()==prepared['staged_tree'],'Staged source changed after review')
++        verify_index()
++        email=str(user['id'])+'+'+user['login']+'@users.noreply.github.com'
++        git('-c','user.name='+user['login'],'-c','user.email='+email,'commit','-m',
++          'r22: add RCB claims on QuickMap and police-only speed tickets')
++        head=git('rev-parse','HEAD').decode().strip()
++    require(git('rev-parse','HEAD^').decode().strip()==PREVIOUS,'Unexpected parent commit')
++    require(not git('status','--porcelain'),'Publication checkout not clean')
++    tag_exists=subprocess.run(['git','rev-parse','--verify','refs/tags/'+TAG],cwd=REPO,stdout=subprocess.PIPE,stderr=subprocess.PIPE).returncode==0
++    if not tag_exists:git('tag',TAG,head)
++    require(git('rev-parse',TAG+'^{commit}').decode().strip()==head,'Release tag points elsewhere')
++    git('push','--atomic','origin','HEAD:main','refs/tags/'+TAG)
++    require(api(token,API+'/commits/main')['sha']==head,'Remote main commit differs')
++    releases=api(token,API+'/releases?per_page=100')
++    release=next((r for r in releases if r['tag_name']==TAG),None)
++    body=(ROOT/'docs/FORUM-CHANGELOG-v0.1.2.txt').read_text(encoding='utf-8-sig')
++    body+='\nASI SHA-256: `'+proof['asi_sha256']+'`\n\nZIP SHA-256: `'+proof['archive_sha256']+'`\n'
++    if release is None:release=api(token,API+'/releases','POST',{'tag_name':TAG,'target_commitish':head,'name':'NLBinder v0.1.2 by perkys & edited by KOBiRO – r22','body':body,'draft':False,'prerelease':False})
++    archive=ROOT/'dist'/proof['archive']
++    require(filehash(archive)==proof['archive_sha256'],'Release ZIP changed')
++    assets=api(token,API+'/releases/'+str(release['id'])+'/assets')
++    asset=next((a for a in assets if a['name']==archive.name),None)
++    if asset is None:
++        upload='https://uploads.github.com/repos/Kobiro57/PerkysBinderChangelog/releases/'+str(release['id'])+'/assets?name='+archive.name
++        asset=api(token,upload,'POST',archive.read_bytes(),'application/zip')
++    require(asset['state']=='uploaded' and asset['size']==archive.stat().st_size,'Release asset incomplete')
++    remote_digest=asset.get('digest')
++    require(remote_digest=='sha256:'+proof['archive_sha256'],'GitHub release asset digest differs')
++    result={'published':True,'repository':URL,'commit':head,'commit_url':URL+'/commit/'+head,
++      'tag':TAG,'release_url':release['html_url'],'download_url':asset['browser_download_url'],
++      'asset_bytes':asset['size'],'asset_sha256_verified':True,'asi_sha256':proof['asi_sha256']}
++    (ROOT/'build/revision22-published.json').write_text(json.dumps(result,indent=2)+'\n')
++    print(json.dumps(result,indent=2))
++
++if __name__=='__main__':
++    parser=argparse.ArgumentParser(description=__doc__)
++    modes=parser.add_mutually_exclusive_group(required=True)
++    modes.add_argument('--prepare',action='store_true');modes.add_argument('--publish',action='store_true')
++    args=parser.parse_args()
++    if args.prepare:stage()
++    else:publish()
+diff --git a/tools/report_revision22_log.py b/tools/report_revision22_log.py
+new file mode 100644
+index 0000000..83cb259
+--- /dev/null
++++ b/tools/report_revision22_log.py
+@@ -0,0 +1,10 @@
++"""Show a compact result from the fixed r22 log paths."""
++from pathlib import Path
++import sys
++root=Path(__file__).resolve().parents[1]
++mode=sys.argv[1]
++if mode not in {'tests','build'}:raise ValueError('Unexpected log kind')
++lines=(root/('build/revision22-'+mode+'.log')).read_text(encoding='utf-8-sig',errors='replace').splitlines()
++important=[line for line in lines if '[FAIL]' in line or 'error ' in line.lower() or 'DrugUseTrackerTests:' in line
++           or 'Online Settings:' in line or 'OnlineOverlayRendererTests:' in line or 'Test exit code:' in line]
++for line in (important if mode=='tests' else lines[-10:]):print(line)
+diff --git a/tools/run_revision22.bat b/tools/run_revision22.bat
+new file mode 100644
+index 0000000..86b01b7
+--- /dev/null
++++ b/tools/run_revision22.bat
+@@ -0,0 +1,69 @@
++@echo off
++setlocal
++pushd "%~dp0.." || exit /b 2
++if not exist build mkdir build
++if not defined NLBINDER_PYTHON set "NLBINDER_PYTHON=%USERPROFILE%\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe"
++if /i "%~1"=="tests" goto tests
++if /i "%~1"=="build" goto build
++if /i "%~1"=="worker" goto worker
++if /i "%~1"=="document" goto document
++if /i "%~1"=="package" goto package
++if /i "%~1"=="prepare-publication" goto preparepublication
++if /i "%~1"=="publish" goto publish
++if /i "%~1"=="verify-public" goto verifypublic
++if /i "%~1"=="export" goto export
++set "NLBINDER_RESULT=2"
++goto finish
++:tests
++call tools\run_tests.bat > build\revision22-tests.log 2>&1
++set "NLBINDER_RESULT=%ERRORLEVEL%"
++"%NLBINDER_PYTHON%" tools\report_revision22_log.py tests
++goto finish
++:build
++call tools\build_release.bat > build\revision22-build.log 2>&1
++set "NLBINDER_RESULT=%ERRORLEVEL%"
++>>build\revision22-build.log echo RELEASE_BUILD_EXIT_CODE=%NLBINDER_RESULT%
++"%NLBINDER_PYTHON%" tools\report_revision22_log.py build
++goto finish
++:worker
++"%NLBINDER_PYTHON%" tools\test_reconnect_worker.py > build\revision22-reconnect.log 2>&1
++set "NLBINDER_RESULT=%ERRORLEVEL%"
++type build\revision22-reconnect.log
++goto finish
++:document
++"%NLBINDER_PYTHON%" tools\document_revision22.py
++if errorlevel 1 goto failed
++"%NLBINDER_PYTHON%" tools\export_full_changelog.py
++set "NLBINDER_RESULT=%ERRORLEVEL%"
++goto finish
++:package
++"%NLBINDER_PYTHON%" tools\verify_revision22_artifact.py
++if errorlevel 1 goto failed
++"%NLBINDER_PYTHON%" tools\document_revision22.py
++if errorlevel 1 goto failed
++"%NLBINDER_PYTHON%" tools\export_full_changelog.py
++if errorlevel 1 goto failed
++"%NLBINDER_PYTHON%" tools\package_revision22.py
++set "NLBINDER_RESULT=%ERRORLEVEL%"
++goto finish
++:preparepublication
++"%NLBINDER_PYTHON%" tools\publish_revision22.py --prepare
++set "NLBINDER_RESULT=%ERRORLEVEL%"
++goto finish
++:publish
++"%NLBINDER_PYTHON%" tools\publish_revision22.py --publish
++set "NLBINDER_RESULT=%ERRORLEVEL%"
++goto finish
++:export
++"%NLBINDER_PYTHON%" tools\finalize_revision22.py
++set "NLBINDER_RESULT=%ERRORLEVEL%"
++goto finish
++:verifypublic
++"%NLBINDER_PYTHON%" tools\verify_revision22_public.py
++set "NLBINDER_RESULT=%ERRORLEVEL%"
++goto finish
++:failed
++set "NLBINDER_RESULT=2"
++:finish
++popd
++exit /b %NLBINDER_RESULT%
+diff --git a/tools/run_tests.bat b/tools/run_tests.bat
+index dccbbcb..cc72ac5 100644
+--- a/tools/run_tests.bat
++++ b/tools/run_tests.bat
+@@ -55,6 +55,7 @@ set "KEYBINDER_TEST_RSP=%~dp0..\build\KeybinderTests.rsp"
+     echo "%~dp0..\tests\R17FeatureTests.cpp"
+     echo "%~dp0..\tests\R18FeatureTests.cpp"
+     echo "%~dp0..\tests\DrugUseTrackerTests.cpp"
++    echo "%~dp0..\tests\LocalFactionAccessTests.cpp"
+     echo "%~dp0..\tests\ImGuiOverlayTests.cpp"
+     echo "%~dp0..\tests\HitmarkerTests.cpp"
+     echo "%~dp0..\tests\HitsoundTests.cpp"
+diff --git a/tools/verify_revision22_artifact.py b/tools/verify_revision22_artifact.py
+new file mode 100644
+index 0000000..911ee5b
+--- /dev/null
++++ b/tools/verify_revision22_artifact.py
+@@ -0,0 +1,58 @@
++"""Verify the r22 PE and embedded helpers without loading executable code."""
++import hashlib,json
++from pathlib import Path
++import sys
++from verify_revision18_artifact import PE, require
++
++def main():
++    root = Path(__file__).resolve().parents[1]
++    asi = PE(sys.argv[1] if len(sys.argv) > 1 else root / "build/Release/NLBinder.asi")
++    helper = PE(root / "build/ReconnectHelper.exe")
++    require(asi.machine == helper.machine == 0x14C, "Expected both binaries to be x86")
++    require(asi.characteristics & 0x2000, "ASI must be a DLL")
++    require(not helper.characteristics & 0x2000, "Worker must be an executable")
++    require(asi.resource(10, 300) == helper.data, "Embedded helper differs from built helper")
++    setup = PE(root / "build/BrowserSetup.exe")
++    require(setup.machine == 0x14C and not setup.characteristics & 0x2000, "Installer must be x86 EXE")
++    require(asi.resource(10, 301) == setup.data, "Embedded browser installer differs")
++    require(b"asInvoker" in setup.resource(24, 1), "Browser installer must not request elevation")
++    require(asi.resource(10, 302) == (root / "third_party/miniz/LICENSE").read_bytes(), "Missing embedded miniz notice")
++    imports = asi.imports()
++    require("libcef.dll" not in [name.lower() for name in imports], "Chromium must remain out of the game process")
++    require(not any(name.lower().startswith(("vcruntime", "msvcp", "ucrtbased")) for name in imports),
++            "Unexpected external C++ runtime dependency")
++    startup = (b"{33CCFF}[NLBinder]{FFFFFF} NLBinder v.0.1.2 by perkys & edited by KOBiRO "
++               b"wurde {00CC00}erfolgreich{FFFFFF} gestartet!")
++    require(startup in asi.data, "The requested v0.1.2 startup message is missing from the ASI")
++    require(b"NLBinder v.0.1.2 by perkys & edited by KOBiRO" in asi.data,
++            "The matching version/credit caption is missing")
++    try:
++        display_path = asi.path.resolve().relative_to(root).as_posix()
++    except ValueError:
++        display_path = asi.path.name
++    result = {
++        "revision": "v0.1.2-r22",
++        "asi": display_path,
++        "bytes": len(asi.data),
++        "format": "PE32 x86 DLL",
++        "sha256": hashlib.sha256(asi.data).hexdigest(),
++        "imports": imports,
++        "requested_startup_message_present": True,
++        "version_and_credit": "NLBinder v.0.1.2 by perkys & edited by KOBiRO",
++        "embedded_helper_id": 300,
++        "embedded_helper_bytes": len(helper.data),
++        "helper_sha256": hashlib.sha256(helper.data).hexdigest(),
++        "embedded_helper_matches": True,
++        "embedded_browser_setup_id": 301,
++        "embedded_browser_setup_bytes": len(setup.data),
++        "embedded_browser_setup_sha256": hashlib.sha256(setup.data).hexdigest(),
++        "embedded_browser_setup_matches": True,
++        "browser_setup_as_invoker": True,
++    }
++    report = json.dumps(result, indent=2)
++    (root / "build/revision22-artifact.json").write_text(report + "\n", encoding="utf-8")
++    print(report)
++
++
++if __name__ == "__main__":
++    main()
+diff --git a/tools/verify_revision22_public.py b/tools/verify_revision22_public.py
+new file mode 100644
+index 0000000..217eb35
+--- /dev/null
++++ b/tools/verify_revision22_public.py
+@@ -0,0 +1,35 @@
++"""Verify the published r22 viewer and release metadata without using a credential."""
++from pathlib import Path
++import json,posixpath,re,urllib.request
++R=Path(__file__).resolve().parents[1]
++BASE='https://api.github.com/repos/Kobiro57/PerkysBinderChangelog'
++
++def get(path):
++    request=urllib.request.Request(BASE+path,headers={'User-Agent':'NLBinder-r22-anonymous-verification',
++        'Accept':'application/vnd.github+json'})
++    with urllib.request.urlopen(request,timeout=45) as response:return json.load(response)
++
++def require(ok,message):
++    if not ok:raise ValueError(message)
++
++def main():
++    publication=json.loads((R/'build/revision22-published.json').read_text(encoding='utf-8'))
++    proof=json.loads((R/'build/revision22-package.json').read_text(encoding='utf-8'))
++    require(get('')['private'] is False,'Repository is not anonymously readable')
++    require(get('/commits/main')['sha']==publication['commit'],'Remote main differs')
++    release=get('/releases/tags/v0.1.2-r22')
++    asset=next(a for a in release['assets'] if a['name']==proof['archive'])
++    require(asset['digest']=='sha256:'+proof['archive_sha256'] and asset['size']==proof['archive_bytes'],
++            'Release asset digest or size differs')
++    repository=R/'build/github-publication/repository'
++    for name in ['README.md','docs/NLBinder-0.1.2-r22-DE.md','docs/review/r22-PRUEFUNG-DE.md','docs/FORUM-INSTALLATION-DE.md']:
++        for href in re.findall(r'\]\(([^)]+)\)',(repository/name).read_text(encoding='utf-8-sig')):
++            if href.startswith(('http:','https:','#')):continue
++            path=posixpath.normpath(posixpath.join(posixpath.dirname(name),href.split('#')[0]))
++            require((repository/path).exists(),'Broken review link: '+name+' -> '+href)
++    result={'anonymous_viewer_access':True,'main_commit_verified':True,'release_asset_sha256_verified':True,
++        'review_document_links_verified':True,'release_url':release['html_url']}
++    (R/'build/revision22-public-access.json').write_text(json.dumps(result,indent=2)+'\n',encoding='utf-8')
++    print(json.dumps(result,indent=2))
++
++if __name__=='__main__':main()

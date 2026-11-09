@@ -4,6 +4,14 @@ Hier ist das aktuelle NLBinder-Release mit fertiger ASI und nachvollziehbarer Ä
 
 NEU IN DIESEM PAKET
 
+Neu in r22: /claims schaltet für Mitglieder der Red County Brotherhood 28 feste Flaggenorte auf der vorhandenen Quick Map ein und beim nächsten Aufruf wieder aus. Als Symbol dient die bereits enthaltene rote enemyAttack-Flagge, passend zum gewählten Radar-Design. Zoom und Kartenausschnitt funktionieren wie gewohnt. Die Quick Map wird weiterhin mit ihrem bisherigen Hotkey geöffnet.
+
+Die eigene Fraktion wird anhand der synchronisierten eigenen Statistiken der aktuellen Verbindung bestätigt und mit vorhandenen frischen Online-Daten abgeglichen. Ein Online-Eintrag desselben Namens allein reicht nicht aus. Es gibt keine manuelle Fraktionseingabe oder Skin-Erkennung. Ohne bestätigte RCB-Mitgliedschaft erscheint lokal: „Du bist kein Mitglied der Red County Brotherhood.“ Rollenverlust, Spielerwechsel oder Verbindungsende blenden die Flaggen aus. Sind bekannte Fraktionsangaben widersprüchlich, wird die Funktion verweigert; nach einem Fraktionswechsel können die eigenen Werte über die vorhandene manuelle Synchronisation aktualisiert werden.
+
+/speed setzt jetzt die bestätigte eigene SAPD-/LSPD-Mitgliedschaft voraus. Andernfalls erscheint lokal „Du bist kein Polizist.“; es wird kein /su gesendet und kein Wanted-Dialog beantwortet. Rollenverlust stoppt auch einen bereits laufenden automatischen Ablauf.
+
+Die 28 X-/Y-/Z-Positionen sind in include/ClaimSpots.h nachvollziehbar enthalten. Die Quick Map zeichnet die Flaggen anhand von X und Y. Es werden dafür keine Spielerklassen, Weltobjekte, Minimap-Blips oder Server-Checkpoints erzeugt.
+
 Hotfix r21: Die tatsächlichen Konsummeldungen mit dem serverseitigen Präfix „*** “ werden jetzt erkannt, zum Beispiel „*** KOBiRO nimmt Heroin zu sich.“. Der Name bleibt dynamisch an den eigenen Spieler gebunden. Heroin startet damit 120 s Cooldown und 60 s Abklingzeit; die Korrektur gilt auch für die übrigen Drogen. Fremde Konsummeldungen und zitierter Spielerchat starten keine Timer.
 
 Die Startmeldung lautet jetzt:
@@ -87,7 +95,7 @@ Repository:
 https://github.com/Kobiro57/PerkysBinderChangelog
 
 Dieses Release:
-https://github.com/Kobiro57/PerkysBinderChangelog/releases/tag/v0.1.2-r21
+https://github.com/Kobiro57/PerkysBinderChangelog/releases/tag/v0.1.2-r22
 
 Das ASI-Downloadpaket enthält den fertigen Binder, die Dokumentation und den gesonderten Installer-Quellcodeauszug. Den vollständigen Binder-Quellbaum gibt es im Repository beziehungsweise über die „Source code“-Downloads des Releases. Der zusammengestellte Desktop-Ordner enthält zusätzlich die fertige ASI.
 

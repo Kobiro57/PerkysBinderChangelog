@@ -41,10 +41,10 @@ std::string VisibleStatsCaption(const std::string& value) {
 bool EqualStats(const keybinder::ServerStatsSnapshot& first, const keybinder::ServerStatsSnapshot& second) {
     return std::tie(first.playerName, first.serverAddress, first.serverPort, first.kills, first.deaths,
         first.cash, first.bank, first.wealth, first.level, first.gold, first.eventcoins,
-        first.wantedPoints, first.experience, first.nextLevelExperience, first.nextPaydayMinutes)
+        first.wantedPoints, first.experience, first.nextLevelExperience, first.nextPaydayMinutes, first.faction)
         == std::tie(second.playerName, second.serverAddress, second.serverPort, second.kills, second.deaths,
         second.cash, second.bank, second.wealth, second.level, second.gold, second.eventcoins,
-        second.wantedPoints, second.experience, second.nextLevelExperience, second.nextPaydayMinutes);
+        second.wantedPoints, second.experience, second.nextLevelExperience, second.nextPaydayMinutes, second.faction);
 }
 
 std::string StatsGameTextToUtf8(const char* text, std::size_t maximum) {
@@ -64,6 +64,7 @@ std::string StatsGameTextToUtf8(const char* text, std::size_t maximum) {
 } // namespace
 
 void SAMPBridge::ResetStartupStats() {
+    synchronizedStats_.faction.reset(); // Never authorize from a saved previous session.
     captureStartupStats_.store(false, std::memory_order_release);
     startupStatsConnected_ = startupStatsRequested_ = startupStatsComplete_ = startupStatsFailed_ = false;
     startupStatsIdentity_.clear();

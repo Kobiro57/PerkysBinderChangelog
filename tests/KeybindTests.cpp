@@ -10,6 +10,7 @@ int RunR16FeatureTests();
 int RunR17FeatureTests();
 int RunR18FeatureTests();
 int RunDrugUseTrackerTests();
+int RunLocalFactionAccessTests();
 int RunReconnectTests();
 int RunKillMessageTestTests();
 int RunLocationVariableTests();
@@ -121,7 +122,8 @@ int main(int argc, char** argv) {
         + run_suite("Running R16FeatureTests...", RunR16FeatureTests)
         + run_suite("Running R17FeatureTests...", RunR17FeatureTests)
         + run_suite("Running R18FeatureTests...", RunR18FeatureTests)
-        + run_suite("Running DrugUseTrackerTests...", RunDrugUseTrackerTests);
+        + run_suite("Running DrugUseTrackerTests...", RunDrugUseTrackerTests)
+        + run_suite("Running LocalFactionAccessTests...", RunLocalFactionAccessTests);
     if (r4_failures != 0) return r4_failures;
     log_line("All tests finished.");
     return reconnect_failures + speedometer_failures + keybind_failures + executor_failures + interface_editor_failures + input_failures + regression_failures + samp_bridge_failures + imgui_overlay_failures + hitmarker_failures + hitsound_failures + theme_failures + quickmap_failures + job_registry_failures + job_chat_adapter_failures + job_event_store_failures + job_parser_failures + job_tracker_lifecycle_failures + main_window_jobs_nav_failures + jobs_ui_failures + jobs_correction_failures + job_adjustment_failures + online_ui_failures + online_data_manager_failures + online_settings_failures + online_overlay_renderer_failures + online_event_detector_failures + ui_components_failures + squaremap_failures + hud_sprite_failures + source_contract_failures;

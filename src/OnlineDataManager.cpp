@@ -44,11 +44,11 @@ bool CaseInsensitiveEqual(const std::string& a, const std::string& b) {
 // ---------------------------------------------------------------------------
 struct FactionAlias {
     const char* canonicalName;
-    const char* aliases[4]; // max 4 aliases per faction, terminated by nullptr
+    const char* aliases[6]; // terminated by nullptr
 };
 
 constexpr FactionAlias kFactionAliases[] = {
-    {"LSPD",              {"lspd", "los santos police department", "police department", nullptr}},
+    {"LSPD",              {"lspd", "sapd", "los santos police department", "san andreas police department", "police department", nullptr}},
     {"Army",              {"army", "national guard", "san andreas army", nullptr}},
     {"Fire Department",   {"fire department", "feuerwehr", "lsfd", nullptr}},
     {"Red County Brotherhood", {"red county brotherhood", "rcb", "redcounty brotherhood", nullptr}},
@@ -228,6 +228,17 @@ void OnlineDataManager::UpdateFromPlayers(const std::vector<OnlinePlayerInfo>& r
 OnlineSnapshot OnlineDataManager::GetSnapshotCopy() const {
     std::lock_guard<std::mutex> lock(snapshotMutex_);
     return snapshot_;
+}
+
+std::optional<OnlineAffiliation> OnlineDataManager::GetLiveAffiliationFor(const std::string& playerName) const {
+    const auto first = playerName.find_first_not_of(" \t\r\n");
+    if (first == std::string::npos) return {};
+    const std::string ownName = playerName.substr(first, playerName.find_last_not_of(" \t\r\n") - first + 1);
+    std::lock_guard<std::mutex> lock(snapshotMutex_);
+    if (ResolveFetchStatusLocked() != OnlineFetchStatus::Live) return {};
+    auto affiliation = ResolveLocalAffiliation(snapshot_.players, ownName);
+    if (affiliation.name.empty()) return {};
+    return affiliation;
 }
 
 // ---------------------------------------------------------------------------

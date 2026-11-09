@@ -1117,3 +1117,24 @@ Der Nutzer bestätigte nach Einspielen des vorläufigen r18-Stands, dass der ang
   und die Browser-Runtime bleiben erhalten. Source/ASI/Texte als r21 aktualisiert.
 - Automatisierte Prüfergebnisse getrennt von einer noch ausstehenden erneuten
   Nutzerbeobachtung im laufenden Spiel dokumentiert.
+
+## 28. Nachtrag v0.1.2 / r22 – 9. November 2026
+
+- `/claims` zum Ein-/Ausblenden von 28 vorgegebenen RCB-Flaggenorten auf der
+  vorhandenen Quick Map ergänzt. Alle X/Y/Z-Koordinaten in ClaimSpots.h erhalten;
+  X/Y werden projiziert, AddPlayerClass-Modell/Blickrichtung/Waffen nicht benutzt.
+- Vorhandenes rotes `radar_enemyAttack`-Flaggensymbol in beiden Radar-Designs
+  verwendet. Zoom, Kartenausschnitt und bestehende Marker bleiben erhalten.
+- Aktivierung an die eigene bestätigte Red County Brotherhood-Mitgliedschaft
+  gebunden; andernfalls lokal „Du bist kein Mitglied der Red County Brotherhood.“.
+- Claims standardmäßig unsichtbar und nur nach explizitem Umschalten angezeigt.
+  Rollen-/Verbindungsverlust entzieht die Anzeige. Keine GTA-/Serverblips erzeugt.
+- `/speed` auf bestätigte SAPD-/LSPD-Mitglieder begrenzt; unberechtigt nur lokal
+  „Du bist kein Polizist.“, ohne /su oder Wanted-Dialogantwort. Laufenden Ablauf
+  bei Berechtigungsverlust stoppen.
+- Eigene synchronisierte Fraktionsinformation ergänzt und für die lokale
+  Berechtigungsprüfung verwendet; fremde Stats und Skin-Raten ausgeschlossen.
+- Zusätzliche Koordinaten-, Quick-Map-, Fraktions-/Stats- und Speed-Prüfungen
+  aufgenommen. Tatsächliche Zahlen stehen im r22-Nachweis; kein Live-Test erfunden.
+- Gesamten Quellcode, ASI und Texte als neuen Desktop-Ordner NLBinder-v0.1.2-r22
+  vorgesehen. Version/Credits und Browser-Runtime bleiben unverändert.

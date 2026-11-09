@@ -2168,6 +2168,36 @@ std::string SAMPBridge::GetLocalPlayerName() const {
 #endif
 }
 
+std::string SAMPBridge::GetLocalFaction() const {
+    const auto* network = GetNetGame();
+    if (!initialized_ || !network || network->m_nGameState != sampapi::v03dl::CNetGame::GAME_MODE_CONNECTED)
+        return {};
+    const std::string ownName = GetLocalPlayerName();
+    if (ownName.empty()) return {};
+    if (localFactionProvider_) {
+        try { return localFactionProvider_(); }
+        catch (...) { return {}; }
+    }
+    return GetSynchronizedFaction();
+}
+
+std::string SAMPBridge::GetSynchronizedFaction() const {
+    const auto* network = GetNetGame();
+    if (!initialized_ || !network || network->m_nGameState != sampapi::v03dl::CNetGame::GAME_MODE_CONNECTED)
+        return {};
+    const std::string ownName = GetLocalPlayerName();
+    if (ownName.empty()) return {};
+    const auto identity = [](std::string value) {
+        std::transform(value.begin(), value.end(), value.begin(), [](unsigned char ch) { return static_cast<char>(std::tolower(ch)); });
+        return value;
+    };
+    if (!startupStatsComplete_ || !synchronizedStats_.faction
+        || identity(synchronizedStats_.playerName) != identity(ownName)
+        || synchronizedStats_.serverAddress != std::string(network->m_szHostAddress, strnlen(network->m_szHostAddress, 257))
+        || synchronizedStats_.serverPort != network->m_nPort) return {};
+    return *synchronizedStats_.faction;
+}
+
 float SAMPBridge::GetLocalPlayerHP() const {
     float health = 0.0f, armour = 0.0f;
     int source = 0;

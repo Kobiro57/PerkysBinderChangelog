@@ -97,6 +97,9 @@ public:
     struct TestingHooks {
         std::function<bool(int)> isKeyDown;
         std::function<bool()> isInputGated;
+#ifdef KEYBINDER_TESTING
+        std::function<TextureInfo*(WORD)> getRadarSpriteTextureByResource;
+#endif
     };
 
     static constexpr float kWorldMin = -3000.0f;
@@ -127,6 +130,9 @@ public:
     void Show();
     void Hide();
     void Toggle();
+    void SetClaimsAllowed(bool allowed);
+    bool ToggleClaims();
+    bool AreClaimsVisible() const { return claimsAllowed_ && claimsVisible_; }
 
     void SetRenderCallback(std::function<void()> callback);
     void Render();
@@ -139,6 +145,9 @@ public:
     void SetTestingHooks(const TestingHooks& hooks);
 
 #ifdef KEYBINDER_TESTING
+    std::vector<MapMarker> ProjectClaimsForTesting(const ImVec2& displayPos, const ImVec2& displaySize) const {
+        return ProjectClaimsForCurrentView(displayPos, displaySize);
+    }
     float GetCurrentZoomFactorForTesting() const { return currentZoomFactor_; }
     ImVec2 GetCurrentFocusWorldForTesting() const { return currentFocusWorld_; }
     QuickMapZoomLevel GetZoomLevelForTesting() const { return zoomLevel_; }
@@ -180,6 +189,7 @@ private:
     void DrawRadarSpriteMarker(ImDrawList* drawList, const MapMarker& marker, TextureInfo* texture) const;
     void DrawZoomIndicator(ImDrawList* drawList, const ImVec2& displayPos, const ImVec2& displaySize) const;
     MapMarker ProjectMarkerForCurrentView(const QuickMapMarker& marker, const ImVec2& displayPos, const ImVec2& displaySize) const;
+    std::vector<MapMarker> ProjectClaimsForCurrentView(const ImVec2& displayPos, const ImVec2& displaySize) const;
     GangZoneRect ProjectGangZoneForCurrentView(const QuickMapGangZone& zone, const ImVec2& displayPos, const ImVec2& displaySize) const;
 
     SettingsManager* settingsManager_ = nullptr;
@@ -189,6 +199,8 @@ private:
     ImVec2 lastDisplayPos_{};
     ImVec2 lastDisplaySize_{};
     bool visible_ = false;
+    bool claimsAllowed_ = false;
+    bool claimsVisible_ = false;
     QuickMapMode mode_ = QuickMapMode::Toggle;
     int hotkey_ = 'M';
     QuickMapZoomLevel zoomLevel_ = QuickMapZoomLevel::Far;

@@ -19,6 +19,7 @@ struct ServerStatsSnapshot {
     std::optional<int> kills, deaths, level, gold, eventcoins, wantedPoints;
     std::optional<long long> cash, bank, wealth;
     std::optional<int> experience, nextLevelExperience, nextPaydayMinutes;
+    std::optional<std::string> faction;
 
     bool HasCounters() const { return kills.has_value() && deaths.has_value(); }
     bool HasCore() const { return HasCounters() && cash.has_value() && bank.has_value(); }
@@ -83,8 +84,7 @@ public:
             if (value < line.size() && (line[value] == '[' || line[value] == '(' || line[value] == '+' || line[value] == '-' || line[value] == '$'
                 || std::isdigit(static_cast<unsigned char>(line[value])))) return true;
         }
-        // Remaining server-statistic rows contain descriptive data, not
-        // numbers needed by the Binder. Recognize them without inventing values.
+        // Descriptive rows are accepted only inside the verified own context.
         constexpr const char* descriptiveLabels[] = {"fraktion", "gang", "geschlecht", "alter", "offene rechnungen",
             "führerscheine", "fuehrerscheine", "lizenzen", "waffenschein", "waffenscheine", "führerschein", "fuehrerschein"};
         for (const char* label : descriptiveLabels) {
@@ -267,6 +267,45 @@ private:
         }
         return {};
     }
+    static std::optional<std::string> FindFaction(const std::string& line) {
+        const std::string lower = Lower(line);
+        constexpr std::size_t labelSize = 8; // "Fraktion", never "Fraktionsrang".
+        std::size_t at = 0;
+        while ((at = lower.find("fraktion", at)) != std::string::npos) {
+            const bool begins = at == 0 || std::isspace(static_cast<unsigned char>(line[at - 1])) || line[at - 1] == '|';
+            std::size_t value = at + labelSize;
+            if (!begins || !FieldBoundary(line, value)) { at += labelSize; continue; }
+            SkipSpaceAndColon(line, value);
+            if (value >= line.size()) return {};
+            if (line[value] == '[' || line[value] == '(') {
+                const auto end = line.find(line[value] == '[' ? ']' : ')', value + 1);
+                if (end == std::string::npos) return {};
+                const std::string faction = Trim(std::string_view(line).substr(value + 1, end - value - 1));
+                return faction.empty() ? std::optional<std::string>{} : faction;
+            }
+            std::size_t end = line.find_first_of("|\t", value);
+            if (end == std::string::npos) end = line.size();
+            // Older chat blocks combine columns on one line without brackets.
+            // Keep a multi-word faction intact, but stop before the next field.
+            for (const char* next : {"fraktionsrang", "gang", "level", "kills", "tode", "gold", "eventcoins",
+                    "wantedpunkte", "bargeld", "kontostand", "nächster zahltag in", "naechster zahltag in"}) {
+                const auto length = std::char_traits<char>::length(next);
+                std::size_t candidate = value;
+                while ((candidate = lower.find(next, candidate)) != std::string::npos && candidate < end) {
+                    if (candidate > value && std::isspace(static_cast<unsigned char>(line[candidate - 1]))
+                        && FieldBoundary(line, candidate + length)) {
+                        std::size_t after = candidate + length;
+                        while (after < line.size() && std::isspace(static_cast<unsigned char>(line[after]))) ++after;
+                        if (after < line.size() && (line[after] == ':' || line[after] == '[')) { end = candidate; break; }
+                    }
+                    candidate += length;
+                }
+            }
+            const std::string faction = Trim(std::string_view(line).substr(value, end - value));
+            return faction.empty() ? std::optional<std::string>{} : faction;
+        }
+        return {};
+    }
     static std::optional<long long> Integer(std::string value, bool signedValue = true) {
         value = Trim(value);
         if (!value.empty() && value.front() == '$') value.erase(value.begin());
@@ -309,6 +348,7 @@ private:
         return static_cast<int>(*parsed);
     }
     void ParseValues(const std::string& line) {
+        if (const auto faction = FindFaction(line)) snapshot_.faction = *faction;
         const auto readSmallInteger = [&](const char* label, std::optional<int>& output) {
             if (const auto value = FindField(line, label)) if (const auto parsed = SmallInteger(*value)) output = parsed;
         };
@@ -357,7 +397,8 @@ private:
     }
     bool HasAnyValue() const {
         return snapshot_.kills || snapshot_.deaths || snapshot_.level || snapshot_.gold || snapshot_.eventcoins || snapshot_.wantedPoints
-            || snapshot_.cash || snapshot_.bank || snapshot_.wealth || snapshot_.experience || snapshot_.nextLevelExperience || snapshot_.nextPaydayMinutes;
+            || snapshot_.cash || snapshot_.bank || snapshot_.wealth || snapshot_.experience || snapshot_.nextLevelExperience || snapshot_.nextPaydayMinutes
+            || snapshot_.faction;
     }
 
     ServerStatsSnapshot snapshot_;

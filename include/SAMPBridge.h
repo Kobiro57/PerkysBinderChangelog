@@ -67,6 +67,9 @@ public:
     void ObserveStatsCommand(const std::string& cmd) const;
     bool SendSimulatedKillMessage(const std::string& text, std::string& error) const;
     bool RequestSpeedTicket(const std::string& arguments, std::string& error);
+    std::string GetLocalFaction() const;
+    std::string GetSynchronizedFaction() const;
+    void SetLocalFactionProvider(std::function<std::string()> provider) { localFactionProvider_ = std::move(provider); }
 
     bool IsChatOpen() const;
     bool IsDialogOpen() const;
@@ -512,6 +515,7 @@ private:
     keybinder::ServerStatsCollector startupStatsCollector_;
     std::unique_ptr<keybinder::StatsDialogRPCAdapter> statsDialogAdapter_;
     keybinder::ServerStatsSnapshot synchronizedStats_;
+    std::function<std::string()> localFactionProvider_;
     std::function<bool(const keybinder::ServerStatsSnapshot&)> statsSynchronizedCallback_;
     bool startupStatsConnected_ = false;
     bool startupStatsRequested_ = false;
