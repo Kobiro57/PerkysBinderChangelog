@@ -558,6 +558,7 @@
     <ClInclude Include="include\LocalFactionAccess.h" />
     <ClInclude Include="include\ClaimSpots.h" />
     <ClInclude Include="include\PoliceLocateTracker.h" />
+    <ClInclude Include="include\CheckpointLocation.h" />
     <ClInclude Include="include\ServerCheckpointRPCAdapter.h" />
     <ClInclude Include="include\NearbyWantedLabels.h" />
     <ClInclude Include="include\ForumBrowser.h" />

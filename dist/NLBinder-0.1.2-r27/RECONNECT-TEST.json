@@ -1,0 +1,8 @@
+{
+  "checks": 83,
+  "failures": 0,
+  "nova_cases": 6,
+  "cancellation_after_readiness_checked": true,
+  "nova_start_requires_spawn_confirmation": true,
+  "scope": "Harmless fixture processes only; no game or installed launcher executed"
+}

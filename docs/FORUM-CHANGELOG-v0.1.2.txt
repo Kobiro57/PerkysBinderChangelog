@@ -4,6 +4,8 @@ Hier ist das aktuelle NLBinder-Release mit fertiger ASI und nachvollziehbarer Ä
 
 NEU IN DIESEM PAKET
 
+Neu in r27: Die automatische Polizeifunk-Ortung liest den Ziel-Checkpoint des aktuellen Detektivvorgangs aus. Bereits vorher aktive normale oder Renn-Checkpoints werden nicht mehr als beliebiger Ersatz verwendet. Die Funkmeldung enthält jetzt Stadt und Bezirk anhand der tatsächlichen Zielkoordinaten, zum Beispiel /r [ORTUNG] Gesuchter NAME wurde zuletzt in [Los Santos Market] geortet. Die eigene Position ersetzt die Zielposition nicht. Erfolgsmeldung, bestätigte SAPD-/LSPD-Mitgliedschaft und einmalige Ausgabe bleiben erforderlich. Die native Wanted-Label-Sichtbarkeit aus r26 sowie TakeOver-Killerkennung, Forum-Sonderzeichen und bisherige Drogenzeiten bleiben erhalten.
+
 Neu in r26: Die automatische Polizeifunk-Ortungsmeldung wurde überarbeitet. Sobald die persönliche Detektiv-Erfolgsmeldung erscheint, liest der Binder den aktuell gesetzten normalen oder Renn-Checkpoint und meldet einmalig den Bezirk dieses Markers mit /r [ORTUNG] Gesuchter NAME wurde zuletzt in [BEZIRK] geortet. Ein noch nicht verfügbarer Marker wird kurz abgewartet; die bisherige zusätzliche Mindestlaufzeit und zwingende Checkpoint-RPC-Erkennung entfallen. Das rote Gesucht-Label folgt jetzt dem tatsächlich sichtbaren normalen Spielernamen, einschließlich Fahrern und Mitfahrern. Die zusätzliche Fünf-Meter-Grenze entfällt; Reichweite und Sichtbarkeit richten sich nach dem nativen Nametag. Verschwindet der normale Name, verschwindet auch das Zusatzlabel. Beide Funktionen bleiben auf bestätigte SAPD-/LSPD-Mitglieder begrenzt.
 
 Neu in r25: Die Meldung [TakeOver]: NAME hat GEGNER getötet. wird jetzt für eigene Kills erkannt. NAME wird mit dem aktuellen eigenen Spielernamen verglichen. Dadurch werden wie gewohnt der Killzähler aktualisiert und der eingestellte Killtext im gewählten Chatkanal gesendet. Farben und Zeitstempel werden berücksichtigt; fremde Täter oder zitierte Nachrichten lösen keinen eigenen Killbind aus. Die vorhandene Zuordnung verhindert eine zweite Wertung desselben Kills durch zusätzliche Bestätigungen.
@@ -107,7 +109,7 @@ Repository:
 https://github.com/Kobiro57/PerkysBinderChangelog
 
 Dieses Release:
-https://github.com/Kobiro57/PerkysBinderChangelog/releases/tag/v0.1.2-r26
+https://github.com/Kobiro57/PerkysBinderChangelog/releases/tag/v0.1.2-r27
 
 Das ASI-Downloadpaket enthält den fertigen Binder, die Dokumentation und den gesonderten Installer-Quellcodeauszug. Den vollständigen Binder-Quellbaum gibt es im Repository beziehungsweise über die „Source code“-Downloads des Releases. Der zusammengestellte Desktop-Ordner enthält zusätzlich die fertige ASI.
 

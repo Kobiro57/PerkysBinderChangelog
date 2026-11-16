@@ -178,6 +178,7 @@ public:
         std::function<int()> getCityLevel;
         std::function<std::string()> getDistrictName;
         std::function<std::string(float, float, float)> getDistrictAtPosition;
+        std::function<std::string(float, float, float)> getCityAtPosition;
         std::function<bool()> isStartupStatsReady;
         std::function<bool()> isStartupJobSkillsReady;
         std::function<void(int)> closeStatsDialog;
@@ -236,6 +237,7 @@ private:
     void CapturePoliceCheckpoint(const keybinder::ServerCheckpointEvent& event);
     void UpdatePoliceLocate(unsigned long now);
     bool ReadPoliceCheckpoint(keybinder::LocateCheckpoint& checkpoint) const;
+    bool ReadPoliceCheckpointKind(bool racing, keybinder::LocateCheckpoint& checkpoint) const;
     std::string ResolvePoliceCheckpointDistrict(float x, float y, float z) const;
     bool SendSpeedDialogChoice(const keybinder::SpeedTicketAction& action);
     void UpdateStartupJobSkills(unsigned long now);
@@ -529,17 +531,36 @@ private:
     std::function<std::string()> localFactionProvider_;
     keybinder::PoliceLocateTracker policeLocateTracker_;
     std::unique_ptr<keybinder::ServerCheckpointRPCAdapter> policeCheckpointAdapter_;
+    struct PoliceLocateNativeSnapshot {
+        bool enabled = false;
+        keybinder::LocateCheckpoint checkpoint{};
+    };
+    struct PoliceLocateCheckpointState {
+        PoliceLocateNativeSnapshot lastNative{};
+        bool nativeChanged = false;
+        unsigned long nativeChangedAt = 0;
+        bool blockedAfterDisable = false;
+        bool rpcObserved = false;
+        keybinder::LocateCheckpoint rpcCheckpoint{};
+        unsigned long rpcAt = 0;
+        unsigned long rpcSequence = 0;
+    };
     struct PendingPoliceLocateEvent {
         bool isCheckpoint = false;
         std::string text;
         keybinder::ServerCheckpointEvent checkpoint;
         unsigned long at = 0;
+        PoliceLocateNativeSnapshot native[2]{};
     };
     std::mutex policeLocateMutex_;
     std::vector<PendingPoliceLocateEvent> pendingPoliceLocateEvents_;
     bool policeLocateCaptureActive_ = false;
     bool policeLocateQueueOverflow_ = false;
     bool policeLocatePreferredRacing_ = false;
+    bool policeLocateHasSelectedCheckpoint_ = false;
+    PoliceLocateCheckpointState policeLocateCheckpoints_[2]{};
+    unsigned long policeLocateCheckpointSequence_ = 0;
+    unsigned long policeLocateSuccessAt_ = 0;
     std::string policeLocateSession_;
     std::function<bool(const keybinder::ServerStatsSnapshot&)> statsSynchronizedCallback_;
     bool startupStatsConnected_ = false;

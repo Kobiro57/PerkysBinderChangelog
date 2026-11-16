@@ -36,6 +36,7 @@ struct Context {
     FakeObject<sampapi::v03dl::CLocalPlayer> local;
     std::string name = "PoliceOfficer";
     std::string faction = "SAPD";
+    std::string targetCity;
     unsigned long now = 100000;
     bool inputAvailable = true;
     std::vector<std::string> commands, serverChat, localMessages;
@@ -90,6 +91,7 @@ struct Context {
         hooks.isStartupStatsReady = []() { return false; };
         hooks.isStartupJobSkillsReady = []() { return false; };
         hooks.getDistrictName = []() { return std::string("Market"); };
+        hooks.getCityAtPosition = [&](float, float, float) { return targetCity; };
         hooks.getDistrictAtPosition = [&](float x, float y, float z) {
             resolvedPositions.emplace_back(x, y, z);
             return std::string("Palomino Creek");
@@ -253,7 +255,7 @@ void PlayerPrefixesCannotSpoofPersonalDetectiveMessages() {
     fixture.context.now += 30000;
     fixture.Marker();
     fixture.Chat(successLine, "OtherPlayer");
-    fixture.Chat("Detektiv: Du hast die Fähigkeit auf Stufe 191 verbessert.");
+    fixture.Chat("Detektiv: Du hast die FÃƒÆ’Ã‚Â¤higkeit auf Stufe 191 verbessert.");
     fixture.bridge.Update();
     CHECK(fixture.context.commands.empty());
     fixture.Chat(successLine);
@@ -466,6 +468,211 @@ void NewRacingCheckpointTakesPriorityOverAnOlderNormalCheckpoint() {
         std::make_tuple(markerX, markerY, markerZ)}));
 }
 
+void OnlyTheChangedCheckpointKindBelongsToTheCompletedLocate() {
+    // Regression: an old Red County job checkpoint must not win over the
+    // detective's Los Santos Market checkpoint, including missed RPCs.
+    constexpr float marketX = 1100.0f, marketY = -1300.0f, marketZ = 13.4f;
+    const char* marketRadio = "/r [ORTUNG] Gesuchter KOBiRO wurde zuletzt in [Los Santos Market] geortet.";
+    for (const bool targetRacing : {false, true}) {
+        Fixture fixture;
+        auto& context = fixture.context;
+        context.name = "KOBiRO";
+        context.targetCity = "Los Santos";
+        fixture.bridge.Update(); // Verify the self-locate account before capture.
+        if (targetRacing) context.ApplyMarker();
+        else context.ApplyRacingMarker();
+        auto hooks = context.Hooks();
+        hooks.getDistrictAtPosition = [&](float x, float y, float z) {
+            context.resolvedPositions.emplace_back(x, y, z);
+            return x == marketX && y == marketY && z == marketZ ? std::string("Market") : std::string("Red County");
+        };
+        SAMPBridge::SetTestingHooks(hooks);
+        fixture.Chat("Detektiv: Das Handy und die Ortung von KOBiRO wurde gestartet und dauert 30 Sekunden.");
+        fixture.bridge.Update();
+        context.now += 30000;
+        fixture.Chat(successLine);
+        fixture.bridge.Update();
+        context.now += keybinder::PoliceLocateTracker::kNativeCheckpointSettleMs;
+        fixture.bridge.Update();
+        CHECK(context.commands.empty()); // Only the unrelated baseline marker is active.
+        CHECK(context.resolvedPositions.empty());
+        if (targetRacing) context.ApplyRacingMarker(marketX, marketY, marketZ);
+        else context.ApplyMarker(marketX, marketY, marketZ);
+        ++context.now;
+        fixture.bridge.Update();
+        CHECK(context.commands == std::vector<std::string>{marketRadio});
+        CHECK((context.resolvedPositions == std::vector<std::tuple<float, float, float>>{
+            std::make_tuple(marketX, marketY, marketZ)}));
+    }
+}
+
+void UnchangedAndAmbiguousCheckpointsDoNotInventALocateDestination() {
+    for (const bool bothChanged : {false, true}) {
+        Fixture fixture;
+        fixture.context.ApplyMarker(100.0f, 200.0f, 3.0f);
+        fixture.context.ApplyRacingMarker(300.0f, 400.0f, 5.0f);
+        fixture.Start();
+        fixture.context.now += 30000;
+        if (bothChanged) {
+            fixture.context.ApplyMarker();
+            fixture.context.ApplyRacingMarker(markerX + 100.0f, markerY, markerZ);
+        }
+        fixture.Chat(successLine);
+        fixture.bridge.Update();
+        fixture.context.now += keybinder::PoliceLocateTracker::kNativeCheckpointSettleMs;
+        fixture.bridge.Update();
+        CHECK(fixture.context.commands.empty());
+        CHECK(fixture.context.resolvedPositions.empty());
+    }
+}
+
+void FreshRpcCandidateCannotBeReplacedByTheOtherActiveNativeKind() {
+    for (const bool racing : {false, true}) {
+        Fixture fixture;
+        auto& context = fixture.context;
+        if (racing) context.ApplyMarker(100.0f, 200.0f, 3.0f);
+        else context.ApplyRacingMarker(100.0f, 200.0f, 3.0f);
+        fixture.Start();
+        context.now += 30000;
+        RakNet::BitStream payload;
+        if (racing) payload.Write(static_cast<unsigned char>(0));
+        payload.Write(markerX); payload.Write(markerY); payload.Write(markerZ);
+        if (racing) { payload.Write(markerX + 10.0f); payload.Write(markerY); payload.Write(markerZ); }
+        payload.Write(markerRadius);
+        CHECK(fixture.bridge.ProcessServerCheckpointRpcForTesting(racing ? 38 : 107, &payload));
+        fixture.Chat(successLine);
+        context.inputAvailable = false;
+        fixture.bridge.Update(); // Packet has not yet been applied natively.
+        context.now += keybinder::PoliceLocateTracker::kNativeCheckpointSettleMs;
+        fixture.bridge.Update();
+        CHECK(context.commands.empty());
+        CHECK(context.resolvedPositions.empty());
+        if (racing) context.ApplyRacingMarker(); else context.ApplyMarker();
+        fixture.bridge.Update();
+        CHECK(context.commands.empty());
+        context.inputAvailable = true;
+        ++context.now;
+        fixture.bridge.Update();
+        CHECK(context.commands == std::vector<std::string>{expectedRadio});
+        CHECK((context.resolvedPositions == std::vector<std::tuple<float, float, float>>{
+            std::make_tuple(markerX, markerY, markerZ)}));
+    }
+}
+
+void CheckpointRpcOnAnEarlierTickThanSuccessKeepsTheOperationAlive() {
+    for (const bool updateBeforeSuccess : {false, true}) {
+        Fixture fixture;
+        fixture.Start();
+        fixture.context.now += 30000;
+        fixture.Marker();
+        if (updateBeforeSuccess) fixture.bridge.Update();
+        ++fixture.context.now;
+        fixture.Chat(successLine);
+        fixture.bridge.Update();
+        CHECK(fixture.context.commands == std::vector<std::string>{expectedRadio});
+        CHECK(fixture.context.resolvedPositions.size() == 1);
+    }
+}
+
+void NativeCheckpointOnAnEarlierTickThanSuccessKeepsTheOperationAlive() {
+    for (const bool racing : {false, true}) {
+        Fixture fixture;
+        fixture.Start();
+        fixture.context.now += 30000;
+        if (racing) fixture.context.ApplyRacingMarker();
+        else fixture.context.ApplyMarker();
+        fixture.bridge.Update(); // Native change observed before the success chat.
+        ++fixture.context.now;
+        fixture.Chat(successLine);
+        fixture.bridge.Update();
+        CHECK(fixture.context.commands.empty());
+        fixture.context.now += keybinder::PoliceLocateTracker::kNativeCheckpointSettleMs;
+        fixture.bridge.Update();
+        CHECK(fixture.context.commands == std::vector<std::string>{expectedRadio});
+        CHECK(fixture.context.resolvedPositions.size() == 1);
+    }
+}
+
+void ConfirmedNativeDisableAllowsANewDestinationWithoutAnEnableRpc() {
+    Fixture fixture;
+    fixture.context.ApplyMarker(100.0f, 200.0f, 3.0f);
+    fixture.Start();
+    fixture.context.now += 30000;
+    fixture.DisableMarker();
+    fixture.bridge.Update(); // Confirm that the native checkpoint is disabled.
+    ++fixture.context.now;
+    fixture.context.ApplyMarker(); // Its enable RPC was missed, as in native polling recovery.
+    fixture.bridge.Update();
+    ++fixture.context.now;
+    fixture.Chat(successLine);
+    fixture.bridge.Update();
+    CHECK(fixture.context.commands.empty());
+    fixture.context.now += keybinder::PoliceLocateTracker::kNativeCheckpointSettleMs;
+    fixture.bridge.Update();
+    CHECK(fixture.context.commands == std::vector<std::string>{expectedRadio});
+    CHECK(fixture.context.resolvedPositions.size() == 1);
+}
+
+void TheLatestServerDestinationMustBeAppliedBeforeAnyRadioIsSent() {
+    Fixture fixture;
+    fixture.Start();
+    fixture.context.now += 30000;
+    fixture.Marker(); // Normal destination applied before the final racing packet.
+    RakNet::BitStream racing;
+    racing.Write(static_cast<unsigned char>(0));
+    racing.Write(markerX + 100.0f); racing.Write(markerY); racing.Write(markerZ);
+    racing.Write(markerX + 110.0f); racing.Write(markerY); racing.Write(markerZ);
+    racing.Write(markerRadius);
+    CHECK(fixture.bridge.ProcessServerCheckpointRpcForTesting(38, &racing));
+    fixture.Chat(successLine);
+    fixture.bridge.Update();
+    CHECK(fixture.context.commands.empty());
+    CHECK(fixture.context.resolvedPositions.empty());
+    fixture.context.now += keybinder::PoliceLocateTracker::kNativeCheckpointSettleMs;
+    fixture.bridge.Update();
+    CHECK(fixture.context.commands.empty());
+    fixture.context.ApplyRacingMarker(markerX + 100.0f, markerY, markerZ);
+    ++fixture.context.now;
+    fixture.bridge.Update();
+    CHECK(fixture.context.commands == std::vector<std::string>{expectedRadio});
+    CHECK((fixture.context.resolvedPositions == std::vector<std::tuple<float, float, float>>{
+        std::make_tuple(markerX + 100.0f, markerY, markerZ)}));
+}
+
+void BaselineIsCapturedWhenStartArrivesEvenWhenTargetArrivesInTheSameFrame() {
+    Fixture fixture;
+    fixture.context.ApplyMarker(100.0f, 200.0f, 3.0f);
+    fixture.Chat(startLine); // Do not update yet: the callback must retain the old native marker.
+    fixture.context.ApplyMarker();
+    fixture.context.now += 1000;
+    fixture.Chat(successLine);
+    fixture.bridge.Update();
+    fixture.context.now += keybinder::PoliceLocateTracker::kNativeCheckpointSettleMs;
+    fixture.bridge.Update();
+    CHECK(fixture.context.commands == std::vector<std::string>{expectedRadio});
+}
+
+void NativeChangesLongBeforeCompletionCannotMasqueradeAsTheResult() {
+    Fixture fixture;
+    fixture.Start();
+    fixture.context.now += 1000;
+    fixture.context.ApplyMarker();
+    fixture.bridge.Update();
+    fixture.context.now += 29000;
+    fixture.Chat(successLine);
+    fixture.bridge.Update();
+    fixture.context.now += keybinder::PoliceLocateTracker::kNativeCheckpointSettleMs;
+    fixture.bridge.Update();
+    CHECK(fixture.context.commands.empty());
+    CHECK(fixture.context.resolvedPositions.empty());
+    fixture.context.ApplyRacingMarker(markerX + 100.0f, markerY, markerZ);
+    ++fixture.context.now;
+    fixture.bridge.Update();
+    CHECK(fixture.context.commands == std::vector<std::string>{expectedRadio});
+    CHECK((fixture.context.resolvedPositions == std::vector<std::tuple<float, float, float>>{
+        std::make_tuple(markerX + 100.0f, markerY, markerZ)}));
+}
+
 } // namespace
 
 int RunPoliceLocateBridgeTests() {
@@ -481,6 +688,15 @@ int RunPoliceLocateBridgeTests() {
     OverflowDiscardsAmbiguousBatchesInsteadOfReplayingResults();
     SuccessReadsCurrentMarkerEvenWhenNoCheckpointRpcWasReceived();
     NewRacingCheckpointTakesPriorityOverAnOlderNormalCheckpoint();
+    OnlyTheChangedCheckpointKindBelongsToTheCompletedLocate();
+    UnchangedAndAmbiguousCheckpointsDoNotInventALocateDestination();
+    FreshRpcCandidateCannotBeReplacedByTheOtherActiveNativeKind();
+    CheckpointRpcOnAnEarlierTickThanSuccessKeepsTheOperationAlive();
+    NativeCheckpointOnAnEarlierTickThanSuccessKeepsTheOperationAlive();
+    ConfirmedNativeDisableAllowsANewDestinationWithoutAnEnableRpc();
+    TheLatestServerDestinationMustBeAppliedBeforeAnyRadioIsSent();
+    BaselineIsCapturedWhenStartArrivesEvenWhenTargetArrivesInTheSameFrame();
+    NativeChangesLongBeforeCompletionCannotMasqueradeAsTheResult();
     std::printf("PoliceLocateBridgeTests: %d checks, %d failures\n", checks, failures);
     return failures;
 }

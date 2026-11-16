@@ -1,6 +1,7 @@
 #include "../include/SAMPBridge.h"
 #include "../include/FactionAccess.h"
 #include "../include/Logger.h"
+#include "../include/CheckpointLocation.h"
 #include <algorithm>
 #include <cctype>
 #include <cmath>
@@ -10,6 +11,16 @@
 #endif
 
 namespace {
+bool SamePoliceCheckpoint(const keybinder::LocateCheckpoint& left, const keybinder::LocateCheckpoint& right) {
+    return std::abs(left.x - right.x) <= 0.25f && std::abs(left.y - right.y) <= 0.25f
+        && std::abs(left.z - right.z) <= 0.25f && std::abs(left.radius - right.radius) <= 0.25f;
+}
+
+bool NearPoliceCompletion(unsigned long at, unsigned long completedAt) {
+    return static_cast<unsigned long>(at - completedAt) <= keybinder::PoliceLocateTracker::kCompletionWindowMs
+        || static_cast<unsigned long>(completedAt - at) <= keybinder::PoliceLocateTracker::kCompletionWindowMs;
+}
+
 unsigned long PoliceTick() {
 #ifdef KEYBINDER_TESTING
     const auto& hooks = SAMPBridge::GetTestingHooks();
@@ -35,6 +46,27 @@ std::string ZoneTextToUtf8(const char* text) {
     WideCharToMultiByte(CP_UTF8, 0, wide.data(), wideLength, result.data(), count, nullptr, nullptr);
     return result;
 }
+
+std::vector<keybinder::CheckpointLocationZone> ReadCheckpointZones(bool mapZones) {
+    const int count = mapZones ? CTheZones::TotalNumberOfMapZones : CTheZones::TotalNumberOfInfoZones;
+    if (count < 1 || count > (mapZones ? 39 : 380)) return {};
+    std::vector<keybinder::CheckpointLocationZone> zones;
+    zones.reserve(count - 1);
+    // Index zero is the whole-world container, not a city or a district.
+    for (short index = 1; index < count; ++index) {
+        CZone* native = mapZones ? CTheZones::GetMapZone(index) : CTheZones::GetInfoZone(index);
+        if (!native) continue;
+        keybinder::NativeCheckpointZoneRecord record{};
+        std::memcpy(&record, native, sizeof(record));
+        if (mapZones ? record.type != 3 : record.type > 1) continue;
+        const std::string name = ZoneTextToUtf8(native->GetTranslatedName());
+        if (keybinder::CleanCheckpointPlace(name).empty()) continue;
+        zones.push_back({static_cast<float>(record.x1), static_cast<float>(record.y1),
+            static_cast<float>(record.z1), static_cast<float>(record.x2),
+            static_cast<float>(record.y2), static_cast<float>(record.z2), record.type, record.level, name});
+    }
+    return zones;
+}
 #endif
 } // namespace
 
@@ -59,6 +91,9 @@ void SAMPBridge::ShutdownPoliceLocate() {
     policeLocateTracker_.Reset();
     policeLocateSession_.clear();
     policeLocatePreferredRacing_ = false;
+    policeLocateHasSelectedCheckpoint_ = false;
+    for (auto& checkpoint : policeLocateCheckpoints_) checkpoint = {};
+    policeLocateCheckpointSequence_ = policeLocateSuccessAt_ = 0;
 }
 
 void SAMPBridge::CapturePoliceLocateChat(const std::string& text) {
@@ -76,7 +111,12 @@ void SAMPBridge::CapturePoliceLocateChat(const std::string& text) {
         policeLocateQueueOverflow_ = true;
         return;
     }
-    pendingPoliceLocateEvents_.push_back({false, text, {}, PoliceTick()});
+    PendingPoliceLocateEvent event{false, text, {}, PoliceTick()};
+    // Snapshot at receive time, before a same-frame checkpoint packet can
+    // replace the destination. An already active job/GPS marker is baseline.
+    for (int kind = 0; kind < 2; ++kind)
+        event.native[kind].enabled = ReadPoliceCheckpointKind(kind != 0, event.native[kind].checkpoint);
+    pendingPoliceLocateEvents_.push_back(std::move(event));
 }
 
 void SAMPBridge::CapturePoliceCheckpoint(const keybinder::ServerCheckpointEvent& event) {
@@ -91,24 +131,28 @@ void SAMPBridge::CapturePoliceCheckpoint(const keybinder::ServerCheckpointEvent&
     pendingPoliceLocateEvents_.push_back({true, {}, event, PoliceTick()});
 }
 
-bool SAMPBridge::ReadPoliceCheckpoint(keybinder::LocateCheckpoint& checkpoint) const {
+bool SAMPBridge::ReadPoliceCheckpointKind(bool racing, keybinder::LocateCheckpoint& checkpoint) const {
     const auto* game = GetGame();
     if (!game) return false;
-    auto read = [&](bool racing) {
-        const bool enabled = racing ? game->m_racingCheckpoint.m_bEnabled != FALSE
-            : game->m_checkpoint.m_bEnabled != FALSE;
-        if (!enabled) return false;
-        const auto& position = racing ? game->m_racingCheckpoint.m_currentPosition
-            : game->m_checkpoint.m_position;
-        if (!std::isfinite(position.x) || !std::isfinite(position.y) || !std::isfinite(position.z)
-            || std::abs(position.x) > 20000.0f || std::abs(position.y) > 20000.0f
-            || std::abs(position.z) > 20000.0f) return false;
-        const float radius = racing ? game->m_racingCheckpoint.m_fSize : game->m_checkpoint.m_size.x;
-        checkpoint = {position.x, position.y, position.z,
-            std::isfinite(radius) && radius > 0.0f && radius <= 1000.0f ? radius : 1.0f};
-        return true;
-    };
-    return read(policeLocatePreferredRacing_) || read(!policeLocatePreferredRacing_);
+    const bool enabled = racing ? game->m_racingCheckpoint.m_bEnabled != FALSE
+        : game->m_checkpoint.m_bEnabled != FALSE;
+    if (!enabled) return false;
+    const auto& position = racing ? game->m_racingCheckpoint.m_currentPosition
+        : game->m_checkpoint.m_position;
+    if (!std::isfinite(position.x) || !std::isfinite(position.y) || !std::isfinite(position.z)
+        || std::abs(position.x) > 20000.0f || std::abs(position.y) > 20000.0f
+        || std::abs(position.z) > 20000.0f) return false;
+    const float radius = racing ? game->m_racingCheckpoint.m_fSize : game->m_checkpoint.m_size.x;
+    checkpoint = {position.x, position.y, position.z,
+        std::isfinite(radius) && radius > 0.0f && radius <= 1000.0f ? radius : 1.0f};
+    return true;
+}
+
+bool SAMPBridge::ReadPoliceCheckpoint(keybinder::LocateCheckpoint& checkpoint) const {
+    // Validation must read the exact kind selected for this operation. Falling
+    // back to another active marker could report a completely different town.
+    return policeLocateHasSelectedCheckpoint_
+        && ReadPoliceCheckpointKind(policeLocatePreferredRacing_, checkpoint);
 }
 
 std::string SAMPBridge::ResolvePoliceCheckpointDistrict(float x, float y, float z) const {
@@ -119,16 +163,11 @@ std::string SAMPBridge::ResolvePoliceCheckpointDistrict(float x, float y, float 
         || std::abs(current.y - y) > 0.25f || std::abs(current.z - z) > 0.25f) return {};
 #ifdef KEYBINDER_TESTING
     const auto& hooks = GetTestingHooks();
-    return hooks.getDistrictAtPosition ? hooks.getDistrictAtPosition(x, y, z) : std::string{};
+    const auto city = hooks.getCityAtPosition ? hooks.getCityAtPosition(x, y, z) : std::string{};
+    const auto district = hooks.getDistrictAtPosition ? hooks.getDistrictAtPosition(x, y, z) : std::string{};
+    return keybinder::FormatCheckpointLocation(city, district);
 #else
-    const CVector position(x, y, z);
-    CZone* zone = CTheZones::FindSmallestZoneForPosition(position, false);
-    if (!zone) return {};
-    const std::string translated = ZoneTextToUtf8(zone->GetTranslatedName());
-    if (!translated.empty()) return translated;
-    char label[9]{};
-    std::memcpy(label, zone->m_szLabel, 8);
-    return ZoneTextToUtf8(label);
+    return keybinder::ResolveCheckpointLocation(x, y, z, ReadCheckpointZones(false), ReadCheckpointZones(true));
 #endif
 }
 
@@ -155,6 +194,9 @@ void SAMPBridge::UpdatePoliceLocate(unsigned long now) {
         if (!allowed || identity != policeLocateSession_) {
             pendingPoliceLocateEvents_.clear();
             policeLocatePreferredRacing_ = false;
+            policeLocateHasSelectedCheckpoint_ = false;
+            for (auto& checkpoint : policeLocateCheckpoints_) checkpoint = {};
+            policeLocateCheckpointSequence_ = policeLocateSuccessAt_ = 0;
         }
         overflow = policeLocateQueueOverflow_;
         policeLocateQueueOverflow_ = false;
@@ -167,28 +209,104 @@ void SAMPBridge::UpdatePoliceLocate(unsigned long now) {
     if (!allowed) return;
     for (const auto& event : events) {
         if (!event.isCheckpoint) {
-            if (policeLocateTracker_.ObserveChat(event.text, event.at))
+            if (policeLocateTracker_.ObserveChat(event.text, event.at)) {
+                if (policeLocateTracker_.HasSuccessfulLocate()) policeLocateSuccessAt_ = event.at;
+                else {
+                    policeLocateHasSelectedCheckpoint_ = false;
+                    policeLocateCheckpointSequence_ = policeLocateSuccessAt_ = 0;
+                    for (int kind = 0; kind < 2; ++kind) {
+                        policeLocateCheckpoints_[kind] = {};
+                        policeLocateCheckpoints_[kind].lastNative = event.native[kind];
+                    }
+                }
                 keybinder::Logger::Info("[SAMPBridge] Detective locate %s accepted: %s",
                     policeLocateTracker_.HasSuccessfulLocate() ? "completion" : "start", event.text.c_str());
+            }
+        } else if (policeLocateTracker_.HasPendingLocate()) {
+            auto& state = policeLocateCheckpoints_[event.checkpoint.racing ? 1 : 0];
+            if (!event.checkpoint.enabled) {
+                state.rpcObserved = state.nativeChanged = false;
+                state.blockedAfterDisable = true;
+            } else {
+                state.rpcObserved = true;
+                state.blockedAfterDisable = false;
+                state.rpcCheckpoint = {event.checkpoint.x, event.checkpoint.y,
+                    event.checkpoint.z, event.checkpoint.radius};
+                state.rpcAt = event.at;
+                state.rpcSequence = ++policeLocateCheckpointSequence_;
+            }
         }
-        else if (!event.checkpoint.enabled) policeLocateTracker_.ObserveCheckpointDisabled();
-        else {
-            policeLocatePreferredRacing_ = event.checkpoint.racing;
-            policeLocateTracker_.ObserveCheckpoint({event.checkpoint.x, event.checkpoint.y,
-                event.checkpoint.z, event.checkpoint.radius}, event.at);
+    }
+    PoliceLocateNativeSnapshot native[2]{};
+    if (policeLocateTracker_.HasPendingLocate()) {
+        for (int kind = 0; kind < 2; ++kind) {
+            auto& state = policeLocateCheckpoints_[kind];
+            native[kind].enabled = ReadPoliceCheckpointKind(kind != 0, native[kind].checkpoint);
+            if (!native[kind].enabled) {
+                state.nativeChanged = false;
+                // The disable packet has now actually reached the game. A
+                // later disabled-to-enabled transition is a new destination,
+                // even if its enable packet is missed by the receive hook.
+                state.blockedAfterDisable = false;
+            }
+            else if ((!state.lastNative.enabled
+                || !SamePoliceCheckpoint(native[kind].checkpoint, state.lastNative.checkpoint))
+                && !state.blockedAfterDisable) {
+                state.nativeChanged = true;
+                state.nativeChangedAt = now;
+            }
+            state.lastNative = native[kind];
         }
     }
     const bool completedBeforePolling = policeLocateTracker_.HasSuccessfulLocate();
-    if (policeLocateTracker_.ReadyForCurrentCheckpoint(now)) {
-        keybinder::LocateCheckpoint checkpoint;
-        if (ReadPoliceCheckpoint(checkpoint)) policeLocateTracker_.ObserveCheckpoint(checkpoint, now);
-    } else if (completedBeforePolling && !policeLocateTracker_.HasPendingLocate()) {
+    const bool allowNativeFallback = policeLocateTracker_.ReadyForCurrentCheckpoint(now);
+    policeLocateHasSelectedCheckpoint_ = false;
+    int selected = -1;
+    unsigned long latestSequence = 0;
+    bool hasFreshRpc = false;
+    if (policeLocateTracker_.HasSuccessfulLocate()) {
+        // A fresh server packet identifies the destination even if another
+        // checkpoint kind remains active. Wait until native application agrees.
+        for (int kind = 0; kind < 2; ++kind) {
+            const auto& state = policeLocateCheckpoints_[kind];
+            if (!state.rpcObserved || !NearPoliceCompletion(state.rpcAt, policeLocateSuccessAt_)) continue;
+            hasFreshRpc = true;
+            if (state.rpcSequence > latestSequence) {
+                latestSequence = state.rpcSequence;
+                selected = native[kind].enabled
+                    && SamePoliceCheckpoint(native[kind].checkpoint, state.rpcCheckpoint) ? kind : -1;
+            }
+        }
+        // A receive hook may miss the packet. In that case use only a native
+        // marker that actually changed during this locate, near its completion.
+        // Two changed kinds are ambiguous: never announce an arbitrary first one.
+        if (selected < 0 && !hasFreshRpc && allowNativeFallback) {
+            int changedCount = 0;
+            for (int kind = 0; kind < 2; ++kind) {
+                const auto& state = policeLocateCheckpoints_[kind];
+                if (native[kind].enabled && state.nativeChanged && !state.blockedAfterDisable
+                    && NearPoliceCompletion(state.nativeChangedAt, policeLocateSuccessAt_)) {
+                    selected = kind;
+                    ++changedCount;
+                }
+            }
+            if (changedCount != 1) selected = -1;
+        }
+    }
+    if (selected >= 0) {
+        policeLocatePreferredRacing_ = selected != 0;
+        policeLocateHasSelectedCheckpoint_ = true;
+        // Freshness was checked against each original event timestamp above.
+        // The tracker must receive the current observation time: replaying a
+        // pre-success timestamp here looks like a wrapped/expired operation.
+        policeLocateTracker_.ObserveCheckpoint(native[selected].checkpoint, now);
+    } else policeLocateTracker_.ObserveCheckpointDisabled();
+    if (completedBeforePolling && !policeLocateTracker_.HasPendingLocate()) {
         const auto* game = GetGame();
-        keybinder::Logger::Warning("[SAMPBridge] Detective result expired before radio dispatch (normal=%d race=%d input=%d preferred=%s).",
+        keybinder::Logger::Warning("[SAMPBridge] Detective result expired before radio dispatch (normal=%d race=%d input=%d selected=%d).",
             game && game->m_checkpoint.m_bEnabled ? 1 : 0,
             game && game->m_racingCheckpoint.m_bEnabled ? 1 : 0,
-            GetInput() ? 1 : 0,
-            policeLocatePreferredRacing_ ? "race" : "normal");
+            GetInput() ? 1 : 0, selected);
     }
     if (GetInput() == nullptr) return;
     const std::string radio = policeLocateTracker_.TakeRadioMessage(now, [this](float x, float y, float z) {

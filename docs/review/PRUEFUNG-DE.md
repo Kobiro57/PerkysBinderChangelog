@@ -1,6 +1,10 @@
 # Hinweise zur Prüfung durch die Projektleitung
 
-## Aktueller Stand v0.1.2 / r26 – 16. November 2026
+## Aktueller Stand v0.1.2 / r27 – 17. November 2026
+
+Ortung mit Stadt und Bezirk: [Prüfumfang](r27-PRUEFUNG-DE.md), [Ergebnisse](r27-validation.json).
+
+## Vorheriger Stand v0.1.2 / r26 – 16. November 2026
 
 Ortung und native Wanted-Labels: [Prüfumfang](r26-PRUEFUNG-DE.md), [Ergebnisse](r26-validation.json).
 

@@ -1,6 +1,6 @@
-# Änderungen am Perkys Binder – NLBinder v.0.1.1 by KOBiRO
+# Änderungen am Perkys Binder – NLBinder v.0.1.2 by perkys & edited by KOBiRO
 
-Stand: 29. Oktober 2026, Arbeitsfassung **r11 mit manueller Spielstandsynchronisation und NLBinder.asi**. Die Abschnitte 1 bis 16 dokumentieren die früheren Stände; Abschnitt 17 ergänzt r11.
+Stand: 17. November 2026, **r27 mit Ortung sowie Stadt und Bezirk**. Die Abschnitte 1 bis 32 dokumentieren die früheren Stände; Abschnitt 33 ergänzt r27.
 
 Die Grundlage ist der vorhandene Perkys/NLBinder. Die Änderungen erweitern dessen bestehende Oberfläche und verwenden weiterhin die vorhandenen ImGui-Komponenten, Karten, Schalter und Darstellungseinstellungen. Der Ordner KOBiRO_ASI diente als funktionale Referenz für die Overlay-Erweiterung; seine Oberfläche wurde nicht als neue Binder-Oberfläche übernommen.
 
@@ -1203,3 +1203,15 @@ Der Nutzer bestätigte nach Einspielen des vorläufigen r18-Stands, dass der ang
 - Regressionen für Erfolgsmeldung, aktuelle Checkpoints, versetzte Verfügbarkeit, doppelte Meldungen und native Label-Sichtbarkeit ergänzt. Tatsächliche Ergebnisse stehen im r26-Prüfnachweis.
 - Vorhandene TakeOver-Killerkennung, Forum-Sonderzeichenkorrektur und Drogenzeiten erhalten. Browsernachweis aus r24 ausdrücklich als historisch übernommen.
 - Neue NLBinder.asi, vollständige Quellen und Changelogs als NLBinder-v0.1.2-r26 vorbereitet. Frühere Exporte und Git-Historie erhalten.
+
+## 33. Nachtrag v0.1.2 / r27 – 17. November 2026
+
+- Auswahl des Ortungsmarkers auf den laufenden Detektivvorgang bezogen; bereits vorher aktive normale beziehungsweise Renn-Checkpoints nicht mehr als beliebigen Ziel-Ersatz verwendet.
+- Neu gesetzte und geänderte Marker bei der Zuordnung berücksichtigt, auch wenn beide Checkpoint-Arten gleichzeitig aktiv sind.
+- Polizeifunk-Ortsangabe um Stadt und Bezirk ergänzt, zum Beispiel Los Santos Market. Maßgeblich sind die Koordinaten des Ziel-Checkpoints.
+- Native Zonentabellen mit ihrem tatsächlichen 32-Byte-Aufbau ausgewertet und die abweichende alte SDK-Struktur bei dieser Abfrage umgangen. Stadt und Bezirk anhand der Ziel-X/Y-Koordinaten bestimmt.
+- Eigene Spielerposition nicht als Ersatz verwendet; bei fehlender verlässlicher Zuordnung keine Ortsangabe eines beliebigen alten Markers gesendet.
+- Erfolgsmeldung, einmalige Ausgabe sowie bestätigte SAPD-/LSPD-Mitgliedschaft und Sitzungsprüfung beibehalten.
+- Regressionen für alte und neue normale beziehungsweise Renn-Checkpoints sowie Stadt-/Bezirksauflösung ergänzt. Tatsächliche Ergebnisse stehen im r27-Prüfnachweis.
+- Native Wanted-Labels aus r26, TakeOver-Killerkennung, Forum-Sonderzeichenkorrektur und bestehende Drogenzeiten erhalten. Browsernachweis aus r24 ausdrücklich als historisch übernommen.
+- Neue NLBinder.asi, vollständige Quellen und gesamte Changelogs als NLBinder-v0.1.2-r27 vorbereitet. Frühere Exporte und Git-Historie erhalten; Spielinstallation unverändert.

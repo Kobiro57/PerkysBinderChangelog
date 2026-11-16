@@ -1,0 +1,34 @@
+﻿NLBinder v.0.1.2 by perkys & edited by KOBiRO (r27)
+NLBinder.asi (x86): 18916352 Bytes
+SHA256: ac941f9ed8019dd7238f8553afabd38565743290bbf2d6a8d458974e350aa615
+
+Gewuenschte farbige Startmeldung ist im finalen PE enthalten.
+Gesamttests und Release-Build: Exitcode 0. Nativer Reconnect-Worker: 83 Checks.
+ASI-Ressourcen 300/301 stimmen mit den gebauten nativen Helfern ueberein.
+Browserhost/GPS/Drogenoverlay und Browsermanifest sind gegen r26 unveraendert geprueft.
+TakeOver-Killerkennung aus r25 beibehalten: eigener Taetername, bestehender Killtext und Zaehler.
+Quick-Forum-Sonderzeichenkorrektur aus r24 beibehalten.
+SAPD-/LSPD-Wantedlabels: nur zusammen mit dem tatsaechlich gezeichneten nativen Nametag, auch im Fahrzeug.
+Reichweite und Sichtbarkeit folgen dem nativen Nametag; die fruehere eigene 5-Meter-Grenze entfaellt.
+Vorhandene Nametag-Freigabe, Wantedlisten-Schalter und frische Wanteddaten erforderlich.
+Wantedtabelle: aktueller SA-MP-Spieler-ID nach Name; keine API-Account-ID.
+Ortung: persoenliche Erfolgsmeldung und zum laufenden Vorgang gehoerender Ziel-Checkpoint.
+Bereits vorher aktive normale oder Renn-Checkpoints dienen nicht als beliebiger Ersatz.
+Funkmeldung mit Stadt und Bezirk anhand der Zielmarkerkoordinaten, z.B. Los Santos Market.
+Native 32-Byte-Zonentabellen korrekt indiziert; Stadt-/Bezirkszuordnung ueber Ziel-X/Y.
+Eigene Spielerposition nicht als Ersatz; einmalige Ausgabe und SAPD-/LSPD-Pruefung erhalten.
+Fruehere Browser-/GPS-Pruefungen sind separat historisch dokumentiert.
+Der unveraenderte historische Browser-Eingabetest aus r24 ist in FORUM-KEYBOARD-TEST.json enthalten.
+Dieser Browser-Test wurde fuer r27 nicht erneut ausgefuehrt.
+Er verwendet nur synthetische Texte in einem isolierten anonymen Profil, ohne Forumbeitrag.
+Ein neuer r27-GTA-Live-Test wird nicht behauptet.
+
+FORUM-INSTALLATION.txt beschreibt Einrichtung und Speicherorte. Die Dateiliste
+enthaelt alle 236 festgelegten Runtime-Dateien. FORUM-INSTALLATION-QUELLCODE
+enthaelt die eigenen Originalquellen und ihre SHA-256-Nachweise, keine privaten Profile.
+FORUM-CHANGELOG.txt ist der fertige Text fuer die Veroeffentlichung im Forum.
+Der vollstaendige Binder-Quellcode ist im neuen Desktop-Ordner und auf GitHub enthalten.
+Der komplette Drittanbieter-Chromium-/CEF-Upstreamcode wird nicht als enthalten ausgegeben.
+
+Nur NLBinder.asi bei beendetem GTA ersetzen. Browserstand unveraendert: cef156-r1.
+Browser-Download SHA256: 01fc7f1d4dcec644a191e9c63da7088a73aa81a63c9a4c207001f7038a70ff45

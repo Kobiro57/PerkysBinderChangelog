@@ -13,6 +13,7 @@ int RunDrugUseTrackerTests();
 int RunLocalFactionAccessTests();
 int RunNearbyWantedLabelsTests();
 int RunPoliceLocateTrackerTests();
+int RunCheckpointLocationTests();
 int RunServerCheckpointRPCAdapterTests();
 int RunPoliceLocateBridgeTests();
 int RunForumKeyboardInputTests();
@@ -131,6 +132,7 @@ int main(int argc, char** argv) {
         + run_suite("Running LocalFactionAccessTests...", RunLocalFactionAccessTests)
         + run_suite("Running NearbyWantedLabelsTests...", RunNearbyWantedLabelsTests)
         + run_suite("Running PoliceLocateTrackerTests...", RunPoliceLocateTrackerTests)
+        + run_suite("Running CheckpointLocationTests...", RunCheckpointLocationTests)
         + run_suite("Running ServerCheckpointRPCAdapterTests...", RunServerCheckpointRPCAdapterTests)
         + run_suite("Running PoliceLocateBridgeTests...", RunPoliceLocateBridgeTests)
         + run_suite("Running ForumKeyboardInputTests...", RunForumKeyboardInputTests)

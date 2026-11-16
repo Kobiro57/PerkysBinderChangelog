@@ -1,0 +1,19 @@
+ Keybinder.vcxproj                         |   1 +
+ include/CheckpointLocation.h              | 102 +++++++++++
+ include/SAMPBridge.h                      |  21 +++
+ src/PoliceLocateBridge.cpp                | 196 ++++++++++++++++----
+ tests/CheckpointLocationTests.cpp         | 106 +++++++++++
+ tests/KeybindTests.cpp                    |   2 +
+ tests/PoliceLocateBridgeTests.cpp         | 218 ++++++++++++++++++++++-
+ tools/document_revision27.py              | 146 +++++++++++++++
+ tools/export_full_changelog_revision27.py |  34 ++++
+ tools/export_source_bundle_revision27.py  | 193 ++++++++++++++++++++
+ tools/finalize_revision27.py              |  58 ++++++
+ tools/package_revision27.py               | 198 +++++++++++++++++++++
+ tools/publish_revision27.py               | 286 ++++++++++++++++++++++++++++++
+ tools/report_revision27_log.py            |  10 ++
+ tools/run_revision27.bat                  |  69 +++++++
+ tools/run_tests.bat                       |   1 +
+ tools/verify_revision27_artifact.py       |  58 ++++++
+ tools/verify_revision27_public.py         |  35 ++++
+ 18 files changed, 1694 insertions(+), 40 deletions(-)

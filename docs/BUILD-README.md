@@ -24,6 +24,8 @@ Advanced keybinder and combat-assist plugin for GTA San Andreas Multiplayer (SA-
 
 - **Police Locate and Native Wanted Labels** — Detective success messages trigger current normal/racing-checkpoint lookup and one radio report. Wanted labels follow actual native nametag draw calls, including vehicle occupants and native visibility/range.
 
+- **Operation-specific police location** — Select the target marker for the current detective operation and resolve its city plus district; unrelated pre-existing checkpoints are not substituted.
+
 ## Building
 
 ### Requirements
