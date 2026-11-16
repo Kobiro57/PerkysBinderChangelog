@@ -29,8 +29,8 @@ void MarkerAndSuccessAreBothRequiredInEitherOrder() {
     CHECK(tracker.TakeRadioMessage(start, District).empty());
     CHECK(tracker.ObserveChat(locate, start));
     CHECK(tracker.HasPendingLocate());
-    CHECK(!tracker.ObserveCheckpoint(targetMarker, start + 1000));
-    CHECK(!tracker.ObserveChat(success, start + 1000));
+    CHECK(tracker.ObserveCheckpoint(targetMarker, start + 1000));
+    CHECK(!tracker.ObserveChat("Detektiv: Du hast die Fähigkeit auf Stufe 191 verbessert.", start + 1000));
     CHECK(tracker.TakeRadioMessage(start + 1000, District).empty());
     CHECK(tracker.ObserveCheckpoint(targetMarker, start + 30000));
     CHECK(tracker.TakeRadioMessage(start + 30000, District).empty());
@@ -60,7 +60,7 @@ void OldMarkersAndUnrelatedChatNeverSupplyTheResult() {
     auto tracker = Authorized();
     CHECK(!tracker.ObserveCheckpoint(targetMarker, start - 10));
     CHECK(tracker.ObserveChat(locate, start));
-    CHECK(!tracker.ObserveCheckpoint(targetMarker, start + 27999));
+    CHECK(tracker.ObserveCheckpoint(targetMarker, start + 1000));
     CHECK(tracker.ObserveChat(success, start + 30000));
     CHECK(tracker.TakeRadioMessage(start + 30001, District).empty());
     CHECK(!tracker.ObserveChat("Detektiv: Du hast die Fähigkeit auf Stufe 191 verbessert.", start + 30002));
@@ -71,10 +71,10 @@ void OldMarkersAndUnrelatedChatNeverSupplyTheResult() {
     tracker = Authorized();
     CHECK(tracker.ObserveChat(locate, start));
     CHECK(tracker.ObserveCheckpoint(targetMarker, start + 28000));
-    CHECK(tracker.ObserveChat(success, start + 34000));
-    CHECK(tracker.TakeRadioMessage(start + 34001, District).empty());
-    CHECK(tracker.ObserveCheckpoint(targetMarker, start + 34002));
-    CHECK(tracker.TakeRadioMessage(start + 34003, District) == expected);
+    CHECK(tracker.ObserveChat(success, start + 39001));
+    CHECK(tracker.TakeRadioMessage(start + 39002, District).empty());
+    CHECK(tracker.ObserveCheckpoint(targetMarker, start + 39003));
+    CHECK(tracker.TakeRadioMessage(start + 39004, District) == expected);
 
     tracker = Authorized();
     CHECK(tracker.ObserveChat(locate, start));
@@ -136,7 +136,7 @@ void DeadlinesHandleStallsDuplicatesAndCounterWrap() {
     tracker = Authorized();
     CHECK(tracker.ObserveChat(locate, start));
     CHECK(tracker.ObserveChat(success, start + 30000));
-    CHECK(!tracker.ObserveCheckpoint(targetMarker, start + 35001));
+    CHECK(!tracker.ObserveCheckpoint(targetMarker, start + 30000 + Tracker::kCompletionWindowMs + 1));
     CHECK(!tracker.HasPendingLocate());
 
     tracker = Authorized();
@@ -191,7 +191,7 @@ void NewOperationAndInvalidDistrictsNeverRecycleOldData() {
     CHECK(tracker.ObserveChat(locate, start));
     CHECK(tracker.ObserveCheckpoint(targetMarker, start + 30000));
     CHECK(tracker.ObserveChat("Detektiv: Das Handy und die Ortung von Next_Target wurde gestartet und dauert 30 Sekunden.", start + 30001));
-    CHECK(!tracker.ObserveChat(success, start + 30002));
+    CHECK(!tracker.ObserveChat("Detektiv: Du hast die Fähigkeit auf Stufe 191 verbessert.", start + 30002));
     CHECK(tracker.TakeRadioMessage(start + 30003, District).empty());
     CHECK(tracker.ObserveChat(success, start + 60001));
     CHECK(tracker.TakeRadioMessage(start + 60002, District).empty());
@@ -218,6 +218,33 @@ void NewOperationAndInvalidDistrictsNeverRecycleOldData() {
     }
 }
 
+void SuccessIsAuthoritativeAndCurrentCheckpointWaitIsBounded() {
+    auto tracker = Authorized();
+    CHECK(tracker.ObserveChat(locate, start));
+    CHECK(!tracker.ReadyForCurrentCheckpoint(start + 1000));
+    CHECK(tracker.ObserveChat(success, start + 1000)); // Actual success, even before announced 30 seconds.
+    CHECK(!tracker.ReadyForCurrentCheckpoint(start + 1149));
+    CHECK(tracker.ReadyForCurrentCheckpoint(start + 1150));
+    CHECK(tracker.TakeRadioMessage(start + 1150, District).empty());
+    CHECK(tracker.ObserveCheckpoint(targetMarker, start + 1150)); // Native memory, no RPC requirement.
+    CHECK(tracker.TakeRadioMessage(start + 1151, District) == expected);
+    CHECK(!tracker.ReadyForCurrentCheckpoint(start + 1152));
+    CHECK(!tracker.ObserveChat(success, start + 1200));
+
+    tracker = Authorized();
+    CHECK(tracker.ObserveChat(locate, start));
+    CHECK(tracker.ObserveChat(success, start + 30000));
+    CHECK(tracker.ReadyForCurrentCheckpoint(start + 38000)); // Late marker is still useful.
+    CHECK(tracker.ObserveCheckpoint(targetMarker, start + 38000));
+    CHECK(tracker.TakeRadioMessage(start + 38001, District) == expected);
+
+    tracker = Authorized();
+    CHECK(tracker.ObserveChat(locate, start));
+    CHECK(tracker.ObserveChat(success, start + 30000));
+    CHECK(!tracker.ReadyForCurrentCheckpoint(start + 30000 + Tracker::kCompletionWindowMs + 1));
+    CHECK(!tracker.HasPendingLocate());
+}
+
 } // namespace
 
 int RunPoliceLocateTrackerTests() {
@@ -228,6 +255,7 @@ int RunPoliceLocateTrackerTests() {
     DeadlinesHandleStallsDuplicatesAndCounterWrap();
     NamesColorCodesAndExactServerEnvelopesAreValidated();
     NewOperationAndInvalidDistrictsNeverRecycleOldData();
+    SuccessIsAuthoritativeAndCurrentCheckpointWaitIsBounded();
     std::printf("PoliceLocateTrackerTests: %d checks, %d failures\n", checks, failures);
     return failures;
 }

@@ -151,9 +151,8 @@ bool PoliceLocateTracker::ObserveChat(const std::string& line, std::uint32_t now
     }
     if (normalized != "Detektiv: Das Ziel wurde geortet und wird dir nun auf der Karte angezeigt."
         || !ValidatePending(nowMs) || successObserved_) return false;
-    const std::uint32_t earliestMs = durationMs_ > kEarlyMarkerToleranceMs
-        ? durationMs_ - kEarlyMarkerToleranceMs : 0;
-    if (static_cast<std::uint32_t>(nowMs - startedAt_) < earliestMs) return false;
+    // The server confirms completion. Its announced duration is informative;
+    // packet delivery or a skill change must not invalidate an actual success.
     successObserved_ = true;
     successAt_ = nowMs;
     if (markerObserved_ && !WithinWindow(markerAt_, successAt_)) markerObserved_ = false;
@@ -162,10 +161,7 @@ bool PoliceLocateTracker::ObserveChat(const std::string& line, std::uint32_t now
 
 bool PoliceLocateTracker::ObserveCheckpoint(const LocateCheckpoint& checkpoint, std::uint32_t nowMs) {
     if (!ValidatePending(nowMs) || !ValidCheckpoint(checkpoint)) return false;
-    const std::uint32_t earliestMs = durationMs_ > kEarlyMarkerToleranceMs
-        ? durationMs_ - kEarlyMarkerToleranceMs : 0;
-    if (static_cast<std::uint32_t>(nowMs - startedAt_) < earliestMs
-        || (successObserved_ && !WithinWindow(nowMs, successAt_))) return false;
+    if (successObserved_ && !WithinWindow(nowMs, successAt_)) return false;
     marker_ = checkpoint;
     markerAt_ = nowMs;
     markerObserved_ = true;
@@ -176,6 +172,11 @@ void PoliceLocateTracker::ObserveCheckpointDisabled() {
     markerObserved_ = false;
     marker_ = {};
     markerAt_ = 0;
+}
+
+bool PoliceLocateTracker::ReadyForCurrentCheckpoint(std::uint32_t nowMs) {
+    return ValidatePending(nowMs) && successObserved_
+        && static_cast<std::uint32_t>(nowMs - successAt_) >= kNativeCheckpointSettleMs;
 }
 
 std::string PoliceLocateTracker::TakeRadioMessage(std::uint32_t nowMs, const DistrictResolver& resolveDistrict) {

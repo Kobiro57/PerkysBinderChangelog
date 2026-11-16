@@ -12,18 +12,26 @@ namespace {
 // https://github.com/openmultiplayer/open.mp/blob/master/Shared/NetCode/checkpoint.hpp
 constexpr unsigned char kSetCheckpoint = 107;
 constexpr unsigned char kDisableCheckpoint = 37;
+constexpr unsigned char kSetRaceCheckpoint = 38;
+constexpr unsigned char kDisableRaceCheckpoint = 39;
 
 bool Dispatch(const std::shared_ptr<ServerCheckpointAdapterState>& state,
               unsigned char id, RakNet::BitStream* payload) {
-    if (!state || (id != kSetCheckpoint && id != kDisableCheckpoint)) return false;
+    if (!state || (id != kSetCheckpoint && id != kDisableCheckpoint
+        && id != kSetRaceCheckpoint && id != kDisableRaceCheckpoint)) return false;
     std::lock_guard<std::mutex> lock(state->mutex);
     if (!state->alive || !state->callback) return false;
     ServerCheckpointEvent event;
-    if (id == kSetCheckpoint) {
+    event.racing = id == kSetRaceCheckpoint || id == kDisableRaceCheckpoint;
+    if (id == kSetCheckpoint || id == kSetRaceCheckpoint) {
         if (!payload) return false;
         const int offset = payload->GetReadOffset();
-        const bool read = payload->Read(event.x) && payload->Read(event.y)
-            && payload->Read(event.z) && payload->Read(event.radius);
+        unsigned char type = 0;
+        float nextX = 0.0f, nextY = 0.0f, nextZ = 0.0f;
+        const bool read = (!event.racing || payload->Read(type))
+            && payload->Read(event.x) && payload->Read(event.y) && payload->Read(event.z)
+            && (!event.racing || (payload->Read(nextX) && payload->Read(nextY) && payload->Read(nextZ)))
+            && payload->Read(event.radius);
         payload->SetReadOffset(offset);
         if (!read || !std::isfinite(event.x) || !std::isfinite(event.y)
             || !std::isfinite(event.z) || !std::isfinite(event.radius)

@@ -1,6 +1,6 @@
 # Dateivergleich zum Original
 
-Verglichen werden die unveränderlichen Git-Blobs des Tags `original-archive-92ce219` mit den gestagten r25-Quellen.
+Verglichen werden die unveränderlichen Git-Blobs des Tags `original-archive-92ce219` mit den gestagten r26-Quellen.
 Die Archivherkunft bleibt dokumentiert; diese Hashes beziehen sich ausdrücklich auf Git-Blobs, nicht neu eingelesene ZIP-Rohbytes.
 Generierte Vergleichsdateien, alte Revisionspatches und Binärpakete sind aus diesem rekursionsfreien Vergleich ausgeschlossen.
 Alle betrachteten Änderungen stehen in [SOURCE-COMPARISON.json](SOURCE-COMPARISON.json).
@@ -44,6 +44,7 @@ Alle betrachteten Änderungen stehen in [SOURCE-COMPARISON.json](SOURCE-COMPARIS
 | added | [docs/NLBinder-0.1.2-r23-DE.md](../../docs/NLBinder-0.1.2-r23-DE.md) |
 | added | [docs/NLBinder-0.1.2-r24-DE.md](../../docs/NLBinder-0.1.2-r24-DE.md) |
 | added | [docs/NLBinder-0.1.2-r25-DE.md](../../docs/NLBinder-0.1.2-r25-DE.md) |
+| added | [docs/NLBinder-0.1.2-r26-DE.md](../../docs/NLBinder-0.1.2-r26-DE.md) |
 | added | [docs/ORIGINAL-README.md](../../docs/ORIGINAL-README.md) |
 | added | [docs/build-dependencies.md](../../docs/build-dependencies.md) |
 | added | [docs/jobs-support.md](../../docs/jobs-support.md) |
@@ -78,6 +79,8 @@ Alle betrachteten Änderungen stehen in [SOURCE-COMPARISON.json](SOURCE-COMPARIS
 | added | [docs/review/r24-validation.json](../../docs/review/r24-validation.json) |
 | added | [docs/review/r25-PRUEFUNG-DE.md](../../docs/review/r25-PRUEFUNG-DE.md) |
 | added | [docs/review/r25-validation.json](../../docs/review/r25-validation.json) |
+| added | [docs/review/r26-PRUEFUNG-DE.md](../../docs/review/r26-PRUEFUNG-DE.md) |
+| added | [docs/review/r26-validation.json](../../docs/review/r26-validation.json) |
 | added | [docs/review/r4-validation.json](../../docs/review/r4-validation.json) |
 | added | [docs/review/r5-validation.json](../../docs/review/r5-validation.json) |
 | added | [docs/review/r6-validation.json](../../docs/review/r6-validation.json) |
@@ -263,11 +266,13 @@ Alle betrachteten Änderungen stehen in [SOURCE-COMPARISON.json](SOURCE-COMPARIS
 | added | [tools/document_revision23.py](../../tools/document_revision23.py) |
 | added | [tools/document_revision24.py](../../tools/document_revision24.py) |
 | added | [tools/document_revision25.py](../../tools/document_revision25.py) |
+| added | [tools/document_revision26.py](../../tools/document_revision26.py) |
 | added | [tools/export_forum_installation_review.py](../../tools/export_forum_installation_review.py) |
 | added | [tools/export_full_changelog.py](../../tools/export_full_changelog.py) |
 | added | [tools/export_full_changelog_revision23.py](../../tools/export_full_changelog_revision23.py) |
 | added | [tools/export_full_changelog_revision24.py](../../tools/export_full_changelog_revision24.py) |
 | added | [tools/export_full_changelog_revision25.py](../../tools/export_full_changelog_revision25.py) |
+| added | [tools/export_full_changelog_revision26.py](../../tools/export_full_changelog_revision26.py) |
 | added | [tools/export_source_bundle.py](../../tools/export_source_bundle.py) |
 | added | [tools/export_source_bundle_revision19.py](../../tools/export_source_bundle_revision19.py) |
 | added | [tools/export_source_bundle_revision20.py](../../tools/export_source_bundle_revision20.py) |
@@ -276,6 +281,7 @@ Alle betrachteten Änderungen stehen in [SOURCE-COMPARISON.json](SOURCE-COMPARIS
 | added | [tools/export_source_bundle_revision23.py](../../tools/export_source_bundle_revision23.py) |
 | added | [tools/export_source_bundle_revision24.py](../../tools/export_source_bundle_revision24.py) |
 | added | [tools/export_source_bundle_revision25.py](../../tools/export_source_bundle_revision25.py) |
+| added | [tools/export_source_bundle_revision26.py](../../tools/export_source_bundle_revision26.py) |
 | added | [tools/fetch_cef_runtime.py](../../tools/fetch_cef_runtime.py) |
 | added | [tools/finalize_revision16.py](../../tools/finalize_revision16.py) |
 | added | [tools/finalize_revision17.py](../../tools/finalize_revision17.py) |
@@ -287,6 +293,7 @@ Alle betrachteten Änderungen stehen in [SOURCE-COMPARISON.json](SOURCE-COMPARIS
 | added | [tools/finalize_revision23.py](../../tools/finalize_revision23.py) |
 | added | [tools/finalize_revision24.py](../../tools/finalize_revision24.py) |
 | added | [tools/finalize_revision25.py](../../tools/finalize_revision25.py) |
+| added | [tools/finalize_revision26.py](../../tools/finalize_revision26.py) |
 | added | [tools/install_revision18.py](../../tools/install_revision18.py) |
 | added | [tools/install_revision19.py](../../tools/install_revision19.py) |
 | added | [tools/install_revision20.py](../../tools/install_revision20.py) |
@@ -308,6 +315,7 @@ Alle betrachteten Änderungen stehen in [SOURCE-COMPARISON.json](SOURCE-COMPARIS
 | added | [tools/package_revision23.py](../../tools/package_revision23.py) |
 | added | [tools/package_revision24.py](../../tools/package_revision24.py) |
 | added | [tools/package_revision25.py](../../tools/package_revision25.py) |
+| added | [tools/package_revision26.py](../../tools/package_revision26.py) |
 | added | [tools/package_revision4.ps1](../../tools/package_revision4.ps1) |
 | added | [tools/package_revision5.ps1](../../tools/package_revision5.ps1) |
 | added | [tools/package_revision6.ps1](../../tools/package_revision6.ps1) |
@@ -328,6 +336,7 @@ Alle betrachteten Änderungen stehen in [SOURCE-COMPARISON.json](SOURCE-COMPARIS
 | added | [tools/publish_revision23.py](../../tools/publish_revision23.py) |
 | added | [tools/publish_revision24.py](../../tools/publish_revision24.py) |
 | added | [tools/publish_revision25.py](../../tools/publish_revision25.py) |
+| added | [tools/publish_revision26.py](../../tools/publish_revision26.py) |
 | added | [tools/record_gps_native_test.py](../../tools/record_gps_native_test.py) |
 | added | [tools/report_revision16_log.py](../../tools/report_revision16_log.py) |
 | added | [tools/report_revision17_log.py](../../tools/report_revision17_log.py) |
@@ -339,6 +348,7 @@ Alle betrachteten Änderungen stehen in [SOURCE-COMPARISON.json](SOURCE-COMPARIS
 | added | [tools/report_revision23_log.py](../../tools/report_revision23_log.py) |
 | added | [tools/report_revision24_log.py](../../tools/report_revision24_log.py) |
 | added | [tools/report_revision25_log.py](../../tools/report_revision25_log.py) |
+| added | [tools/report_revision26_log.py](../../tools/report_revision26_log.py) |
 | added | [tools/run_revision16.bat](../../tools/run_revision16.bat) |
 | added | [tools/run_revision17.bat](../../tools/run_revision17.bat) |
 | added | [tools/run_revision18.bat](../../tools/run_revision18.bat) |
@@ -349,6 +359,7 @@ Alle betrachteten Änderungen stehen in [SOURCE-COMPARISON.json](SOURCE-COMPARIS
 | added | [tools/run_revision23.bat](../../tools/run_revision23.bat) |
 | added | [tools/run_revision24.bat](../../tools/run_revision24.bat) |
 | added | [tools/run_revision25.bat](../../tools/run_revision25.bat) |
+| added | [tools/run_revision26.bat](../../tools/run_revision26.bat) |
 | modified | [tools/run_tests.bat](../../tools/run_tests.bat) |
 | added | [tools/setup_msvc.bat](../../tools/setup_msvc.bat) |
 | added | [tools/test_browser_restart.py](../../tools/test_browser_restart.py) |
@@ -380,6 +391,8 @@ Alle betrachteten Änderungen stehen in [SOURCE-COMPARISON.json](SOURCE-COMPARIS
 | added | [tools/verify_revision24_public.py](../../tools/verify_revision24_public.py) |
 | added | [tools/verify_revision25_artifact.py](../../tools/verify_revision25_artifact.py) |
 | added | [tools/verify_revision25_public.py](../../tools/verify_revision25_public.py) |
+| added | [tools/verify_revision26_artifact.py](../../tools/verify_revision26_artifact.py) |
+| added | [tools/verify_revision26_public.py](../../tools/verify_revision26_public.py) |
 | added | [tools/verify_revision4_artifact.py](../../tools/verify_revision4_artifact.py) |
 | added | [tools/verify_revision5_artifact.py](../../tools/verify_revision5_artifact.py) |
 | added | [tools/verify_revision6_artifact.py](../../tools/verify_revision6_artifact.py) |

@@ -147,7 +147,7 @@ void TestCoordinateAndRadiusBoundariesRemainValidAndReadOnly() {
     CHECK(events.size() == 3);
 }
 
-void TestOnlyNormalServerCheckpointRpcIdsAreObserved() {
+void TestUnrelatedRpcIdsAreIgnored() {
     keybinder::ServerCheckpointRPCAdapter adapter;
     int delivered = 0;
     adapter.SetCallback([&](const auto&) { ++delivered; });
@@ -157,12 +157,47 @@ void TestOnlyNormalServerCheckpointRpcIdsAreObserved() {
     WriteCheckpoint(payload);
     payload.SetReadOffset(2);
     const auto before = Snapshot(payload);
-    for (unsigned char rpc : {0, 1, 36, 38, 39, 61, 106, 108, 255}) {
+    for (unsigned char rpc : {0, 1, 36, 40, 61, 106, 108, 255}) {
         CHECK(!adapter.ProcessRpcForTesting(rpc, &payload));
         CHECK(Unchanged(payload, before));
         CHECK(!adapter.ProcessRpcForTesting(rpc, nullptr));
     }
     CHECK(delivered == 0);
+}
+
+void TestRacingCheckpointLayoutAndDisablePreservePayload() {
+    keybinder::ServerCheckpointRPCAdapter adapter;
+    std::vector<keybinder::ServerCheckpointEvent> events;
+    adapter.SetCallback([&](const auto& event) { events.push_back(event); });
+    CHECK(adapter.Initialize());
+    for (int prefix = 0; prefix < 8; ++prefix) {
+        RakNet::BitStream payload;
+        for (int bit = 0; bit < prefix; ++bit) payload.Write(true);
+        payload.Write(static_cast<unsigned char>(1));
+        payload.Write(1927.0f); payload.Write(168.0f); payload.Write(40.0f);
+        payload.Write(0.0f); payload.Write(0.0f); payload.Write(0.0f);
+        payload.Write(4.0f);
+        payload.SetReadOffset(prefix);
+        const auto before = Snapshot(payload);
+        CHECK(adapter.ProcessRpcForTesting(38, &payload));
+        CHECK(Unchanged(payload, before));
+        CHECK(events.back().enabled && events.back().racing);
+        CHECK(events.back().x == 1927.0f && events.back().y == 168.0f
+            && events.back().z == 40.0f && events.back().radius == 4.0f);
+        const std::size_t count = events.size();
+        for (int body = 0; body < 232; ++body) {
+            RakNet::BitStream partial(payload.GetData(), payload.GetNumberOfBytesUsed(), true);
+            partial.SetWriteOffset(prefix + body); partial.SetReadOffset(prefix);
+            const auto saved = Snapshot(partial);
+            CHECK(!adapter.ProcessRpcForTesting(38, &partial));
+            CHECK(Unchanged(partial, saved));
+            CHECK(events.size() == count);
+        }
+    }
+    CHECK(adapter.ProcessRpcForTesting(39, nullptr));
+    CHECK(!events.back().enabled && events.back().racing);
+    CHECK(adapter.ProcessRpcForTesting(37, nullptr));
+    CHECK(!events.back().enabled && !events.back().racing);
 }
 
 void TestDisableCheckpointAllowsNullOrUnrelatedPayloadWithoutReadingIt() {
@@ -304,7 +339,8 @@ int RunServerCheckpointRPCAdapterTests() {
     TestEveryTruncatedPayloadRestoresTheOriginalReadPositionAndBytes();
     TestNanInfinityInvalidCoordinatesAndRadiusNeverReachTheCallback();
     TestCoordinateAndRadiusBoundariesRemainValidAndReadOnly();
-    TestOnlyNormalServerCheckpointRpcIdsAreObserved();
+    TestUnrelatedRpcIdsAreIgnored();
+    TestRacingCheckpointLayoutAndDisablePreservePayload();
     TestDisableCheckpointAllowsNullOrUnrelatedPayloadWithoutReadingIt();
     TestLifecycleRequiresInitializationCallbackAndSupportsSafeReinitialize();
     TestCallbackFailureStillLeavesTheIncomingPayloadReadOnly();

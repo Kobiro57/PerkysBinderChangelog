@@ -1191,3 +1191,15 @@ Der Nutzer bestätigte nach Einspielen des vorläufigen r18-Stands, dass der ang
 - Regressionen für Parser, vollständige Chat-Anbindung, lokale Meldung, normale/radio/dienst/fraktionsbezogene Chattexte und Zusammenführung mit nativen sowie anderen Serverbestätigungen ergänzt.
 - Vorhandene Forum-Sonderzeichenkorrektur und Drogenzeiten erhalten. Historischen r24-Browsernachweis getrennt übernommen; kein erneuter r25-Browser- oder GTA-Livetest behauptet.
 - Neue NLBinder.asi, vollständigen Quellcode, gesamten Changelog und Forumtext als NLBinder-v0.1.2-r25 bereitgestellt; bisherige Exporte erhalten.
+
+## 32. Nachtrag v0.1.2 / r26 – 16. November 2026
+
+- Automatische Polizeifunk-Ortung an die persönliche Detektiv-Erfolgsmeldung gebunden und den Zielnamen aus der Startmeldung beibehalten.
+- Tatsächlich gesetzten normalen oder Renn-Checkpoint ausgelesen; kurze begrenzte Wartezeit für später verfügbare Marker vorgesehen.
+- Frühere zusätzliche Mindestlaufzeit und zwingende Beobachtung von RPC 107 entfernt. Zielbezirk anhand der Markerposition bestimmt, nicht anhand der Position des Polizisten.
+- Einmalige Ausgabe, Sitzungs-/Fraktionsprüfung und Verwerfen unvollständiger beziehungsweise abgelaufener Vorgänge beibehalten.
+- Gesucht-Label an den tatsächlich gezeichneten nativen Spielernamen gekoppelt, einschließlich Fahrern und Mitfahrern.
+- Zusätzliche Fünf-Meter-Grenze und eigene Fahrzeug-Sichtblockade entfernt. Reichweite und Sichtbarkeit folgen der nativen Namensanzeige; keine serverseitige Ausblendung aufgehoben.
+- Regressionen für Erfolgsmeldung, aktuelle Checkpoints, versetzte Verfügbarkeit, doppelte Meldungen und native Label-Sichtbarkeit ergänzt. Tatsächliche Ergebnisse stehen im r26-Prüfnachweis.
+- Vorhandene TakeOver-Killerkennung, Forum-Sonderzeichenkorrektur und Drogenzeiten erhalten. Browsernachweis aus r24 ausdrücklich als historisch übernommen.
+- Neue NLBinder.asi, vollständige Quellen und Changelogs als NLBinder-v0.1.2-r26 vorbereitet. Frühere Exporte und Git-Historie erhalten.

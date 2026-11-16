@@ -15,6 +15,7 @@ struct ServerCheckpointEvent {
     float y = 0.0f;
     float z = 0.0f;
     float radius = 0.0f;
+    bool racing = false;
 };
 
 struct ServerCheckpointAdapterState {

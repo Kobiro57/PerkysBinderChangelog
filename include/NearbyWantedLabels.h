@@ -1,6 +1,6 @@
 #pragma once
 
-#include <limits>
+#include <functional>
 #include <optional>
 #include <string>
 
@@ -11,9 +11,6 @@ namespace keybinder {
 class OnlineDataManager;
 struct OnlineSnapshot;
 
-// Deliberately fixed: this is a close-range annotation, never a player radar.
-constexpr float kNearbyWantedLabelMaximumDistance = 5.0f;
-
 struct NearbyWantedLabelState {
     bool overlayEnabled = false;
     bool policeMember = false;
@@ -22,29 +19,29 @@ struct NearbyWantedLabelState {
     bool localAlive = false;
     bool streamed = false;
     bool targetAlive = false;
-    bool targetVisible = false;
-    bool sameInterior = false;
     bool serverAllowsLabels = false;
     bool remoteAllowsLabels = false;
-    bool cameraLineOfSight = false;
-    bool localLineOfSight = false;
-    bool projectedOnScreen = false;
+    // Set only by the native DrawLabel call that draws this player's name.
+    bool nativeNameTagVisible = false;
     int localPlayerId = -1;
     int playerId = -1;
     int wanted = 0;
-    float distanceSquared = std::numeric_limits<float>::infinity();
-    float serverDrawDistance = 0.0f;
 };
 
 bool ShouldShowNearbyWantedLabel(const NearbyWantedLabelState& state);
 std::optional<int> FindLiveWantedForName(const OnlineSnapshot& snapshot, const std::string& name);
 std::string BuildNearbyWantedLabel(int wanted);
+bool MatchesNativePlayerNameTag(const std::string& text, const std::string& name, int id);
+std::string BuildWantedLabelForNativeDraw(NearbyWantedLabelState state, const OnlineSnapshot& snapshot,
+                                        const std::string& nativeText, const std::string& playerName);
 
 class NearbyWantedLabels {
 public:
-    // Called inside the existing ImGui HUD frame. No labels or positions persist
-    // between frames and this never modifies native nametags, blips or entities.
+    // Refreshes the native name-draw observer; labels are drawn synchronously
+    // with their real name, never from retained world positions or an own radar.
     static void Render(SAMPBridge& bridge, const OnlineDataManager& online, bool wantedOverlayEnabled);
+    static void SetEnabledProvider(std::function<bool()> provider);
+    static void Shutdown(bool removeHook = true);
 };
 
 } // namespace keybinder

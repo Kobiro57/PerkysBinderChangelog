@@ -1,6 +1,10 @@
 # Hinweise zur Prüfung durch die Projektleitung
 
-## Aktueller Stand v0.1.2 / r25 – 16. November 2026
+## Aktueller Stand v0.1.2 / r26 – 16. November 2026
+
+Ortung und native Wanted-Labels: [Prüfumfang](r26-PRUEFUNG-DE.md), [Ergebnisse](r26-validation.json).
+
+## Vorheriger Stand v0.1.2 / r25 – 16. November 2026
 
 TakeOver-Killmeldung: [Prüfumfang](r25-PRUEFUNG-DE.md), [Ergebnisse](r25-validation.json).
 

@@ -58,6 +58,15 @@ struct Context {
         checkpoint.m_bEnabled = TRUE;
     }
 
+    void ApplyRacingMarker(float x = markerX, float y = markerY, float z = markerZ) {
+        auto& checkpoint = game.get()->m_racingCheckpoint;
+        checkpoint.m_currentPosition.x = x;
+        checkpoint.m_currentPosition.y = y;
+        checkpoint.m_currentPosition.z = z;
+        checkpoint.m_fSize = markerRadius;
+        checkpoint.m_bEnabled = TRUE;
+    }
+
     SAMPBridge::TestingHooks Hooks() {
         SAMPBridge::TestingHooks hooks{};
         hooks.getModuleHandle = [](const char*) { return reinterpret_cast<HMODULE>(1); };
@@ -405,6 +414,58 @@ void OverflowDiscardsAmbiguousBatchesInsteadOfReplayingResults() {
     CHECK(fixture.context.commands.empty());
 }
 
+void SuccessReadsCurrentMarkerEvenWhenNoCheckpointRpcWasReceived() {
+    for (const bool racing : {false, true}) {
+        Fixture fixture;
+        fixture.Start();
+        fixture.context.now += 1000; // The server success is authoritative, no forced 28-second gate.
+        fixture.Chat(successLine);
+        fixture.bridge.Update();
+        CHECK(fixture.context.commands.empty());
+        if (racing) fixture.context.ApplyRacingMarker();
+        else fixture.context.ApplyMarker();
+        fixture.context.now += keybinder::PoliceLocateTracker::kNativeCheckpointSettleMs;
+        fixture.bridge.Update();
+        CHECK(fixture.context.commands == std::vector<std::string>{expectedRadio});
+        CHECK((fixture.context.resolvedPositions == std::vector<std::tuple<float, float, float>>{
+            std::make_tuple(markerX, markerY, markerZ)}));
+        fixture.Chat(successLine);
+        fixture.context.now += 1000;
+        fixture.bridge.Update();
+        CHECK(fixture.context.commands.size() == 1);
+    }
+    Fixture fixture;
+    fixture.Start();
+    fixture.context.now += 30000;
+    fixture.Chat(successLine);
+    fixture.bridge.Update();
+    fixture.context.now += 8000;
+    fixture.context.ApplyMarker(); // Marker arrived after the former five-second deadline.
+    fixture.bridge.Update();
+    CHECK(fixture.context.commands == std::vector<std::string>{expectedRadio});
+    CHECK(fixture.bridge.GetDistrictName() == "Market");
+}
+
+void NewRacingCheckpointTakesPriorityOverAnOlderNormalCheckpoint() {
+    Fixture fixture;
+    fixture.context.ApplyMarker(100.0f, 200.0f, 3.0f);
+    fixture.Start();
+    fixture.context.now += 30000;
+    RakNet::BitStream payload;
+    payload.Write(static_cast<unsigned char>(0));
+    payload.Write(markerX); payload.Write(markerY); payload.Write(markerZ);
+    payload.Write(markerX + 10.0f); payload.Write(markerY); payload.Write(markerZ);
+    payload.Write(markerRadius);
+    CHECK(fixture.bridge.ProcessServerCheckpointRpcForTesting(38, &payload));
+    CHECK(payload.GetReadOffset() == 0);
+    fixture.context.ApplyRacingMarker();
+    fixture.Chat(successLine);
+    fixture.bridge.Update();
+    CHECK(fixture.context.commands == std::vector<std::string>{expectedRadio});
+    CHECK((fixture.context.resolvedPositions == std::vector<std::tuple<float, float, float>>{
+        std::make_tuple(markerX, markerY, markerZ)}));
+}
+
 } // namespace
 
 int RunPoliceLocateBridgeTests() {
@@ -418,6 +479,8 @@ int RunPoliceLocateBridgeTests() {
     LocalGpsAndOldServerCheckpointsNeverCountAsLocatedTarget();
     ExpiredOperationsCannotSendAndUnavailableInputDefersOutput();
     OverflowDiscardsAmbiguousBatchesInsteadOfReplayingResults();
+    SuccessReadsCurrentMarkerEvenWhenNoCheckpointRpcWasReceived();
+    NewRacingCheckpointTakesPriorityOverAnOlderNormalCheckpoint();
     std::printf("PoliceLocateBridgeTests: %d checks, %d failures\n", checks, failures);
     return failures;
 }

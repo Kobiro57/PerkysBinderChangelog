@@ -11,14 +11,11 @@ int checks = 0, failures = 0;
 keybinder::NearbyWantedLabelState VisibleSample() {
     keybinder::NearbyWantedLabelState s;
     s.overlayEnabled = s.policeMember = s.connected = s.localActive = s.localAlive = true;
-    s.streamed = s.targetAlive = s.targetVisible = s.sameInterior = true;
-    s.serverAllowsLabels = s.remoteAllowsLabels = s.cameraLineOfSight = s.localLineOfSight = true;
-    s.projectedOnScreen = true;
+    s.streamed = s.targetAlive = true;
+    s.serverAllowsLabels = s.remoteAllowsLabels = s.nativeNameTagVisible = true;
     s.localPlayerId = 10;
     s.playerId = 20;
     s.wanted = 15;
-    s.distanceSquared = 4.0f;
-    s.serverDrawDistance = 30.0f;
     return s;
 }
 }
@@ -26,46 +23,22 @@ keybinder::NearbyWantedLabelState VisibleSample() {
 int RunNearbyWantedLabelsTests() {
     using namespace keybinder;
     checks = failures = 0;
-    CHECK(kNearbyWantedLabelMaximumDistance == 5.0f);
     CHECK(!ShouldShowNearbyWantedLabel({}));
     auto s = VisibleSample();
     CHECK(ShouldShowNearbyWantedLabel(s));
-    s.distanceSquared = 25.0f;
+    // Native visibility is authoritative for both vehicle occupants and foot
+    // players at every distance where their actual name is drawn.
+    s.nativeNameTagVisible = false;
+    CHECK(!ShouldShowNearbyWantedLabel(s));
+    s.nativeNameTagVisible = true;
     CHECK(ShouldShowNearbyWantedLabel(s));
-    s.distanceSquared = 25.0001f;
-    CHECK(!ShouldShowNearbyWantedLabel(s));
-    s.distanceSquared = 36.0f; // Six metres vertically also exceeds the fixed 3D radius.
-    CHECK(!ShouldShowNearbyWantedLabel(s));
-    s.distanceSquared = 0.0f;
-    CHECK(ShouldShowNearbyWantedLabel(s));
-    s.distanceSquared = -1.0f;
-    CHECK(!ShouldShowNearbyWantedLabel(s));
-    s.distanceSquared = std::numeric_limits<float>::infinity();
-    CHECK(!ShouldShowNearbyWantedLabel(s));
-    s.distanceSquared = std::numeric_limits<float>::quiet_NaN();
-    CHECK(!ShouldShowNearbyWantedLabel(s));
-    s = VisibleSample();
-    s.serverDrawDistance = 1.0f;
-    CHECK(!ShouldShowNearbyWantedLabel(s));
-    s.serverDrawDistance = 2.0f;
-    CHECK(ShouldShowNearbyWantedLabel(s));
-    s.serverDrawDistance = 0.0f;
-    CHECK(!ShouldShowNearbyWantedLabel(s));
-    s.serverDrawDistance = -1.0f;
-    CHECK(!ShouldShowNearbyWantedLabel(s));
-    s.serverDrawDistance = std::numeric_limits<float>::quiet_NaN();
-    CHECK(!ShouldShowNearbyWantedLabel(s));
-    s.serverDrawDistance = std::numeric_limits<float>::infinity();
-    CHECK(!ShouldShowNearbyWantedLabel(s));
 
     bool NearbyWantedLabelState::* const guards[] = {
         &NearbyWantedLabelState::overlayEnabled, &NearbyWantedLabelState::policeMember,
         &NearbyWantedLabelState::connected, &NearbyWantedLabelState::localActive,
         &NearbyWantedLabelState::localAlive, &NearbyWantedLabelState::streamed,
-        &NearbyWantedLabelState::targetAlive, &NearbyWantedLabelState::targetVisible,
-        &NearbyWantedLabelState::sameInterior, &NearbyWantedLabelState::serverAllowsLabels,
-        &NearbyWantedLabelState::remoteAllowsLabels, &NearbyWantedLabelState::cameraLineOfSight,
-        &NearbyWantedLabelState::localLineOfSight, &NearbyWantedLabelState::projectedOnScreen
+        &NearbyWantedLabelState::targetAlive, &NearbyWantedLabelState::serverAllowsLabels,
+        &NearbyWantedLabelState::remoteAllowsLabels, &NearbyWantedLabelState::nativeNameTagVisible
     };
     for (const auto guard : guards) {
         s = VisibleSample();
@@ -120,6 +93,36 @@ int RunNearbyWantedLabelsTests() {
     snapshot.players[1].name = "Lesch_2";
     CHECK(FindLiveWantedForName(snapshot, "Lesch") == 15);
     CHECK(!FindLiveWantedForName(snapshot, "Lesch_2"));
+    for (const auto& name : {std::string("Lesch"), std::string("[RCB]Lesch"), std::string("Nick(3)")}) {
+        for (int id : {0, 3, 1003}) {
+            CHECK(MatchesNativePlayerNameTag(name, name, id));
+            CHECK(MatchesNativePlayerNameTag(name + " (" + std::to_string(id) + ")", name, id));
+            CHECK(MatchesNativePlayerNameTag(name + "(" + std::to_string(id) + ")", name, id));
+            CHECK(MatchesNativePlayerNameTag("{FF0000}" + name + " (" + std::to_string(id) + "){FFFFFFFF}", name, id));
+            CHECK(!MatchesNativePlayerNameTag("Other (" + std::to_string(id) + ")", name, id));
+            CHECK(!MatchesNativePlayerNameTag(name + " (" + std::to_string(id + 1) + ")", name, id));
+            CHECK(!MatchesNativePlayerNameTag(name + "Suffix", name, id));
+        }
+    }
+    CHECK(MatchesNativePlayerNameTag(" lesCH (20) ", "Lesch", 20));
+    CHECK(!MatchesNativePlayerNameTag("Lesch", "Lesch", -1));
+    CHECK(!MatchesNativePlayerNameTag("Lesch (1004)", "Lesch", 1004));
+    CHECK(!MatchesNativePlayerNameTag("Lesch (20) extra", "Lesch", 20));
+    CHECK(!MatchesNativePlayerNameTag("Lesch\n(20)", "Lesch", 20));
+    CHECK(!MatchesNativePlayerNameTag("[GESUCHT | 15 Wanteds]", "Lesch", 20));
+    CHECK(!MatchesNativePlayerNameTag(std::string(193, 'x'), "Lesch", 20));
+    s = VisibleSample();
+    CHECK(BuildWantedLabelForNativeDraw(s, snapshot, "Lesch (20)", "Lesch") == "[GESUCHT | 15 Wanteds]");
+    s.nativeNameTagVisible = false;
+    CHECK(BuildWantedLabelForNativeDraw(s, snapshot, "Lesch (20)", "Lesch").empty());
+    s = VisibleSample();
+    CHECK(BuildWantedLabelForNativeDraw(s, snapshot, "Lesch (21)", "Lesch").empty());
+    s.policeMember = false;
+    CHECK(BuildWantedLabelForNativeDraw(s, snapshot, "Lesch (20)", "Lesch").empty());
+    s = VisibleSample();
+    snapshot.fetchStatus = OnlineFetchStatus::Stale;
+    CHECK(BuildWantedLabelForNativeDraw(s, snapshot, "Lesch (20)", "Lesch").empty());
+    snapshot.fetchStatus = OnlineFetchStatus::Live;
     CHECK(BuildNearbyWantedLabel(15) == "[GESUCHT | 15 Wanteds]");
     CHECK(BuildNearbyWantedLabel(1) == "[GESUCHT | 1 Wanteds]");
     CHECK(BuildNearbyWantedLabel(0).empty());

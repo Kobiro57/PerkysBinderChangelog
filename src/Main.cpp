@@ -365,6 +365,7 @@ public:
         // Phase 4 is emergency-only: save state and disable feature callbacks,
         // but avoid hook teardown while SA-MP is exiting via TerminateProcess.
         g_shutdown_phase.store(4);
+        keybinder::NearbyWantedLabels::Shutdown(false);
         
         // Save keybinds + settings (CRT is alive, file I/O works)
         keybinder::Logger::Info("=== NLBinder emergency shutdown (TerminateProcess intercepted) ===");
@@ -665,6 +666,11 @@ public:
         });
         onlineOverlayRenderer_.SetInputGateCallback([&]() {
             return bridge_.IsChatOpen() || bridge_.IsDialogOpen() || bridge_.IsCursorActive();
+        });
+        keybinder::NearbyWantedLabels::SetEnabledProvider([&]() {
+            const auto& settings = settingsManager_.Get();
+            return settings.online_enabled && settings.online_wanted_overlay_enabled
+                && !overlay_.IsVisible() && !quickMap_.IsVisible() && !forumBrowser_.IsOpen();
         });
         overlay_.SetOnlineQuickOverlayRenderCallback([&]() {
             onlineOverlayRenderer_.Render();
@@ -1097,6 +1103,7 @@ public:
         };
         Events::shutdownRwEvent += [] {
             g_shutdown_phase.store(2);
+            keybinder::NearbyWantedLabels::Shutdown();
             keybinder::Logger::Info("=== NLBinder shutdown initiated ===");
 
             // Export kill tracker data to unified config before saving.

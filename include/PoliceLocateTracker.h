@@ -13,8 +13,8 @@ struct LocateCheckpoint {
     float radius = 0.0f;
 };
 
-// Correlates the server's personal detective messages with a newly received
-// server checkpoint. It never reads the local GPS destination or sends chat.
+// Correlates personal detective messages with the active game checkpoint.
+// It never reads the local GPS destination or sends chat.
 // All methods are called on the game thread. The caller supplies a current,
 // verified police role and a host/port/player identity before observing events.
 class PoliceLocateTracker {
@@ -22,8 +22,8 @@ public:
     using DistrictResolver = std::function<std::string(float, float, float)>;
 
     static constexpr std::uint32_t kOperationTimeoutMs = 120000;
-    static constexpr std::uint32_t kCompletionWindowMs = 5000;
-    static constexpr std::uint32_t kEarlyMarkerToleranceMs = 2000;
+    static constexpr std::uint32_t kCompletionWindowMs = 10000;
+    static constexpr std::uint32_t kNativeCheckpointSettleMs = 150;
 
     void SetSession(bool policeAllowed, const std::string& connectionIdentity);
     void Reset();
@@ -31,13 +31,15 @@ public:
     bool ObserveChat(const std::string& line, std::uint32_t nowMs);
     bool ObserveCheckpoint(const LocateCheckpoint& checkpoint, std::uint32_t nowMs);
     void ObserveCheckpointDisabled();
+    bool ReadyForCurrentCheckpoint(std::uint32_t nowMs);
 
     // Returns an already formatted /r command once, only after the matching
     // success and checkpoint were observed. A missing district never falls
-    // back to the local player's location or an old checkpoint.
+    // back to the local player's location. The bridge supplies the active marker.
     std::string TakeRadioMessage(std::uint32_t nowMs, const DistrictResolver& resolveDistrict);
 
     bool HasPendingLocate() const { return pending_; }
+    bool HasSuccessfulLocate() const { return pending_ && successObserved_; }
 
 private:
     void ClearOperation();

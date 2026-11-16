@@ -22,6 +22,8 @@ Advanced keybinder and combat-assist plugin for GTA San Andreas Multiplayer (SA-
 
 - **TakeOver Kills** — Own `[TakeOver]: NAME hat ENEMY getötet.` confirmations use the existing kill counter and configured killbind, with whole-name attribution and existing duplicate correlation.
 
+- **Police Locate and Native Wanted Labels** — Detective success messages trigger current normal/racing-checkpoint lookup and one radio report. Wanted labels follow actual native nametag draw calls, including vehicle occupants and native visibility/range.
+
 ## Building
 
 ### Requirements

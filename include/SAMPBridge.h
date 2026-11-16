@@ -235,6 +235,7 @@ private:
     void CapturePoliceLocateChat(const std::string& text);
     void CapturePoliceCheckpoint(const keybinder::ServerCheckpointEvent& event);
     void UpdatePoliceLocate(unsigned long now);
+    bool ReadPoliceCheckpoint(keybinder::LocateCheckpoint& checkpoint) const;
     std::string ResolvePoliceCheckpointDistrict(float x, float y, float z) const;
     bool SendSpeedDialogChoice(const keybinder::SpeedTicketAction& action);
     void UpdateStartupJobSkills(unsigned long now);
@@ -538,6 +539,7 @@ private:
     std::vector<PendingPoliceLocateEvent> pendingPoliceLocateEvents_;
     bool policeLocateCaptureActive_ = false;
     bool policeLocateQueueOverflow_ = false;
+    bool policeLocatePreferredRacing_ = false;
     std::string policeLocateSession_;
     std::function<bool(const keybinder::ServerStatsSnapshot&)> statsSynchronizedCallback_;
     bool startupStatsConnected_ = false;

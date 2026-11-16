@@ -2,22 +2,22 @@
   "original_archive": "NLBinder-master.zip",
   "original_sha256": "a328e78eea63420e9bfe9c084883100177fe0fd9c2d62c4fcaef38c0a44801e9",
   "original_archive_commit_comment": "92ce21971bee2d166d830e23ad20950f1dc98921",
-  "release": "v0.1.2-r25",
-  "release_asi_sha256": "f97705935391e2da2eb629c38b927ee6d4d4d01ff07585b4d0820181746df2ed",
+  "release": "v0.1.2-r26",
+  "release_asi_sha256": "49faf8c7ff8ac623479d7d73209585ba7f869f04b01ed348edbf7a86baf716ad",
   "baseline_tag": "original-archive-92ce219",
   "baseline_commit": "2da75e6c54a098243bf00ab48d86c5e3ee3cd261",
-  "hash_scope": "Exact Git blob bytes in original tag versus staged r25 source; generated comparisons and release binaries excluded.",
+  "hash_scope": "Exact Git blob bytes in original tag versus staged r26 source; generated comparisons and release binaries excluded.",
   "generated_paths_excluded": [
     "docs/review/DATEIVERGLEICH.md",
     "docs/review/DIFFSTAT.txt",
-    "docs/review/REVISION25-DIFFSTAT.txt",
+    "docs/review/REVISION26-DIFFSTAT.txt",
     "docs/review/SOURCE-COMPARISON.json",
     "docs/review/first-party-changes.patch",
-    "docs/review/revision25-changes.patch"
+    "docs/review/revision26-changes.patch"
   ],
   "historical_revision_patches_excluded": true,
   "baseline_files": 2006,
-  "current_files": 5873,
+  "current_files": 5886,
   "changes": [
     {
       "path": ".gitattributes",
@@ -57,7 +57,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": "65b8ae3822ae33054ece73689612fc8afb758e59282f3ee1185ee5fce62e269d",
-      "after_sha256": "a44cb488539b50bc207ad88b1885bb52217a6f26d37a76e6f01a141383131079"
+      "after_sha256": "ea3e741a2c4ba03cb2aa3c585432cc00148116f97db6ff8dc8eeaee9d49dd2e2"
     },
     {
       "path": "browser/CMakeLists.txt",
@@ -81,7 +81,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": null,
-      "after_sha256": "4076df8e8d046cb75a7d68a6ad300c039151d227ac184a2ba38cd031dcf1a67a"
+      "after_sha256": "49f1be89935a6f5604ff7d85b4ef89eee152f058cc7f1f8a2d12ca38ecbb1c12"
     },
     {
       "path": "docs/CHANGELOG-GESAMT.txt",
@@ -89,7 +89,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": null,
-      "after_sha256": "8bb1064fc41d11341f01564eda1022daa8223caec269dea76ffa6e650c967700"
+      "after_sha256": "90e63561b3a32cecd4a9001069e83113fdbb448551cd4c8921ea8e5fb5e2bc10"
     },
     {
       "path": "docs/FORUM-CHANGELOG-v0.1.2.txt",
@@ -97,7 +97,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": null,
-      "after_sha256": "bcf8ebfe5617add46eea17c77a313539b4475227e2ffffb54d5db64d33190f1a"
+      "after_sha256": "e00d22869ae1976ffd22af8b81cfb392538f1263815f592f2f9d3416aebb04df"
     },
     {
       "path": "docs/FORUM-DATEILISTE.txt",
@@ -316,6 +316,14 @@
       "after_sha256": "57134fbe52a860d817858577acb851a80123979ddae06fac2330718146864dee"
     },
     {
+      "path": "docs/NLBinder-0.1.2-r26-DE.md",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "b76788af68f47f0d54f0e4722df5d83d3e5a88467c0eb8fac7e4b963be1fabec"
+    },
+    {
       "path": "docs/ORIGINAL-README.md",
       "status": "added",
       "dependency": false,
@@ -345,7 +353,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": null,
-      "after_sha256": "ba7900bd8a6f826afd4fdfdf521a59f67a4c7eb4b8aefce00819a1d875f5c452"
+      "after_sha256": "bff4907e0e8d81a52e8747c82eccf6a8c0427881d22b8392db785f41cd353186"
     },
     {
       "path": "docs/review/DEPENDENCIES.md",
@@ -361,7 +369,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": null,
-      "after_sha256": "e7a8fc28fca2151c4cc979479c76f9d431c644ba1a45c77a7d16bdc0888dacb9"
+      "after_sha256": "5684babf99d23b90ec5ae33b562bd6931182ad0cdfc57052edada9e0f85c3bfb"
     },
     {
       "path": "docs/review/PUBLICATION.json",
@@ -369,7 +377,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": null,
-      "after_sha256": "b2f7528a12fc066f3e67a82912f7dfc510276f4f1d84aa62570ac83944a538ea"
+      "after_sha256": "852a871d68f4ef6ff027d326e71c1baa77890020748ee50c47fb2a8bb58d1fe5"
     },
     {
       "path": "docs/review/PUBLISHING-DE.md",
@@ -385,7 +393,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": null,
-      "after_sha256": "0b514f2296117f1debd7559509d6f3d9c9a3aa06f692501b85fb84af7b466673"
+      "after_sha256": "d3f55df15cad3bd119f3d6a0e4ebba3e1faaa44917a24a623d374b341999054e"
     },
     {
       "path": "docs/review/r10-validation.json",
@@ -586,6 +594,22 @@
       "line_endings_only": false,
       "before_sha256": null,
       "after_sha256": "c4b0ceb17c495e184f14ec80720a131c3be6e9e0b30f50352e8e60e579a2483d"
+    },
+    {
+      "path": "docs/review/r26-PRUEFUNG-DE.md",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "01a2c98fc2cc300707e646acd3332aebe2819396a4119b89faa0a085bb88ca09"
+    },
+    {
+      "path": "docs/review/r26-validation.json",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "9110becfdeede96db6f63ab34bdc1fbdb4349358040a1901acfd0b73ee93003b"
     },
     {
       "path": "docs/review/r4-validation.json",
@@ -937,7 +961,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": null,
-      "after_sha256": "d659a2912c6f76dd3a01d9a5d69bf71b7e2e845e9613e8f4b1d45501ca0afe60"
+      "after_sha256": "fb49b8791ee015a5726b7d5c943cd4834e1ae70bbc9e878caffe3a6833df864e"
     },
     {
       "path": "include/NovaReconnectFlow.h",
@@ -993,7 +1017,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": null,
-      "after_sha256": "ae69b276aff583f7def6ee7f945e694dd0b0631641de553e002bd12e43b6303d"
+      "after_sha256": "c501abdf93fd1e7cdf199605224688242c29df1e695ec58ba6ab3f68cc0b1780"
     },
     {
       "path": "include/QuickMap.h",
@@ -1329,7 +1353,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": "2299aeab1ef34de7189e4d246e7956bf5028638a7593289451304fb78e61f20e",
-      "after_sha256": "8e50bb1867db29340d956358cd1f3f25165d8bf425d2c6ecb5d8c8e54d343944"
+      "after_sha256": "6331ffa597725b829a822d092f524d90612a80dc8350486bf1204a2770f373c2"
     },
     {
       "path": "include/ServerCheckpointRPCAdapter.h",
@@ -1337,7 +1361,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": null,
-      "after_sha256": "71719e3dd7d8de3697af7fbd3a91f63c97185700e1accddf9e6edb2045824ecc"
+      "after_sha256": "bbe369a615f8dfcdc71c778f50ffa4b0dbc56ad84dd2c2750577563a7d6a5ac0"
     },
     {
       "path": "include/ServerStatsSnapshot.h",
@@ -29785,7 +29809,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": "eb9f28895fa6b3b435282a6285e06fff924a252ab88bfe81ad90658a0a222781",
-      "after_sha256": "2ce26471ca8ff865472c11929c90bb2253008aa2e237a87507bc30bf5fbb2d80"
+      "after_sha256": "1a1529a2e942d91afeac9e3ef60b6c6008c8d3fbe669dcbce772885e1d5aa020"
     },
     {
       "path": "src/MainWindowUI.cpp",
@@ -29809,7 +29833,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": null,
-      "after_sha256": "8ecba585b3c2e92af70386bb0f5a8a68f8a17549cc2a831d04a36899a7c3870e"
+      "after_sha256": "7c83bcdcd8e50d44b16f2f82b2d8d882eabe387927ab7b9922da83917228ace5"
     },
     {
       "path": "src/OnlineDataManager.cpp",
@@ -29841,7 +29865,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": "3f39225d87476f6e4cc4278f9b2cfb4b7afd8587e6b6dac85c3acf195b3b41fd",
-      "after_sha256": "0a06f98138e969dea8be871c77536e92fc28cfdba18fd817a4c229ea4c585ba9"
+      "after_sha256": "5703e2ae605eb22e739a996a31aa1df971fc3442d99490ce578ab04411fc5067"
     },
     {
       "path": "src/PersistentPaths.cpp",
@@ -29857,7 +29881,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": null,
-      "after_sha256": "31187735ba711993bf0bcb600cca702293fda367a914753c9f93cf9ba5d1def8"
+      "after_sha256": "ae418ea3ee601e05c787c038aed21d8a259a17dac4fe0320fcd392c32513410a"
     },
     {
       "path": "src/PoliceLocateTracker.cpp",
@@ -29865,7 +29889,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": null,
-      "after_sha256": "e41f15b6ac17defd1e40d2fe3fb6a4b330212d76396572f7fa067a44b56994de"
+      "after_sha256": "c2897b565a50ec80588715c2e0567954a085004245653669575905a4c0d6208b"
     },
     {
       "path": "src/QuickMap.cpp",
@@ -29897,7 +29921,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": null,
-      "after_sha256": "7b1e048c49c90b8f3e4e12f9978d0b690ff467a61b107e606a3373c184e9912d"
+      "after_sha256": "f51415c2fcad4bf247eac7647a3b1ae79bf873809474706de2b8f013d7192b58"
     },
     {
       "path": "src/SettingsManager.cpp",
@@ -30185,7 +30209,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": null,
-      "after_sha256": "352e51c8ba01e3dab23e7f9fc0d4a09229eada1c29227e8c950e757da5800a14"
+      "after_sha256": "02a48f0ba96cc3f5983c95dd520c88eeffdf5e0ff250dfa20ae3ced8683d9cd7"
     },
     {
       "path": "tests/OnlineDataManagerTests.cpp",
@@ -30217,7 +30241,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": null,
-      "after_sha256": "691041c4b69b594cb94b2d6c8aa62ffde19728bf76d963ec566dbebf59c97792"
+      "after_sha256": "60777657dc7b0822e7c7cb8d9fd7582619546736a261e69010ce7fc3422125f8"
     },
     {
       "path": "tests/PoliceLocateTrackerTests.cpp",
@@ -30225,7 +30249,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": null,
-      "after_sha256": "4fbc761b74276e1ccde147f76dd559c0a45085b1228b11160eb876ff95dcaca3"
+      "after_sha256": "784bfbcb0736a6a11600b7e7dedbee969b5cd24d8b92b14fe0546491ae394235"
     },
     {
       "path": "tests/QuickMapTests.cpp",
@@ -30297,7 +30321,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": null,
-      "after_sha256": "83ab363b56261158e0480ff4329742e85190c0e272d742dac7ffa3b290e68dd8"
+      "after_sha256": "e47fb4451fb48b96fffa1d897794bec1df6a04a2346e59021d0535cda31a1850"
     },
     {
       "path": "tests/ServerStatsParserTests.cpp",
@@ -30636,6 +30660,14 @@
       "after_sha256": "ec2b48625129467aacc0b10c7ad61906e50255267a1f09432dfbe1bd058f5678"
     },
     {
+      "path": "tools/document_revision26.py",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "f5afbf7b7af74654419e0dff5921f2ae20587a1f6cb13a08374d2abb11ffd737"
+    },
+    {
       "path": "tools/export_forum_installation_review.py",
       "status": "added",
       "dependency": false,
@@ -30674,6 +30706,14 @@
       "line_endings_only": false,
       "before_sha256": null,
       "after_sha256": "6f47a54fc77dc79206c750d437ef81df1c4f840e52fedaffe0487e509e6fdbf3"
+    },
+    {
+      "path": "tools/export_full_changelog_revision26.py",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "3dec1ec36262cf6cd30cfbfe324143f7d091c94b38a2209ace0ba85ca74becfc"
     },
     {
       "path": "tools/export_source_bundle.py",
@@ -30738,6 +30778,14 @@
       "line_endings_only": false,
       "before_sha256": null,
       "after_sha256": "47d0808245a97aa4bb5e47b7ee6bae852bcbb4e8ccc97004b99a01069bb45ebe"
+    },
+    {
+      "path": "tools/export_source_bundle_revision26.py",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "03857a78a639f010f984f55e295e38b8ab5498dfac919525c8fc4c3f72690cdc"
     },
     {
       "path": "tools/fetch_cef_runtime.py",
@@ -30826,6 +30874,14 @@
       "line_endings_only": false,
       "before_sha256": null,
       "after_sha256": "27dcf165c67576fa377a61b0566afa510e8bb3dff223a7ee7b85be89bbbd942e"
+    },
+    {
+      "path": "tools/finalize_revision26.py",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "904378a4b70a3b09a94d80775094952a70973a2069259bdb0bdcb55fac2507bd"
     },
     {
       "path": "tools/install_revision18.py",
@@ -30996,6 +31052,14 @@
       "after_sha256": "501c3acf3cfe23d1e3f6058bfce956a94da94242170516fb42e8b5572dfe9b65"
     },
     {
+      "path": "tools/package_revision26.py",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "173ba7abb5e50b60f965710f2f13071a1817bf61deb8bc7befd10a16ff6ba769"
+    },
+    {
       "path": "tools/package_revision4.ps1",
       "status": "added",
       "dependency": false,
@@ -31156,6 +31220,14 @@
       "after_sha256": "cfcc69225ef9e8c3baf0f38ed07ee018d4a86394f449abb03c07a6f46955b071"
     },
     {
+      "path": "tools/publish_revision26.py",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "9c6d3aeb8561ab2793a6b0c6334c37870fa25a026e38968cc270830642e5e665"
+    },
+    {
       "path": "tools/record_gps_native_test.py",
       "status": "added",
       "dependency": false,
@@ -31244,6 +31316,14 @@
       "after_sha256": "990c5a2be6f4d6894e9e3eafccfb8db3e6c7a2ca878f566856bec5a6d3b7938e"
     },
     {
+      "path": "tools/report_revision26_log.py",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "f6eaad2f3819c8f0d87e71be239416db5e70c0af2ec717d19e575fb9600e7435"
+    },
+    {
       "path": "tools/run_revision16.bat",
       "status": "added",
       "dependency": false,
@@ -31322,6 +31402,14 @@
       "line_endings_only": false,
       "before_sha256": null,
       "after_sha256": "95715ae17b4e2223ac82fb7d4abef5bb07c835d69f839870f482e47889a246e6"
+    },
+    {
+      "path": "tools/run_revision26.bat",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "57c2c04702c3e3502e3d4108887414d556e3a13c05583c42acc0ba1b6857942d"
     },
     {
       "path": "tools/run_tests.bat",
@@ -31570,6 +31658,22 @@
       "line_endings_only": false,
       "before_sha256": null,
       "after_sha256": "441451aa65e06c44ddcd6f84dd78953a2b6a34c00383068b735c5b8e2c55a024"
+    },
+    {
+      "path": "tools/verify_revision26_artifact.py",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "6e2f31f15826ab701f9b113050b5ac943008d69ae5e1f83a7ec113858709aeb0"
+    },
+    {
+      "path": "tools/verify_revision26_public.py",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "5f689dbc796c3e12a444257806367d951d3c129488507d71971cefa614411e06"
     },
     {
       "path": "tools/verify_revision4_artifact.py",
