@@ -14,7 +14,7 @@ index 88480d9..9e7a6cb 100644
  IDR_FONT_MATERIAL_SYMBOLS RCDATA "third_party\\assets\\fonts\\icons\\MaterialSymbols.ttf"
  IDR_IMAGE_NL_LOGO RCDATA "res\\NLLogo.png"
 diff --git a/Keybinder.vcxproj b/Keybinder.vcxproj
-index 41dbd9f..d758a1f 100644
+index 41dbd9f..6bfa473 100644
 --- a/Keybinder.vcxproj
 +++ b/Keybinder.vcxproj
 @@ -53,14 +53,14 @@
@@ -86,7 +86,7 @@ index 41dbd9f..d758a1f 100644
      <ClCompile Include="src\ActionExecutor.cpp" />
      <ClCompile Include="src\InputManager.cpp" />
      <ClCompile Include="src\Logger.cpp" />
-@@ -532,6 +553,13 @@
+@@ -532,6 +553,15 @@
      <ClInclude Include="include\OnlineOverlayRenderer.h" />
      <ClInclude Include="include\OnlineEventDetector.h" />
      <ClInclude Include="include\OnlineOverlayController.h" />
@@ -97,10 +97,12 @@ index 41dbd9f..d758a1f 100644
 +    <ClInclude Include="include\PoliceLocateTracker.h" />
 +    <ClInclude Include="include\ServerCheckpointRPCAdapter.h" />
 +    <ClInclude Include="include\NearbyWantedLabels.h" />
++    <ClInclude Include="include\ForumBrowser.h" />
++    <ClInclude Include="include\ForumKeyboardInput.h" />
      <ClInclude Include="include\\StatsStorage.h" />
      <ClInclude Include="include\\JobsTypes.h" />
      <ClInclude Include="include\\JobRegistry.h" />
-@@ -553,10 +581,20 @@
+@@ -553,10 +583,20 @@
  
    <ItemGroup>
      <ResourceCompile Include="Keybinder.rc">
@@ -1194,10 +1196,10 @@ index 0000000..6f0b805
 +}
 diff --git a/include/ForumBrowser.h b/include/ForumBrowser.h
 new file mode 100644
-index 0000000..a9e990d
+index 0000000..c46db76
 --- /dev/null
 +++ b/include/ForumBrowser.h
-@@ -0,0 +1,33 @@
+@@ -0,0 +1,34 @@
 +#pragma once
 +
 +#include <functional>
@@ -1226,6 +1228,7 @@ index 0000000..a9e990d
 +private:
 +#ifdef KEYBINDER_TESTING
 +    friend int RunNativeForumSmokeTest();
++    friend int RunForumKeyboardRoutingTests();
 +#endif
 +    struct Impl;
 +    std::unique_ptr<Impl> impl_;
@@ -1287,6 +1290,87 @@ index 0000000..36879dc
 +static_assert(sizeof(Command) == 28);
 +static_assert(offsetof(SharedState, parentWindow) == 64);
 +static_assert(std::is_trivially_copyable_v<Command> && std::is_trivially_copyable_v<SharedState>);
++} // namespace keybinder::forum
+diff --git a/include/ForumKeyboardInput.h b/include/ForumKeyboardInput.h
+new file mode 100644
+index 0000000..f52e3ae
+--- /dev/null
++++ b/include/ForumKeyboardInput.h
+@@ -0,0 +1,75 @@
++#pragma once
++
++#include "ForumBrowserProtocol.h"
++#include <array>
++#include <cstddef>
++#include <cstdint>
++#include <windows.h>
++
++namespace keybinder::forum {
++
++struct KeyCommandBatch {
++    bool handled = false;
++    std::array<Command, 2> commands{};
++    std::size_t count = 0;
++};
++
++// Consume Windows' translated text instead of translating virtual keys again:
++// a second ToUnicodeEx call would disturb dead-key composition. The overlay
++// installs a Unicode WndProc, so WM_CHAR already contains UTF-16 code units.
++inline KeyCommandBatch BuildForumKeyCommands(UINT message, WPARAM key,
++                                             LPARAM native, unsigned int modifiers) {
++    KeyCommandBatch result;
++    const bool down = message == WM_KEYDOWN || message == WM_SYSKEYDOWN;
++    const bool up = message == WM_KEYUP || message == WM_SYSKEYUP;
++    const bool character = message == WM_CHAR || message == WM_SYSCHAR;
++    const bool unicodeScalar = message == WM_UNICHAR;
++    const bool deadCharacter = message == WM_DEADCHAR || message == WM_SYSDEADCHAR;
++    if (!down && !up && !character && !unicodeScalar && !deadCharacter) return result;
++
++    // Escape belongs to the overlay close action, Alt+F4 to the native window.
++    if (key == VK_ESCAPE) return result;
++    if ((down || up) && key == VK_F4
++        && (message == WM_SYSKEYDOWN || message == WM_SYSKEYUP || (modifiers & Alt))) return result;
++    result.handled = true;
++    if (deadCharacter || (unicodeScalar && key == UNICODE_NOCHAR)) return result;
++
++    if (character && key > 0xFFFFu) return result;
++    if (unicodeScalar && (key > 0x10FFFFu || (key >= 0xD800u && key <= 0xDFFFu))) return result;
++    if ((character || unicodeScalar) && key == 0) return result;
++
++    Command command{CommandType::Key};
++    command.a = static_cast<int>(character || unicodeScalar ? KeyType::Character
++        : (up ? KeyType::Up : KeyType::Down));
++    command.b = static_cast<std::int32_t>(key);
++    command.c = static_cast<std::int32_t>(static_cast<std::uint32_t>(native));
++    command.d = message == WM_SYSKEYDOWN || message == WM_SYSKEYUP || message == WM_SYSCHAR;
++    command.modifiers = modifiers;
++    if (up) command.modifiers &= ~static_cast<unsigned int>(Repeat);
++    else if (static_cast<std::uint32_t>(native) & (1u << 30)) command.modifiers |= Repeat;
++
++    // On Windows AltGr is reported as Ctrl+Alt. Passing those shortcut flags
++    // with an already translated '[' makes Chromium treat it as Ctrl+[ (ESC).
++    // CEF's OSR example likewise clears Control/Alt for AltGr character events:
++    // https://github.com/chromiumembedded/cef/blob/master/tests/cefclient/browser/osr_window_win.cc
++    // Send printable text without shortcut/system flags, remaining compatible
++    // with the installed host protocol. Raw Ctrl+C/V/X/A events stay untouched.
++    const bool printable = key >= 0x20u && key != 0x7Fu;
++    if ((character || unicodeScalar) && printable
++        && (modifiers & (Control | Alt)) == (Control | Alt)) {
++        command.modifiers &= ~static_cast<unsigned int>(Control | Alt);
++        command.d = 0;
++        command.c = static_cast<std::int32_t>(static_cast<std::uint32_t>(command.c) & ~(1u << 29));
++    }
++
++    if (unicodeScalar && key > 0xFFFFu) {
++        const auto scalar = static_cast<std::uint32_t>(key) - 0x10000u;
++        command.b = static_cast<std::int32_t>(0xD800u + (scalar >> 10));
++        result.commands[result.count++] = command;
++        command.b = static_cast<std::int32_t>(0xDC00u + (scalar & 0x3FFu));
++    }
++    result.commands[result.count++] = command;
++    return result;
++}
++
 +} // namespace keybinder::forum
 diff --git a/include/GpsManager.h b/include/GpsManager.h
 new file mode 100644
@@ -6571,12 +6655,13 @@ index e8d6058..88c5e72 100644
  } // namespace killtracker
 diff --git a/src/ForumBrowser.cpp b/src/ForumBrowser.cpp
 new file mode 100644
-index 0000000..ea7b115
+index 0000000..9f242bd
 --- /dev/null
 +++ b/src/ForumBrowser.cpp
-@@ -0,0 +1,686 @@
+@@ -0,0 +1,729 @@
 +#include "../include/ForumBrowser.h"
 +#include "../include/ForumBrowserProtocol.h"
++#include "../include/ForumKeyboardInput.h"
 +#include "../include/ForumAfkSession.h"
 +#include "../include/SettingsManager.h"
 +#include "../include/Logger.h"
@@ -7040,18 +7125,10 @@ index 0000000..ea7b115
 +}
 +bool ForumBrowser::HandleWindowMessage(HWND, UINT message, WPARAM key, LPARAM native) {
 +    if (impl_->setupProcess || impl_->stopping) return false;
-+    if (!impl_->open || !impl_->focused || key == VK_ESCAPE) return false;
-+    if (message != WM_KEYDOWN && message != WM_SYSKEYDOWN && message != WM_KEYUP
-+        && message != WM_SYSKEYUP && message != WM_CHAR && message != WM_SYSCHAR) return false;
-+    if ((message == WM_SYSKEYDOWN || message == WM_SYSKEYUP) && key == VK_F4) return false;
-+    ipc::Command command{ipc::CommandType::Key};
-+    command.a = static_cast<int>((message == WM_CHAR || message == WM_SYSCHAR) ? ipc::KeyType::Character
-+        : ((message == WM_KEYUP || message == WM_SYSKEYUP) ? ipc::KeyType::Up : ipc::KeyType::Down));
-+    command.b = static_cast<int>(key); command.c = static_cast<int>(native);
-+    command.d = message == WM_SYSKEYDOWN || message == WM_SYSKEYUP || message == WM_SYSCHAR;
-+    command.modifiers = CurrentModifiers();
-+    if (native & (1u << 30)) command.modifiers |= ipc::Repeat;
-+    impl_->Send(command); return true;
++    if (!impl_->open || !impl_->focused) return false;
++    const auto batch = ipc::BuildForumKeyCommands(message, key, native, CurrentModifiers());
++    for (std::size_t at = 0; at < batch.count; ++at) impl_->Send(batch.commands[at]);
++    return batch.handled;
 +}
 +
 +void ForumBrowser::Render(IDirect3DDevice9* device) {
@@ -7182,6 +7259,56 @@ index 0000000..ea7b115
 +    if (!visible || closeRequested) Close();
 +}
 +#ifdef KEYBINDER_TESTING
++int RunForumKeyboardRoutingTests() {
++    int checks = 0, failures = 0;
++    auto check = [&](bool condition, const char* description) {
++        ++checks;
++        if (!condition) { ++failures; std::printf("[FAIL] ForumKeyboardRouting: %s\n", description); }
++    };
++    ForumBrowser browser;
++    auto& impl = *browser.impl_;
++    impl.mapping = CreateFileMappingW(INVALID_HANDLE_VALUE, nullptr, PAGE_READWRITE,
++        0, sizeof(ipc::SharedState), nullptr);
++    impl.input = CreateEventW(nullptr, FALSE, FALSE, nullptr);
++    impl.shared = impl.mapping ? static_cast<ipc::SharedState*>(MapViewOfFile(
++        impl.mapping, FILE_MAP_ALL_ACCESS, 0, 0, sizeof(ipc::SharedState))) : nullptr;
++    check(impl.mapping && impl.input && impl.shared, "anonymous IPC fixture ready");
++    if (impl.shared && impl.input) {
++        auto count = [&]() { return Read(impl.shared->commandWrite); };
++        check(!browser.HandleWindowMessage(nullptr, WM_CHAR, '[', 0) && count() == 0, "closed forum ignores input");
++        impl.open = true; impl.focused = false;
++        check(!browser.HandleWindowMessage(nullptr, WM_CHAR, '[', 0) && count() == 0, "unfocused forum ignores input");
++        impl.focused = true; impl.stopping = true;
++        check(!browser.HandleWindowMessage(nullptr, WM_CHAR, '[', 0) && count() == 0, "stopping forum ignores input");
++        impl.stopping = false; impl.setupProcess = reinterpret_cast<HANDLE>(1);
++        check(!browser.HandleWindowMessage(nullptr, WM_CHAR, '[', 0) && count() == 0, "setup does not route into browser");
++        impl.setupProcess = nullptr;
++        check(browser.HandleWindowMessage(nullptr, WM_CHAR, '[', 0) && count() == 1, "character reaches actual IPC queue");
++        check(impl.shared->commands[0].type == ipc::CommandType::Key
++            && impl.shared->commands[0].a == static_cast<int>(ipc::KeyType::Character)
++            && impl.shared->commands[0].b == '[', "character command is unchanged UTF16 text");
++        check(browser.HandleWindowMessage(nullptr, WM_SYSCHAR, ']', 1u << 29) && count() == 2, "system character reaches queue");
++        check(browser.HandleWindowMessage(nullptr, WM_UNICHAR, 0x1F680, 0) && count() == 4, "Unicode scalar generates two UTF16 commands");
++        check(impl.shared->commands[2].b == 0xD83D && impl.shared->commands[3].b == 0xDE80,
++            "supplementary Unicode has correct surrogate order");
++        check(browser.HandleWindowMessage(nullptr, WM_UNICHAR, UNICODE_NOCHAR, 0) && count() == 4, "Unicode probe does not insert text");
++        check(browser.HandleWindowMessage(nullptr, WM_DEADCHAR, '^', 0) && count() == 4, "dead key waits for composition");
++        check(browser.HandleWindowMessage(nullptr, WM_SYSDEADCHAR, '~', 0) && count() == 4, "system dead key is not inserted twice");
++        check(browser.HandleWindowMessage(nullptr, WM_CHAR, 0x00E9, 0) && count() == 5, "composed Unicode character reaches queue");
++        check(impl.shared->commands[4].b == 0x00E9, "Unicode is not treated as an ANSI byte");
++        check(!browser.HandleWindowMessage(nullptr, WM_KEYDOWN, VK_ESCAPE, 0) && count() == 5, "Escape remains available to close forum");
++        check(!browser.HandleWindowMessage(nullptr, WM_SYSKEYDOWN, VK_F4, 1u << 29) && count() == 5, "AltF4 remains a native window action");
++        check(!browser.HandleWindowMessage(nullptr, WM_MOUSEMOVE, 0, 0) && count() == 5, "nonkeyboard input uses existing route");
++        check(browser.HandleWindowMessage(nullptr, WM_KEYUP, 'A', static_cast<LPARAM>(0xC01E0001u)) && count() == 6,
++            "key release reaches queue");
++        check(!(impl.shared->commands[5].modifiers & ipc::Repeat), "key release is not auto repeat");
++    }
++    impl.open = false;
++    impl.Release();
++    std::printf("ForumKeyboardRoutingTests: %d checks, %d failures\n", checks, failures);
++    return failures;
++}
++
 +int RunNativeForumSmokeTest() {
 +    const auto root = std::filesystem::path("build/native-forum-smoke") / std::to_string(GetTickCount64());
 +    std::filesystem::create_directories(root);
@@ -19186,6 +19313,314 @@ index 0000000..98b72aa
 +    std::printf("DrugUseTrackerTests: %d checks, %d failures\n", checks, failures);
 +    return failures;
 +}
+diff --git a/tests/ForumKeyboardInputTests.cpp b/tests/ForumKeyboardInputTests.cpp
+new file mode 100644
+index 0000000..e846a1a
+--- /dev/null
++++ b/tests/ForumKeyboardInputTests.cpp
+@@ -0,0 +1,157 @@
++#include "../include/ForumKeyboardInput.h"
++
++#include <cstdio>
++#include <cstdint>
++#include <limits>
++
++namespace {
++using namespace keybinder::forum;
++int checks = 0, failures = 0;
++#define CHECK(value) do { ++checks; if (!(value)) { ++failures; std::printf("[FAIL] ForumKeyboardInput: %s (line %d)\n", #value, __LINE__); return; } } while (0)
++
++constexpr LPARAM Native(std::uint32_t bits) { return static_cast<LPARAM>(static_cast<std::int32_t>(bits)); }
++
++void AltGrTextKeepsTheTranslatedCharacters() {
++    // German layout: AltGr+7/8/9/0/Q/E/ß/< /+; also shifted AltGr characters.
++    for (WPARAM text : {WPARAM('['), WPARAM(']'), WPARAM('{'), WPARAM('}'), WPARAM('@'),
++                       WPARAM(0x20AC), WPARAM('\\'), WPARAM('|'), WPARAM('~'), WPARAM(0x1E9E)}) {
++        for (UINT message : {UINT(WM_CHAR), UINT(WM_SYSCHAR)}) {
++            const auto batch = BuildForumKeyCommands(message, text, Native(0x60100001u),
++                Control | Alt | Shift | CapsLock | NumLock | LeftButton);
++            CHECK(batch.handled && batch.count == 1);
++            const auto& command = batch.commands[0];
++            CHECK(command.type == CommandType::Key);
++            CHECK(command.a == static_cast<int>(KeyType::Character));
++            CHECK(command.b == static_cast<std::int32_t>(text));
++            CHECK((command.modifiers & (Control | Alt)) == 0);
++            CHECK((command.modifiers & (Shift | CapsLock | NumLock | LeftButton))
++                == (Shift | CapsLock | NumLock | LeftButton));
++            CHECK(command.modifiers & Repeat);
++            CHECK(command.d == 0);
++            CHECK(static_cast<std::uint32_t>(command.c) == 0x40100001u);
++        }
++    }
++}
++
++void RawKeysAndRealShortcutsRemainIntact() {
++    for (WPARAM key : {WPARAM('C'), WPARAM('V'), WPARAM('X'), WPARAM('A'), WPARAM(VK_DELETE),
++                       WPARAM(VK_HOME), WPARAM(VK_END), WPARAM(VK_LEFT), WPARAM(VK_RIGHT),
++                       WPARAM(VK_UP), WPARAM(VK_DOWN), WPARAM(VK_TAB), WPARAM(VK_RETURN)}) {
++        const auto down = BuildForumKeyCommands(WM_KEYDOWN, key, Native(0x001E0001u), Control | Shift);
++        CHECK(down.handled && down.count == 1);
++        CHECK(down.commands[0].a == static_cast<int>(KeyType::Down));
++        CHECK(down.commands[0].b == static_cast<std::int32_t>(key) && down.commands[0].c == Native(0x001E0001u));
++        CHECK(down.commands[0].modifiers == (Control | Shift));
++        CHECK(down.commands[0].d == 0);
++        const auto up = BuildForumKeyCommands(WM_KEYUP, key, Native(0xC01E0001u), Control | Shift | Repeat);
++        CHECK(up.handled && up.count == 1);
++        CHECK(up.commands[0].a == static_cast<int>(KeyType::Up));
++        CHECK(up.commands[0].b == static_cast<std::int32_t>(key) && up.commands[0].c == Native(0xC01E0001u));
++        CHECK(up.commands[0].modifiers == (Control | Shift));
++    }
++    const auto altGrKey = BuildForumKeyCommands(WM_SYSKEYDOWN, '8', Native(0x20090001u), Control | Alt);
++    CHECK(altGrKey.handled && altGrKey.count == 1);
++    CHECK(altGrKey.commands[0].modifiers == (Control | Alt));
++    CHECK(altGrKey.commands[0].d == 1);
++    const auto controlCharacter = BuildForumKeyCommands(WM_CHAR, 3, Native(0x002E0001u), Control);
++    CHECK(controlCharacter.handled && controlCharacter.count == 1);
++    CHECK(controlCharacter.commands[0].b == 3 && controlCharacter.commands[0].modifiers == Control);
++    const auto genuineAltText = BuildForumKeyCommands(WM_SYSCHAR, 'f', Native(0x20210001u), Alt);
++    CHECK(genuineAltText.handled && genuineAltText.count == 1);
++    CHECK(genuineAltText.commands[0].d == 1 && genuineAltText.commands[0].modifiers == Alt);
++}
++
++void PlainUnicodeTextAndDeadKeysAreNotRetranslated() {
++    for (WPARAM text : {WPARAM('a'), WPARAM('A'), WPARAM('!'), WPARAM(0x00E4), WPARAM(0x00F6),
++                       WPARAM(0x00FC), WPARAM(0x00DF), WPARAM(0x00E9), WPARAM(0x03A9), WPARAM(0x4E2D)}) {
++        const auto batch = BuildForumKeyCommands(WM_CHAR, text, Native(0x001E0001u), Shift | CapsLock);
++        CHECK(batch.handled && batch.count == 1);
++        CHECK(batch.commands[0].b == static_cast<std::int32_t>(text));
++        CHECK(batch.commands[0].modifiers == (Shift | CapsLock));
++    }
++    for (UINT message : {UINT(WM_DEADCHAR), UINT(WM_SYSDEADCHAR)}) {
++        const auto dead = BuildForumKeyCommands(message, '^', Native(0x00290001u), 0);
++        CHECK(dead.handled && dead.count == 0);
++    }
++    const auto composed = BuildForumKeyCommands(WM_CHAR, 0x00E2, Native(0x001E0001u), 0);
++    CHECK(composed.handled && composed.count == 1 && composed.commands[0].b == 0x00E2);
++    const auto high = BuildForumKeyCommands(WM_CHAR, 0xD83D, Native(0x00000001u), 0);
++    const auto low = BuildForumKeyCommands(WM_CHAR, 0xDE00, Native(0x00000001u), 0);
++    CHECK(high.handled && high.count == 1 && high.commands[0].b == 0xD83D);
++    CHECK(low.handled && low.count == 1 && low.commands[0].b == 0xDE00);
++}
++
++void UnicodeScalarInputSupportsSupplementaryCharacters() {
++    const auto probe = BuildForumKeyCommands(WM_UNICHAR, UNICODE_NOCHAR, 0, 0);
++    CHECK(probe.handled && probe.count == 0);
++    const auto euro = BuildForumKeyCommands(WM_UNICHAR, 0x20AC, 0, Control | Alt);
++    CHECK(euro.handled && euro.count == 1 && euro.commands[0].b == 0x20AC);
++    CHECK(euro.commands[0].modifiers == 0);
++    const auto emoji = BuildForumKeyCommands(WM_UNICHAR, 0x1F600, Native(0x20000001u), Control | Alt | Shift);
++    CHECK(emoji.handled && emoji.count == 2);
++    CHECK(emoji.commands[0].b == 0xD83D && emoji.commands[1].b == 0xDE00);
++    CHECK(emoji.commands[0].type == CommandType::Key && emoji.commands[1].type == CommandType::Key);
++    CHECK(emoji.commands[0].a == static_cast<int>(KeyType::Character)
++        && emoji.commands[1].a == static_cast<int>(KeyType::Character));
++    CHECK(emoji.commands[0].modifiers == Shift && emoji.commands[1].modifiers == Shift);
++    CHECK(emoji.commands[0].d == 0 && emoji.commands[1].d == 0);
++    CHECK(emoji.commands[0].c == 1 && emoji.commands[1].c == 1);
++    const auto maximum = BuildForumKeyCommands(WM_UNICHAR, 0x10FFFF, 0, 0);
++    CHECK(maximum.handled && maximum.count == 2);
++    CHECK(maximum.commands[0].b == 0xDBFF && maximum.commands[1].b == 0xDFFF);
++    for (WPARAM invalid : {WPARAM(0), WPARAM(0xD800), WPARAM(0xDFFF), WPARAM(0x110000),
++                          (std::numeric_limits<WPARAM>::max)()}) {
++        const auto rejected = BuildForumKeyCommands(WM_UNICHAR, invalid, 0, Control | Alt);
++        CHECK(rejected.handled && rejected.count == 0);
++    }
++    const auto invalidChar = BuildForumKeyCommands(WM_CHAR, 0x10000, 0, 0);
++    CHECK(invalidChar.handled && invalidChar.count == 0);
++    const auto nul = BuildForumKeyCommands(WM_CHAR, 0, 0, 0);
++    CHECK(nul.handled && nul.count == 0);
++}
++
++void EscapeAndNativeCloseRemainAvailable() {
++    for (UINT message : {UINT(WM_KEYDOWN), UINT(WM_KEYUP), UINT(WM_SYSKEYDOWN), UINT(WM_SYSKEYUP),
++                         UINT(WM_CHAR), UINT(WM_SYSCHAR), UINT(WM_UNICHAR)}) {
++        const auto escape = BuildForumKeyCommands(message, VK_ESCAPE, 0, 0);
++        CHECK(!escape.handled && escape.count == 0);
++    }
++    for (UINT message : {UINT(WM_SYSKEYDOWN), UINT(WM_SYSKEYUP), UINT(WM_KEYDOWN), UINT(WM_KEYUP)}) {
++        const auto close = BuildForumKeyCommands(message, VK_F4, Native(0x203E0001u), Alt);
++        CHECK(!close.handled && close.count == 0);
++    }
++    const auto plainF4 = BuildForumKeyCommands(WM_KEYDOWN, VK_F4, Native(0x003E0001u), 0);
++    CHECK(plainF4.handled && plainF4.count == 1);
++    // The character 's' has the same numeric value as VK_F4 but is ordinary text.
++    const auto textS = BuildForumKeyCommands(WM_SYSCHAR, 's', Native(0x201F0001u), Control | Alt);
++    CHECK(textS.handled && textS.count == 1 && textS.commands[0].b == 's');
++    for (UINT message : {UINT(WM_MOUSEMOVE), UINT(WM_KILLFOCUS), UINT(WM_INPUT), UINT(WM_CLOSE)}) {
++        const auto other = BuildForumKeyCommands(message, 'a', 0, 0);
++        CHECK(!other.handled && other.count == 0);
++    }
++}
++
++void RepeatFlagsDistinguishCharacterRepeatsFromReleases() {
++    for (UINT message : {UINT(WM_KEYDOWN), UINT(WM_SYSKEYDOWN), UINT(WM_CHAR), UINT(WM_SYSCHAR)}) {
++        const auto repeat = BuildForumKeyCommands(message, 'x', Native(0x40100001u), 0);
++        CHECK(repeat.handled && repeat.count == 1 && (repeat.commands[0].modifiers & Repeat));
++    }
++    for (UINT message : {UINT(WM_KEYUP), UINT(WM_SYSKEYUP)}) {
++        const auto release = BuildForumKeyCommands(message, 'x', Native(0xC0100001u), Alt | Repeat);
++        CHECK(release.handled && release.count == 1 && !(release.commands[0].modifiers & Repeat));
++        CHECK(release.commands[0].modifiers & Alt);
++    }
++}
++} // namespace
++
++int RunForumKeyboardInputTests() {
++    checks = failures = 0;
++    AltGrTextKeepsTheTranslatedCharacters();
++    RawKeysAndRealShortcutsRemainIntact();
++    PlainUnicodeTextAndDeadKeysAreNotRetranslated();
++    UnicodeScalarInputSupportsSupplementaryCharacters();
++    EscapeAndNativeCloseRemainAvailable();
++    RepeatFlagsDistinguishCharacterRepeatsFromReleases();
++    std::printf("ForumKeyboardInputTests: %d checks, %d failures\n", checks, failures);
++    return failures;
++}
+diff --git a/tests/ForumKeyboardProbe.cpp b/tests/ForumKeyboardProbe.cpp
+new file mode 100644
+index 0000000..bf44057
+--- /dev/null
++++ b/tests/ForumKeyboardProbe.cpp
+@@ -0,0 +1,139 @@
++// Emits only synthetic test commands through the same translator as the ASI.
++// The Python integration runner forwards these bytes to the unchanged CEF host.
++#include "../include/ForumKeyboardInput.h"
++#include <cstdint>
++#include <iostream>
++#include <string>
++#include <vector>
++
++namespace ipc = keybinder::forum;
++namespace {
++struct Case {
++    const char* name;
++    const char* element = "input";
++    std::vector<std::uint32_t> expected;
++    std::vector<ipc::Command> commands;
++    bool legacy = false;
++    bool prefill = false;
++};
++
++void Append(Case& test, UINT message, WPARAM key, std::uint32_t native, unsigned modifiers) {
++    if (!test.legacy) {
++        const auto batch = ipc::BuildForumKeyCommands(message, key, static_cast<LPARAM>(native), modifiers);
++        test.commands.insert(test.commands.end(), batch.commands.begin(), batch.commands.begin() + batch.count);
++        return;
++    }
++    ipc::Command command{ipc::CommandType::Key};
++    command.a = static_cast<int>((message == WM_CHAR || message == WM_SYSCHAR) ? ipc::KeyType::Character
++        : ((message == WM_KEYUP || message == WM_SYSKEYUP) ? ipc::KeyType::Up : ipc::KeyType::Down));
++    command.b = static_cast<int>(key);
++    command.c = static_cast<int>(native);
++    command.d = message == WM_SYSKEYDOWN || message == WM_SYSKEYUP || message == WM_SYSCHAR;
++    command.modifiers = modifiers;
++    if (native & (1u << 30)) command.modifiers |= ipc::Repeat;
++    test.commands.push_back(command);
++}
++
++void AltGrBegin(Case& test) {
++    Append(test, WM_KEYDOWN, VK_CONTROL, 0x001D0001, ipc::Control);
++    Append(test, WM_SYSKEYDOWN, VK_MENU, 0x21380001, ipc::Control | ipc::Alt);
++}
++void AltGrEnd(Case& test) {
++    Append(test, WM_SYSKEYUP, VK_MENU, 0xE1380001, ipc::Control);
++    Append(test, WM_KEYUP, VK_CONTROL, 0xC01D0001, 0);
++}
++void AltGrCharacter(Case& test, std::uint32_t character, int virtualKey, unsigned scan, bool systemCharacter = false) {
++    const unsigned mods = ipc::Control | ipc::Alt;
++    Append(test, WM_KEYDOWN, virtualKey, 1u | (scan << 16), mods);
++    Append(test, systemCharacter ? WM_SYSCHAR : WM_CHAR, character,
++        1u | (scan << 16) | (systemCharacter ? (1u << 29) : 0), mods);
++    Append(test, WM_KEYUP, virtualKey, 0xC0000001u | (scan << 16), mods);
++}
++
++Case AltGr(const char* name, const char* element, bool legacy = false, bool systemCharacter = false) {
++    Case test{name, element};
++    test.legacy = legacy;
++    test.expected = {'[', ']', '{', '}', '@', 0x20AC, '\\', '|', '~'};
++    AltGrBegin(test);
++    const int keys[] = {'8', '9', '7', '0', 'Q', 'E', VK_OEM_4, VK_OEM_102, VK_OEM_PLUS};
++    const unsigned scans[] = {9, 10, 8, 11, 16, 18, 12, 86, 27};
++    for (std::size_t i = 0; i < test.expected.size(); ++i)
++        AltGrCharacter(test, test.expected[i], keys[i], scans[i], systemCharacter);
++    AltGrEnd(test);
++    return test;
++}
++
++Case Unicode() {
++    Case test{"unicode_text_and_supplementary_scalar", "textarea"};
++    test.expected = {0xE4, 0xF6, 0xFC, 0xC4, 0xD6, 0xDC, 0xDF, 0x20AC, 0x1F600};
++    for (std::uint32_t scalar : test.expected)
++        Append(test, scalar > 0xFFFF ? WM_UNICHAR : WM_CHAR, scalar, 1, 0);
++    return test;
++}
++
++Case DeadKey() {
++    Case test{"composed_dead_key_text", "input"};
++    test.expected = {0xEA, ' ', '^'};
++    Append(test, WM_KEYDOWN, VK_OEM_5, 0x00290001, 0);
++    Append(test, WM_DEADCHAR, '^', 0x00290001, 0);
++    Append(test, WM_KEYUP, VK_OEM_5, 0xC0290001, 0);
++    Append(test, WM_KEYDOWN, 'E', 0x00120001, 0);
++    Append(test, WM_CHAR, 0xEA, 0x00120001, 0);
++    Append(test, WM_KEYUP, 'E', 0xC0120001, 0);
++    Append(test, WM_CHAR, ' ', 0x00390001, 0);
++    Append(test, WM_CHAR, '^', 0x00290001, 0);
++    return test;
++}
++
++Case ControlA() {
++    Case test{"control_a_selection_then_typing", "textarea"};
++    test.prefill = true;
++    test.expected = {'[', 'o', 'k', ']'};
++    Append(test, WM_KEYDOWN, VK_CONTROL, 0x001D0001, ipc::Control);
++    Append(test, WM_KEYDOWN, 'A', 0x001E0001, ipc::Control);
++    Append(test, WM_CHAR, 1, 0x001E0001, ipc::Control);
++    Append(test, WM_KEYUP, 'A', 0xC01E0001, ipc::Control);
++    Append(test, WM_KEYUP, VK_CONTROL, 0xC01D0001, 0);
++    AltGrBegin(test);
++    AltGrCharacter(test, '[', '8', 9);
++    AltGrEnd(test);
++    Append(test, WM_CHAR, 'o', 1, 0);
++    Append(test, WM_CHAR, 'k', 1, 0);
++    AltGrBegin(test);
++    AltGrCharacter(test, ']', '9', 10);
++    AltGrEnd(test);
++    return test;
++}
++
++void Print(const std::vector<Case>& cases) {
++    std::cout << "{\"protocol_version\":1,\"cases\":[";
++    bool firstCase = true;
++    for (const auto& test : cases) {
++        if (!firstCase) std::cout << ',';
++        firstCase = false;
++        std::cout << "{\"name\":\"" << test.name << "\",\"element\":\"" << test.element
++            << "\",\"legacy\":" << (test.legacy ? "true" : "false")
++            << ",\"prefill\":" << (test.prefill ? "true" : "false") << ",\"expected_scalars\":[";
++        for (std::size_t i = 0; i < test.expected.size(); ++i) {
++            if (i) std::cout << ',';
++            std::cout << test.expected[i];
++        }
++        std::cout << "],\"commands\":[";
++        for (std::size_t i = 0; i < test.commands.size(); ++i) {
++            if (i) std::cout << ',';
++            const auto& c = test.commands[i];
++            std::cout << '[' << static_cast<int>(c.type) << ',' << c.a << ',' << c.b << ',' << c.c
++                << ',' << c.d << ',' << c.e << ',' << c.modifiers << ']';
++        }
++        std::cout << "]}";
++    }
++    std::cout << "]}\n";
++}
++} // namespace
++
++int main() {
++    Print({AltGr("legacy_altgr_characters", "input", true),
++        AltGr("altgr_input", "input"), AltGr("altgr_textarea", "textarea"),
++        AltGr("altgr_contenteditable", "contenteditable"),
++        AltGr("altgr_system_character", "input", false, true), Unicode(), DeadKey(), ControlA()});
++}
 diff --git a/tests/GpsNativeAdapterTests.cpp b/tests/GpsNativeAdapterTests.cpp
 new file mode 100644
 index 0000000..f8f94c9
@@ -20310,10 +20745,10 @@ index 1aca855..abd30e5 100644
  }
  
 diff --git a/tests/KeybindTests.cpp b/tests/KeybindTests.cpp
-index 7f489f8..9843f7e 100644
+index 7f489f8..a409f16 100644
 --- a/tests/KeybindTests.cpp
 +++ b/tests/KeybindTests.cpp
-@@ -5,10 +5,36 @@
+@@ -5,10 +5,37 @@
  #include "KeybindTests.h"
  
  int RunActionExecutorTests();
@@ -20327,6 +20762,7 @@ index 7f489f8..9843f7e 100644
 +int RunPoliceLocateTrackerTests();
 +int RunServerCheckpointRPCAdapterTests();
 +int RunPoliceLocateBridgeTests();
++int RunForumKeyboardInputTests();
 +int RunReconnectTests();
 +int RunKillMessageTestTests();
 +int RunLocationVariableTests();
@@ -20350,18 +20786,18 @@ index 7f489f8..9843f7e 100644
  int RunImGuiOverlayTests();
  int RunHitmarkerTests();
  int RunHitsoundTests();
-@@ -35,7 +61,9 @@ int RunSourceContractTests();
+@@ -35,7 +62,9 @@ int RunSourceContractTests();
  
  #include <stdio.h>
  
 -int main() {
-+namespace keybinder { int RunNativeForumSmokeTest(); }
++namespace keybinder { int RunNativeForumSmokeTest(); int RunForumKeyboardRoutingTests(); }
 +int main(int argc, char** argv) {
 +    if (argc == 2 && std::string(argv[1]) == "--native-forum-smoke") return keybinder::RunNativeForumSmokeTest();
      auto log_line = [](const char* message) {
          printf("%s\n", message);
          fflush(stdout);
-@@ -50,6 +78,8 @@ int main() {
+@@ -50,6 +79,8 @@ int main() {
  
      const int keybind_failures = run_suite("Running KeybindTests...", RunKeybindTests);
      const int executor_failures = run_suite("Running ActionExecutorTests...", RunActionExecutorTests);
@@ -20370,7 +20806,7 @@ index 7f489f8..9843f7e 100644
      const int interface_editor_failures = run_suite("Running InterfaceEditorTests...", RunInterfaceEditorTests);
      const int input_failures = run_suite("Running InputManagerTests...", RunInputManagerTests);
      const int regression_failures = run_suite("Running RegressionTests...", RunRegressionTests);
-@@ -78,6 +108,31 @@ int main() {
+@@ -78,6 +109,33 @@ int main() {
      const int hud_sprite_failures = run_suite("Running HudSpriteManagerTests...", RunHudSpriteManagerTests);
      const int source_contract_failures = run_suite("Running SourceContractTests...", RunSourceContractTests);
  
@@ -20397,7 +20833,9 @@ index 7f489f8..9843f7e 100644
 +        + run_suite("Running NearbyWantedLabelsTests...", RunNearbyWantedLabelsTests)
 +        + run_suite("Running PoliceLocateTrackerTests...", RunPoliceLocateTrackerTests)
 +        + run_suite("Running ServerCheckpointRPCAdapterTests...", RunServerCheckpointRPCAdapterTests)
-+        + run_suite("Running PoliceLocateBridgeTests...", RunPoliceLocateBridgeTests);
++        + run_suite("Running PoliceLocateBridgeTests...", RunPoliceLocateBridgeTests)
++        + run_suite("Running ForumKeyboardInputTests...", RunForumKeyboardInputTests)
++        + run_suite("Running ForumKeyboardRoutingTests...", keybinder::RunForumKeyboardRoutingTests);
 +    if (r4_failures != 0) return r4_failures;
      log_line("All tests finished.");
 -    return keybind_failures + executor_failures + interface_editor_failures + input_failures + regression_failures + samp_bridge_failures + imgui_overlay_failures + hitmarker_failures + hitsound_failures + theme_failures + quickmap_failures + job_registry_failures + job_chat_adapter_failures + job_event_store_failures + job_parser_failures + job_tracker_lifecycle_failures + main_window_jobs_nav_failures + jobs_ui_failures + jobs_correction_failures + job_adjustment_failures + online_ui_failures + online_data_manager_failures + online_settings_failures + online_overlay_renderer_failures + online_event_detector_failures + ui_components_failures + squaremap_failures + hud_sprite_failures + source_contract_failures;
@@ -28226,6 +28664,18 @@ index 0000000..3fad386
 +if errorlevel 1 exit /b 2
 +copy /y "%NLBINDER_CEF_ROOT%\LICENSE.txt" "%NLBINDER_PROJECT%\build\cef-host\Release\CEF-LICENSE.txt" >nul
 +exit /b 0
+diff --git a/tools/build_forum_keyboard_probe.bat b/tools/build_forum_keyboard_probe.bat
+new file mode 100644
+index 0000000..ffc5ba7
+--- /dev/null
++++ b/tools/build_forum_keyboard_probe.bat
+@@ -0,0 +1,6 @@
++@echo off
++setlocal
++call "%~dp0setup_msvc.bat" || exit /b 1
++if not exist "%~dp0..\build" mkdir "%~dp0..\build"
++cl.exe /nologo /EHsc /std:c++17 /W4 /MT /DWIN32 /D_CRT_SECURE_NO_WARNINGS /Fo"%~dp0..\build\ForumKeyboardProbe.obj" /Fe"%~dp0..\build\ForumKeyboardProbe.exe" "%~dp0..\tests\ForumKeyboardProbe.cpp" /link user32.lib
++exit /b %ERRORLEVEL%
 diff --git a/tools/build_plugin_sdk.bat b/tools/build_plugin_sdk.bat
 index e8fb91f..2db59d0 100644
 --- a/tools/build_plugin_sdk.bat
@@ -30097,9 +30547,199 @@ index 0000000..a0c3a56
 +
 +if __name__ == '__main__':
 +    main()
+diff --git a/tools/document_revision24.py b/tools/document_revision24.py
+new file mode 100644
+index 0000000..e42e579
+--- /dev/null
++++ b/tools/document_revision24.py
+@@ -0,0 +1,184 @@
++"""Document the Quick Forum keyboard repair and preserve the full release history."""
++from pathlib import Path
++import re
++
++R=Path(__file__).resolve().parents[1]
++
++NOTES=r'''# NLBinder v.0.1.2 by perkys & edited by KOBiRO – r24
++
++## Sonderzeichen im Quick Forum
++
++Die Tastatureingabe im über `/forum` geöffneten Quick Forum ist für
++Sonderzeichen überarbeitet. Auf einer deutschen Tastatur betrifft das
++insbesondere Zeichen mit AltGr wie `[ ] { } @ € \ | ~`.
++Die Texteingabe wird als Texteingabe an den Browser weitergereicht;
++Tastenkombinationen zum Kopieren und Einfügen bleiben erhalten.
++
++Die Eingabe ist auf das geöffnete, fokussierte Forum beschränkt. ESC behält
++seine vorhandene Schließen-Funktion. Das Schreiben im Forum darf keine
++Binder-Aktion auslösen. Das vorhandene AFK-/Back-Verhalten wird beibehalten.
++
++Der Fix liegt in der ASI und ihrer Tastaturanbindung. Die Browser-Runtime
++**cef156-r1** und ihr Download bleiben erhalten; ein erneutes Herunterladen
++des Browserpakets ist für diese Korrektur nicht erforderlich. Persönliche
++Browserprofile, Anmeldungen und Binder-Einstellungen gehören nicht zum Paket.
++
++## Weiterhin enthalten
++
++- Wanted-Tabelle mit tatsächlicher SA-MP-Spieler-ID hinter dem Namen,
++  etwa `Lesch (24)`, und der bisherigen Wantedzahl.
++- Rote Wanted-Labels für bestätigte SAPD-/LSPD-Mitglieder bei aktivierter
++  Wanted-Liste, maximal fünf Meter entfernt, sichtbar und mit freier Sicht.
++- Einmalige Polizeifunkmeldung nach erfolgreicher Detektiv-Ortung und neuem
++  Server-Checkpoint mit dem Bezirk des gesetzten Markers.
++- Die bisherigen Jobs, Overlays, Drogen-Timer, Zähler, GPS- und Forumfunktionen.
++
++## Fertige ASI und Quellcode
++
++Der neue Desktop-Ordner `NLBinder-v0.1.2-r24` enthält die fertige `NLBinder.asi`,
++den vollständigen veröffentlichten Binder-Quellcode, `CHANGELOG-GESAMT.txt`,
++den postbaren `FORUM-CHANGELOG.txt` und den gesonderten
++`FORUM-INSTALLATION-QUELLCODE` mit nachvollziehbaren Quellcode-Prüfsummen.
++Frühere Desktop-Ordner werden erhalten.
++
++Zum Übernehmen GTA vollständig schließen, die bisherige Binder-ASI ersetzen
++und neu starten. Nur eine Binder-ASI laden. Anschließend `/forum` öffnen und
++die gewünschten Zeichen in einem Texteingabefeld verwenden.
++
++Version/Credits bleiben v.0.1.2 by perkys & edited by KOBiRO.
++
++[Prüfumfang](https://github.com/Kobiro57/PerkysBinderChangelog/blob/v0.1.2-r24/docs/review/r24-PRUEFUNG-DE.md) ·
++[Prüfnachweis](https://github.com/Kobiro57/PerkysBinderChangelog/blob/v0.1.2-r24/docs/review/r24-validation.json)
++'''
++
++REVIEW=r'''# Prüfumfang r24 – 16. November 2026
++
++Die Tastaturregressionen prüfen die Weitergabe von Zeichen im geöffneten,
++fokussierten Quick Forum, einschließlich der Sonderzeichen über AltGr.
++Normale Texteingabe, die vorhandenen Kopieren-/Einfügen-Kombinationen,
++Tastenfreigaben und das Beenden der Eingabe müssen erhalten bleiben.
++
++Der Paketbau verlangt erfolgreiche Gesamttests und Release-Build sowie eine
++erfolgreiche neue Suite `ForumKeyboardInputTests` und die Anbindung über
++`ForumKeyboardRoutingTests`. Die bisherigen Prüfungen
++für SAPD-/LSPD-Wanted-Labels, Spieler-IDs, Ortung und Server-Checkpoints müssen
++ebenfalls weiterhin bestehen. Der PE-Nachweis prüft die x86-ASI, bytegleiche
++eingebettete Helfer, Lizenz und erhaltene v.0.1.2-Startmeldung.
++
++Der Tastaturfix liegt in der ASI. Der Browserhost und die 236 Dateien des
++gepinnten CEF-Browserpakets werden gegen den vorherigen Stand verifiziert.
++Die Browser-Runtime cef156-r1 und ihr Archiv bleiben unverändert. Die
++veränderte `src/ForumBrowser.cpp` wird ausdrücklich nicht als unveränderte
++Quelle behandelt. Die vorherigen Polizei-, GPS-, Zähler- und Overlayprüfungen
++sind von den neuen Tastaturregressionen getrennt dokumentiert.
++
++Ein zusätzlicher nativer Browser-Eingabetest verwendet den bestehenden
++gepinnten CEF-Host mit einem isolierten anonymen Profil und synthetischen
++Texten. Sein Ergebnis ist in `FORUM-KEYBOARD-TEST.json` im Release-Paket und
++im r24-Prüfnachweis enthalten. Es wird kein Forumbeitrag abgeschickt.
++Der Fall `legacy_altgr_characters` verwendet absichtlich die frühere fehlerhafte
++Weiterleitung. Sein `passed: false` belegt die nachgestellte Ursache. Die
++korrigierten Fälle müssen vollständig erfolgreich sein. Vor jeder Eingabe
++werden der gezeichnete Browserinhalt, der Fokus und die Verarbeitung der
++Tastenereignisse geprüft; ausbleibende Eingabe beim Start gilt nicht als
++erfolgreich nachgestellter AltGr-Fehler.
++Automatische Prüfungen und dieser native Test außerhalb von GTA werden nicht
++als beobachteter Ingame-Sichttest bezeichnet. Ein neuer GTA-Live-Test wird
++erst nach tatsächlicher Beobachtung dokumentiert.
++
++Der fokussierte Forum-Quellcodeauszug wird aus den aktuellen eigenen Quellen
++einschließlich der benötigten Tastaturanbindung neu erstellt und vollständig
++mit SHA-256 abgeglichen. Der Desktop-Export liest die unveränderlichen
++veröffentlichten Git-Blobs und prüft jede exportierte Datei. Persönliche
++Konfigurationen, Profile und Logs werden nicht mitverteilt.
++'''
++
++HISTORY=r'''
++## 30. Nachtrag v0.1.2 / r24 – 16. November 2026
++
++- Tastatureingabe des über `/forum` geöffneten Quick Forums für Sonderzeichen
++  überarbeitet, insbesondere die deutsche AltGr-Eingabe von `[ ] { } @ € \ | ~`.
++- Texteingabe von Tastaturkürzeln unterschieden; normales Schreiben sowie
++  Kopieren und Einfügen bleiben im vorhandenen Browserfenster vorgesehen.
++- Eingabe weiterhin auf das geöffnete, fokussierte Forum beschränkt; die
++  vorhandene ESC-Schließen-Funktion und AFK-/Back-Anbindung beibehalten.
++- Korrektur in der ASI mit nachvollziehbarem eigenen Tastaturquellcode;
++  vorhandene Browser-Runtime cef156-r1 und ihr Download werden beibehalten.
++- Tastaturregressionen ergänzt und die bisherigen Prüfungen für Wanted-IDs,
++  nahe sichtbare Wanted-Labels und die checkpointgebundene Polizeifunk-Ortung
++  weiterhin verlangt. Tatsächliche Ergebnisse stehen im r24-Prüfnachweis.
++- Neue NLBinder.asi, vollständige Binder-Quellen, gesamter Changelog und
++  postbarer Forumtext als NLBinder-v0.1.2-r24 zusammengestellt. Frühere
++  Desktop-Exporte und die veröffentlichte Git-Historie werden erhalten.
++'''
++
++POST=r'''Neu in r24: Die Tastatureingabe im über /forum geöffneten Quick Forum ist für Sonderzeichen überarbeitet. Besonders die deutschen AltGr-Zeichen [ ] { } @ € \ | ~ werden als Texteingabe weitergereicht. Normales Schreiben sowie Kopieren und Einfügen bleiben erhalten; ESC schließt das Forum wie gewohnt. Der Fix liegt in der ASI. Die vorhandene Browser-Runtime cef156-r1 muss dafür nicht erneut heruntergeladen werden. Vollständige Quellen, der eigene Forum-/Installer-Quellcode und der gesamte Changelog sind im Paket beziehungsweise im Repository nachvollziehbar enthalten.'''
++
++README=r'''# NLBinder – PerkysBinderChangelog
++
++Aktueller Stand: **NLBinder v.0.1.2 by perkys & edited by KOBiRO**, r24.
++
++Die Tastaturweiterleitung des über `/forum` geöffneten Quick Forums ist für
++Sonderzeichen überarbeitet, insbesondere deutsche AltGr-Zeichen wie `[ ]`.
++Die Korrektur liegt in der ASI; die vorhandene Browser-Runtime cef156-r1 wird
++weiterverwendet. Die r23-Funktionen mit aktuellen Spieler-IDs in der
++Wanted-Tabelle, nahen sichtbaren Wanted-Labels und Ortungsmeldung bleiben
++enthalten.
++
++- [Fertige ASI und Dokumentation](https://github.com/Kobiro57/PerkysBinderChangelog/releases/tag/v0.1.2-r24)
++- [NLBinder.asi](dist/NLBinder-0.1.2-r24/NLBinder.asi)
++- [Bedienung](docs/NLBinder-0.1.2-r24-DE.md)
++- [Tastaturweiterleitung](include/ForumKeyboardInput.h)
++- [Quick Forum](src/ForumBrowser.cpp)
++- [Gesamt-Changelog](docs/review/CHANGELOG-DE.md), [TXT](docs/CHANGELOG-GESAMT.txt)
++- [Forumtext zum Posten](docs/FORUM-CHANGELOG-v0.1.2.txt)
++- [Forum-Installation und Speicherorte](docs/FORUM-INSTALLATION-DE.md)
++- [Alle 236 Runtime-Dateien](docs/FORUM-DATEILISTE.txt)
++- [Eigener Installer-/Browsercode](dist/NLBinder-0.1.2-r24/FORUM-INSTALLATION-QUELLCODE/README.md)
++- [Prüfumfang](docs/review/r24-PRUEFUNG-DE.md), [Ergebnisse](docs/review/r24-validation.json)
++- [Nativer Browser-Eingabetest](dist/NLBinder-0.1.2-r24/FORUM-KEYBOARD-TEST.json)
++- [Änderungen seit r23](https://github.com/Kobiro57/PerkysBinderChangelog/compare/v0.1.2-r23...v0.1.2-r24)
++- [Originalvergleich](docs/review/DATEIVERGLEICH.md)
++
++Der neue Desktop-Ordner enthält vollständige Binder-Quellen, die fertige ASI
++und Changelogs. Frühere Desktop-Ordner und die Git-Historie bleiben erhalten.
++GTA vollständig schließen, ASI ersetzen und neu starten. Automatische Tests,
++der native Browser-Eingabetest und tatsächliche
++Ingame-Beobachtungen werden im Prüfnachweis getrennt ausgewiesen.
++'''
++
++def main():
++    (R/'build').mkdir(exist_ok=True)
++    for path,text in [('docs/NLBinder-0.1.2-r24-DE.md',NOTES),
++                      ('docs/review/r24-PRUEFUNG-DE.md',REVIEW),
++                      ('build/README-GITHUB-r24.md',README)]:
++        (R/path).write_text(text,encoding='utf-8',newline='\n')
++    (R/'docs/review/README-GITHUB.md').write_text(
++        re.sub(r'\]\((docs/|dist/|res/|include/|src/)',r'](../../\1',README),encoding='utf-8',newline='\n')
++    path=R/'docs/review/CHANGELOG-DE.md'
++    text=path.read_text(encoding='utf-8-sig')
++    if '## 30. Nachtrag v0.1.2 / r24' not in text:
++        path.write_text(text.rstrip()+'\n'+HISTORY,encoding='utf-8',newline='\n')
++    path=R/'docs/review/PRUEFUNG-DE.md'
++    text=path.read_text(encoding='utf-8-sig')
++    if '## Aktueller Stand v0.1.2 / r24' not in text:
++        text=text.replace('## Aktueller Stand v0.1.2 / r23','## Vorheriger Stand v0.1.2 / r23',1)
++        first,_,rest=text.partition('\n')
++        text=first+'\n\n## Aktueller Stand v0.1.2 / r24 – 16. November 2026\n\n'+(
++            'Die Quick-Forum-Tastaturkorrektur wird im [r24-Prüfumfang](r24-PRUEFUNG-DE.md)\n'
++            'und [Prüfnachweis](r24-validation.json) getrennt von früheren Ergebnissen dokumentiert.\n')+rest
++        path.write_text(text,encoding='utf-8',newline='\n')
++    path=R/'docs/FORUM-CHANGELOG-v0.1.2.txt'
++    text=path.read_text(encoding='utf-8-sig')
++    if 'Neu in r24:' not in text:
++        text=text.replace('NEU IN DIESEM PAKET\n','NEU IN DIESEM PAKET\n\n'+POST+'\n',1)
++        text=text.replace('/releases/tag/v0.1.2-r23','/releases/tag/v0.1.2-r24')
++        path.write_text(text,encoding='utf-8-sig',newline='\n')
++    path=R/'docs/BUILD-README.md'
++    text=path.read_text(encoding='utf-8-sig')
++    if '**Quick Forum Keyboard**' not in text:
++        text=text.replace('## Building','- **Quick Forum Keyboard** — The in-game `/forum` keyboard bridge supports text input including German AltGr special characters, preserving browser copy/paste shortcuts and Esc-close behavior. The pinned browser runtime cef156-r1 remains in use.\n\n## Building',1)
++        path.write_text(text,encoding='utf-8',newline='\n')
++    print('Documented Quick Forum special-character input and history section 30')
++
++if __name__=='__main__':main()
 diff --git a/tools/export_forum_installation_review.py b/tools/export_forum_installation_review.py
 new file mode 100644
-index 0000000..689f64b
+index 0000000..cbba50b
 --- /dev/null
 +++ b/tools/export_forum_installation_review.py
 @@ -0,0 +1,189 @@
@@ -30123,7 +30763,7 @@ index 0000000..689f64b
 +    'tools/prepare_browser_autoinstall.py', 'tools/cef-runtime.lock.json',
 +    'tools/export_forum_installation_review.py',
 +    'src/ForumBrowser.cpp', 'src/PersistentPaths.cpp', 'src/Main.cpp',
-+    'include/ForumBrowser.h', 'include/ForumBrowserProtocol.h',
++    'include/ForumBrowser.h', 'include/ForumBrowserProtocol.h', 'include/ForumKeyboardInput.h',
 +    'include/BrowserSetupProtocol.h', 'include/BrowserRuntimeLock.h',
 +    'include/ForumAfkSession.h', 'include/PersistentPaths.h', 'include/ResourceIds.h', 'include/Version.h',
 +    'browser/ForumBrowserHost.cpp', 'browser/CMakeLists.txt',
@@ -30368,6 +31008,46 @@ index 0000000..1a242e1
 +    result = render(text)
 +    target.write_text(result, encoding="utf-8-sig", newline="\n")
 +    print(f"Full changelog: {len(result.splitlines())} lines, sections 1-29, {target.name}")
++
++
++if __name__ == "__main__":
++    main()
+diff --git a/tools/export_full_changelog_revision24.py b/tools/export_full_changelog_revision24.py
+new file mode 100644
+index 0000000..4dbe885
+--- /dev/null
++++ b/tools/export_full_changelog_revision24.py
+@@ -0,0 +1,34 @@
++"""Render the complete reviewed German change history as a portable TXT file."""
++from pathlib import Path
++import re
++
++
++def render(text):
++    text = re.sub(r"!\[([^\]]*)\]\(([^)]+)\)", r"\1 (\2)", text)
++    text = re.sub(r"\[([^\]]+)\]\(([^)]+)\)", r"\1 (\2)", text)
++    lines = []
++    for line in text.splitlines():
++        heading = re.match(r"^(#{1,6})\s+(.+)$", line)
++        if heading:
++            title = heading[2].replace("**", "").replace("`", "")
++            lines += [title, ("=" if len(heading[1]) <= 2 else "-") * len(title)]
++        else:
++            lines.append(line.replace("**", "").replace("`", ""))
++    return "\n".join(lines).rstrip() + "\n"
++
++
++def main():
++    root = Path(__file__).resolve().parents[1]
++    source = root / "docs/review/CHANGELOG-DE.md"
++    target = root / "docs/CHANGELOG-GESAMT.txt"
++    text = source.read_text(encoding="utf-8")
++    required = {f"## {number}. " for number in range(1, 31)}
++    if not all(marker in text for marker in required):
++        raise ValueError("Complete change history sections 1-30 required")
++    result = render(text)
++    target.write_text(result, encoding="utf-8-sig", newline="\n")
++    print(f"Full changelog: {len(result.splitlines())} lines, sections 1-30, {target.name}")
 +
 +
 +if __name__ == "__main__":
@@ -31546,6 +32226,205 @@ index 0000000..0738830
 +
 +if __name__ == "__main__":
 +    main()
+diff --git a/tools/export_source_bundle_revision24.py b/tools/export_source_bundle_revision24.py
+new file mode 100644
+index 0000000..4edc70a
+--- /dev/null
++++ b/tools/export_source_bundle_revision24.py
+@@ -0,0 +1,193 @@
++"""Export a verified r24 source snapshot, ASI, automatic-browser manifest and full changelog.
++
++Reads Git blobs without changing Git or the game installation. The destination
++must not exist. Historical release binaries, Git metadata, local build outputs
++and private runtime files are excluded. The proof manifest stays under build/.
++"""
++from pathlib import Path, PurePosixPath
++import argparse
++import hashlib
++import json
++import re
++import subprocess
++
++
++ROOT = Path(__file__).resolve().parents[1]
++RELEASE = "v0.1.2-r24"
++PACKAGE = "dist/NLBinder-0.1.2-r24"
++PRIVATE_PARTS = {
++    ".git", ".vs", ".aws", ".codex", ".agents", "__pycache__", "build",
++    "output", "debug", "release", "obj", "cmakefiles", ".venv", "venv",
++}
++PRIVATE_NAMES = {
++    "keybinder.json", "jobs_data.json", "imgui.ini", ".env", ".git-credentials",
++    "credentials", "id_rsa", "id_ed25519", "nul", "gps.xml",
++}
++PRIVATE_SUFFIXES = {".log", ".obj", ".pdb", ".ilk", ".exp", ".pyc", ".suo", ".user", ".o"}
++
++
++def require(ok, message):
++    if not ok:
++        raise ValueError(message)
++
++
++def digest(data):
++    return hashlib.sha256(data).hexdigest()
++
++
++def git(repo, *args):
++    return subprocess.check_output(["git", *args], cwd=repo)
++
++
++def safe_source_path(relative):
++    path = PurePosixPath(relative)
++    require(path.parts and not path.is_absolute() and ".." not in path.parts,
++            "Unsafe source path: " + relative)
++    require("\\" not in relative and ":" not in relative, "Invalid source path: " + relative)
++    require(not any(part.lower() in PRIVATE_PARTS for part in path.parts[:-1]),
++            "Private/build directory in source snapshot: " + relative)
++    require(path.name.lower() not in PRIVATE_NAMES and path.suffix.lower() not in PRIVATE_SUFFIXES,
++            "Private/runtime file in source snapshot: " + relative)
++
++
++def source_entries(repo, commit):
++    entries = {}
++    for entry in git(repo, "ls-tree", "-r", "-z", commit).split(b"\0"):
++        if not entry:
++            continue
++        metadata, raw_path = entry.split(b"\t", 1)
++        mode, kind, oid = metadata.split()
++        relative = raw_path.decode("utf-8")
++        require(kind == b"blob" and mode in {b"100644", b"100755"},
++                "Unsupported symlink/submodule: " + relative)
++        entries[relative] = oid
++    return entries
++
++
++def read_blobs(repo, entries):
++    oids = sorted(set(entries.values()))
++    process = subprocess.Popen(["git", "cat-file", "--batch"], cwd=repo,
++                               stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
++    output, errors = process.communicate(b"\n".join(oids) + b"\n")
++    require(process.returncode == 0, "Cannot read Git source objects: " + errors.decode("utf-8", "replace"))
++    offset, blobs = 0, {}
++    for oid in oids:
++        end_header = output.find(b"\n", offset)
++        require(end_header >= offset, "Truncated Git source header")
++        header = output[offset:end_header].split()
++        require(len(header) == 3 and header[0] == oid and header[1] == b"blob", "Unexpected source object")
++        size = int(header[2])
++        start, end = end_header + 1, end_header + 1 + size
++        require(output[end:end + 1] == b"\n", "Truncated source file")
++        blobs[oid] = output[start:end]
++        offset = end + 1
++    require(offset == len(output), "Unexpected trailing Git source data")
++    return {relative: blobs[oid] for relative, oid in entries.items()}
++
++
++def main():
++    parser = argparse.ArgumentParser(description=__doc__)
++    parser.add_argument("--destination", required=True, type=Path)
++    parser.add_argument("--repository", type=Path, default=ROOT / "build/github-publication/repository")
++    parser.add_argument("--revision", default="HEAD")
++    parser.add_argument("--binary", type=Path, default=ROOT / "build/Release/NLBinder.asi")
++    parser.add_argument("--manifest", type=Path, default=ROOT / "build/source-export-r24.json")
++    args = parser.parse_args()
++    repo = args.repository.resolve(strict=True)
++    destination = args.destination.resolve()
++    manifest_path = args.manifest.resolve()
++    require(not destination.exists(), "Destination already exists; nothing will be overwritten: " + str(destination))
++    require(destination.parent.is_dir(), "Destination parent must already exist")
++    require(not destination.is_relative_to(repo), "Export must be outside the publication checkout")
++    require(not manifest_path.is_relative_to(destination), "Manifest must remain outside the source export")
++    commit = git(repo, "rev-parse", "--verify", "--end-of-options", args.revision + "^{commit}").decode().strip()
++    require(re.fullmatch("[0-9a-f]{40}", commit), "Unexpected Git revision")
++    entries = source_entries(repo, commit)
++    selected = {}
++    for relative, oid in entries.items():
++        if PurePosixPath(relative).parts[0] == "dist":
++            continue  # Prior ASIs/ZIPs are available through the Git history.
++        safe_source_path(relative)
++        selected[relative] = oid
++    extras = {
++        "NLBinder.asi": PACKAGE + "/NLBinder.asi",
++        "CHANGELOG-GESAMT.txt": "docs/CHANGELOG-GESAMT.txt",
++        "README.md": "docs/BUILD-README.md",
++        "LIESMICH-DE.md": PACKAGE + "/LIESMICH.md",
++        "BUILD-INFO.txt": PACKAGE + "/BUILD-INFO.txt",
++        "PRUEFBERICHT.json": PACKAGE + "/PRUEFBERICHT.json",
++        "SHA256SUMS.txt": PACKAGE + "/SHA256SUMS.txt",
++        "RECONNECT-TEST.json": PACKAGE + "/RECONNECT-TEST.json",
++        "FORUM-KEYBOARD-TEST.json": PACKAGE + "/FORUM-KEYBOARD-TEST.json",
++        "BROWSER-RUNTIME.json": PACKAGE + "/BROWSER-RUNTIME.json",
++        "FORUM-CHANGELOG.txt": "docs/FORUM-CHANGELOG-v0.1.2.txt",
++        "FORUM-INSTALLATION.txt": "docs/FORUM-INSTALLATION-DE.md",
++        "FORUM-DATEILISTE.txt": "docs/FORUM-DATEILISTE.txt",
++    }
++    focus_prefix = PACKAGE + "/FORUM-INSTALLATION-QUELLCODE/"
++    focus_entries = {name[len(PACKAGE) + 1:]: name for name in entries if name.startswith(focus_prefix)}
++    require(focus_entries, "The verified focused forum installer sources are missing")
++    extras.update(focus_entries)
++    for source in extras.values():
++        require(source in entries, "Verified r24 publication file missing: " + source)
++    read_entries = dict(selected)
++    read_entries.update({source: entries[source] for source in extras.values()})
++    files = read_blobs(repo, read_entries)
++    exported = {relative: files[relative] for relative in selected}
++    for target, source in extras.items():
++        exported[target] = files[source]
++    binary = exported["NLBinder.asi"]
++    require(binary == args.binary.read_bytes(), "Published ASI differs from the locally built NLBinder.asi")
++    report = json.loads(exported["PRUEFBERICHT.json"].decode("utf-8-sig"))
++    require(report.get("revision") == RELEASE and report.get("asi") == "NLBinder.asi" and report.get("sha256") == digest(binary)
++            and report.get("bytes") == len(binary) and report.get("embedded_helper_matches") is True,
++            "r24 artifact verification is missing or stale")
++    runtime = json.loads(exported['BROWSER-RUNTIME.json'].decode('utf-8'))
++    runtime_files = {}
++    # r24 installs the pinned browser automatically into Documents on first /forum.
++    require(exported["Keybinder.vcxproj"].count(b"<TargetName>NLBinder</TargetName>") == 2,
++            "Release/Debug project names are not both NLBinder")
++    folded = [relative.casefold() for relative in exported]
++    require(len(folded) == len(set(folded)), "Case-insensitive destination path collision")
++    require(git(repo, "rev-parse", "--verify", "--end-of-options", args.revision + "^{commit}").decode().strip() == commit,
++            "Source revision changed during snapshot reading")
++    # All input and publication checks finish before the first destination write.
++    destination.mkdir()
++    for relative, data in sorted(exported.items()):
++        target = destination / relative
++        require(target.resolve().is_relative_to(destination), "Export escaped the destination")
++        target.parent.mkdir(parents=True, exist_ok=True)
++        target.write_bytes(data)
++    import shutil
++    for relative, source in runtime_files.items():
++        target = destination / relative
++        target.parent.mkdir(parents=True, exist_ok=True)
++        shutil.copyfile(source, target)
++    actual = {path.relative_to(destination).as_posix(): path for path in destination.rglob("*") if path.is_file()}
++    require(set(actual) == set(exported) | set(runtime_files), "Exported file set differs")
++    for relative, data in exported.items():
++        require(actual[relative].read_bytes() == data, "Exported file differs: " + relative)
++        require(not actual[relative].is_symlink(), "Unexpected exported symlink: " + relative)
++    for relative, source in runtime_files.items():
++        with source.open('rb') as stream: before = hashlib.file_digest(stream, 'sha256').hexdigest()
++        with actual[relative].open('rb') as stream: after = hashlib.file_digest(stream, 'sha256').hexdigest()
++        require(before == after, 'Exported runtime differs: ' + relative)
++    manifest = {
++        "release": RELEASE, "source_commit": commit, "destination": str(destination),
++        "exported_files": len(exported) + len(runtime_files),
++        "exported_bytes": sum(map(len, exported.values())) + sum(p.stat().st_size for p in runtime_files.values()),
++        "browser_runtime_files": len(runtime_files),
++        "source_files": len(selected), "all_files_verified": True,
++        "historical_release_binaries_in_export": 0, "private_runtime_files": 0,
++        "asi_bytes": len(binary), "asi_sha256": digest(binary),
++        "changelog_sha256": digest(exported["CHANGELOG-GESAMT.txt"]),
++        "root_file_sources": extras,
++        "files": {relative: digest(data) for relative, data in sorted(exported.items())},
++    }
++    manifest_path.parent.mkdir(parents=True, exist_ok=True)
++    manifest_path.write_text(json.dumps(manifest, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
++    print(json.dumps({key: value for key, value in manifest.items() if key != "files"}, indent=2, ensure_ascii=False))
++
++
++if __name__ == "__main__":
++    main()
 diff --git a/tools/fetch_cef_runtime.py b/tools/fetch_cef_runtime.py
 new file mode 100644
 index 0000000..6314494
@@ -32143,6 +33022,70 @@ index 0000000..0d4a4a5
 +        'postable_forum_changelog_verified':True,'previous_desktop_exports_modified':False,
 +        'game_installation_modified':False}
 +    (ROOT/'build/revision23-desktop-export.json').write_text(json.dumps(result,indent=2)+'\n',encoding='utf-8')
++    print(json.dumps(result,indent=2))
++
++if __name__=='__main__':main()
+diff --git a/tools/finalize_revision24.py b/tools/finalize_revision24.py
+new file mode 100644
+index 0000000..32f34cc
+--- /dev/null
++++ b/tools/finalize_revision24.py
+@@ -0,0 +1,58 @@
++"""Export v0.1.2 to a new Desktop folder, preserving every previous export."""
++from pathlib import Path
++import hashlib,json,subprocess,sys
++ROOT=Path(__file__).resolve().parents[1]
++
++def require(ok,message):
++    if not ok:raise ValueError(message)
++
++def sha(path):
++    with path.open('rb') as stream:return hashlib.file_digest(stream,'sha256').hexdigest()
++
++def main():
++    desktop=Path.home()/'Desktop'
++    require(desktop.resolve(strict=True)==ROOT.parent.resolve(strict=True),'Unexpected Desktop location')
++    target=desktop/'NLBinder-v0.1.2-r24'
++    prepared=desktop/'NLBinder-v0.1.2-r24-prepared-20261116'
++    for path in [target,prepared]:
++        require(path.parent.resolve(strict=True)==desktop.resolve(strict=True)
++                and path.resolve().parent==desktop.resolve(strict=True),'Unexpected export path')
++        require(not path.is_symlink() and not path.is_junction(),'Redirected Desktop folder refused')
++        require(not path.exists(),'Existing export is preserved: '+path.name)
++    publication=json.loads((ROOT/'build/revision24-published.json').read_text(encoding='utf-8'))
++    proof=json.loads((ROOT/'build/revision24-package.json').read_text(encoding='utf-8'))
++    require(publication['published'] and publication['tag']=='v0.1.2-r24'
++            and publication['asi_sha256']==proof['asi_sha256'],'Verified publication missing')
++    subprocess.run([sys.executable,str(ROOT/'tools/export_source_bundle_revision24.py'),
++        '--destination',str(prepared),'--revision',publication['commit']],cwd=ROOT,check=True)
++    require(sha(prepared/'NLBinder.asi')==proof['asi_sha256'],'Prepared ASI differs')
++    require(sha(prepared/'CHANGELOG-GESAMT.txt')==proof['changelog_sha256'],'Complete changelog differs')
++    require(sha(prepared/'FORUM-CHANGELOG.txt')==proof['forum_changelog_sha256'],'Postable forum changelog differs')
++    require(sha(prepared/'FORUM-INSTALLATION.txt')==proof['forum_installation_sha256'],'Installer disclosure differs')
++    require(sha(prepared/'FORUM-DATEILISTE.txt')==proof['forum_file_list_sha256'],'Runtime file list differs')
++    native=json.loads((prepared/'FORUM-KEYBOARD-TEST.json').read_text(encoding='utf-8'))
++    require(native==proof['native_forum_keyboard_test'] and native['passed'] is True,
++            'Native CEF keyboard test proof differs')
++    focus=prepared/'FORUM-INSTALLATION-QUELLCODE'
++    actual={p.relative_to(focus).as_posix():p for p in focus.rglob('*') if p.is_file()}
++    require(set(actual)==set(proof['forum_review_files']),'Focused installer source set differs')
++    for name,digest in proof['forum_review_files'].items():
++        require(actual[name].resolve().is_relative_to(focus.resolve()) and sha(actual[name])==digest,
++                'Focused installer file differs: '+name)
++    runtime=json.loads((prepared/'BROWSER-RUNTIME.json').read_text(encoding='utf-8'))
++    require(runtime['runtime_id']=='cef156-r1'
++            and runtime['archive_sha256']=='01fc7f1d4dcec644a191e9c63da7088a73aa81a63c9a4c207001f7038a70ff45',
++            'Unchanged automatic browser manifest differs')
++    require(prepared.resolve().parent==desktop.resolve() and target.resolve().parent==desktop.resolve(),
++            'Unsafe final rename')
++    prepared.rename(target)
++    result={'revision':'v0.1.2-r24','desktop_source':str(target),'source_commit':publication['commit'],
++        'asi_sha256':sha(target/'NLBinder.asi'),'all_source_files_verified':True,
++        'focused_forum_source_files_verified':len(actual),'forum_installation_paths_documented':True,
++        'postable_forum_changelog_verified':True,'native_forum_keyboard_test_verified':True,
++        'previous_desktop_exports_modified':False,
++        'game_installation_modified':False}
++    (ROOT/'build/revision24-desktop-export.json').write_text(json.dumps(result,indent=2)+'\n',encoding='utf-8')
 +    print(json.dumps(result,indent=2))
 +
 +if __name__=='__main__':main()
@@ -34265,6 +35208,203 @@ index 0000000..09b70b1
 +        'archive':archive.name,'archive_bytes':archive.stat().st_size,'archive_sha256':sha(archive),'archive_integrity_checked':True,
 +        'browser_download_url':lock['download_url'],'browser_download_sha256':lock['archive_sha256'],'browser_download_bytes':lock['archive_bytes']}
 +    for target in ['build/revision23-package.json','docs/review/r23-validation.json']:
++        (R/target).write_text(json.dumps(proof,indent=2)+'\n',encoding='utf-8')
++    compact=dict(proof,forum_review_files='Recorded '+str(len(review_files))+' verified source/document files')
++    print(json.dumps(compact,indent=2))
++
++if __name__=='__main__':main()
+diff --git a/tools/package_revision24.py b/tools/package_revision24.py
+new file mode 100644
+index 0000000..ba05621
+--- /dev/null
++++ b/tools/package_revision24.py
+@@ -0,0 +1,191 @@
++"""Package the verified v0.1.2 ASI, forum disclosure and inspectable installer sources."""
++from pathlib import Path
++import hashlib,json,re,shutil,subprocess,sys,zipfile
++R=Path(__file__).resolve().parents[1]
++PREVIOUS='9a793421fcdb40b6de2494f85984393bda052366'
++TAG='v0.1.2-r24'
++
++def check(ok,why):
++    if not ok:raise ValueError(why)
++
++def sha(path):
++    with path.open('rb') as stream:return hashlib.file_digest(stream,'sha256').hexdigest()
++
++def main():
++    package=R/'dist/NLBinder-0.1.2-r24'
++    archive=R/'dist/NLBinder-v0.1.2-KOBiRO-r24.zip'
++    check(not package.exists() and not archive.exists(),'Existing v0.1.2 package is preserved; do not overwrite')
++    log_path=R/'build/revision24-tests.log'
++    log=log_path.read_text(encoding='utf-8-sig',errors='replace')
++    check(re.search(r'^Test exit code: 0\s*$',log,re.M) and '[FAIL]' not in log,'Full tests not passing')
++    check('RELEASE_BUILD_EXIT_CODE=0' in (R/'build/revision24-build.log').read_text(errors='replace'),'Release build not passing')
++    suites={}
++    for suite in ['DrugUseTracker','R18Feature','R17Feature','R16Feature','DamageLogRegression','StartupStatsSync','CombatChatBridge','ServerStatsParser','LocalFactionAccess','NearbyWantedLabels','PoliceLocateTracker','ServerCheckpointRPCAdapter','PoliceLocateBridge','ForumKeyboardInput','ForumKeyboardRouting']:
++        found=re.search(suite+r'Tests: (\d+) checks, 0 failures',log)
++        check(found is not None,'Missing passing suite '+suite);suites[suite]=int(found[1])
++    for name,pattern in [('OnlineSettings',r'Online Settings: (\d+) passed, 0 failed'),
++                         ('OnlineOverlayRenderer',r'OnlineOverlayRendererTests: (\d+) passed, 0 failed'),
++                         ('QuickMap',r'QuickMapTests: (\d+) passed, 0 failed')]:
++        found=re.search(pattern,log);check(found is not None,'Missing passing suite '+name);suites[name]=int(found[1])
++    check(suites['DrugUseTracker']>=207,'Existing drug parser regressions missing')
++    check(suites['QuickMap']>149,'Missing claims QuickMap regression checks')
++    check(suites['ServerStatsParser']>156,'Missing own-faction parsing regression checks')
++    check(suites['LocalFactionAccess']>=18,'Missing local/API faction reconciliation checks')
++    check(suites['StartupStatsSync']>401,'Missing speed command and role-loss regression checks')
++    for suite in ['NearbyWantedLabels','PoliceLocateTracker','ServerCheckpointRPCAdapter','PoliceLocateBridge','ForumKeyboardInput','ForumKeyboardRouting']:
++        check(suites[suite]>0,'Missing r24 regression checks: '+suite)
++    cap=(R/'include/NearbyWantedLabels.h').read_text(encoding='utf-8')
++    check(re.search(r'kNearbyWantedLabelMaximumDistance\s*=\s*5\.0f',cap) is not None,
++          'Wanted label hard maximum is not the reviewed five metres')
++    artifact=json.loads((R/'build/revision24-artifact.json').read_text(encoding='utf-8'))
++    asi=R/'build/Release/NLBinder.asi'
++    check(artifact['revision']==TAG and sha(asi)==artifact['sha256'] and artifact['embedded_helper_matches']
++          and artifact['embedded_browser_setup_matches'] and artifact['requested_startup_message_present'],'Artifact proof stale')
++    check(artifact['embedded_browser_setup_sha256']==sha(R/'build/BrowserSetup.exe'),'Installer proof stale')
++    check('libcef.dll' not in [x.lower() for x in artifact['imports']],'CEF must remain outside GTA')
++    worker_path=R/'build/reconnect-worker-tests/result.json'
++    worker=json.loads(worker_path.read_text(encoding='utf-8'))
++    check(worker['failures']==0 and worker['checks']>=83 and worker['nova_cases']==6,'Native reconnect regression failed')
++    check(worker_path.stat().st_mtime>=(R/'build/ReconnectHelper.exe').stat().st_mtime,'Reconnect test predates helper build')
++    native_path=R/'build/revision24-native-forum-keyboard.json'
++    native=json.loads(native_path.read_text(encoding='utf-8'))
++    check(native.get('passed') is True,'Native CEF forum keyboard test not passing')
++    check(native.get('renderer_input_readiness_checked') is True
++          and native.get('initial_offscreen_frames',0)>=2,
++          'Native keyboard test did not establish renderer readiness and input focus')
++    check(native.get('runtime_id')=='cef156-r1' and native.get('protocol_version')==1,
++          'Native keyboard test did not use the pinned browser and existing IPC protocol')
++    check(native.get('anonymous_isolated_profile') is True and native.get('login_or_post_submitted') is False
++          and native.get('live_gta_gameplay_test_performed') is False and native.get('clean_exit_code')==0,
++          'Native keyboard test scope or browser cleanup differs')
++    check(native.get('fixed_cases',0)>0 and native.get('fixed_cases_passed')==native['fixed_cases']
++          and native.get('actual_cef_ipc_keyboard_path') is True and native.get('local_dom_fixture') is True
++          and native.get('network_blocked_during_fixture') is True
++          and native.get('initial_page_loaded_read_only') is True
++          and native.get('viewport_paint_barriers_checked') is True
++          and native.get('user_clipboard_modified') is False,
++          'Native keyboard editing cases or isolated fixture scope differ')
++    check(native.get('legacy_regression_reproduced') is True,
++          'Native keyboard test did not reproduce the reported AltGr regression with the old route')
++    check(native.get('translator_sha256')==sha(R/'include/ForumKeyboardInput.h')
++          and native.get('probe_sha256')==sha(R/'build/ForumKeyboardProbe.exe'),
++          'Native keyboard proof predates the current translator or probe')
++    check(native_path.stat().st_mtime>=log_path.stat().st_mtime,'Native CEF keyboard proof predates current full test run')
++    lock=json.loads((R/'res/browser-runtime.json').read_text(encoding='utf-8'))
++    check(lock['archive_sha256']=='01fc7f1d4dcec644a191e9c63da7088a73aa81a63c9a4c207001f7038a70ff45',
++          'Browser runtime pin changed')
++    check(len(lock['files'])==236 and sum(x['bytes'] for x in lock['files'])==429252102,'Runtime manifest file set changed')
++    runtime_files={entry['path']:entry for entry in lock['files']}
++    check(native.get('cef_host_sha256')==runtime_files['NLBinderBrowser.exe']['sha256']
++          and native.get('cef_host_dll_sha256')==runtime_files['NLBinderBrowser.dll']['sha256'],
++          'Native keyboard proof does not match the unchanged pinned browser host')
++    unchanged=['browser/ForumBrowserHost.cpp','src/GpsGameAdapter.cpp','src/GpsManager.cpp',
++        'tools/BrowserSetup.cpp','tools/ReconnectHelper.cpp','include/BrowserSetupProtocol.h','include/BrowserRuntimeLock.h',
++        'res/browser-runtime.json','include/DrugUseTracker.h',
++        'src/OnlineOverlayRenderer.cpp','src/SettingsManager.cpp',
++        'include/SettingsManager.h','src/MainWindowUI.cpp','include/Version.h']
++    repo=R/'build/github-publication/repository'
++    for name in unchanged:
++        before=subprocess.check_output(['git','show',PREVIOUS+':'+name],cwd=repo)
++        check((R/name).read_bytes().replace(b'\r\n',b'\n')==before.replace(b'\r\n',b'\n'),
++              'Previously tested runtime source changed: '+name)
++    history=(R/'docs/review/CHANGELOG-DE.md').read_text(encoding='utf-8')
++    check(all(f'## {n}. ' in history for n in range(1,31)),'Full history sections 1-30 required')
++    post=R/'docs/FORUM-CHANGELOG-v0.1.2.txt'
++    check('0.1.2' in post.read_text(encoding='utf-8-sig') and 'perkys & edited by KOBiRO' in post.read_text(encoding='utf-8-sig'),
++          'Postable forum changelog has the wrong version or credits')
++    file_list=R/'docs/FORUM-DATEILISTE.txt'
++    listed=file_list.read_text(encoding='utf-8-sig')
++    for item in lock['files']:
++        check(item['path'] in listed and item['sha256'] in listed,'Disclosed runtime file missing: '+item['path'])
++    review_parent=R/'build/revision24-forum-review'
++    review_parent.mkdir(parents=True,exist_ok=True)
++    review=review_parent/'FORUM-INSTALLATION-QUELLCODE'
++    subprocess.run([sys.executable,str(R/'tools/export_forum_installation_review.py'),
++                    '--destination',str(review)],cwd=R,check=True)
++    review_files={}
++    for path in review.rglob('*'):
++        check(not path.is_symlink() and not path.is_junction(),'Redirected focused review file')
++        if path.is_file():
++            check(path.suffix.lower() not in {'.asi','.exe','.dll','.log','.pyc','.obj'},'Unexpected binary/private focused file')
++            review_files[path.relative_to(review).as_posix()]=sha(path)
++    check('include/ForumKeyboardInput.h' in review_files and 'tools/BrowserSetup.cpp' in review_files and 'browser/ForumBrowserHost.cpp' in review_files
++          and 'SHA256SUMS.txt' in review_files and 'SOURCE-MANIFEST.json' in review_files,
++          'The focused own installer/browser sources or their checksums are missing')
++    package.mkdir(parents=True)
++    shutil.copyfile(asi,package/'NLBinder.asi')
++    for source,target in [('docs/NLBinder-0.1.2-r24-DE.md','LIESMICH.md'),('docs/CHANGELOG-GESAMT.txt','CHANGELOG-GESAMT.txt'),
++        ('docs/FORUM-CHANGELOG-v0.1.2.txt','FORUM-CHANGELOG.txt'),('docs/FORUM-INSTALLATION-DE.md','FORUM-INSTALLATION.txt'),
++        ('docs/FORUM-DATEILISTE.txt','FORUM-DATEILISTE.txt'),('third_party/miniz/LICENSE','MINIZ-LICENSE.txt'),
++        ('res/browser-runtime.json','BROWSER-RUNTIME.json'),('build/reconnect-worker-tests/result.json','RECONNECT-TEST.json'),
++        ('build/revision24-native-forum-keyboard.json','FORUM-KEYBOARD-TEST.json'),
++        ('docs/review/r24-PRUEFUNG-DE.md','PRUEFUMFANG.md')]:
++        shutil.copyfile(R/source,package/target)
++    shutil.copytree(review,package/'FORUM-INSTALLATION-QUELLCODE')
++    public=dict(artifact,asi='NLBinder.asi')
++    (package/'PRUEFBERICHT.json').write_text(json.dumps(public,indent=2)+'\n',encoding='utf-8')
++    (package/'SHA256SUMS.txt').write_text(sha(asi)+'  NLBinder.asi\n',encoding='ascii')
++    (package/'BUILD-INFO.txt').write_text(f'''NLBinder v.0.1.2 by perkys & edited by KOBiRO (r24)
++NLBinder.asi (x86): {asi.stat().st_size} Bytes
++SHA256: {sha(asi)}
++
++Gewuenschte farbige Startmeldung ist im finalen PE enthalten.
++Gesamttests und Release-Build: Exitcode 0. Nativer Reconnect-Worker: {worker['checks']} Checks.
++ASI-Ressourcen 300/301 stimmen mit den gebauten nativen Helfern ueberein.
++Browserhost/GPS/Drogenoverlay und Browsermanifest sind gegen r23 unveraendert geprueft.
++Die Tastaturweiterleitung in der ASI ist fuer Quick-Forum-Sonderzeichen korrigiert.
++SAPD-/LSPD-Wantedlabels: maximal 5 Meter, sichtbarer gestreamter Ped, freie Sicht.
++Vorhandene Nametag-Freigabe, Wantedlisten-Schalter und frische Wanteddaten erforderlich.
++Wantedtabelle: aktueller SA-MP-Spieler-ID nach Name; keine API-Account-ID.
++Ortung: einmalige Funkmeldung nach Erfolg UND frischem Servercheckpoint,
++Bezirk anhand Markerkoordinaten, keine eigene GPS-Navigation als Ausloeser.
++Fruehere Browser-/GPS-Pruefungen sind separat historisch dokumentiert.
++Ein nativer Eingabetest mit dem bestehenden CEF-Host ist in FORUM-KEYBOARD-TEST.json dokumentiert.
++Er verwendet nur synthetische Texte in einem isolierten anonymen Profil, ohne Forumbeitrag.
++Ein neuer r24-GTA-Live-Test wird nicht behauptet.
++
++FORUM-INSTALLATION.txt beschreibt Einrichtung und Speicherorte. Die Dateiliste
++enthaelt alle 236 festgelegten Runtime-Dateien. FORUM-INSTALLATION-QUELLCODE
++enthaelt die eigenen Originalquellen und ihre SHA-256-Nachweise, keine privaten Profile.
++FORUM-CHANGELOG.txt ist der fertige Text fuer die Veroeffentlichung im Forum.
++Der vollstaendige Binder-Quellcode ist im neuen Desktop-Ordner und auf GitHub enthalten.
++Der komplette Drittanbieter-Chromium-/CEF-Upstreamcode wird nicht als enthalten ausgegeben.
++
++Nur NLBinder.asi bei beendetem GTA ersetzen. Browserstand unveraendert: cef156-r1.
++Browser-Download SHA256: {lock['archive_sha256']}
++''',encoding='utf-8-sig')
++    with zipfile.ZipFile(archive,'w',zipfile.ZIP_DEFLATED,compresslevel=6) as zipped:
++        for path in sorted(package.rglob('*')):
++            if path.is_file():zipped.write(path,package.name+'/'+path.relative_to(package).as_posix())
++    with zipfile.ZipFile(archive) as zipped:
++        check(zipped.testzip() is None,'ZIP integrity failed')
++        check(hashlib.sha256(zipped.read(package.name+'/NLBinder.asi')).hexdigest()==sha(asi),'Zipped ASI differs')
++        for name,digest in review_files.items():
++            check(hashlib.sha256(zipped.read(package.name+'/FORUM-INSTALLATION-QUELLCODE/'+name)).hexdigest()==digest,
++                  'Zipped focused installer source differs: '+name)
++        check(not any(x.lower().endswith(('.log','.dll','.exe','.obj','.pyc')) for x in zipped.namelist()),
++              'Runtime binary or private data in package')
++    proof={'revision':TAG,'date':'2026-11-16','asi_bytes':asi.stat().st_size,'asi_sha256':sha(asi),
++        'version_and_credit':artifact['version_and_credit'],'requested_startup_message_present':True,
++        'embedded_browser_setup_sha256':artifact['embedded_browser_setup_sha256'],
++        'full_test_suite_exit_code':0,'full_test_log_sha256':sha(log_path),'release_build_exit_code':0,
++        'focused_checks':suites,'wanted_label_maximum_distance_metres':5.0,'wanted_label_line_of_sight_required':True,
++        'wanted_label_native_visibility_required':True,'wanted_table_current_samp_id':True,
++        'police_locate_requires_new_server_checkpoint':True,'police_locate_duplicate_guard_tested':True,
++        'local_faction_guards_tested':True,'forum_keyboard_input_regression_tested':True,
++        'forum_browser_runtime_changed':False,'native_forum_keyboard_test':native,
++        'native_reconnect_checks':worker['checks'],'native_reconnect_nova_cases':worker['nova_cases'],
++        'unchanged_prior_tested_sources':unchanged,'unchanged_sources_baseline':PREVIOUS,
++        'previous_browser_gps_validation':'r18-validation.json','browser_gps_native_integration_rerun':False,
++        'live_gta_gameplay_test_performed':False,'changelog_sections':30,'changelog_sha256':sha(R/'docs/CHANGELOG-GESAMT.txt'),
++        'forum_changelog_sha256':sha(post),'forum_installation_sha256':sha(R/'docs/FORUM-INSTALLATION-DE.md'),
++        'forum_file_list_sha256':sha(file_list),'forum_runtime_files_disclosed':len(lock['files']),
++        'forum_review_files':review_files,'forum_review_file_count':len(review_files),
++        'archive':archive.name,'archive_bytes':archive.stat().st_size,'archive_sha256':sha(archive),'archive_integrity_checked':True,
++        'browser_download_url':lock['download_url'],'browser_download_sha256':lock['archive_sha256'],'browser_download_bytes':lock['archive_bytes']}
++    for target in ['build/revision24-package.json','docs/review/r24-validation.json']:
 +        (R/target).write_text(json.dumps(proof,indent=2)+'\n',encoding='utf-8')
 +    compact=dict(proof,forum_review_files='Recorded '+str(len(review_files))+' verified source/document files')
 +    print(json.dumps(compact,indent=2))
@@ -37452,6 +38592,298 @@ index 0000000..d80c07d
 +    args=parser.parse_args()
 +    if args.prepare:stage()
 +    else:publish()
+diff --git a/tools/publish_revision24.py b/tools/publish_revision24.py
+new file mode 100644
+index 0000000..bd56f98
+--- /dev/null
++++ b/tools/publish_revision24.py
+@@ -0,0 +1,286 @@
++"""Prepare/publish only the authorized r24 update to Kobiro57/PerkysBinderChangelog.
++
++Uses the existing Git credential manager in memory; never logs or stores tokens.
++Large Chromium binaries belong in the release asset, not Git history.
++"""
++from pathlib import Path, PurePosixPath
++import argparse
++import hashlib
++import json
++import os
++import re
++import shutil
++import subprocess
++import urllib.request
++import urllib.error
++
++ROOT=Path(__file__).resolve().parents[1]
++REPO=ROOT/'build/github-publication/repository'
++URL='https://github.com/Kobiro57/PerkysBinderChangelog'
++API='https://api.github.com/repos/Kobiro57/PerkysBinderChangelog'
++TAG='v0.1.2-r24'
++PREVIOUS='9a793421fcdb40b6de2494f85984393bda052366'
++PACKAGE='dist/NLBinder-0.1.2-r24'
++BASE='original-archive-92ce219'
++GENERATED={'docs/review/SOURCE-COMPARISON.json','docs/review/DATEIVERGLEICH.md',
++ 'docs/review/DIFFSTAT.txt','docs/review/first-party-changes.patch',
++ 'docs/review/REVISION24-DIFFSTAT.txt','docs/review/revision24-changes.patch'}
++PRIVATE_DIRS={'.git','.vs','__pycache__','output','debug','release','obj','cmakefiles','.codex','.agents','.aws'}
++PRIVATE_NAMES={'keybinder.json','jobs_data.json','imgui.ini','gps.xml','.env','.git-credentials','nul'}
++PRIVATE_SUFFIXES={'.obj','.pdb','.ilk','.exp','.log','.pyc','.suo','.user','.o'}
++PROGRAM=['src','browser','tests','tools','res','include/*.h','Keybinder.rc','Keybinder.vcxproj','Keybinder.sln']
++
++def require(ok,message):
++    if not ok:raise ValueError(message)
++
++def digest(data):return hashlib.sha256(data).hexdigest()
++
++def filehash(path):
++    with path.open('rb') as f:return hashlib.file_digest(f,'sha256').hexdigest()
++
++def git(*args,input=None):
++    p=subprocess.run(['git',*args],cwd=REPO,input=input,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
++    if p.returncode:raise RuntimeError('Git failed: '+str(args[:3])+': '+p.stderr.decode('utf-8','replace')[:1500])
++    return p.stdout
++
++def write(relative,data):
++    p=REPO/relative;p.parent.mkdir(parents=True,exist_ok=True)
++    p.write_bytes(data.encode('utf-8') if isinstance(data,str) else data)
++
++def paths(revision):
++    entries={}
++    if revision==':':
++        records=git('ls-files','--stage','-z').split(b'\0')
++        for record in records:
++            if not record:continue
++            meta,name=record.split(b'\t',1);mode,oid,stage=meta.split()
++            require(stage==b'0' and mode in {b'100644',b'100755'},'Unmerged/link entry')
++            entries[name.decode()]=oid
++    else:
++        for record in git('ls-tree','-r','-z',revision).split(b'\0'):
++            if not record:continue
++            meta,name=record.split(b'\t',1);mode,kind,oid=meta.split()
++            require(kind==b'blob' and mode in {b'100644',b'100755'},'Submodule/link entry')
++            entries[name.decode()]=oid
++    return entries
++
++def blobs(entries):
++    oids=sorted(set(entries.values()))
++    process=subprocess.Popen(['git','cat-file','--batch'],cwd=REPO,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
++    raw,err=process.communicate(b'\n'.join(oids)+b'\n')
++    require(process.returncode==0,'Cannot read source blobs')
++    values={};at=0
++    for oid in oids:
++        end=raw.index(b'\n',at);header=raw[at:end].split()
++        require(header[0]==oid and header[1]==b'blob','Invalid blob batch')
++        size=int(header[2]);at=end+1;values[oid]=raw[at:at+size];at+=size+1
++    require(at==len(raw),'Trailing source bytes')
++    return {name:values[oid] for name,oid in entries.items()}
++
++def allowed(relative):
++    p=PurePosixPath(relative)
++    return not (p.is_absolute() or '..' in p.parts or ':' in relative or '\\' in relative
++      or any(x.lower() in PRIVATE_DIRS for x in p.parts[:-1])
++      or p.name.lower() in PRIVATE_NAMES or p.suffix.lower() in PRIVATE_SUFFIXES)
++
++def historical(relative):
++    return bool(re.fullmatch(r'docs/review/(REVISION(?:[4-9]|1[0-9]|2[0-3])-DIFFSTAT\.txt|revision(?:[4-9]|1[0-9]|2[0-3])-changes\.patch)',relative))
++
++def stage():
++    require(git('remote','get-url','origin').decode().strip().removesuffix('.git')==URL,'Wrong target repository')
++    require(git('rev-parse','HEAD').decode().strip()==PREVIOUS,'Publication must start on the known r23 commit')
++    if git('status','--porcelain'):
++        # Resume only an explicitly recorded, inspected preparation tree.
++        checkpoint=json.loads((ROOT/'build/revision24-staged-owned.json').read_text())
++        require(git('write-tree').decode().strip()==checkpoint['staged_tree'] and not git('diff','--name-only'),
++                'Publication checkout changed outside the recorded preparation')
++    proof=json.loads((ROOT/'build/revision24-package.json').read_text())
++    require(proof['revision']==TAG and filehash(ROOT/'build/Release/NLBinder.asi')==proof['asi_sha256'],'Package proof stale')
++    original_entries=paths(BASE)
++    previous_entries=paths('HEAD')
++    for start in ['src','tests','tools','docs','res','browser','third_party/miniz']:
++        for parent,dirs,names in os.walk(ROOT/start):
++            dirs[:]=[x for x in dirs if x.lower() not in PRIVATE_DIRS]
++            for name in names:
++                path=Path(parent)/name;relative=path.relative_to(ROOT).as_posix()
++                if relative in GENERATED or historical(relative) or not allowed(relative):continue
++                require(not path.is_symlink() and path.stat().st_size<90*1024*1024,'Unexpected source link/large binary: '+relative)
++                require(path.suffix.lower() not in {'.asi','.exe','.dll','.lib'},'Binary in first-party source: '+relative)
++                write(relative,path.read_bytes())
++    for path in (ROOT/'include').glob('*.h'):write(path.relative_to(ROOT).as_posix(),path.read_bytes())
++    for relative in previous_entries:
++        if relative.startswith(('include/','third_party/')) and len(PurePosixPath(relative).parts)>2:
++            source=ROOT/relative
++            require(source.is_file() and allowed(relative),'Missing required dependency '+relative)
++            write(relative,source.read_bytes())
++    for name in ['.gitignore','.gitattributes','Keybinder.rc','Keybinder.sln','Keybinder.vcxproj']:
++        write(name,(ROOT/name).read_bytes())
++    write('README.md',(ROOT/'build/README-GITHUB-r24.md').read_bytes())
++    for path in (ROOT/PACKAGE).rglob('*'):
++        if path.is_file():
++            relative=path.relative_to(ROOT).as_posix()
++            require(allowed(relative) and not path.is_symlink(),'Unexpected packaged file: '+relative)
++            write(relative,path.read_bytes())
++    publication=json.loads((ROOT/'docs/review/PUBLICATION.json').read_text())
++    publication.update(release=TAG,previous_release='v0.1.2-r23',previous_published_commit=PREVIOUS,
++      asi_sha256=proof['asi_sha256'],history_note='Original and dependency imports remain intact. r24 is a subsequent update; no history is rewritten.',
++      complete_runtime_asset=proof['archive'],complete_runtime_sha256=proof['archive_sha256'])
++    write('docs/review/PUBLICATION.json',json.dumps(publication,indent=2)+'\n')
++    git('add','--all')
++    # Patches describe program changes and avoid recursively including their own bytes.
++    write('docs/review/first-party-changes.patch',git('diff','--cached','--binary','build-dependencies-baseline','--',*PROGRAM))
++    write('docs/review/DIFFSTAT.txt',git('diff','--cached','--stat','build-dependencies-baseline','--',*PROGRAM))
++    write('docs/review/revision24-changes.patch',git('diff','--cached','--binary',PREVIOUS,'--',*PROGRAM))
++    write('docs/review/REVISION24-DIFFSTAT.txt',git('diff','--cached','--stat',PREVIOUS,'--',*PROGRAM))
++    git('add','--all')
++    current_entries=paths(':')
++    selected=lambda name:not name.startswith('dist/') and name not in GENERATED and not historical(name)
++    before=blobs({p:o for p,o in original_entries.items() if selected(p)})
++    after=blobs({p:o for p,o in current_entries.items() if selected(p)})
++    changes=[]
++    for name in sorted(before.keys()|after.keys()):
++        b=before.get(name);a=after.get(name)
++        if a==b:continue
++        changes.append({'path':name,'status':'added' if b is None else 'deleted' if a is None else 'modified',
++          'dependency':name.startswith(('include/plugin-sdk/','include/RakHook/','third_party/miniz/')),
++          'line_endings_only':a is not None and b is not None and a.replace(b'\r\n',b'\n')==b.replace(b'\r\n',b'\n'),
++          'before_sha256':digest(b) if b is not None else None,'after_sha256':digest(a) if a is not None else None})
++    record={'original_archive':'NLBinder-master.zip','original_sha256':'a328e78eea63420e9bfe9c084883100177fe0fd9c2d62c4fcaef38c0a44801e9',
++      'original_archive_commit_comment':'92ce21971bee2d166d830e23ad20950f1dc98921','release':TAG,'release_asi_sha256':proof['asi_sha256'],
++      'baseline_tag':BASE,'baseline_commit':git('rev-parse',BASE+'^{commit}').decode().strip(),
++      'hash_scope':'Exact Git blob bytes in original tag versus staged r24 source; generated comparisons and release binaries excluded.',
++      'generated_paths_excluded':sorted(GENERATED),'historical_revision_patches_excluded':True,
++      'baseline_files':len(before),'current_files':len(after),'changes':changes}
++    write('docs/review/SOURCE-COMPARISON.json',json.dumps(record,indent=2,ensure_ascii=False)+'\n')
++    relevant=[x for x in changes if not x['dependency'] and not x['line_endings_only']]
++    lines=['# Dateivergleich zum Original','',
++      'Verglichen werden die unveränderlichen Git-Blobs des Tags `original-archive-92ce219` mit den gestagten r24-Quellen.',
++      'Die Archivherkunft bleibt dokumentiert; diese Hashes beziehen sich ausdrücklich auf Git-Blobs, nicht neu eingelesene ZIP-Rohbytes.',
++      'Generierte Vergleichsdateien, alte Revisionspatches und Binärpakete sind aus diesem rekursionsfreien Vergleich ausgeschlossen.',
++      'Alle betrachteten Änderungen stehen in [SOURCE-COMPARISON.json](SOURCE-COMPARISON.json).','',
++      '| Status | Datei |','| --- | --- |']
++    for item in relevant:lines.append('| '+item['status']+' | ['+item['path']+'](../../'+item['path']+') |')
++    write('docs/review/DATEIVERGLEICH.md','\n'.join(lines)+'\n')
++    git('add','--all')
++    verify_index(previous_entries)
++    result={'prepared':True,'previous_commit':PREVIOUS,'staged_tree':git('write-tree').decode().strip(),
++      'source_changes':len(changes),'first_party_content_changes':len(relevant),'asi_sha256':proof['asi_sha256'],
++      'changed_paths':len(git('diff','--cached','--name-only').decode().splitlines())}
++    (ROOT/'build/revision24-publication-ready.json').write_text(json.dumps(result,indent=2)+'\n')
++    (ROOT/'build/revision24-staged-owned.json').write_text(json.dumps({'staged_tree':result['staged_tree'],
++        'reason':'Successfully prepared and verified r24 source tree; safe resume requires this exact tree.'},indent=2)+'\n')
++    print(json.dumps(result,indent=2))
++
++def verify_index(previous_entries=None):
++    entries=paths(':')
++    previous_entries=previous_entries or paths(PREVIOUS)
++    for name in entries:
++        require(allowed(name),'Private or generated build data in publication: '+name)
++        require(not name.startswith('NLBinder/Browser/'),'Loose Chromium runtime must not enter Git')
++        if historical(name):require(entries[name]==previous_entries[name],'Historical review patch changed: '+name)
++    proof=json.loads((ROOT/'build/revision24-package.json').read_text())
++    require(digest(git('show',':'+PACKAGE+'/NLBinder.asi'))==proof['asi_sha256'],'Published ASI differs')
++    require(git('show',':docs/CHANGELOG-GESAMT.txt')==(ROOT/'docs/CHANGELOG-GESAMT.txt').read_bytes(),'Published full changelog differs')
++    for name in ['include/ForumKeyboardInput.h','include/ForumBrowser.h',
++                 'tests/ForumKeyboardInputTests.cpp','src/ImGuiOverlay.cpp',
++                 'tests/ForumKeyboardProbe.cpp','tools/build_forum_keyboard_probe.bat','tools/test_forum_keyboard.py',
++                 'include/NearbyWantedLabels.h','src/NearbyWantedLabels.cpp','tests/NearbyWantedLabelsTests.cpp',
++                 'include/PoliceLocateTracker.h','src/PoliceLocateTracker.cpp','tests/PoliceLocateTrackerTests.cpp',
++                 'include/ServerCheckpointRPCAdapter.h','src/ServerCheckpointRPCAdapter.cpp',
++                 'tests/ServerCheckpointRPCAdapterTests.cpp','src/PoliceLocateBridge.cpp','tests/PoliceLocateBridgeTests.cpp',
++                 'include/LocalFactionAccess.h','tests/LocalFactionAccessTests.cpp',
++                 'include/OnlineDataManager.h','src/OnlineDataManager.cpp','tests/OnlineDataManagerTests.cpp',
++                 'src/StartupStatsSync.cpp','tests/StartupStatsSyncTests.cpp',
++                 'include/ClaimSpots.h','include/FactionAccess.h','include/QuickMap.h','src/QuickMap.cpp',
++                 'include/SAMPBridge.h','src/SpeedTicketBridge.cpp','include/ServerStatsSnapshot.h',
++                 'tests/QuickMapTests.cpp','tests/SAMPBridgeTests.cpp','tests/ServerStatsParserTests.cpp',
++                 'include/Version.h','src/SAMPBridge.cpp','src/MainWindowUI.cpp',
++                 'include/DrugUseTracker.h','tests/DrugUseTrackerTests.cpp',
++                 'tools/BrowserSetup.cpp','browser/ForumBrowserHost.cpp','tools/export_forum_installation_review.py',
++                 'docs/FORUM-INSTALLATION-DE.md','docs/FORUM-DATEILISTE.txt','docs/FORUM-CHANGELOG-v0.1.2.txt',
++                 'include/DrugUseTracker.h','tests/DrugUseTrackerTests.cpp','src/Main.cpp',
++                 'include/SettingsManager.h','src/SettingsManager.cpp','include/OnlineOverlayController.h',
++                 'src/OnlineOverlayController.cpp','src/OnlineOverlayRenderer.cpp','src/OnlineUI.cpp',
++                 'tests/OnlineOverlayRendererTests.cpp','tests/OnlineSettingsTests.cpp']:
++        require(git('show',':'+name)==(ROOT/name).read_bytes().replace(b'\r\n',b'\n'),'Published source differs: '+name)
++    prefix=PACKAGE+'/FORUM-INSTALLATION-QUELLCODE/'
++    focused={name:oid for name,oid in entries.items() if name.startswith(prefix)}
++    require({name[len(prefix):] for name in focused}==set(proof['forum_review_files']),
++            'Published focused source file set differs')
++    for name,data in blobs(focused).items():
++        require(digest(data)==proof['forum_review_files'][name[len(prefix):]],
++                'Published focused original source differs: '+name)
++    # These are checksum-verified copies of existing original sources. Keep
++    # their formatting intact instead of rewriting inherited whitespace.
++    git('diff','--cached','--check','--','.',':(exclude)*.patch',':(exclude)third_party/miniz',
++        ':(exclude)dist/NLBinder-0.1.2-r24/FORUM-INSTALLATION-QUELLCODE')
++    require(not git('ls-files','--others','--exclude-standard'),'Unexpected untracked publication file')
++
++def credential():
++    env=dict(os.environ,GCM_INTERACTIVE='Never',GIT_TERMINAL_PROMPT='0')
++    p=subprocess.run(['git','credential','fill'],cwd=REPO,input=b'protocol=https\nhost=github.com\n\n',
++        stdout=subprocess.PIPE,stderr=subprocess.PIPE,env=env)
++    require(p.returncode==0,'Existing GitHub credential not available')
++    fields=dict(line.split('=',1) for line in p.stdout.decode().splitlines() if '=' in line)
++    require(fields.get('password'),'Credential manager returned no token')
++    return fields['password']
++
++def api(token,url,method='GET',data=None,content_type='application/json'):
++    require(url.startswith(('https://api.github.com/','https://uploads.github.com/repos/Kobiro57/PerkysBinderChangelog/')),'Unexpected API host')
++    body=json.dumps(data).encode() if data is not None and content_type=='application/json' else data
++    req=urllib.request.Request(url,data=body,method=method,headers={'Authorization':'Bearer '+token,
++      'Accept':'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28','User-Agent':'NLBinder-authorized-r24-publication','Content-Type':content_type})
++    try:
++        with urllib.request.urlopen(req,timeout=600) as response:return json.load(response)
++    except urllib.error.HTTPError as e:
++        raise RuntimeError('GitHub API status '+str(e.code)+' for '+url.split('?')[0]) from None
++
++def publish():
++    proof=json.loads((ROOT/'build/revision24-package.json').read_text())
++    prepared=json.loads((ROOT/'build/revision24-publication-ready.json').read_text())
++    token=credential()
++    user=api(token,'https://api.github.com/user')
++    require(user['login'].casefold()=='kobiro57','Wrong GitHub account')
++    head=git('rev-parse','HEAD').decode().strip()
++    if head==PREVIOUS:
++        require(git('write-tree').decode().strip()==prepared['staged_tree'],'Staged source changed after review')
++        verify_index()
++        email=str(user['id'])+'+'+user['login']+'@users.noreply.github.com'
++        git('-c','user.name='+user['login'],'-c','user.email='+email,'commit','-m',
++          'r24: fix special character input in the in-game forum')
++        head=git('rev-parse','HEAD').decode().strip()
++    require(git('rev-parse','HEAD^').decode().strip()==PREVIOUS,'Unexpected parent commit')
++    require(not git('status','--porcelain'),'Publication checkout not clean')
++    tag_exists=subprocess.run(['git','rev-parse','--verify','refs/tags/'+TAG],cwd=REPO,stdout=subprocess.PIPE,stderr=subprocess.PIPE).returncode==0
++    if not tag_exists:git('tag',TAG,head)
++    require(git('rev-parse',TAG+'^{commit}').decode().strip()==head,'Release tag points elsewhere')
++    git('push','--atomic','origin','HEAD:main','refs/tags/'+TAG)
++    require(api(token,API+'/commits/main')['sha']==head,'Remote main commit differs')
++    releases=api(token,API+'/releases?per_page=100')
++    release=next((r for r in releases if r['tag_name']==TAG),None)
++    body=(ROOT/'docs/FORUM-CHANGELOG-v0.1.2.txt').read_text(encoding='utf-8-sig')
++    body+='\nASI SHA-256: `'+proof['asi_sha256']+'`\n\nZIP SHA-256: `'+proof['archive_sha256']+'`\n'
++    if release is None:release=api(token,API+'/releases','POST',{'tag_name':TAG,'target_commitish':head,'name':'NLBinder v0.1.2 by perkys & edited by KOBiRO – r24','body':body,'draft':False,'prerelease':False})
++    archive=ROOT/'dist'/proof['archive']
++    require(filehash(archive)==proof['archive_sha256'],'Release ZIP changed')
++    assets=api(token,API+'/releases/'+str(release['id'])+'/assets')
++    asset=next((a for a in assets if a['name']==archive.name),None)
++    if asset is None:
++        upload='https://uploads.github.com/repos/Kobiro57/PerkysBinderChangelog/releases/'+str(release['id'])+'/assets?name='+archive.name
++        asset=api(token,upload,'POST',archive.read_bytes(),'application/zip')
++    require(asset['state']=='uploaded' and asset['size']==archive.stat().st_size,'Release asset incomplete')
++    remote_digest=asset.get('digest')
++    require(remote_digest=='sha256:'+proof['archive_sha256'],'GitHub release asset digest differs')
++    result={'published':True,'repository':URL,'commit':head,'commit_url':URL+'/commit/'+head,
++      'tag':TAG,'release_url':release['html_url'],'download_url':asset['browser_download_url'],
++      'asset_bytes':asset['size'],'asset_sha256_verified':True,'asi_sha256':proof['asi_sha256']}
++    (ROOT/'build/revision24-published.json').write_text(json.dumps(result,indent=2)+'\n')
++    print(json.dumps(result,indent=2))
++
++if __name__=='__main__':
++    parser=argparse.ArgumentParser(description=__doc__)
++    modes=parser.add_mutually_exclusive_group(required=True)
++    modes.add_argument('--prepare',action='store_true');modes.add_argument('--publish',action='store_true')
++    args=parser.parse_args()
++    if args.prepare:stage()
++    else:publish()
 diff --git a/tools/record_gps_native_test.py b/tools/record_gps_native_test.py
 new file mode 100644
 index 0000000..7b40c5d
@@ -37595,6 +39027,22 @@ index 0000000..72f3199
 +if mode not in {'tests','build'}:raise ValueError('Unexpected log kind')
 +lines=(root/('build/revision23-'+mode+'.log')).read_text(encoding='utf-8-sig',errors='replace').splitlines()
 +important=[line for line in lines if '[FAIL]' in line or 'error ' in line.lower() or 'DrugUseTrackerTests:' in line
++           or 'Online Settings:' in line or 'OnlineOverlayRendererTests:' in line or 'Test exit code:' in line]
++for line in (important if mode=='tests' else lines[-10:]):print(line)
+diff --git a/tools/report_revision24_log.py b/tools/report_revision24_log.py
+new file mode 100644
+index 0000000..6d1cea0
+--- /dev/null
++++ b/tools/report_revision24_log.py
+@@ -0,0 +1,10 @@
++"""Show a compact result from the fixed r24 log paths."""
++from pathlib import Path
++import sys
++root=Path(__file__).resolve().parents[1]
++mode=sys.argv[1]
++if mode not in {'tests','build'}:raise ValueError('Unexpected log kind')
++lines=(root/('build/revision24-'+mode+'.log')).read_text(encoding='utf-8-sig',errors='replace').splitlines()
++important=[line for line in lines if '[FAIL]' in line or 'error ' in line.lower() or 'ForumKeyboardInputTests:' in line or 'DrugUseTrackerTests:' in line
 +           or 'Online Settings:' in line or 'OnlineOverlayRendererTests:' in line or 'Test exit code:' in line]
 +for line in (important if mode=='tests' else lines[-10:]):print(line)
 diff --git a/tools/run_revision16.bat b/tools/run_revision16.bat
@@ -38239,8 +39687,91 @@ index 0000000..1b81af6
 +:finish
 +popd
 +exit /b %NLBINDER_RESULT%
+diff --git a/tools/run_revision24.bat b/tools/run_revision24.bat
+new file mode 100644
+index 0000000..ce6785a
+--- /dev/null
++++ b/tools/run_revision24.bat
+@@ -0,0 +1,77 @@
++@echo off
++setlocal
++pushd "%~dp0.." || exit /b 2
++if not exist build mkdir build
++if not defined NLBINDER_PYTHON set "NLBINDER_PYTHON=%USERPROFILE%\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe"
++if /i "%~1"=="tests" goto tests
++if /i "%~1"=="build" goto build
++if /i "%~1"=="worker" goto worker
++if /i "%~1"=="keyboard" goto keyboard
++if /i "%~1"=="document" goto document
++if /i "%~1"=="package" goto package
++if /i "%~1"=="prepare-publication" goto preparepublication
++if /i "%~1"=="publish" goto publish
++if /i "%~1"=="verify-public" goto verifypublic
++if /i "%~1"=="export" goto export
++set "NLBINDER_RESULT=2"
++goto finish
++:tests
++call tools\run_tests.bat > build\revision24-tests.log 2>&1
++set "NLBINDER_RESULT=%ERRORLEVEL%"
++"%NLBINDER_PYTHON%" tools\report_revision24_log.py tests
++goto finish
++:build
++call tools\build_release.bat > build\revision24-build.log 2>&1
++set "NLBINDER_RESULT=%ERRORLEVEL%"
++>>build\revision24-build.log echo RELEASE_BUILD_EXIT_CODE=%NLBINDER_RESULT%
++"%NLBINDER_PYTHON%" tools\report_revision24_log.py build
++goto finish
++:worker
++"%NLBINDER_PYTHON%" tools\test_reconnect_worker.py > build\revision24-reconnect.log 2>&1
++set "NLBINDER_RESULT=%ERRORLEVEL%"
++type build\revision24-reconnect.log
++goto finish
++:keyboard
++call tools\build_forum_keyboard_probe.bat > build\revision24-keyboard-build.log 2>&1
++if errorlevel 1 goto failed
++"%NLBINDER_PYTHON%" tools\test_forum_keyboard.py > build\revision24-native-keyboard.log 2>&1
++set "NLBINDER_RESULT=%ERRORLEVEL%"
++type build\revision24-native-keyboard.log
++goto finish
++:document
++"%NLBINDER_PYTHON%" tools\document_revision24.py
++if errorlevel 1 goto failed
++"%NLBINDER_PYTHON%" tools\export_full_changelog_revision24.py
++set "NLBINDER_RESULT=%ERRORLEVEL%"
++goto finish
++:package
++"%NLBINDER_PYTHON%" tools\verify_revision24_artifact.py
++if errorlevel 1 goto failed
++"%NLBINDER_PYTHON%" tools\document_revision24.py
++if errorlevel 1 goto failed
++"%NLBINDER_PYTHON%" tools\export_full_changelog_revision24.py
++if errorlevel 1 goto failed
++"%NLBINDER_PYTHON%" tools\package_revision24.py
++set "NLBINDER_RESULT=%ERRORLEVEL%"
++goto finish
++:preparepublication
++"%NLBINDER_PYTHON%" tools\publish_revision24.py --prepare
++set "NLBINDER_RESULT=%ERRORLEVEL%"
++goto finish
++:publish
++"%NLBINDER_PYTHON%" tools\publish_revision24.py --publish
++set "NLBINDER_RESULT=%ERRORLEVEL%"
++goto finish
++:export
++"%NLBINDER_PYTHON%" tools\finalize_revision24.py
++set "NLBINDER_RESULT=%ERRORLEVEL%"
++goto finish
++:verifypublic
++"%NLBINDER_PYTHON%" tools\verify_revision24_public.py
++set "NLBINDER_RESULT=%ERRORLEVEL%"
++goto finish
++:failed
++set "NLBINDER_RESULT=2"
++:finish
++popd
++exit /b %NLBINDER_RESULT%
 diff --git a/tools/run_tests.bat b/tools/run_tests.bat
-index 546d340..0312a08 100644
+index 546d340..2975d70 100644
 --- a/tools/run_tests.bat
 +++ b/tools/run_tests.bat
 @@ -1,5 +1,16 @@
@@ -38278,7 +39809,7 @@ index 546d340..0312a08 100644
      echo /I"%~dp0..\include\plugin-sdk\plugin_sa\game_sa\rw"
      echo /I"%~dp0..\include\plugin-sdk\hooking"
      echo /I"%~dp0..\include\plugin-sdk\injector"
-@@ -36,6 +48,18 @@ set "KEYBINDER_TEST_RSP=%~dp0..\build\KeybinderTests.rsp"
+@@ -36,6 +48,19 @@ set "KEYBINDER_TEST_RSP=%~dp0..\build\KeybinderTests.rsp"
      echo "%~dp0..\tests\InputManagerTests.cpp"
      echo "%~dp0..\tests\RegressionTests.cpp"
      echo "%~dp0..\tests\SAMPBridgeTests.cpp"
@@ -38294,10 +39825,11 @@ index 546d340..0312a08 100644
 +    echo "%~dp0..\tests\PoliceLocateTrackerTests.cpp"
 +    echo "%~dp0..\tests\ServerCheckpointRPCAdapterTests.cpp"
 +    echo "%~dp0..\tests\PoliceLocateBridgeTests.cpp"
++    echo "%~dp0..\tests\ForumKeyboardInputTests.cpp"
      echo "%~dp0..\tests\ImGuiOverlayTests.cpp"
      echo "%~dp0..\tests\HitmarkerTests.cpp"
      echo "%~dp0..\tests\HitsoundTests.cpp"
-@@ -59,13 +83,44 @@ set "KEYBINDER_TEST_RSP=%~dp0..\build\KeybinderTests.rsp"
+@@ -59,13 +84,44 @@ set "KEYBINDER_TEST_RSP=%~dp0..\build\KeybinderTests.rsp"
      echo "%~dp0..\tests\SquareMapTests.cpp"
      echo "%~dp0..\tests\HudSpriteManagerTests.cpp"
      echo "%~dp0..\tests\SourceContractTests.cpp"
@@ -38342,7 +39874,7 @@ index 546d340..0312a08 100644
      echo "%~dp0..\\src\\InputManager.cpp"
      echo "%~dp0..\\src\\ImGuiOverlay.cpp"
      echo "%~dp0..\\src\\SettingsManager.cpp"
-@@ -119,7 +174,10 @@ set "KEYBINDER_TEST_RSP=%~dp0..\build\KeybinderTests.rsp"
+@@ -119,7 +175,10 @@ set "KEYBINDER_TEST_RSP=%~dp0..\build\KeybinderTests.rsp"
      echo "%~dp0..\\include\\pugixml\\pugixml.cpp"
      echo "%~dp0..\\include\\plugin-sdk\\shared\\Other.cpp"
      echo "%~dp0..\\include\\SAMP-API\\src\\sampapi\\sampapi.cpp"
@@ -38353,7 +39885,7 @@ index 546d340..0312a08 100644
      echo "%~dp0..\\include\\imgui-1.92.7\\imgui.cpp"
      echo "%~dp0..\include\imgui-1.92.7\imgui_draw.cpp"
      echo "%~dp0..\include\imgui-1.92.7\imgui_tables.cpp"
-@@ -127,7 +185,7 @@ set "KEYBINDER_TEST_RSP=%~dp0..\build\KeybinderTests.rsp"
+@@ -127,7 +186,7 @@ set "KEYBINDER_TEST_RSP=%~dp0..\build\KeybinderTests.rsp"
      echo "%~dp0..\include\imgui-1.92.7\backends\imgui_impl_dx9.cpp"
      echo "%~dp0..\include\imgui-1.92.7\backends\imgui_impl_win32.cpp"
      echo "%~dp0..\include\imgui-1.92.7\misc\cpp\imgui_stdlib.cpp"
@@ -38362,7 +39894,7 @@ index 546d340..0312a08 100644
  ) > "%KEYBINDER_TEST_RSP%"
  cl.exe @"%KEYBINDER_TEST_RSP%"
  if %ERRORLEVEL% NEQ 0 (
-@@ -146,6 +204,7 @@ cl.exe /nologo /EHsc /std:c++latest /W3 /MT /DKEYBINDER_TESTING /DWIN32 /D_CRT_S
+@@ -146,6 +205,7 @@ cl.exe /nologo /EHsc /std:c++latest /W3 /MT /DKEYBINDER_TESTING /DWIN32 /D_CRT_S
      /I"%~dp0..\include\plugin-sdk\shared\game" ^
      /I"%~dp0..\include\plugin-sdk\plugin_sa" ^
      /I"%~dp0..\include\plugin-sdk\plugin_sa\game_sa" ^
@@ -38650,6 +40182,342 @@ index 0000000..af8f0ec
 +        kernel.UnmapViewOfFile(pointer);kernel.CloseHandle(event);kernel.CloseHandle(mapping)
 +
 +if __name__=='__main__':main()
+diff --git a/tools/test_forum_keyboard.py b/tools/test_forum_keyboard.py
+new file mode 100644
+index 0000000..fca838b
+--- /dev/null
++++ b/tools/test_forum_keyboard.py
+@@ -0,0 +1,330 @@
++"""Actual CEF keyboard regression with production-translated synthetic input.
++
++Only a disposable anonymous profile and local DOM fixture are used. The
++normal forum page is loaded anonymously once to establish its renderer;
++then network requests are blocked. No server form is submitted, and the user's
++clipboard or Windows keyboard state is never changed. Chromium/CEF binaries
++are the already installed, pinned cef156-r1 binaries; nothing is rebuilt here.
++"""
++from pathlib import Path
++import base64
++import ctypes as C
++from ctypes import wintypes as W
++import hashlib
++import json
++import os
++import socket
++import struct
++import subprocess
++import time
++import urllib.parse
++import urllib.request
++import uuid
++
++from test_forum_host import Command, Shared, COMMANDS
++
++ROOT = Path(__file__).resolve().parents[1]
++PROOF = ROOT / 'build/revision24-native-forum-keyboard.json'
++
++
++def sha(path):
++    with path.open('rb') as stream:
++        return hashlib.file_digest(stream, 'sha256').hexdigest()
++
++
++class DevTools:
++    """Small stdlib-only WebSocket client, restricted to this loopback host."""
++    def __init__(self, url):
++        parsed = urllib.parse.urlsplit(url)
++        if parsed.scheme != 'ws' or parsed.hostname not in {'127.0.0.1', 'localhost'}:
++            raise ValueError('The test only accepts its own loopback DevTools endpoint')
++        self.socket = socket.create_connection((parsed.hostname, parsed.port), timeout=10)
++        nonce = base64.b64encode(os.urandom(16)).decode('ascii')
++        self.socket.sendall((f'GET {parsed.path} HTTP/1.1\r\nHost: {parsed.hostname}:{parsed.port}\r\n'
++            f'Upgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Key: {nonce}\r\n'
++            'Sec-WebSocket-Version: 13\r\n\r\n').encode('ascii'))
++        headers = bytearray()
++        while not headers.endswith(b'\r\n\r\n'):
++            headers += self.exact(1)
++            if len(headers) > 16384:
++                raise ValueError('Unexpected WebSocket handshake')
++        if not headers.startswith(b'HTTP/1.1 101 '):
++            raise RuntimeError('DevTools WebSocket upgrade failed')
++        self.sequence = 0
++
++    def exact(self, size):
++        data = bytearray()
++        while len(data) < size:
++            piece = self.socket.recv(size - len(data))
++            if not piece:
++                raise RuntimeError('DevTools disconnected')
++            data += piece
++        return bytes(data)
++
++    def frame(self, opcode, payload):
++        length = len(payload)
++        header = bytes([0x80 | opcode])
++        if length < 126:
++            header += bytes([0x80 | length])
++        elif length <= 65535:
++            header += bytes([0x80 | 126]) + struct.pack('!H', length)
++        else:
++            header += bytes([0x80 | 127]) + struct.pack('!Q', length)
++        mask = os.urandom(4)
++        masked = bytes(ch ^ mask[i % 4] for i, ch in enumerate(payload))
++        self.socket.sendall(header + mask + masked)
++
++    def receive(self):
++        fragments = bytearray()
++        while True:
++            first, second = self.exact(2)
++            length = second & 0x7F
++            if length == 126:
++                length = struct.unpack('!H', self.exact(2))[0]
++            elif length == 127:
++                length = struct.unpack('!Q', self.exact(8))[0]
++            if length > 20 * 1024 * 1024:
++                raise RuntimeError('Unexpectedly large DevTools frame')
++            mask = self.exact(4) if second & 0x80 else None
++            body = self.exact(length)
++            if mask:
++                body = bytes(ch ^ mask[i % 4] for i, ch in enumerate(body))
++            opcode = first & 15
++            if opcode == 8:
++                raise RuntimeError('DevTools closed its connection')
++            if opcode == 9:
++                self.frame(10, body)
++                continue
++            if opcode == 10:
++                continue
++            if opcode not in {0, 1}:
++                raise RuntimeError('Unexpected DevTools data opcode')
++            fragments += body
++            if first & 0x80:
++                return json.loads(fragments.decode('utf-8'))
++
++    def call(self, method, params=None):
++        self.sequence += 1
++        request_id = self.sequence
++        self.frame(1, json.dumps({'id': request_id, 'method': method, 'params': params or {}}).encode('utf-8'))
++        while True:
++            response = self.receive()
++            if response.get('id') != request_id:
++                continue
++            if 'error' in response:
++                raise RuntimeError('DevTools command failed: ' + json.dumps(response['error']))
++            return response.get('result', {})
++
++    def evaluate(self, expression):
++        response = self.call('Runtime.evaluate', {'expression': expression, 'returnByValue': True, 'awaitPromise': True})
++        if 'exceptionDetails' in response:
++            raise RuntimeError('Local DOM fixture failed')
++        return response.get('result', {}).get('value')
++
++    def close(self):
++        self.socket.close()
++
++
++def main():
++    probe = ROOT / 'build/ForumKeyboardProbe.exe'
++    generated = json.loads(subprocess.check_output([str(probe)], cwd=ROOT))
++    if generated['protocol_version'] != 1:
++        raise ValueError('Unexpected keyboard probe protocol')
++    runtime = Path.home() / 'Documents/GTA San Andreas User Files/NLBinder/Browser/cef156-r1'
++    executable = runtime / 'NLBinderBrowser.exe'
++    host = runtime / 'NLBinderBrowser.dll'
++    lock = json.loads((ROOT / 'res/browser-runtime.json').read_text(encoding='utf-8'))
++    locked = {item['path']: item for item in lock['files']}
++    for file in (executable, host):
++        if not file.is_file() or sha(file) != locked[file.name]['sha256']:
++            raise ValueError('Installed browser does not match the reviewed cef156-r1 pin')
++    kernel = C.WinDLL('kernel32', use_last_error=True)
++    kernel.CreateFileMappingW.argtypes = [W.HANDLE, C.c_void_p, W.DWORD, W.DWORD, W.DWORD, W.LPCWSTR]
++    kernel.CreateFileMappingW.restype = W.HANDLE
++    kernel.MapViewOfFile.argtypes = [W.HANDLE, W.DWORD, W.DWORD, W.DWORD, C.c_size_t]
++    kernel.MapViewOfFile.restype = C.c_void_p
++    kernel.CreateEventW.argtypes = [C.c_void_p, W.BOOL, W.BOOL, W.LPCWSTR]
++    kernel.CreateEventW.restype = W.HANDLE
++    kernel.SetEvent.argtypes = [W.HANDLE]
++    kernel.CloseHandle.argtypes = [W.HANDLE]
++    kernel.UnmapViewOfFile.argtypes = [C.c_void_p]
++    assert C.sizeof(Command) == 28 and Shared.parentWindow.offset == 64
++    base = ROOT / 'build/forum-keyboard-tests' / uuid.uuid4().hex
++    base.mkdir(parents=True)
++    mapping_name = 'Local\\NLBinder.Forum.keyboard.' + uuid.uuid4().hex
++    mapping = kernel.CreateFileMappingW(W.HANDLE(-1), None, 0x04, 0, C.sizeof(Shared), mapping_name)
++    if not mapping:
++        raise OSError(C.get_last_error(), 'CreateFileMapping')
++    pointer = kernel.MapViewOfFile(mapping, 0xF001F, 0, 0, C.sizeof(Shared))
++    event = kernel.CreateEventW(None, False, False, mapping_name + '.input')
++    if not pointer or not event:
++        raise OSError(C.get_last_error(), 'MapViewOfFile/CreateEvent')
++    state = Shared.from_address(pointer)
++    state.magic = 0x4E4C4346
++    state.version = 1
++    state.bytes = C.sizeof(Shared)
++    with socket.socket() as port_socket:
++        port_socket.bind(('127.0.0.1', 0))
++        port = port_socket.getsockname()[1]
++    startup = subprocess.STARTUPINFO()
++    startup.dwFlags |= subprocess.STARTF_USESHOWWINDOW
++    startup.wShowWindow = 0
++    process = subprocess.Popen([str(executable), '--nlbinder-map=' + mapping_name,
++        '--nlbinder-smoke-profile=' + str(base / 'profile'), '--remote-debugging-port=' + str(port),
++        '--remote-debugging-address=127.0.0.1', '--disable-background-networking'], cwd=runtime, startupinfo=startup,
++        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
++    opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
++    devtools = None
++    def wait_for(predicate, seconds=30):
++        deadline = time.monotonic() + seconds
++        while time.monotonic() < deadline:
++            if process.poll() is not None:
++                raise RuntimeError('CEF host exited: ' + str(process.returncode))
++            if predicate():
++                return
++            time.sleep(0.03)
++        raise RuntimeError('CEF keyboard test timed out: ' + json.dumps({
++            'state': state.state, 'frames': state.frameSequence, 'width': state.width,
++            'height': state.height, 'loading': state.loading, 'error': state.errorCode,
++            'read': state.commandRead, 'write': state.commandWrite}))
++    def send(values):
++        write = state.commandWrite & 0xFFFFFFFF
++        if (write - (state.commandRead & 0xFFFFFFFF)) & 0xFFFFFFFF >= COMMANDS:
++            raise RuntimeError('Keyboard input ring full')
++        state.commands[write % COMMANDS] = Command(*values)
++        state.commandWrite = C.c_int32(write + 1).value
++        kernel.SetEvent(event)
++    def endpoint():
++        try:
++            with opener.open(f'http://127.0.0.1:{port}/json/list', timeout=0.5) as response:
++                targets = json.load(response)
++            return next((target.get('webSocketDebuggerUrl') for target in targets if target.get('type') == 'page'), None)
++        except (OSError, ValueError):
++            return None
++    def paint_barrier():
++        # The first resize may precede the first paint, so a fixed frame count
++        # is not a readiness condition. Force and acknowledge two different
++        # viewport sizes instead; each acknowledgement comes from OnPaint.
++        sequence = state.frameSequence
++        send([0, 1280, 801, 0, 0, 0, 0])
++        wait_for(lambda: state.frameSequence > sequence and state.width == 1280 and state.height == 801)
++        sequence = state.frameSequence
++        send([0, 1280, 800, 0, 0, 0, 0])
++        wait_for(lambda: state.frameSequence > sequence and state.width == 1280 and state.height == 800)
++    try:
++        wait_for(lambda: state.state == 1)
++        wait_for(endpoint)
++        devtools = DevTools(endpoint())
++        devtools.call('Network.enable')
++        devtools.call('Runtime.enable')
++        # OnAfterCreated marks the host ready before the renderer widget and
++        # first navigation have finished. Sending keys at that point can be
++        # discarded even though Runtime.evaluate already has a JS context.
++        # Require the actual windowless view before constructing the fixture.
++        send([0, 1280, 800, 0, 0, 0, 0])
++        wait_for(lambda: state.frameSequence >= 1 and state.width == 1280
++            and state.height == 800 and not state.loading and not state.errorCode)
++        paint_barrier()
++        wait_for(lambda: devtools.evaluate("document.readyState") == 'complete')
++        devtools.call('Network.setBlockedURLs', {'urls': ['*']})
++        devtools.call('Page.stopLoading')
++        devtools.evaluate("document.title='NLBinder local keyboard fixture';document.body.replaceChildren();true")
++        initial_frames = state.frameSequence
++        results = []
++        for test in generated['cases']:
++            element = test['element']
++            # This fixture exists only in this disposable renderer. It has no
++            # form, links, network resources, event handlers or submit action.
++            fixture = """(() => {
++                document.body.replaceChildren();
++                const tag=ELEMENT==='contenteditable'?'div':ELEMENT;
++                const field=document.createElement(tag); field.id='keyboard-test';
++                field.style='position:fixed;left:20px;top:20px;width:600px;height:160px';
++                if(ELEMENT==='contenteditable')field.contentEditable='true';
++                document.body.appendChild(field);
++                if(PREFILL){if(ELEMENT==='contenteditable')field.textContent='erase me';else field.value='erase me';}
++                field.focus(); if(field.setSelectionRange)field.setSelectionRange(field.value.length,field.value.length);
++                window.fixture=field;
++                window.keyEvents=0;
++                field.addEventListener('keydown',()=>++window.keyEvents);
++                return document.activeElement===field;
++            })()""".replace('ELEMENT', json.dumps(element)).replace('PREFILL', json.dumps(test['prefill']))
++            if devtools.evaluate(fixture) is not True:
++                raise RuntimeError('Local fixture did not receive focus')
++            # A user focuses a forum textbox with a click. Exercise that same
++            # IPC path after layout has painted; DOM .focus() by itself does
++            # not establish native render-widget input readiness.
++            paint_barrier()
++            send([5, 0, 0, 0, 0, 0, 0])
++            send([5, 1, 0, 0, 0, 0, 0])
++            send([1, 60, 60, 0, 0, 0, 0])
++            send([2, 60, 60, 0, 0, 1, 0])
++            send([2, 60, 60, 0, 1, 1, 0])
++            wait_for(lambda: state.commandRead == state.commandWrite)
++            wait_for(lambda: devtools.evaluate("document.hasFocus()&&document.activeElement===window.fixture") is True)
++            # paint_barrier above acknowledges real compositor output with
++            # this textbox; the ring counter only acknowledges task posting.
++            readiness = devtools.evaluate("({focus:document.hasFocus(),active:document.activeElement===window.fixture,visibility:document.visibilityState,ready:document.readyState})")
++            for command in test['commands']:
++                send(command)
++            wait_for(lambda: state.commandRead == state.commandWrite)
++            expected = ''.join(chr(value) for value in test['expected_scalars'])
++            # Wait for the queued keyboard events to reach this same renderer.
++            # This is an execution barrier, rather than an arbitrary short sleep.
++            expected_keys = sum(command[0] == 4 and command[1] == 0 for command in test['commands'])
++            if expected_keys:
++                wait_for(lambda: devtools.evaluate('window.keyEvents') >= expected_keys, 5)
++            value_expression = "window.fixture.isContentEditable?window.fixture.textContent:window.fixture.value"
++            actual = devtools.evaluate("new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve(" + value_expression + "))))")
++            # Character-only input can have no raw keydown to acknowledge. Do
++            # not resend any input: give this one queued sequence a bounded
++            # renderer completion interval and retain a wrong value as failure.
++            if not test['legacy']:
++                deadline = time.monotonic() + 3
++                while actual != expected and time.monotonic() < deadline:
++                    time.sleep(0.03)
++                    actual = devtools.evaluate(value_expression)
++            results.append({'name': test['name'], 'legacy': test['legacy'], 'expected': expected,
++                'actual': actual, 'command_count': len(test['commands']), 'passed': actual == expected,
++                'readiness': readiness, 'renderer_keydowns': devtools.evaluate('window.keyEvents')})
++        fixed = [item for item in results if not item['legacy']]
++        regression = any(item['legacy'] and not item['passed'] for item in results)
++        passed = all(item['passed'] for item in fixed)
++        devtools.close()
++        devtools = None
++        send([10, 0, 0, 0, 0, 0, 0])
++        process.wait(timeout=10)
++        proof = {'passed': passed and process.returncode == 0, 'runtime_id': 'cef156-r1',
++            'protocol_version': generated['protocol_version'], 'cef_host_sha256': sha(executable),
++            'cef_host_dll_sha256': sha(host), 'probe_sha256': sha(probe),
++            'translator_sha256': sha(ROOT / 'include/ForumKeyboardInput.h'),
++            'cases': results, 'fixed_cases_passed': sum(item['passed'] for item in fixed),
++            'fixed_cases': len(fixed), 'legacy_regression_reproduced': regression,
++            'actual_cef_ipc_keyboard_path': True, 'local_dom_fixture': True,
++            'initial_offscreen_frames': initial_frames, 'renderer_input_readiness_checked': True,
++            'viewport_paint_barriers_checked': True,
++            'anonymous_isolated_profile': True, 'user_clipboard_modified': False,
++            'network_blocked_during_fixture': True, 'login_or_post_submitted': False,
++            'initial_page_loaded_read_only': True,
++            'live_gta_gameplay_test_performed': False, 'clean_exit_code': process.returncode}
++        PROOF.write_text(json.dumps(proof, indent=2, ensure_ascii=True) + '\n', encoding='utf-8')
++        print(json.dumps(proof, indent=2, ensure_ascii=True))
++        if not proof['passed']:
++            raise RuntimeError('CEF rejected one or more translated keyboard cases')
++    finally:
++        if devtools:
++            devtools.close()
++        if process.poll() is None:
++            try:
++                send([10, 0, 0, 0, 0, 0, 0])
++                process.wait(timeout=5)
++            except Exception:
++                process.terminate()
++                process.wait(timeout=5)
++        kernel.UnmapViewOfFile(pointer)
++        kernel.CloseHandle(event)
++        kernel.CloseHandle(mapping)
++
++
++if __name__ == '__main__':
++    main()
 diff --git a/tools/test_gps_native.bat b/tools/test_gps_native.bat
 new file mode 100644
 index 0000000..6b081ca
@@ -40550,6 +42418,111 @@ index 0000000..2d3250c
 +    result={'anonymous_viewer_access':True,'main_commit_verified':True,'release_asset_sha256_verified':True,
 +        'review_document_links_verified':True,'release_url':release['html_url']}
 +    (R/'build/revision23-public-access.json').write_text(json.dumps(result,indent=2)+'\n',encoding='utf-8')
++    print(json.dumps(result,indent=2))
++
++if __name__=='__main__':main()
+diff --git a/tools/verify_revision24_artifact.py b/tools/verify_revision24_artifact.py
+new file mode 100644
+index 0000000..c9461c2
+--- /dev/null
++++ b/tools/verify_revision24_artifact.py
+@@ -0,0 +1,58 @@
++"""Verify the r24 PE and embedded helpers without loading executable code."""
++import hashlib,json
++from pathlib import Path
++import sys
++from verify_revision18_artifact import PE, require
++
++def main():
++    root = Path(__file__).resolve().parents[1]
++    asi = PE(sys.argv[1] if len(sys.argv) > 1 else root / "build/Release/NLBinder.asi")
++    helper = PE(root / "build/ReconnectHelper.exe")
++    require(asi.machine == helper.machine == 0x14C, "Expected both binaries to be x86")
++    require(asi.characteristics & 0x2000, "ASI must be a DLL")
++    require(not helper.characteristics & 0x2000, "Worker must be an executable")
++    require(asi.resource(10, 300) == helper.data, "Embedded helper differs from built helper")
++    setup = PE(root / "build/BrowserSetup.exe")
++    require(setup.machine == 0x14C and not setup.characteristics & 0x2000, "Installer must be x86 EXE")
++    require(asi.resource(10, 301) == setup.data, "Embedded browser installer differs")
++    require(b"asInvoker" in setup.resource(24, 1), "Browser installer must not request elevation")
++    require(asi.resource(10, 302) == (root / "third_party/miniz/LICENSE").read_bytes(), "Missing embedded miniz notice")
++    imports = asi.imports()
++    require("libcef.dll" not in [name.lower() for name in imports], "Chromium must remain out of the game process")
++    require(not any(name.lower().startswith(("vcruntime", "msvcp", "ucrtbased")) for name in imports),
++            "Unexpected external C++ runtime dependency")
++    startup = (b"{33CCFF}[NLBinder]{FFFFFF} NLBinder v.0.1.2 by perkys & edited by KOBiRO "
++               b"wurde {00CC00}erfolgreich{FFFFFF} gestartet!")
++    require(startup in asi.data, "The requested v0.1.2 startup message is missing from the ASI")
++    require(b"NLBinder v.0.1.2 by perkys & edited by KOBiRO" in asi.data,
++            "The matching version/credit caption is missing")
++    try:
++        display_path = asi.path.resolve().relative_to(root).as_posix()
++    except ValueError:
++        display_path = asi.path.name
++    result = {
++        "revision": "v0.1.2-r24",
++        "asi": display_path,
++        "bytes": len(asi.data),
++        "format": "PE32 x86 DLL",
++        "sha256": hashlib.sha256(asi.data).hexdigest(),
++        "imports": imports,
++        "requested_startup_message_present": True,
++        "version_and_credit": "NLBinder v.0.1.2 by perkys & edited by KOBiRO",
++        "embedded_helper_id": 300,
++        "embedded_helper_bytes": len(helper.data),
++        "helper_sha256": hashlib.sha256(helper.data).hexdigest(),
++        "embedded_helper_matches": True,
++        "embedded_browser_setup_id": 301,
++        "embedded_browser_setup_bytes": len(setup.data),
++        "embedded_browser_setup_sha256": hashlib.sha256(setup.data).hexdigest(),
++        "embedded_browser_setup_matches": True,
++        "browser_setup_as_invoker": True,
++    }
++    report = json.dumps(result, indent=2)
++    (root / "build/revision24-artifact.json").write_text(report + "\n", encoding="utf-8")
++    print(report)
++
++
++if __name__ == "__main__":
++    main()
+diff --git a/tools/verify_revision24_public.py b/tools/verify_revision24_public.py
+new file mode 100644
+index 0000000..7171804
+--- /dev/null
++++ b/tools/verify_revision24_public.py
+@@ -0,0 +1,35 @@
++"""Verify the published r24 viewer and release metadata without using a credential."""
++from pathlib import Path
++import json,posixpath,re,urllib.request
++R=Path(__file__).resolve().parents[1]
++BASE='https://api.github.com/repos/Kobiro57/PerkysBinderChangelog'
++
++def get(path):
++    request=urllib.request.Request(BASE+path,headers={'User-Agent':'NLBinder-r24-anonymous-verification',
++        'Accept':'application/vnd.github+json'})
++    with urllib.request.urlopen(request,timeout=45) as response:return json.load(response)
++
++def require(ok,message):
++    if not ok:raise ValueError(message)
++
++def main():
++    publication=json.loads((R/'build/revision24-published.json').read_text(encoding='utf-8'))
++    proof=json.loads((R/'build/revision24-package.json').read_text(encoding='utf-8'))
++    require(get('')['private'] is False,'Repository is not anonymously readable')
++    require(get('/commits/main')['sha']==publication['commit'],'Remote main differs')
++    release=get('/releases/tags/v0.1.2-r24')
++    asset=next(a for a in release['assets'] if a['name']==proof['archive'])
++    require(asset['digest']=='sha256:'+proof['archive_sha256'] and asset['size']==proof['archive_bytes'],
++            'Release asset digest or size differs')
++    repository=R/'build/github-publication/repository'
++    for name in ['README.md','docs/NLBinder-0.1.2-r24-DE.md','docs/review/r24-PRUEFUNG-DE.md','docs/FORUM-INSTALLATION-DE.md']:
++        for href in re.findall(r'\]\(([^)]+)\)',(repository/name).read_text(encoding='utf-8-sig')):
++            if href.startswith(('http:','https:','#')):continue
++            path=posixpath.normpath(posixpath.join(posixpath.dirname(name),href.split('#')[0]))
++            require((repository/path).exists(),'Broken review link: '+name+' -> '+href)
++    result={'anonymous_viewer_access':True,'main_commit_verified':True,'release_asset_sha256_verified':True,
++        'review_document_links_verified':True,'release_url':release['html_url']}
++    (R/'build/revision24-public-access.json').write_text(json.dumps(result,indent=2)+'\n',encoding='utf-8')
 +    print(json.dumps(result,indent=2))
 +
 +if __name__=='__main__':main()

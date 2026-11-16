@@ -1,5 +1,6 @@
 #include "../include/ForumBrowser.h"
 #include "../include/ForumBrowserProtocol.h"
+#include "../include/ForumKeyboardInput.h"
 #include "../include/ForumAfkSession.h"
 #include "../include/SettingsManager.h"
 #include "../include/Logger.h"
@@ -463,18 +464,10 @@ void ForumBrowser::Update() {
 }
 bool ForumBrowser::HandleWindowMessage(HWND, UINT message, WPARAM key, LPARAM native) {
     if (impl_->setupProcess || impl_->stopping) return false;
-    if (!impl_->open || !impl_->focused || key == VK_ESCAPE) return false;
-    if (message != WM_KEYDOWN && message != WM_SYSKEYDOWN && message != WM_KEYUP
-        && message != WM_SYSKEYUP && message != WM_CHAR && message != WM_SYSCHAR) return false;
-    if ((message == WM_SYSKEYDOWN || message == WM_SYSKEYUP) && key == VK_F4) return false;
-    ipc::Command command{ipc::CommandType::Key};
-    command.a = static_cast<int>((message == WM_CHAR || message == WM_SYSCHAR) ? ipc::KeyType::Character
-        : ((message == WM_KEYUP || message == WM_SYSKEYUP) ? ipc::KeyType::Up : ipc::KeyType::Down));
-    command.b = static_cast<int>(key); command.c = static_cast<int>(native);
-    command.d = message == WM_SYSKEYDOWN || message == WM_SYSKEYUP || message == WM_SYSCHAR;
-    command.modifiers = CurrentModifiers();
-    if (native & (1u << 30)) command.modifiers |= ipc::Repeat;
-    impl_->Send(command); return true;
+    if (!impl_->open || !impl_->focused) return false;
+    const auto batch = ipc::BuildForumKeyCommands(message, key, native, CurrentModifiers());
+    for (std::size_t at = 0; at < batch.count; ++at) impl_->Send(batch.commands[at]);
+    return batch.handled;
 }
 
 void ForumBrowser::Render(IDirect3DDevice9* device) {
@@ -605,6 +598,56 @@ void ForumBrowser::Render(IDirect3DDevice9* device) {
     if (!visible || closeRequested) Close();
 }
 #ifdef KEYBINDER_TESTING
+int RunForumKeyboardRoutingTests() {
+    int checks = 0, failures = 0;
+    auto check = [&](bool condition, const char* description) {
+        ++checks;
+        if (!condition) { ++failures; std::printf("[FAIL] ForumKeyboardRouting: %s\n", description); }
+    };
+    ForumBrowser browser;
+    auto& impl = *browser.impl_;
+    impl.mapping = CreateFileMappingW(INVALID_HANDLE_VALUE, nullptr, PAGE_READWRITE,
+        0, sizeof(ipc::SharedState), nullptr);
+    impl.input = CreateEventW(nullptr, FALSE, FALSE, nullptr);
+    impl.shared = impl.mapping ? static_cast<ipc::SharedState*>(MapViewOfFile(
+        impl.mapping, FILE_MAP_ALL_ACCESS, 0, 0, sizeof(ipc::SharedState))) : nullptr;
+    check(impl.mapping && impl.input && impl.shared, "anonymous IPC fixture ready");
+    if (impl.shared && impl.input) {
+        auto count = [&]() { return Read(impl.shared->commandWrite); };
+        check(!browser.HandleWindowMessage(nullptr, WM_CHAR, '[', 0) && count() == 0, "closed forum ignores input");
+        impl.open = true; impl.focused = false;
+        check(!browser.HandleWindowMessage(nullptr, WM_CHAR, '[', 0) && count() == 0, "unfocused forum ignores input");
+        impl.focused = true; impl.stopping = true;
+        check(!browser.HandleWindowMessage(nullptr, WM_CHAR, '[', 0) && count() == 0, "stopping forum ignores input");
+        impl.stopping = false; impl.setupProcess = reinterpret_cast<HANDLE>(1);
+        check(!browser.HandleWindowMessage(nullptr, WM_CHAR, '[', 0) && count() == 0, "setup does not route into browser");
+        impl.setupProcess = nullptr;
+        check(browser.HandleWindowMessage(nullptr, WM_CHAR, '[', 0) && count() == 1, "character reaches actual IPC queue");
+        check(impl.shared->commands[0].type == ipc::CommandType::Key
+            && impl.shared->commands[0].a == static_cast<int>(ipc::KeyType::Character)
+            && impl.shared->commands[0].b == '[', "character command is unchanged UTF16 text");
+        check(browser.HandleWindowMessage(nullptr, WM_SYSCHAR, ']', 1u << 29) && count() == 2, "system character reaches queue");
+        check(browser.HandleWindowMessage(nullptr, WM_UNICHAR, 0x1F680, 0) && count() == 4, "Unicode scalar generates two UTF16 commands");
+        check(impl.shared->commands[2].b == 0xD83D && impl.shared->commands[3].b == 0xDE80,
+            "supplementary Unicode has correct surrogate order");
+        check(browser.HandleWindowMessage(nullptr, WM_UNICHAR, UNICODE_NOCHAR, 0) && count() == 4, "Unicode probe does not insert text");
+        check(browser.HandleWindowMessage(nullptr, WM_DEADCHAR, '^', 0) && count() == 4, "dead key waits for composition");
+        check(browser.HandleWindowMessage(nullptr, WM_SYSDEADCHAR, '~', 0) && count() == 4, "system dead key is not inserted twice");
+        check(browser.HandleWindowMessage(nullptr, WM_CHAR, 0x00E9, 0) && count() == 5, "composed Unicode character reaches queue");
+        check(impl.shared->commands[4].b == 0x00E9, "Unicode is not treated as an ANSI byte");
+        check(!browser.HandleWindowMessage(nullptr, WM_KEYDOWN, VK_ESCAPE, 0) && count() == 5, "Escape remains available to close forum");
+        check(!browser.HandleWindowMessage(nullptr, WM_SYSKEYDOWN, VK_F4, 1u << 29) && count() == 5, "AltF4 remains a native window action");
+        check(!browser.HandleWindowMessage(nullptr, WM_MOUSEMOVE, 0, 0) && count() == 5, "nonkeyboard input uses existing route");
+        check(browser.HandleWindowMessage(nullptr, WM_KEYUP, 'A', static_cast<LPARAM>(0xC01E0001u)) && count() == 6,
+            "key release reaches queue");
+        check(!(impl.shared->commands[5].modifiers & ipc::Repeat), "key release is not auto repeat");
+    }
+    impl.open = false;
+    impl.Release();
+    std::printf("ForumKeyboardRoutingTests: %d checks, %d failures\n", checks, failures);
+    return failures;
+}
+
 int RunNativeForumSmokeTest() {
     const auto root = std::filesystem::path("build/native-forum-smoke") / std::to_string(GetTickCount64());
     std::filesystem::create_directories(root);

@@ -1,0 +1,28 @@
+﻿NLBinder v.0.1.2 by perkys & edited by KOBiRO (r24)
+NLBinder.asi (x86): 18916352 Bytes
+SHA256: f396043fa01832a3f275b0f03f24a2577a0dbae4cd7154b83e0b872f942f84e5
+
+Gewuenschte farbige Startmeldung ist im finalen PE enthalten.
+Gesamttests und Release-Build: Exitcode 0. Nativer Reconnect-Worker: 83 Checks.
+ASI-Ressourcen 300/301 stimmen mit den gebauten nativen Helfern ueberein.
+Browserhost/GPS/Drogenoverlay und Browsermanifest sind gegen r23 unveraendert geprueft.
+Die Tastaturweiterleitung in der ASI ist fuer Quick-Forum-Sonderzeichen korrigiert.
+SAPD-/LSPD-Wantedlabels: maximal 5 Meter, sichtbarer gestreamter Ped, freie Sicht.
+Vorhandene Nametag-Freigabe, Wantedlisten-Schalter und frische Wanteddaten erforderlich.
+Wantedtabelle: aktueller SA-MP-Spieler-ID nach Name; keine API-Account-ID.
+Ortung: einmalige Funkmeldung nach Erfolg UND frischem Servercheckpoint,
+Bezirk anhand Markerkoordinaten, keine eigene GPS-Navigation als Ausloeser.
+Fruehere Browser-/GPS-Pruefungen sind separat historisch dokumentiert.
+Ein nativer Eingabetest mit dem bestehenden CEF-Host ist in FORUM-KEYBOARD-TEST.json dokumentiert.
+Er verwendet nur synthetische Texte in einem isolierten anonymen Profil, ohne Forumbeitrag.
+Ein neuer r24-GTA-Live-Test wird nicht behauptet.
+
+FORUM-INSTALLATION.txt beschreibt Einrichtung und Speicherorte. Die Dateiliste
+enthaelt alle 236 festgelegten Runtime-Dateien. FORUM-INSTALLATION-QUELLCODE
+enthaelt die eigenen Originalquellen und ihre SHA-256-Nachweise, keine privaten Profile.
+FORUM-CHANGELOG.txt ist der fertige Text fuer die Veroeffentlichung im Forum.
+Der vollstaendige Binder-Quellcode ist im neuen Desktop-Ordner und auf GitHub enthalten.
+Der komplette Drittanbieter-Chromium-/CEF-Upstreamcode wird nicht als enthalten ausgegeben.
+
+Nur NLBinder.asi bei beendetem GTA ersetzen. Browserstand unveraendert: cef156-r1.
+Browser-Download SHA256: 01fc7f1d4dcec644a191e9c63da7088a73aa81a63c9a4c207001f7038a70ff45

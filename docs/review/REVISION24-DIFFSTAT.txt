@@ -1,0 +1,22 @@
+ Keybinder.vcxproj                         |   2 +
+ include/ForumBrowser.h                    |   1 +
+ include/ForumKeyboardInput.h              |  75 +++++++
+ src/ForumBrowser.cpp                      |  67 ++++--
+ tests/ForumKeyboardInputTests.cpp         | 157 ++++++++++++++
+ tests/ForumKeyboardProbe.cpp              | 139 +++++++++++++
+ tests/KeybindTests.cpp                    |   7 +-
+ tools/build_forum_keyboard_probe.bat      |   6 +
+ tools/document_revision24.py              | 184 +++++++++++++++++
+ tools/export_forum_installation_review.py |   2 +-
+ tools/export_full_changelog_revision24.py |  34 +++
+ tools/export_source_bundle_revision24.py  | 193 +++++++++++++++++
+ tools/finalize_revision24.py              |  58 ++++++
+ tools/package_revision24.py               | 191 +++++++++++++++++
+ tools/publish_revision24.py               | 286 ++++++++++++++++++++++++++
+ tools/report_revision24_log.py            |  10 +
+ tools/run_revision24.bat                  |  77 +++++++
+ tools/run_tests.bat                       |   1 +
+ tools/test_forum_keyboard.py              | 330 ++++++++++++++++++++++++++++++
+ tools/verify_revision24_artifact.py       |  58 ++++++
+ tools/verify_revision24_public.py         |  35 ++++
+ 21 files changed, 1898 insertions(+), 15 deletions(-)

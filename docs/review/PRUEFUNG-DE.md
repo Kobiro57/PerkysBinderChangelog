@@ -1,6 +1,11 @@
 # Hinweise zur Prüfung durch die Projektleitung
 
-## Aktueller Stand v0.1.2 / r23 – 16. November 2026
+## Aktueller Stand v0.1.2 / r24 – 16. November 2026
+
+Die Quick-Forum-Tastaturkorrektur wird im [r24-Prüfumfang](r24-PRUEFUNG-DE.md)
+und [Prüfnachweis](r24-validation.json) getrennt von früheren Ergebnissen dokumentiert.
+
+## Vorheriger Stand v0.1.2 / r23 – 16. November 2026
 
 Wanted-Labels in direkter Nähe und die Polizeifunk-Ortungsmeldung stehen im
 [r23-Prüfumfang](r23-PRUEFUNG-DE.md) und

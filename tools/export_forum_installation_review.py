@@ -18,7 +18,7 @@ SOURCES = (
     'tools/prepare_browser_autoinstall.py', 'tools/cef-runtime.lock.json',
     'tools/export_forum_installation_review.py',
     'src/ForumBrowser.cpp', 'src/PersistentPaths.cpp', 'src/Main.cpp',
-    'include/ForumBrowser.h', 'include/ForumBrowserProtocol.h',
+    'include/ForumBrowser.h', 'include/ForumBrowserProtocol.h', 'include/ForumKeyboardInput.h',
     'include/BrowserSetupProtocol.h', 'include/BrowserRuntimeLock.h',
     'include/ForumAfkSession.h', 'include/PersistentPaths.h', 'include/ResourceIds.h', 'include/Version.h',
     'browser/ForumBrowserHost.cpp', 'browser/CMakeLists.txt',

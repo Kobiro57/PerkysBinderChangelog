@@ -1,5 +1,5 @@
  Keybinder.rc                              |    5 +
- Keybinder.vcxproj                         |   44 +-
+ Keybinder.vcxproj                         |   46 +-
  browser/CMakeLists.txt                    |   24 +
  browser/ForumBrowserHost.cpp              |  301 +++++
  include/ActionExecutor.h                  |   22 +-
@@ -12,8 +12,9 @@
  include/DrugUseTracker.h                  |  160 +++
  include/FactionAccess.h                   |   51 +
  include/ForumAfkSession.h                 |   32 +
- include/ForumBrowser.h                    |   33 +
+ include/ForumBrowser.h                    |   34 +
  include/ForumBrowserProtocol.h            |   51 +
+ include/ForumKeyboardInput.h              |   75 ++
  include/GpsManager.h                      |   63 +
  include/GpsRadarOwnership.h               |   19 +
  include/ImGuiOverlay.h                    |   12 +
@@ -69,7 +70,7 @@
  src/CombatChatParser.cpp                  |  110 ++
  src/DamageRPCAdapter.cpp                  |   31 +-
  src/DeathMessageRPCAdapter.cpp            |    7 +
- src/ForumBrowser.cpp                      |  686 ++++++++++
+ src/ForumBrowser.cpp                      |  729 +++++++++++
  src/GpsGameAdapter.cpp                    |  120 ++
  src/GpsManager.cpp                        |  175 +++
  src/ImGuiOverlay.cpp                      |  111 +-
@@ -116,6 +117,8 @@
  tests/CombatChatParserTests.cpp           |   84 ++
  tests/DamageLogRegressionTests.cpp        |  711 ++++++++++
  tests/DrugUseTrackerTests.cpp             |  165 +++
+ tests/ForumKeyboardInputTests.cpp         |  157 +++
+ tests/ForumKeyboardProbe.cpp              |  139 ++
  tests/GpsNativeAdapterTests.cpp           |   62 +
  tests/ImGuiOverlayTests.cpp               |  104 ++
  tests/InterfaceEditorTests.cpp            |  157 +++
@@ -127,7 +130,7 @@
  tests/JobSkillsSnapshotTests.cpp          |  114 ++
  tests/JobTrackerLifecycleTests.cpp        |   47 +
  tests/JobsUITests.cpp                     |    2 +-
- tests/KeybindTests.cpp                    |   59 +-
+ tests/KeybindTests.cpp                    |   62 +-
  tests/KillMessageTestTests.cpp            |   59 +
  tests/LocalFactionAccessTests.cpp         |   32 +
  tests/LocationVariableTests.cpp           |  112 ++
@@ -161,6 +164,7 @@
  tools/build_browser_setup.bat             |    8 +
  tools/build_browser_setup_tests.bat       |    7 +
  tools/build_forum_browser.bat             |   22 +
+ tools/build_forum_keyboard_probe.bat      |    6 +
  tools/build_plugin_sdk.bat                |   19 +-
  tools/build_reconnect_helper.bat          |   13 +
  tools/build_release.bat                   |    8 +
@@ -174,15 +178,18 @@
  tools/document_revision21.py              |  134 ++
  tools/document_revision22.py              |  189 +++
  tools/document_revision23.py              |  211 +++
+ tools/document_revision24.py              |  184 +++
  tools/export_forum_installation_review.py |  189 +++
  tools/export_full_changelog.py            |   34 +
  tools/export_full_changelog_revision23.py |   34 +
+ tools/export_full_changelog_revision24.py |   34 +
  tools/export_source_bundle.py             |  185 +++
  tools/export_source_bundle_revision19.py  |  185 +++
  tools/export_source_bundle_revision20.py  |  192 +++
  tools/export_source_bundle_revision21.py  |  192 +++
  tools/export_source_bundle_revision22.py  |  192 +++
  tools/export_source_bundle_revision23.py  |  192 +++
+ tools/export_source_bundle_revision24.py  |  193 +++
  tools/fetch_cef_runtime.py                |   55 +
  tools/finalize_revision16.py              |   56 +
  tools/finalize_revision17.py              |   54 +
@@ -192,6 +199,7 @@
  tools/finalize_revision21.py              |   77 ++
  tools/finalize_revision22.py              |   54 +
  tools/finalize_revision23.py              |   54 +
+ tools/finalize_revision24.py              |   58 +
  tools/install_revision18.py               |   48 +
  tools/install_revision19.py               |   47 +
  tools/install_revision20.py               |   48 +
@@ -211,6 +219,7 @@
  tools/package_revision21.py               |  141 ++
  tools/package_revision22.py               |  153 +++
  tools/package_revision23.py               |  158 +++
+ tools/package_revision24.py               |  191 +++
  tools/package_revision4.ps1               |   97 ++
  tools/package_revision5.ps1               |   96 ++
  tools/package_revision6.ps1               |   93 ++
@@ -229,6 +238,7 @@
  tools/publish_revision21.py               |  273 ++++
  tools/publish_revision22.py               |  279 ++++
  tools/publish_revision23.py               |  283 ++++
+ tools/publish_revision24.py               |  286 ++++
  tools/record_gps_native_test.py           |   11 +
  tools/report_revision16_log.py            |   10 +
  tools/report_revision17_log.py            |   10 +
@@ -238,6 +248,7 @@
  tools/report_revision21_log.py            |   10 +
  tools/report_revision22_log.py            |   10 +
  tools/report_revision23_log.py            |   10 +
+ tools/report_revision24_log.py            |   10 +
  tools/run_revision16.bat                  |   87 ++
  tools/run_revision17.bat                  |   71 +
  tools/run_revision18.bat                  |   76 ++
@@ -246,11 +257,13 @@
  tools/run_revision21.bat                  |   74 ++
  tools/run_revision22.bat                  |   69 +
  tools/run_revision23.bat                  |   69 +
- tools/run_tests.bat                       |   65 +-
+ tools/run_revision24.bat                  |   77 ++
+ tools/run_tests.bat                       |   66 +-
  tools/setup_msvc.bat                      |   16 +
  tools/test_browser_restart.py             |   57 +
  tools/test_browser_setup.py               |   81 ++
  tools/test_forum_host.py                  |  102 ++
+ tools/test_forum_keyboard.py              |  330 +++++
  tools/test_gps_native.bat                 |   15 +
  tools/test_reconnect_worker.py            |  250 ++++
  tools/verify_revision10_artifact.py       |  115 ++
@@ -272,10 +285,12 @@
  tools/verify_revision22_public.py         |   35 +
  tools/verify_revision23_artifact.py       |   58 +
  tools/verify_revision23_public.py         |   35 +
+ tools/verify_revision24_artifact.py       |   58 +
+ tools/verify_revision24_public.py         |   35 +
  tools/verify_revision4_artifact.py        |  115 ++
  tools/verify_revision5_artifact.py        |  115 ++
  tools/verify_revision6_artifact.py        |  115 ++
  tools/verify_revision7_artifact.py        |  115 ++
  tools/verify_revision8_artifact.py        |  115 ++
  tools/verify_revision9_artifact.py        |  115 ++
- 280 files changed, 34515 insertions(+), 1478 deletions(-)
+ 295 files changed, 36398 insertions(+), 1478 deletions(-)

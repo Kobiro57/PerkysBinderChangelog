@@ -18,6 +18,8 @@ Advanced keybinder and combat-assist plugin for GTA San Andreas Multiplayer (SA-
 
 - **Police Wanted and Location** — Confirmed SAPD/LSPD members with the Wanted overlay enabled see red wanted labels only on immediately nearby visible streamed players (hard maximum 5 metres, clear line of sight and native nametag visibility required). The Wanted table includes current SA-MP player IDs when resolved. Successful detective location plus a fresh server checkpoint sends one radio message with the marker district. Current-session faction checks apply to both new functions.
 
+- **Quick Forum Keyboard** — The in-game `/forum` keyboard bridge supports text input including German AltGr special characters, preserving browser copy/paste shortcuts and Esc-close behavior. The pinned browser runtime cef156-r1 remains in use.
+
 ## Building
 
 ### Requirements

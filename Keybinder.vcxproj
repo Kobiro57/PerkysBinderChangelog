@@ -560,6 +560,8 @@
     <ClInclude Include="include\PoliceLocateTracker.h" />
     <ClInclude Include="include\ServerCheckpointRPCAdapter.h" />
     <ClInclude Include="include\NearbyWantedLabels.h" />
+    <ClInclude Include="include\ForumBrowser.h" />
+    <ClInclude Include="include\ForumKeyboardInput.h" />
     <ClInclude Include="include\\StatsStorage.h" />
     <ClInclude Include="include\\JobsTypes.h" />
     <ClInclude Include="include\\JobRegistry.h" />

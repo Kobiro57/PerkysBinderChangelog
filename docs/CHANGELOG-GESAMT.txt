@@ -1232,3 +1232,21 @@ Der Nutzer bestätigte nach Einspielen des vorläufigen r18-Stands, dass der ang
   ein neuer Ingame-Sichttest wird nicht aus automatischen Tests abgeleitet.
 - Neue fertige NLBinder.asi mit vollständigem Quellcode und Changelogs als
   NLBinder-v0.1.2-r23 vorgesehen. Vorherige Exporte und Browser-Runtime erhalten.
+
+30. Nachtrag v0.1.2 / r24 – 16. November 2026
+=============================================
+
+- Tastatureingabe des über /forum geöffneten Quick Forums für Sonderzeichen
+  überarbeitet, insbesondere die deutsche AltGr-Eingabe von [ ] { } @ € \ | ~.
+- Texteingabe von Tastaturkürzeln unterschieden; normales Schreiben sowie
+  Kopieren und Einfügen bleiben im vorhandenen Browserfenster vorgesehen.
+- Eingabe weiterhin auf das geöffnete, fokussierte Forum beschränkt; die
+  vorhandene ESC-Schließen-Funktion und AFK-/Back-Anbindung beibehalten.
+- Korrektur in der ASI mit nachvollziehbarem eigenen Tastaturquellcode;
+  vorhandene Browser-Runtime cef156-r1 und ihr Download werden beibehalten.
+- Tastaturregressionen ergänzt und die bisherigen Prüfungen für Wanted-IDs,
+  nahe sichtbare Wanted-Labels und die checkpointgebundene Polizeifunk-Ortung
+  weiterhin verlangt. Tatsächliche Ergebnisse stehen im r24-Prüfnachweis.
+- Neue NLBinder.asi, vollständige Binder-Quellen, gesamter Changelog und
+  postbarer Forumtext als NLBinder-v0.1.2-r24 zusammengestellt. Frühere
+  Desktop-Exporte und die veröffentlichte Git-Historie werden erhalten.

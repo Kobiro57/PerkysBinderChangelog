@@ -26,6 +26,7 @@ public:
 private:
 #ifdef KEYBINDER_TESTING
     friend int RunNativeForumSmokeTest();
+    friend int RunForumKeyboardRoutingTests();
 #endif
     struct Impl;
     std::unique_ptr<Impl> impl_;
