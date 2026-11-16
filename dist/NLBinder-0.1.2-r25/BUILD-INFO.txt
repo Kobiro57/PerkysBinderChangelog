@@ -1,0 +1,30 @@
+﻿NLBinder v.0.1.2 by perkys & edited by KOBiRO (r25)
+NLBinder.asi (x86): 18917888 Bytes
+SHA256: f97705935391e2da2eb629c38b927ee6d4d4d01ff07585b4d0820181746df2ed
+
+Gewuenschte farbige Startmeldung ist im finalen PE enthalten.
+Gesamttests und Release-Build: Exitcode 0. Nativer Reconnect-Worker: 83 Checks.
+ASI-Ressourcen 300/301 stimmen mit den gebauten nativen Helfern ueberein.
+Browserhost/GPS/Drogenoverlay und Browsermanifest sind gegen r24 unveraendert geprueft.
+TakeOver-Killmeldung ergaenzt: eigener Taetername, bestehender Killtext und Zaehler.
+Quick-Forum-Sonderzeichenkorrektur aus r24 beibehalten.
+SAPD-/LSPD-Wantedlabels: maximal 5 Meter, sichtbarer gestreamter Ped, freie Sicht.
+Vorhandene Nametag-Freigabe, Wantedlisten-Schalter und frische Wanteddaten erforderlich.
+Wantedtabelle: aktueller SA-MP-Spieler-ID nach Name; keine API-Account-ID.
+Ortung: einmalige Funkmeldung nach Erfolg UND frischem Servercheckpoint,
+Bezirk anhand Markerkoordinaten, keine eigene GPS-Navigation als Ausloeser.
+Fruehere Browser-/GPS-Pruefungen sind separat historisch dokumentiert.
+Der unveraenderte historische Browser-Eingabetest aus r24 ist in FORUM-KEYBOARD-TEST.json enthalten.
+Dieser Browser-Test wurde fuer r25 nicht erneut ausgefuehrt.
+Er verwendet nur synthetische Texte in einem isolierten anonymen Profil, ohne Forumbeitrag.
+Ein neuer r25-GTA-Live-Test wird nicht behauptet.
+
+FORUM-INSTALLATION.txt beschreibt Einrichtung und Speicherorte. Die Dateiliste
+enthaelt alle 236 festgelegten Runtime-Dateien. FORUM-INSTALLATION-QUELLCODE
+enthaelt die eigenen Originalquellen und ihre SHA-256-Nachweise, keine privaten Profile.
+FORUM-CHANGELOG.txt ist der fertige Text fuer die Veroeffentlichung im Forum.
+Der vollstaendige Binder-Quellcode ist im neuen Desktop-Ordner und auf GitHub enthalten.
+Der komplette Drittanbieter-Chromium-/CEF-Upstreamcode wird nicht als enthalten ausgegeben.
+
+Nur NLBinder.asi bei beendetem GTA ersetzen. Browserstand unveraendert: cef156-r1.
+Browser-Download SHA256: 01fc7f1d4dcec644a191e9c63da7088a73aa81a63c9a4c207001f7038a70ff45

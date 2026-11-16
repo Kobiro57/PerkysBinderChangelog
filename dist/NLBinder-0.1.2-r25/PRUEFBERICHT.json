@@ -1,0 +1,29 @@
+{
+  "revision": "v0.1.2-r25",
+  "asi": "NLBinder.asi",
+  "bytes": 18917888,
+  "format": "PE32 x86 DLL",
+  "sha256": "f97705935391e2da2eb629c38b927ee6d4d4d01ff07585b4d0820181746df2ed",
+  "imports": [
+    "ADVAPI32.dll",
+    "IMM32.dll",
+    "KERNEL32.dll",
+    "ntdll.dll",
+    "ole32.dll",
+    "SHELL32.dll",
+    "USER32.dll",
+    "WINHTTP.dll",
+    "WS2_32.dll"
+  ],
+  "requested_startup_message_present": true,
+  "version_and_credit": "NLBinder v.0.1.2 by perkys & edited by KOBiRO",
+  "embedded_helper_id": 300,
+  "embedded_helper_bytes": 127488,
+  "helper_sha256": "0e7395c4d28e048d91afd7373210eb555191a50991b29fe557cd33241c5fd4cb",
+  "embedded_helper_matches": true,
+  "embedded_browser_setup_id": 301,
+  "embedded_browser_setup_bytes": 258048,
+  "embedded_browser_setup_sha256": "3a0124f018769e2aa3520e42193dca281f35a8190f69bb6b148911314de90dd6",
+  "embedded_browser_setup_matches": true,
+  "browser_setup_as_invoker": true
+}

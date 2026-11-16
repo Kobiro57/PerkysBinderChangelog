@@ -1250,3 +1250,14 @@ Der Nutzer bestätigte nach Einspielen des vorläufigen r18-Stands, dass der ang
 - Neue NLBinder.asi, vollständige Binder-Quellen, gesamter Changelog und
   postbarer Forumtext als NLBinder-v0.1.2-r24 zusammengestellt. Frühere
   Desktop-Exporte und die veröffentlichte Git-Historie werden erhalten.
+
+31. Nachtrag v0.1.2 / r25 – 16. November 2026
+=============================================
+
+- TakeOver-Servermeldung [TakeOver]: NAME hat GEGNER getötet. in die vorhandene Killerkennung aufgenommen.
+- Aktuellen vollständigen eigenen Namen als Täter geprüft und das Opfer dynamisch übernommen; kein fest eingetragener Spielername.
+- Eigenen Killzähler und konfigurierten Killtext einschließlich gewähltem Chatkanal wie bei bisherigen Killmeldungen verwendet.
+- Farben, Zeitstempel und vorhandene Zeichenkodierungsbehandlung berücksichtigt. Fremde Täter, eigene Opferrolle und zitierter Spielerchat erzeugen keinen eigenen Kill.
+- Regressionen für Parser, vollständige Chat-Anbindung, lokale Meldung, normale/radio/dienst/fraktionsbezogene Chattexte und Zusammenführung mit nativen sowie anderen Serverbestätigungen ergänzt.
+- Vorhandene Forum-Sonderzeichenkorrektur und Drogenzeiten erhalten. Historischen r24-Browsernachweis getrennt übernommen; kein erneuter r25-Browser- oder GTA-Livetest behauptet.
+- Neue NLBinder.asi, vollständigen Quellcode, gesamten Changelog und Forumtext als NLBinder-v0.1.2-r25 bereitgestellt; bisherige Exporte erhalten.

@@ -2,22 +2,22 @@
   "original_archive": "NLBinder-master.zip",
   "original_sha256": "a328e78eea63420e9bfe9c084883100177fe0fd9c2d62c4fcaef38c0a44801e9",
   "original_archive_commit_comment": "92ce21971bee2d166d830e23ad20950f1dc98921",
-  "release": "v0.1.2-r24",
-  "release_asi_sha256": "f396043fa01832a3f275b0f03f24a2577a0dbae4cd7154b83e0b872f942f84e5",
+  "release": "v0.1.2-r25",
+  "release_asi_sha256": "f97705935391e2da2eb629c38b927ee6d4d4d01ff07585b4d0820181746df2ed",
   "baseline_tag": "original-archive-92ce219",
   "baseline_commit": "2da75e6c54a098243bf00ab48d86c5e3ee3cd261",
-  "hash_scope": "Exact Git blob bytes in original tag versus staged r24 source; generated comparisons and release binaries excluded.",
+  "hash_scope": "Exact Git blob bytes in original tag versus staged r25 source; generated comparisons and release binaries excluded.",
   "generated_paths_excluded": [
     "docs/review/DATEIVERGLEICH.md",
     "docs/review/DIFFSTAT.txt",
-    "docs/review/REVISION24-DIFFSTAT.txt",
+    "docs/review/REVISION25-DIFFSTAT.txt",
     "docs/review/SOURCE-COMPARISON.json",
     "docs/review/first-party-changes.patch",
-    "docs/review/revision24-changes.patch"
+    "docs/review/revision25-changes.patch"
   ],
   "historical_revision_patches_excluded": true,
   "baseline_files": 2006,
-  "current_files": 5860,
+  "current_files": 5873,
   "changes": [
     {
       "path": ".gitattributes",
@@ -57,7 +57,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": "65b8ae3822ae33054ece73689612fc8afb758e59282f3ee1185ee5fce62e269d",
-      "after_sha256": "dc4d6da482609175ea016ec563c5b3de2d90e0818772597e1aa66a9f0a72252d"
+      "after_sha256": "a44cb488539b50bc207ad88b1885bb52217a6f26d37a76e6f01a141383131079"
     },
     {
       "path": "browser/CMakeLists.txt",
@@ -81,7 +81,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": null,
-      "after_sha256": "cfab8cbe75b5062b613cb929589ccc6905d679c6ddfdb4c8d30b09b038d36b79"
+      "after_sha256": "4076df8e8d046cb75a7d68a6ad300c039151d227ac184a2ba38cd031dcf1a67a"
     },
     {
       "path": "docs/CHANGELOG-GESAMT.txt",
@@ -89,7 +89,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": null,
-      "after_sha256": "6391b1ff057e37f5a848d84d33d2b08d48b7ce3c34bbcd5fcfe4fc0278909a16"
+      "after_sha256": "8bb1064fc41d11341f01564eda1022daa8223caec269dea76ffa6e650c967700"
     },
     {
       "path": "docs/FORUM-CHANGELOG-v0.1.2.txt",
@@ -97,7 +97,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": null,
-      "after_sha256": "cd919581752ff27996d06d49165cb5bf537771bd7ae5bbb120810820f1040ed4"
+      "after_sha256": "bcf8ebfe5617add46eea17c77a313539b4475227e2ffffb54d5db64d33190f1a"
     },
     {
       "path": "docs/FORUM-DATEILISTE.txt",
@@ -308,6 +308,14 @@
       "after_sha256": "2fb852a29de4e4c6de18c44296e35b2652cc298094c234157e61a21a22cf22f2"
     },
     {
+      "path": "docs/NLBinder-0.1.2-r25-DE.md",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "57134fbe52a860d817858577acb851a80123979ddae06fac2330718146864dee"
+    },
+    {
       "path": "docs/ORIGINAL-README.md",
       "status": "added",
       "dependency": false,
@@ -337,7 +345,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": null,
-      "after_sha256": "bd99e8c2ec2e8fe54998e57ded9fea4aa9b01b36ae55923052861b7876d0d02e"
+      "after_sha256": "ba7900bd8a6f826afd4fdfdf521a59f67a4c7eb4b8aefce00819a1d875f5c452"
     },
     {
       "path": "docs/review/DEPENDENCIES.md",
@@ -353,7 +361,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": null,
-      "after_sha256": "50e5f604bed4278f71585b987d2e7b1da1d3ff0463fa8c69bf6ceeb6cf816d0f"
+      "after_sha256": "e7a8fc28fca2151c4cc979479c76f9d431c644ba1a45c77a7d16bdc0888dacb9"
     },
     {
       "path": "docs/review/PUBLICATION.json",
@@ -361,7 +369,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": null,
-      "after_sha256": "008adc2251a0d7cec2d0c6102ddfdda90d23e02d4cff46bf0b5722ba1e09f285"
+      "after_sha256": "b2f7528a12fc066f3e67a82912f7dfc510276f4f1d84aa62570ac83944a538ea"
     },
     {
       "path": "docs/review/PUBLISHING-DE.md",
@@ -377,7 +385,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": null,
-      "after_sha256": "037b03d1746fbbc9ab7ea92dfcf018affd11b266b3991c9e8b4ed18dea735542"
+      "after_sha256": "0b514f2296117f1debd7559509d6f3d9c9a3aa06f692501b85fb84af7b466673"
     },
     {
       "path": "docs/review/r10-validation.json",
@@ -564,6 +572,22 @@
       "after_sha256": "ca7b2dce2464ad1c19cdc072c0564654c92f7771709ed51d309af240e6537824"
     },
     {
+      "path": "docs/review/r25-PRUEFUNG-DE.md",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "031f1a2f32918afb44e0fc77df21e277a5523a159486aaf28bf942a9ad11d2c8"
+    },
+    {
+      "path": "docs/review/r25-validation.json",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "c4b0ceb17c495e184f14ec80720a131c3be6e9e0b30f50352e8e60e579a2483d"
+    },
+    {
       "path": "docs/review/r4-validation.json",
       "status": "added",
       "dependency": false,
@@ -649,7 +673,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": null,
-      "after_sha256": "c1e932acc0e015d9a75894de68ff9537beeb880ec3fe5b6d8f390e56313d530a"
+      "after_sha256": "23771f314aec6e4cfae204170d4da141c05674cd6f859b26f0012cf14f4adf5c"
     },
     {
       "path": "include/DamageRPCAdapter.h",
@@ -29617,7 +29641,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": null,
-      "after_sha256": "207a60b3f9c102e8883a03592351322e8b118adeb6fcee6357a23aee51dc14c8"
+      "after_sha256": "eeb145fa7d1a3dbf0c231b49200b635bd87260a7eb28b8052cdb6e4619fda0f0"
     },
     {
       "path": "src/DamageRPCAdapter.cpp",
@@ -29985,7 +30009,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": null,
-      "after_sha256": "8cbfa549ffddedc155fd4fb0198098a866fd3455e22d4f9e609f02ab5710ff8c"
+      "after_sha256": "020c39f6d42dc97474239cad49190f13e23211a03743720736abc1a5a891acc8"
     },
     {
       "path": "tests/CombatChatParserTests.cpp",
@@ -29993,7 +30017,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": null,
-      "after_sha256": "325b2220f5f1a0aab8e6fae142dfdce13f21e19deb64ff2b3d3f120a14639e85"
+      "after_sha256": "6416ab51cbd72140a47a84efcb73e63caa4c68303fb2ec4f82ff56cfa41678d8"
     },
     {
       "path": "tests/DamageLogRegressionTests.cpp",
@@ -30604,6 +30628,14 @@
       "after_sha256": "fde45df68e86c8186e33cd20bfcd6709490e6809978d27362d65c98ff61d2e5f"
     },
     {
+      "path": "tools/document_revision25.py",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "ec2b48625129467aacc0b10c7ad61906e50255267a1f09432dfbe1bd058f5678"
+    },
+    {
       "path": "tools/export_forum_installation_review.py",
       "status": "added",
       "dependency": false,
@@ -30634,6 +30666,14 @@
       "line_endings_only": false,
       "before_sha256": null,
       "after_sha256": "85a1f2014409787d8f9c230ca25514c5d9d36d23390e56a35dd982d5b57586e3"
+    },
+    {
+      "path": "tools/export_full_changelog_revision25.py",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "6f47a54fc77dc79206c750d437ef81df1c4f840e52fedaffe0487e509e6fdbf3"
     },
     {
       "path": "tools/export_source_bundle.py",
@@ -30690,6 +30730,14 @@
       "line_endings_only": false,
       "before_sha256": null,
       "after_sha256": "ef3fbb4b95abc3e419622296ca246766e1ecf5609bb61ed2ee4f5db4a3d6dad8"
+    },
+    {
+      "path": "tools/export_source_bundle_revision25.py",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "47d0808245a97aa4bb5e47b7ee6bae852bcbb4e8ccc97004b99a01069bb45ebe"
     },
     {
       "path": "tools/fetch_cef_runtime.py",
@@ -30770,6 +30818,14 @@
       "line_endings_only": false,
       "before_sha256": null,
       "after_sha256": "196c0f00a86fe931509df4edcd87e47301b29bb8d03c1d1569d80ffe87553455"
+    },
+    {
+      "path": "tools/finalize_revision25.py",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "27dcf165c67576fa377a61b0566afa510e8bb3dff223a7ee7b85be89bbbd942e"
     },
     {
       "path": "tools/install_revision18.py",
@@ -30932,6 +30988,14 @@
       "after_sha256": "094aabe45b814c3c052cd825867b9b22e345b8640e5795c12367a16ca1b150f1"
     },
     {
+      "path": "tools/package_revision25.py",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "501c3acf3cfe23d1e3f6058bfce956a94da94242170516fb42e8b5572dfe9b65"
+    },
+    {
       "path": "tools/package_revision4.ps1",
       "status": "added",
       "dependency": false,
@@ -31084,6 +31148,14 @@
       "after_sha256": "d93709d1aa4b9b86ef800acd1c639c046de16cd35c34e06d8755ac23a78fcb6e"
     },
     {
+      "path": "tools/publish_revision25.py",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "cfcc69225ef9e8c3baf0f38ed07ee018d4a86394f449abb03c07a6f46955b071"
+    },
+    {
       "path": "tools/record_gps_native_test.py",
       "status": "added",
       "dependency": false,
@@ -31164,6 +31236,14 @@
       "after_sha256": "603a676d87435b6d6bd5e1c94ad51d82e82317b41904ad9c980093d9c8212a4e"
     },
     {
+      "path": "tools/report_revision25_log.py",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "990c5a2be6f4d6894e9e3eafccfb8db3e6c7a2ca878f566856bec5a6d3b7938e"
+    },
+    {
       "path": "tools/run_revision16.bat",
       "status": "added",
       "dependency": false,
@@ -31234,6 +31314,14 @@
       "line_endings_only": false,
       "before_sha256": null,
       "after_sha256": "f06782be9192e751b499592301b8c31ffad195468a7099a442c05dbe7cab4c06"
+    },
+    {
+      "path": "tools/run_revision25.bat",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "95715ae17b4e2223ac82fb7d4abef5bb07c835d69f839870f482e47889a246e6"
     },
     {
       "path": "tools/run_tests.bat",
@@ -31466,6 +31554,22 @@
       "line_endings_only": false,
       "before_sha256": null,
       "after_sha256": "210480eea86fa3b469704e3d53c7fc3a26e43091a3668c5e4999c70283534b5c"
+    },
+    {
+      "path": "tools/verify_revision25_artifact.py",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "5d11dba3524939adba72d8239a778629cb2c8dd9b2c5e58aa28e4f172face734"
+    },
+    {
+      "path": "tools/verify_revision25_public.py",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "441451aa65e06c44ddcd6f84dd78953a2b6a34c00383068b735c5b8e2c55a024"
     },
     {
       "path": "tools/verify_revision4_artifact.py",

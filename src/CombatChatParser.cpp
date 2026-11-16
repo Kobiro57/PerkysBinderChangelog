@@ -105,6 +105,10 @@ CombatChatNotice ParseCombatChat(const std::string& line, const std::string& loc
     if (std::regex_match(text, match, deathzone) && ValidName(match[1]) && ValidName(match[2])
         && SameCombatPlayerName(match[1], localName) && !SameCombatPlayerName(match[2], localName))
         return Kill(CombatChatFamily::Deathzone, localName, match[2]);
+    static const std::regex takeover(R"(^\[TakeOver\]: (\S{1,24}) hat (\S{1,24}) getoetet\.$)", flags);
+    if (std::regex_match(text, match, takeover) && ValidName(match[1]) && ValidName(match[2])
+        && SameCombatPlayerName(match[1], localName) && !SameCombatPlayerName(match[2], localName))
+        return Kill(CombatChatFamily::Takeover, localName, match[2]);
     return {};
 }
 } // namespace killtracker

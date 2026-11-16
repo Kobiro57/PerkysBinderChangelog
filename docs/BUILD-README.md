@@ -20,6 +20,8 @@ Advanced keybinder and combat-assist plugin for GTA San Andreas Multiplayer (SA-
 
 - **Quick Forum Keyboard** — The in-game `/forum` keyboard bridge supports text input including German AltGr special characters, preserving browser copy/paste shortcuts and Esc-close behavior. The pinned browser runtime cef156-r1 remains in use.
 
+- **TakeOver Kills** — Own `[TakeOver]: NAME hat ENEMY getötet.` confirmations use the existing kill counter and configured killbind, with whole-name attribution and existing duplicate correlation.
+
 ## Building
 
 ### Requirements

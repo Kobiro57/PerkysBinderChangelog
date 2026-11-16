@@ -39,7 +39,8 @@ int RunCombatChatParserTests() {
             "REVIERKAMPF: " + local + " hat Enemy_One getötet (Teamkill). Neuer Spielstand: Angreifer: 2 - Verteidiger: 3",
             "REVIERKAMPF: " + local + " hat Enemy_One getötet.",
             "STREETWAR: " + local + " hat Enemy_One (Los Santos Police Department) getötet. Aktuelle Kills: 4",
-            "DEATHZONE: " + local + " hat Enemy_One mit einer Desert Eagle getötet."
+            "DEATHZONE: " + local + " hat Enemy_One mit einer Desert Eagle getötet.",
+            "[TakeOver]: " + local + " hat Enemy_One getötet."
         };
         for (const auto& line : named) {
             const auto notice = ParseCombatChat(line, local);
@@ -78,6 +79,40 @@ int RunCombatChatParserTests() {
     CHECK(ParseCombatChat("Du hast ein Verbrechen begangen ( Raub ). Reporter: Anonym", "Local").kind == CombatChatKind::None);
     CHECK(ParseCombatChat("STREETWAR: Local hat Enemy (Gang) getötet. Aktuelle Kills: invalid", "Local").kind == CombatChatKind::None);
     CHECK(ParseCombatChat("REVIERKAMPF: Local hat Local getötet.", "Local").kind == CombatChatKind::None);
+    for (const std::string local : {"KOBiRO", "[RCB]Nick.Name", "Another_Player", "Nick+Name", "A(1)"}) {
+        const std::string line = "[TakeOver]: " + local + " hat [Enemy]Nick.Name getötet.";
+        const auto notice = ParseCombatChat(line, local);
+        CHECK(notice.kind == CombatChatKind::Kill);
+        CHECK(notice.family == CombatChatFamily::Takeover);
+        CHECK(notice.killer == local && notice.victim == "[Enemy]Nick.Name" && notice.victimKnown);
+        CHECK(ParseCombatChat(Cp1252(line), local).family == CombatChatFamily::Takeover);
+        CHECK(ParseCombatChat("{FF0000}[12:34:56] {FFFFFF}" + line, local).kind == CombatChatKind::Kill);
+        CHECK(ParseCombatChat("INFO: " + line, local).kind == CombatChatKind::Kill);
+        CHECK(ParseCombatChat(line, local, true).kind == CombatChatKind::None);
+        CHECK(ParseCombatChat("Someone sagt: " + line, local).kind == CombatChatKind::None);
+        CHECK(ParseCombatChat("/r " + line, local).kind == CombatChatKind::None);
+        CHECK(ParseCombatChat("\"" + line + "\"", local).kind == CombatChatKind::None);
+        CHECK(ParseCombatChat(line + " Zusatz", local).kind == CombatChatKind::None);
+        CHECK(ParseCombatChat("[TakeOver]: " + local + "Suffix hat Enemy getötet.", local).kind == CombatChatKind::None);
+        CHECK(ParseCombatChat("[TakeOver]: Prefix" + local + " hat Enemy getötet.", local).kind == CombatChatKind::None);
+        CHECK(ParseCombatChat("[TakeOver]: Other hat " + local + " getötet.", local).kind == CombatChatKind::None);
+        CHECK(ParseCombatChat("[TakeOver]: " + local + " hat " + local + " getötet.", local).kind == CombatChatKind::None);
+        CHECK(ParseCombatChat("[TakeOver]: " + local + " hat Enemy getötet.", "Other").kind == CombatChatKind::None);
+    }
+    const auto mixedCaseTakeover = ParseCombatChat("[tAkEoVeR]: local hat EnEmY getötet.", "LOCAL");
+    CHECK(mixedCaseTakeover.kind == CombatChatKind::Kill && mixedCaseTakeover.killer == "LOCAL");
+    CHECK(mixedCaseTakeover.family == CombatChatFamily::Takeover && mixedCaseTakeover.victim == "EnEmY");
+    CHECK(ParseCombatChat("[TakeOver]: Local hat LOCAL getötet.", "Local").kind == CombatChatKind::None);
+    CHECK(ParseCombatChat("[TakeOver]: Local hat Invalid Name getötet.", "Local").kind == CombatChatKind::None);
+    CHECK(ParseCombatChat("[TakeOver]: Local hat Enemy:One getötet.", "Local").kind == CombatChatKind::None);
+    CHECK(ParseCombatChat("[TakeOver]: Local hat <Enemy> getötet.", "Local").kind == CombatChatKind::None);
+    CHECK(ParseCombatChat("[TakeOver]: Local hat " + std::string(25, 'x') + " getötet.", "Local").kind == CombatChatKind::None);
+    CHECK(ParseCombatChat("[TakeOver]: Local hat Enemy getötet.", "").kind == CombatChatKind::None);
+    CHECK(ParseCombatChat("[TakeOver]: Invalid Name hat Enemy getötet.", "Invalid Name").kind == CombatChatKind::None);
+    CHECK(ParseCombatChat("[TakeOver]: Local hat Enemy getötet. [Extra]", "Local").kind == CombatChatKind::None);
+    CHECK(ParseCombatChat("[TakeOver]: Local hat Enemy getötet!", "Local").kind == CombatChatKind::None);
+    CHECK(ParseCombatChat("[TakeOver]: Local hat Enemy getötet", "Local").kind == CombatChatKind::None);
+    CHECK(ParseCombatChat("TakeOver: Local hat Enemy getötet.", "Local").kind == CombatChatKind::None);
     CHECK(ParseCombatChat(std::string(5000, 'x'), "Local").kind == CombatChatKind::None);
     std::printf("CombatChatParserTests: %d checks, %d failures\n", checks, failures);
     return failures;

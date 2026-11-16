@@ -67,7 +67,7 @@
  res/browser-runtime.json                  | 1192 +++++++++++++++++
  res/jobs_registry.json                    |  192 ++-
  src/ActionExecutor.cpp                    |   93 +-
- src/CombatChatParser.cpp                  |  110 ++
+ src/CombatChatParser.cpp                  |  114 ++
  src/DamageRPCAdapter.cpp                  |   31 +-
  src/DeathMessageRPCAdapter.cpp            |    7 +
  src/ForumBrowser.cpp                      |  729 +++++++++++
@@ -113,8 +113,8 @@
  src/WeaponIconsUI.cpp                     |  154 +++
  tests/ActionExecutorTests.cpp             |  239 ++++
  tests/BrowserSetupUnitTests.cpp           |   18 +
- tests/CombatChatBridgeTests.cpp           |  639 +++++++++
- tests/CombatChatParserTests.cpp           |   84 ++
+ tests/CombatChatBridgeTests.cpp           |  703 ++++++++++
+ tests/CombatChatParserTests.cpp           |  119 ++
  tests/DamageLogRegressionTests.cpp        |  711 ++++++++++
  tests/DrugUseTrackerTests.cpp             |  165 +++
  tests/ForumKeyboardInputTests.cpp         |  157 +++
@@ -179,10 +179,12 @@
  tools/document_revision22.py              |  189 +++
  tools/document_revision23.py              |  211 +++
  tools/document_revision24.py              |  184 +++
+ tools/document_revision25.py              |  103 ++
  tools/export_forum_installation_review.py |  189 +++
  tools/export_full_changelog.py            |   34 +
  tools/export_full_changelog_revision23.py |   34 +
  tools/export_full_changelog_revision24.py |   34 +
+ tools/export_full_changelog_revision25.py |   34 +
  tools/export_source_bundle.py             |  185 +++
  tools/export_source_bundle_revision19.py  |  185 +++
  tools/export_source_bundle_revision20.py  |  192 +++
@@ -190,6 +192,7 @@
  tools/export_source_bundle_revision22.py  |  192 +++
  tools/export_source_bundle_revision23.py  |  192 +++
  tools/export_source_bundle_revision24.py  |  193 +++
+ tools/export_source_bundle_revision25.py  |  193 +++
  tools/fetch_cef_runtime.py                |   55 +
  tools/finalize_revision16.py              |   56 +
  tools/finalize_revision17.py              |   54 +
@@ -200,6 +203,7 @@
  tools/finalize_revision22.py              |   54 +
  tools/finalize_revision23.py              |   54 +
  tools/finalize_revision24.py              |   58 +
+ tools/finalize_revision25.py              |   58 +
  tools/install_revision18.py               |   48 +
  tools/install_revision19.py               |   47 +
  tools/install_revision20.py               |   48 +
@@ -220,6 +224,7 @@
  tools/package_revision22.py               |  153 +++
  tools/package_revision23.py               |  158 +++
  tools/package_revision24.py               |  191 +++
+ tools/package_revision25.py               |  195 +++
  tools/package_revision4.ps1               |   97 ++
  tools/package_revision5.ps1               |   96 ++
  tools/package_revision6.ps1               |   93 ++
@@ -239,6 +244,7 @@
  tools/publish_revision22.py               |  279 ++++
  tools/publish_revision23.py               |  283 ++++
  tools/publish_revision24.py               |  286 ++++
+ tools/publish_revision25.py               |  286 ++++
  tools/record_gps_native_test.py           |   11 +
  tools/report_revision16_log.py            |   10 +
  tools/report_revision17_log.py            |   10 +
@@ -249,6 +255,7 @@
  tools/report_revision22_log.py            |   10 +
  tools/report_revision23_log.py            |   10 +
  tools/report_revision24_log.py            |   10 +
+ tools/report_revision25_log.py            |   10 +
  tools/run_revision16.bat                  |   87 ++
  tools/run_revision17.bat                  |   71 +
  tools/run_revision18.bat                  |   76 ++
@@ -258,6 +265,7 @@
  tools/run_revision22.bat                  |   69 +
  tools/run_revision23.bat                  |   69 +
  tools/run_revision24.bat                  |   77 ++
+ tools/run_revision25.bat                  |   69 +
  tools/run_tests.bat                       |   66 +-
  tools/setup_msvc.bat                      |   16 +
  tools/test_browser_restart.py             |   57 +
@@ -287,10 +295,12 @@
  tools/verify_revision23_public.py         |   35 +
  tools/verify_revision24_artifact.py       |   58 +
  tools/verify_revision24_public.py         |   35 +
+ tools/verify_revision25_artifact.py       |   58 +
+ tools/verify_revision25_public.py         |   35 +
  tools/verify_revision4_artifact.py        |  115 ++
  tools/verify_revision5_artifact.py        |  115 ++
  tools/verify_revision6_artifact.py        |  115 ++
  tools/verify_revision7_artifact.py        |  115 ++
  tools/verify_revision8_artifact.py        |  115 ++
  tools/verify_revision9_artifact.py        |  115 ++
- 295 files changed, 36398 insertions(+), 1478 deletions(-)
+ 305 files changed, 37542 insertions(+), 1478 deletions(-)

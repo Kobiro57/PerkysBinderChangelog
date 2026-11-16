@@ -177,7 +177,8 @@ void TestAllFormsReachTheConfiguredChatChannelAndDynamicName() {
         "STREETWAR: " + context.name + " hat Enemy_One (Gang) getötet. Aktuelle Kills: 9",
         "DEATHZONE: " + context.name + " hat Enemy_One mit einer Desert Eagle getötet.",
         "REVIERKAMPF: " + context.name + " hat Enemy_One getötet.",
-        "REVIERKAMPF: " + context.name + " hat einen Teamkill begangen."
+        "REVIERKAMPF: " + context.name + " hat einen Teamkill begangen.",
+        "[TakeOver]: " + context.name + " hat Enemy_One getötet."
     };
     int expected = 10;
     for (const auto& line : forms) {
@@ -195,6 +196,67 @@ void TestAllFormsReachTheConfiguredChatChannelAndDynamicName() {
     context.Line("REVIERKAMPF: A_New_Name hat Another_Enemy getötet.");
     context.bridge.Update();
     CHECK(context.bridge.GetTotalKills() == expected + 1);
+}
+
+void TestTakeoverUsesConfiguredTextAndRejectsForeignOrQuotedKills() {
+    for (const std::string channel : {"", "/r ", "/d ", "/f "}) {
+        Context context;
+        context.bridge.SetKillTrackerLocalKillMessageEnabled(true);
+        context.bridge.SetKillTrackerLocalKillMessageTemplate("LOCAL Kills: {total_kills}");
+        context.bridge.SetKillTrackerServerKillMessageTemplate(channel + "Mein Killtext {total_kills}");
+        const std::string own = "[TakeOver]: " + context.name + " hat Enemy_One getötet.";
+        for (const std::string rejected : std::vector<std::string>{
+            "[TakeOver]: Other hat Enemy_One getötet.",
+            "[TakeOver]: Other hat " + context.name + " getötet.",
+            "[TakeOver]: " + context.name + "Suffix hat Enemy_One getötet.",
+            "Jemand sagt: " + own}) {
+            context.Line(rejected); context.bridge.Update();
+            CHECK(context.bridge.GetTotalKills() == 10 && context.sent.empty());
+        }
+        context.Line(own, "Player"); context.bridge.Update();
+        CHECK(context.bridge.GetTotalKills() == 10 && context.sent.empty());
+        context.Line("{FF0000}[12:34:56] {FFFFFF}" + own); context.bridge.Update();
+        CHECK(context.bridge.GetTotalKills() == 11);
+        CHECK(context.bridge.GetKillTracker()->GetSessionKills() == 1);
+        CHECK(context.sent == std::vector<std::string>{channel + "Mein Killtext 11"});
+        CHECK(context.bridge.GetKillTracker()->GetRecentKills().back().victim == "Enemy_One");
+        CHECK(std::count(context.localMessages.begin(), context.localMessages.end(), "LOCAL Kills: 11") == 1);
+        context.Line(own); context.bridge.Update();
+        CHECK(context.bridge.GetTotalKills() == 11 && context.sent.size() == 1);
+        context.name = "Another_Player";
+        context.now += 6000;
+        context.Line("[TakeOver]: Another_Player hat Enemy_Two getötet."); context.bridge.Update();
+        CHECK(context.bridge.GetTotalKills() == 12);
+        CHECK(context.sent.back() == channel + "Mein Killtext 12");
+        CHECK(context.bridge.GetTotalDeaths() == 3);
+    }
+}
+
+void TestTakeoverAndExistingConfirmationsDescribeOneKill() {
+    for (const bool nativeFirst : {false, true}) {
+        Context context;
+        if (nativeFirst) context.bridge.ProcessDeathMessageForTesting({5, 7, 24, std::time(nullptr), true});
+        context.Line("[TakeOver]: " + context.name + " hat Enemy_One getötet.");
+        context.bridge.Update();
+        if (!nativeFirst) context.bridge.ProcessDeathMessageForTesting({5, 7, 24, std::time(nullptr), true});
+        context.Line("Du hast einen Spieler getötet.");
+        context.Line("REVIERKAMPF: " + context.name + " hat Enemy_One getötet.");
+        context.bridge.Update();
+        CHECK(context.bridge.GetTotalKills() == 11 && context.sent.size() == 1);
+        CHECK(context.bridge.GetKillTracker()->GetSessionKills() == 1);
+        CHECK(context.bridge.GetKillTracker()->GetWeaponStats(24) != nullptr);
+        CHECK(context.bridge.GetKillTracker()->GetWeaponStats(24)->killCount == 1);
+        context.Line("[TakeOver]: " + context.name + " hat Enemy_Two getötet.");
+        context.bridge.Update();
+        CHECK(context.bridge.GetTotalKills() == 12 && context.sent.size() == 2);
+    }
+    Context context;
+    context.Line("Du hast einen Spieler getötet."); context.bridge.Update();
+    context.Line("[TakeOver]: " + context.name + " hat Enemy_One getötet."); context.bridge.Update();
+    CHECK(context.bridge.GetTotalKills() == 11 && context.sent.size() == 1);
+    context.Line("[TakeOver]: " + context.name + " hat Enemy_Two getötet.");
+    context.bridge.Update();
+    CHECK(context.bridge.GetTotalKills() == 12 && context.sent.size() == 2);
 }
 
 void TestPersonalNamedRpcAndStatsCorrelateWithoutRepeatingBind() {
@@ -616,6 +678,8 @@ void TestFirstServerSnapshotWhileAliveIsABaselineForAFutureDeath() {
 int RunCombatChatBridgeTests() {
     checks = failures = 0;
     TestAllFormsReachTheConfiguredChatChannelAndDynamicName();
+    TestTakeoverUsesConfiguredTextAndRejectsForeignOrQuotedKills();
+    TestTakeoverAndExistingConfirmationsDescribeOneKill();
     TestPersonalNamedRpcAndStatsCorrelateWithoutRepeatingBind();
     TestRpcNewerThanQueuedChatAndDistinctRapidVictims();
     TestTwoSameFramePersonalKillsAreNeverDropped();

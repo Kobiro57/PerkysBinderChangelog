@@ -4,6 +4,8 @@ Hier ist das aktuelle NLBinder-Release mit fertiger ASI und nachvollziehbarer Ä
 
 NEU IN DIESEM PAKET
 
+Neu in r25: Die Meldung [TakeOver]: NAME hat GEGNER getötet. wird jetzt für eigene Kills erkannt. NAME wird mit dem aktuellen eigenen Spielernamen verglichen. Dadurch werden wie gewohnt der Killzähler aktualisiert und der eingestellte Killtext im gewählten Chatkanal gesendet. Farben und Zeitstempel werden berücksichtigt; fremde Täter oder zitierte Nachrichten lösen keinen eigenen Killbind aus. Die vorhandene Zuordnung verhindert eine zweite Wertung desselben Kills durch zusätzliche Bestätigungen.
+
 Neu in r24: Die Tastatureingabe im über /forum geöffneten Quick Forum ist für Sonderzeichen überarbeitet. Besonders die deutschen AltGr-Zeichen [ ] { } @ € \ | ~ werden als Texteingabe weitergereicht. Normales Schreiben sowie Kopieren und Einfügen bleiben erhalten; ESC schließt das Forum wie gewohnt. Der Fix liegt in der ASI. Die vorhandene Browser-Runtime cef156-r1 muss dafür nicht erneut heruntergeladen werden. Vollständige Quellen, der eigene Forum-/Installer-Quellcode und der gesamte Changelog sind im Paket beziehungsweise im Repository nachvollziehbar enthalten.
 
 Neu in r23: Bei aktivierter Wanted-Liste erhalten bestätigte SAPD-/LSPD-Mitglieder über unmittelbar benachbarten gesuchten Spielern ein rotes Label im Format [GESUCHT | 15 Wanteds]. Die feste Reichweite beträgt höchstens fünf Meter in drei Dimensionen. Der Spieler muss gestreamt, lebend und vor der Kamera sichtbar sein; freie Sicht und die vorhandene Nametag-Freigabe sind erforderlich. Durch Wände, hinter der Kamera und außerhalb dieser unmittelbaren Nähe wird kein Label angezeigt. Es gibt keine zusätzliche Entfernungs- oder Richtungsanzeige. Frische Wantedzahlen werden mit dem tatsächlichen Spielernamen abgeglichen.
@@ -103,7 +105,7 @@ Repository:
 https://github.com/Kobiro57/PerkysBinderChangelog
 
 Dieses Release:
-https://github.com/Kobiro57/PerkysBinderChangelog/releases/tag/v0.1.2-r24
+https://github.com/Kobiro57/PerkysBinderChangelog/releases/tag/v0.1.2-r25
 
 Das ASI-Downloadpaket enthält den fertigen Binder, die Dokumentation und den gesonderten Installer-Quellcodeauszug. Den vollständigen Binder-Quellbaum gibt es im Repository beziehungsweise über die „Source code“-Downloads des Releases. Der zusammengestellte Desktop-Ordner enthält zusätzlich die fertige ASI.
 
