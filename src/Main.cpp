@@ -29,6 +29,7 @@
 #include "../include/ForumBrowser.h"
 #include "../include/DrugUseTracker.h"
 #include "../include/LocalFactionAccess.h"
+#include "../include/NearbyWantedLabels.h"
 #include "../include/InputManager.h"
 #include "../include/InterfaceEditor.h"
 #include "../include/NativeHudEditor.h"
@@ -668,6 +669,10 @@ public:
         overlay_.SetOnlineQuickOverlayRenderCallback([&]() {
             onlineOverlayRenderer_.Render();
             onlineOverlayRenderer_.RenderPersistentOverlays();
+            const auto& settings = settingsManager_.Get();
+            keybinder::NearbyWantedLabels::Render(bridge_, onlineDataManager_,
+                settings.online_enabled && settings.online_wanted_overlay_enabled
+                && !overlay_.IsVisible() && !quickMap_.IsVisible() && !forumBrowser_.IsOpen());
         });
         onlineOverlayRenderer_.SetSettingsPersistCallback([&]() {
             keybindManager_.Save(&settingsManager_);

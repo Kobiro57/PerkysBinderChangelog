@@ -936,7 +936,7 @@ void OnlineUI::RenderPersistentOverlaySettings() {
     if (ImGui::IsItemHovered()) { ImGui::SetTooltip("Zeigt deine eigene Gang als separates Overlay an, wenn du in einer Gang bist."); }
 
     if (UIComponents::Toggle("Wanted-Liste anzeigen", &settings.online_wanted_overlay_enabled)) { PersistSettings(); ApplyLiveSettings(); }
-    if (ImGui::IsItemHovered()) { ImGui::SetTooltip("Zeigt Spieler mit Wanted-Level in einem konfigurierbaren Bereich an."); }
+    if (ImGui::IsItemHovered()) { ImGui::SetTooltip("Zeigt Spieler mit Wanted-Level und ihrer Ingame-ID an. SAPD/LSPD: rotes Gesucht-Label bei freier Sicht in maximal 5 Metern Entfernung."); }
 
     if (settings.online_wanted_overlay_enabled) {
         const float availWidth = ImGui::GetContentRegionAvail().x;

@@ -21,6 +21,8 @@
 #include "ServerStatsSnapshot.h"
 #include "StatsDialogRPCAdapter.h"
 #include "SpeedTicketFlow.h"
+#include "PoliceLocateTracker.h"
+#include "ServerCheckpointRPCAdapter.h"
 #include "JobSkillsSnapshot.h"
 #include "DeathMessageRPCAdapter.h"
 #include "JobChatAdapter.h"
@@ -175,6 +177,7 @@ public:
         std::function<bool(float&, float&, int&, const void*&)> readLocalDamageSample;
         std::function<int()> getCityLevel;
         std::function<std::string()> getDistrictName;
+        std::function<std::string(float, float, float)> getDistrictAtPosition;
         std::function<bool()> isStartupStatsReady;
         std::function<bool()> isStartupJobSkillsReady;
         std::function<void(int)> closeStatsDialog;
@@ -205,6 +208,7 @@ public:
     bool ProcessIncomingChatLineForTesting(const char* prefix, const char* text);
     void ProcessStatsDialogForTesting(const keybinder::StatsDialogEvent& event);
     bool ProcessStatsDialogRpcForTesting(RakNet::BitStream* payload);
+    bool ProcessServerCheckpointRpcForTesting(unsigned char id, RakNet::BitStream* payload);
 #endif
 
 private:
@@ -226,6 +230,12 @@ private:
     bool AcceptStartupStatsDialog(const keybinder::StatsDialogEvent& event, unsigned long now);
     void CloseStartupStatsDialog(unsigned long now);
     void UpdateSpeedTicketFlow(unsigned long now);
+    void InitializePoliceLocate();
+    void ShutdownPoliceLocate();
+    void CapturePoliceLocateChat(const std::string& text);
+    void CapturePoliceCheckpoint(const keybinder::ServerCheckpointEvent& event);
+    void UpdatePoliceLocate(unsigned long now);
+    std::string ResolvePoliceCheckpointDistrict(float x, float y, float z) const;
     bool SendSpeedDialogChoice(const keybinder::SpeedTicketAction& action);
     void UpdateStartupJobSkills(unsigned long now);
     void UpdateAutoEngineStart(unsigned long now);
@@ -516,6 +526,19 @@ private:
     std::unique_ptr<keybinder::StatsDialogRPCAdapter> statsDialogAdapter_;
     keybinder::ServerStatsSnapshot synchronizedStats_;
     std::function<std::string()> localFactionProvider_;
+    keybinder::PoliceLocateTracker policeLocateTracker_;
+    std::unique_ptr<keybinder::ServerCheckpointRPCAdapter> policeCheckpointAdapter_;
+    struct PendingPoliceLocateEvent {
+        bool isCheckpoint = false;
+        std::string text;
+        keybinder::ServerCheckpointEvent checkpoint;
+        unsigned long at = 0;
+    };
+    std::mutex policeLocateMutex_;
+    std::vector<PendingPoliceLocateEvent> pendingPoliceLocateEvents_;
+    bool policeLocateCaptureActive_ = false;
+    bool policeLocateQueueOverflow_ = false;
+    std::string policeLocateSession_;
     std::function<bool(const keybinder::ServerStatsSnapshot&)> statsSynchronizedCallback_;
     bool startupStatsConnected_ = false;
     bool startupStatsRequested_ = false;

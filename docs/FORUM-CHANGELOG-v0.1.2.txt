@@ -4,6 +4,12 @@ Hier ist das aktuelle NLBinder-Release mit fertiger ASI und nachvollziehbarer Ä
 
 NEU IN DIESEM PAKET
 
+Neu in r23: Bei aktivierter Wanted-Liste erhalten bestätigte SAPD-/LSPD-Mitglieder über unmittelbar benachbarten gesuchten Spielern ein rotes Label im Format [GESUCHT | 15 Wanteds]. Die feste Reichweite beträgt höchstens fünf Meter in drei Dimensionen. Der Spieler muss gestreamt, lebend und vor der Kamera sichtbar sein; freie Sicht und die vorhandene Nametag-Freigabe sind erforderlich. Durch Wände, hinter der Kamera und außerhalb dieser unmittelbaren Nähe wird kein Label angezeigt. Es gibt keine zusätzliche Entfernungs- oder Richtungsanzeige. Frische Wantedzahlen werden mit dem tatsächlichen Spielernamen abgeglichen.
+
+In der vorhandenen Wanted-Tabelle steht zusätzlich die aktuelle SA-MP-Spieler-ID hinter dem Namen, zum Beispiel Lesch (24). Die Wantedzahl bleibt wie bisher. Es werden tatsächliche aktuelle Spieler-IDs verwendet, keine Account-IDs der Online-API. Bei fehlender eindeutiger Zuordnung bleibt der Name ohne erfundene ID.
+
+Nach einer erfolgreichen Detektiv-Ortung meldet der Binder einmalig im Polizeifunk: /r [ORTUNG] Gesuchter Name wurde zuletzt in [Bezirk] geortet. Name und Bezirk werden automatisch eingesetzt. Die Meldung kommt erst nach der serverseitigen Erfolgsmeldung und einem neuen Server-Checkpoint; der Bezirk stammt aus den Koordinaten des Ortungsmarkers. Ein alter Marker, doppelte Meldungen oder die eigene GPS-Navigation lösen keinen zusätzlichen Funktext aus. Auch diese Funktion setzt eine bestätigte eigene SAPD-/LSPD-Mitgliedschaft voraus. Rollenverlust, Spielerwechsel und Verbindungsende verwerfen den laufenden Ortungsvorgang.
+
 Neu in r22: /claims schaltet für Mitglieder der Red County Brotherhood 28 feste Flaggenorte auf der vorhandenen Quick Map ein und beim nächsten Aufruf wieder aus. Als Symbol dient die bereits enthaltene rote enemyAttack-Flagge, passend zum gewählten Radar-Design. Zoom und Kartenausschnitt funktionieren wie gewohnt. Die Quick Map wird weiterhin mit ihrem bisherigen Hotkey geöffnet.
 
 Die eigene Fraktion wird anhand der synchronisierten eigenen Statistiken der aktuellen Verbindung bestätigt und mit vorhandenen frischen Online-Daten abgeglichen. Ein Online-Eintrag desselben Namens allein reicht nicht aus. Es gibt keine manuelle Fraktionseingabe oder Skin-Erkennung. Ohne bestätigte RCB-Mitgliedschaft erscheint lokal: „Du bist kein Mitglied der Red County Brotherhood.“ Rollenverlust, Spielerwechsel oder Verbindungsende blenden die Flaggen aus. Sind bekannte Fraktionsangaben widersprüchlich, wird die Funktion verweigert; nach einem Fraktionswechsel können die eigenen Werte über die vorhandene manuelle Synchronisation aktualisiert werden.
@@ -95,7 +101,7 @@ Repository:
 https://github.com/Kobiro57/PerkysBinderChangelog
 
 Dieses Release:
-https://github.com/Kobiro57/PerkysBinderChangelog/releases/tag/v0.1.2-r22
+https://github.com/Kobiro57/PerkysBinderChangelog/releases/tag/v0.1.2-r23
 
 Das ASI-Downloadpaket enthält den fertigen Binder, die Dokumentation und den gesonderten Installer-Quellcodeauszug. Den vollständigen Binder-Quellbaum gibt es im Repository beziehungsweise über die „Source code“-Downloads des Releases. Der zusammengestellte Desktop-Ordner enthält zusätzlich die fertige ASI.
 

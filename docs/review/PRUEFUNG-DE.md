@@ -1,6 +1,12 @@
 # Hinweise zur Prüfung durch die Projektleitung
 
-## Aktueller Stand v0.1.2 / r22 – 9. November 2026
+## Aktueller Stand v0.1.2 / r23 – 16. November 2026
+
+Wanted-Labels in direkter Nähe und die Polizeifunk-Ortungsmeldung stehen im
+[r23-Prüfumfang](r23-PRUEFUNG-DE.md) und
+[Prüfnachweis](r23-validation.json). Frühere Ergebnisse bleiben erhalten.
+
+## Vorheriger Stand v0.1.2 / r22 – 9. November 2026
 
 RCB-Claims und die lokale Fraktionsprüfung für /speed stehen im
 [r22-Prüfumfang](r22-PRUEFUNG-DE.md) und

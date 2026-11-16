@@ -1205,3 +1205,30 @@ Der Nutzer bestätigte nach Einspielen des vorläufigen r18-Stands, dass der ang
   aufgenommen. Tatsächliche Zahlen stehen im r22-Nachweis; kein Live-Test erfunden.
 - Gesamten Quellcode, ASI und Texte als neuen Desktop-Ordner NLBinder-v0.1.2-r22
   vorgesehen. Version/Credits und Browser-Runtime bleiben unverändert.
+
+29. Nachtrag v0.1.2 / r23 – 16. November 2026
+=============================================
+
+- Für bestätigte SAPD-/LSPD-Mitglieder bei aktivierter Wanted-Liste ein rotes
+  [GESUCHT | Zahl Wanteds]-Label über unmittelbar benachbarten Gesuchten ergänzt.
+- Feste Grenze von fünf Metern in drei Dimensionen, freie Sicht, gestreamter
+  sichtbarer lebender Spieler und vorhandene Nametag-Freigabe erforderlich.
+  Keine Anzeige durch Wände, hinter der Kamera oder außerhalb direkter Nähe.
+- Wantedzahlen aus frischen bestehenden Online-Daten mit dem tatsächlichen
+  gestreamten Spielernamen abgeglichen. Alte Daten und der eigene Spieler
+  erzeugen kein zusätzliches Label. Keine Entfernung oder Richtungsanzeige.
+- Bestehende Wanted-Tabelle um die aktuelle SA-MP-Spieler-ID hinter dem Namen
+  ergänzt, zum Beispiel Lesch (24); Wantedzahl erhalten. Keine API-Account-ID
+  als Spieler-ID verwendet, unbekannte Zuordnungen ohne erfundene ID belassen.
+- Dynamischen Zielnamen aus dem serverseitigen Detektiv-Ortungsstart gelesen.
+  Nach Erfolgsmeldung und neuem Server-Checkpoint einmalig den Bezirk dieses
+  Markers per /r [ORTUNG] Gesuchter Name wurde zuletzt in [Bezirk] geortet. melden.
+- Alte Marker, unvollständige/ungültige Checkpointdaten, doppelte Meldungen und
+  abgelaufene Abläufe verwerfen; eigene GPS-Navigation nicht als Ortung behandeln.
+- Beide neuen Funktionen an die eigene bestätigte Polizeifraktion der aktuellen
+  Verbindung gebunden und laufende Ortungen bei Rollen-/Sitzungsverlust beendet.
+- Regressionen für Nähe/Sichtbarkeit/Wantedzuordnung, Ortungsreihenfolge und
+  Checkpointadapter ergänzt. Tatsächliche Ergebnisse stehen im r23-Prüfnachweis;
+  ein neuer Ingame-Sichttest wird nicht aus automatischen Tests abgeleitet.
+- Neue fertige NLBinder.asi mit vollständigem Quellcode und Changelogs als
+  NLBinder-v0.1.2-r23 vorgesehen. Vorherige Exporte und Browser-Runtime erhalten.

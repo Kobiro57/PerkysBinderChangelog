@@ -1,5 +1,5 @@
  Keybinder.rc                              |    5 +
- Keybinder.vcxproj                         |   37 +-
+ Keybinder.vcxproj                         |   44 +-
  browser/CMakeLists.txt                    |   24 +
  browser/ForumBrowserHost.cpp              |  301 +++++
  include/ActionExecutor.h                  |   22 +-
@@ -38,16 +38,19 @@
  include/MessageVariablesUI.h              |   48 +
  include/NativeHudEditor.h                 |   39 +
  include/NativePlayerHealth.h              |   23 +
+ include/NearbyWantedLabels.h              |   50 +
  include/NovaReconnectFlow.h               |   56 +
  include/OnlineDataManager.h               |    6 +-
  include/OnlineOverlayController.h         |   55 +
  include/OnlineOverlayRenderer.h           |    5 +
  include/OnlineUI.h                        |   10 +-
  include/PersistentPaths.h                 |    2 +
+ include/PoliceLocateTracker.h             |   59 +
  include/QuickMap.h                        |   12 +
  include/ReconnectManager.h                |   80 ++
  include/ResourceIds.h                     |    2 +
- include/SAMPBridge.h                      |  265 +++-
+ include/SAMPBridge.h                      |  288 ++++-
+ include/ServerCheckpointRPCAdapter.h      |   43 +
  include/ServerStatsSnapshot.h             |  410 ++++++
  include/SettingsManager.h                 |   67 +-
  include/SpeedTicketFlow.h                 |   54 +
@@ -81,17 +84,21 @@
  src/KillTracker.cpp                       |   56 +-
  src/KillTrackerUI.cpp                     |  104 +-
  src/KillfeedAdapter.cpp                   |   34 +-
- src/Main.cpp                              |  255 +++-
+ src/Main.cpp                              |  260 +++-
  src/MainWindowUI.cpp                      |  216 +++-
  src/NativeHudEditor.cpp                   |  274 ++++
+ src/NearbyWantedLabels.cpp                |  177 +++
  src/OnlineDataManager.cpp                 |   21 +-
- src/OnlineOverlayController.cpp           |  249 +++-
+ src/OnlineOverlayController.cpp           |  265 +++-
  src/OnlineOverlayRenderer.cpp             |  156 ++-
- src/OnlineUI.cpp                          |  148 ++-
+ src/OnlineUI.cpp                          |  150 ++-
  src/PersistentPaths.cpp                   |   28 +
+ src/PoliceLocateBridge.cpp                |  155 +++
+ src/PoliceLocateTracker.cpp               |  194 +++
  src/QuickMap.cpp                          |   52 +-
  src/ReconnectManager.cpp                  |  371 ++++++
- src/SAMPBridge.cpp                        | 2005 +++++++++++++++++++----------
+ src/SAMPBridge.cpp                        | 2009 +++++++++++++++++++----------
+ src/ServerCheckpointRPCAdapter.cpp        |   77 ++
  src/SettingsManager.cpp                   |  384 +++++-
  src/SpeedTicketBridge.cpp                 |  167 +++
  src/SpeedTicketFlow.cpp                   |  245 ++++
@@ -120,14 +127,17 @@
  tests/JobSkillsSnapshotTests.cpp          |  114 ++
  tests/JobTrackerLifecycleTests.cpp        |   47 +
  tests/JobsUITests.cpp                     |    2 +-
- tests/KeybindTests.cpp                    |   51 +-
+ tests/KeybindTests.cpp                    |   59 +-
  tests/KillMessageTestTests.cpp            |   59 +
  tests/LocalFactionAccessTests.cpp         |   32 +
  tests/LocationVariableTests.cpp           |  112 ++
  tests/NativeHudEditorTests.cpp            |  103 ++
+ tests/NearbyWantedLabelsTests.cpp         |  129 ++
  tests/OnlineDataManagerTests.cpp          |   34 +-
- tests/OnlineOverlayRendererTests.cpp      |  467 ++++++-
+ tests/OnlineOverlayRendererTests.cpp      |  526 +++++++-
  tests/OnlineSettingsTests.cpp             |  172 +++
+ tests/PoliceLocateBridgeTests.cpp         |  423 ++++++
+ tests/PoliceLocateTrackerTests.cpp        |  233 ++++
  tests/QuickMapTests.cpp                   |  217 ++++
  tests/R16FeatureTests.cpp                 |  127 ++
  tests/R17FeatureTests.cpp                 |   39 +
@@ -136,6 +146,7 @@
  tests/ReconnectWorkerFixture.cpp          |  100 ++
  tests/RegressionTests.cpp                 |   35 +-
  tests/SAMPBridgeTests.cpp                 | 1818 +++++++++++++++++++++++++-
+ tests/ServerCheckpointRPCAdapterTests.cpp |  314 +++++
  tests/ServerStatsParserTests.cpp          |  282 ++++
  tests/SourceContractTests.cpp             |   22 +-
  tests/SpeedTicketFlowTests.cpp            |  201 +++
@@ -162,13 +173,16 @@
  tools/document_revision20.py              |  174 +++
  tools/document_revision21.py              |  134 ++
  tools/document_revision22.py              |  189 +++
+ tools/document_revision23.py              |  211 +++
  tools/export_forum_installation_review.py |  189 +++
  tools/export_full_changelog.py            |   34 +
+ tools/export_full_changelog_revision23.py |   34 +
  tools/export_source_bundle.py             |  185 +++
  tools/export_source_bundle_revision19.py  |  185 +++
  tools/export_source_bundle_revision20.py  |  192 +++
  tools/export_source_bundle_revision21.py  |  192 +++
  tools/export_source_bundle_revision22.py  |  192 +++
+ tools/export_source_bundle_revision23.py  |  192 +++
  tools/fetch_cef_runtime.py                |   55 +
  tools/finalize_revision16.py              |   56 +
  tools/finalize_revision17.py              |   54 +
@@ -177,6 +191,7 @@
  tools/finalize_revision20.py              |   54 +
  tools/finalize_revision21.py              |   77 ++
  tools/finalize_revision22.py              |   54 +
+ tools/finalize_revision23.py              |   54 +
  tools/install_revision18.py               |   48 +
  tools/install_revision19.py               |   47 +
  tools/install_revision20.py               |   48 +
@@ -195,6 +210,7 @@
  tools/package_revision20.py               |  138 ++
  tools/package_revision21.py               |  141 ++
  tools/package_revision22.py               |  153 +++
+ tools/package_revision23.py               |  158 +++
  tools/package_revision4.ps1               |   97 ++
  tools/package_revision5.ps1               |   96 ++
  tools/package_revision6.ps1               |   93 ++
@@ -212,6 +228,7 @@
  tools/publish_revision20.py               |  272 ++++
  tools/publish_revision21.py               |  273 ++++
  tools/publish_revision22.py               |  279 ++++
+ tools/publish_revision23.py               |  283 ++++
  tools/record_gps_native_test.py           |   11 +
  tools/report_revision16_log.py            |   10 +
  tools/report_revision17_log.py            |   10 +
@@ -220,6 +237,7 @@
  tools/report_revision20_log.py            |   10 +
  tools/report_revision21_log.py            |   10 +
  tools/report_revision22_log.py            |   10 +
+ tools/report_revision23_log.py            |   10 +
  tools/run_revision16.bat                  |   87 ++
  tools/run_revision17.bat                  |   71 +
  tools/run_revision18.bat                  |   76 ++
@@ -227,7 +245,8 @@
  tools/run_revision20.bat                  |   74 ++
  tools/run_revision21.bat                  |   74 ++
  tools/run_revision22.bat                  |   69 +
- tools/run_tests.bat                       |   57 +-
+ tools/run_revision23.bat                  |   69 +
+ tools/run_tests.bat                       |   65 +-
  tools/setup_msvc.bat                      |   16 +
  tools/test_browser_restart.py             |   57 +
  tools/test_browser_setup.py               |   81 ++
@@ -251,10 +270,12 @@
  tools/verify_revision21_public.py         |   35 +
  tools/verify_revision22_artifact.py       |   58 +
  tools/verify_revision22_public.py         |   35 +
+ tools/verify_revision23_artifact.py       |   58 +
+ tools/verify_revision23_public.py         |   35 +
  tools/verify_revision4_artifact.py        |  115 ++
  tools/verify_revision5_artifact.py        |  115 ++
  tools/verify_revision6_artifact.py        |  115 ++
  tools/verify_revision7_artifact.py        |  115 ++
  tools/verify_revision8_artifact.py        |  115 ++
  tools/verify_revision9_artifact.py        |  115 ++
- 259 files changed, 31427 insertions(+), 1476 deletions(-)
+ 280 files changed, 34515 insertions(+), 1478 deletions(-)

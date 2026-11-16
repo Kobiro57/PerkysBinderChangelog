@@ -75,8 +75,8 @@ void OnlineOverlayController::Update(float deltaTimeSeconds) {
     UpdateLocalOverlay();
     UpdateOwnGangOverlay();
     UpdateGangsOverlay();
-    UpdateWantedOverlay();
     UpdateGameOverlays(deltaTimeSeconds);
+    UpdateWantedOverlay();
 }
 
 void OnlineOverlayController::SetGameStateProvider(std::function<OnlineGameOverlayState()> provider) {
@@ -140,6 +140,13 @@ OnlineGameOverlayState OnlineOverlayController::CaptureGameState(SAMPBridge* bri
     auto* pool = netGame->GetPlayerPool();
     if (pool == nullptr) return state;
     state.connected = true;
+
+    // Wanted rows may include ourselves too. IDs always come from the current
+    // SA-MP pool; the web API's player ID can be an account ID instead.
+    if (pool->m_nLocalPlayerId < sampapi::v03dl::CPlayerPool::MAX_PLAYERS
+        && !pool->m_szLocalPlayerName.empty()) {
+        state.players.push_back({static_cast<int>(pool->m_nLocalPlayerId), pool->m_szLocalPlayerName});
+    }
 
     // Read the native ped only after SA-MP has a current local ped. The
     // connected state can already be set while the player is still spawning.
@@ -565,7 +572,14 @@ void OnlineOverlayController::UpdateWantedOverlay() {
     std::vector<PersistentOverlayCountRow> rows;
     rows.reserve(entries.size());
     for (const auto& e : entries) {
-        rows.push_back({e.name, e.wanted});
+        std::string label = e.name;
+        const auto found = gamePlayerIndices_.find(NormalizeMarkerName(e.name));
+        if (gameState_.connected && found != gamePlayerIndices_.end()
+            && found->second < gameState_.players.size()) {
+            const int id = gameState_.players[found->second].id;
+            if (id >= 0 && id < 1004) label += " (" + std::to_string(id) + ")";
+        }
+        rows.push_back({std::move(label), e.wanted});
     }
 
     wantedOverlay_.visible = true;

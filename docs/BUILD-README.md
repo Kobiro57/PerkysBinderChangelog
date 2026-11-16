@@ -16,6 +16,8 @@ Advanced keybinder and combat-assist plugin for GTA San Andreas Multiplayer (SA-
 - **Settings Management** — All configuration is unified in a single `keybinder.json` file: keybinds, kill tracker data, hitmarker presets, interface editor presets, theme settings, and QuickMap options.
 - **State Synchronization** — Stats and job skills synchronize after login. **Einstellungen → General → Tacho → Aktuellen Spielstand synchronisieren** repeats the same import manually and confirms completion locally after the new values are saved.
 
+- **Police Wanted and Location** — Confirmed SAPD/LSPD members with the Wanted overlay enabled see red wanted labels only on immediately nearby visible streamed players (hard maximum 5 metres, clear line of sight and native nametag visibility required). The Wanted table includes current SA-MP player IDs when resolved. Successful detective location plus a fresh server checkpoint sends one radio message with the marker district. Current-session faction checks apply to both new functions.
+
 ## Building
 
 ### Requirements

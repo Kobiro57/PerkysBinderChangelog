@@ -608,6 +608,64 @@ bool TestWantedOverlaySwapsInvertedRange() {
     return true;
 }
 
+bool TestWantedOverlayUsesCurrentIngameIdsAndPreservesWantedCounts() {
+    SettingsManager settings;
+    settings.GetMutable().online_enabled = true;
+    settings.GetMutable().online_wanted_overlay_enabled = true;
+    settings.GetMutable().online_wanted_overlay_min = 1;
+    settings.GetMutable().online_wanted_overlay_max = 0;
+    OnlineDataManager manager;
+    std::vector<OnlinePlayerInfo> players;
+    // These API identifiers are deliberately unrelated to the live player IDs.
+    players.push_back(BuildRawPlayer("90001", "Lesch", std::string(), "Ballas"));
+    players.push_back(BuildRawPlayer("90002", "KOBiRO", std::string(), "Ballas"));
+    players.push_back(BuildRawPlayer("90003", "Missing", std::string(), "Ballas"));
+    players.push_back(BuildRawPlayer("0", "Invalid", std::string(), "Ballas"));
+    players.push_back(BuildRawPlayer("42", "OutOfRange", std::string(), "Ballas"));
+    for (std::size_t i = 0; i < players.size(); ++i) players[i].wanted = 50 - static_cast<int>(i) * 10;
+    manager.UpdateFromPlayers(players, 12345, "KOBiRO");
+    OnlineGameOverlayState game;
+    game.connected = true;
+    game.players = {{0, " lesCH "}, {42, "KOBiRO"}, {-1, "Invalid"}, {1004, "OutOfRange"}};
+    OnlineOverlayController controller;
+    controller.Initialize(&settings, &manager);
+    controller.SetGameStateProvider([&]() { return game; });
+    controller.Update(0.0f); // New live IDs must be included in the first update.
+    const auto& wanted = controller.GetWantedOverlayData();
+    ASSERT_TRUE(wanted.visible);
+    ASSERT_EQ(wanted.countRows.size(), std::size_t(5));
+    ASSERT_EQ(wanted.countRows[0].label, std::string("Lesch (0)"));
+    ASSERT_EQ(wanted.countRows[0].count, 50);
+    ASSERT_EQ(wanted.countRows[1].label, std::string("KOBiRO (42)"));
+    ASSERT_EQ(wanted.countRows[1].count, 40);
+    ASSERT_EQ(wanted.countRows[2].label, std::string("Missing"));
+    ASSERT_EQ(wanted.countRows[3].label, std::string("Invalid"));
+    ASSERT_EQ(wanted.countRows[4].label, std::string("OutOfRange"));
+
+    // Reconnecting with different IDs must not keep the previous session's IDs.
+    game.connected = false;
+    controller.Update(0.6f);
+    ASSERT_EQ(wanted.countRows[0].label, std::string("Lesch"));
+    ASSERT_EQ(wanted.countRows[1].label, std::string("KOBiRO"));
+    game.connected = true;
+    game.players[0].id = 17;
+    game.players[1].id = 44;
+    controller.Update(0.6f);
+    ASSERT_EQ(wanted.countRows[0].label, std::string("Lesch (17)"));
+    ASSERT_EQ(wanted.countRows[1].label, std::string("KOBiRO (44)"));
+    ASSERT_EQ(wanted.countRows[1].count, 40);
+
+    // A recycled slot belongs to its new current name, never to an old API row.
+    game.players[0].name = "AnotherPlayer";
+    controller.Update(0.6f);
+    ASSERT_EQ(wanted.countRows[0].label, std::string("Lesch"));
+    ASSERT_EQ(wanted.countRows[1].label, std::string("KOBiRO (44)"));
+    settings.GetMutable().online_enabled = false;
+    controller.Update(0.0f);
+    ASSERT_EQ(wanted.countRows[1].label, std::string("KOBiRO"));
+    return true;
+}
+
 bool TestWantedOverlayDisabledByDefault() {
     SettingsManager settings;
     settings.GetMutable().online_enabled = true;
@@ -1101,6 +1159,7 @@ int RunOnlineOverlayRendererTests() {
     RUN_TEST(TestWantedOverlayFiltersByRangeAndBuildsCountRows);
     RUN_TEST(TestWantedOverlayMaxZeroMeansNoUpperLimit);
     RUN_TEST(TestWantedOverlaySwapsInvertedRange);
+    RUN_TEST(TestWantedOverlayUsesCurrentIngameIdsAndPreservesWantedCounts);
     RUN_TEST(TestWantedOverlayDisabledByDefault);
     RUN_TEST(TestGameHudUsesLiveStateAndOriginalAppearance);
     RUN_TEST(TestPlayerListsRespectIndependentFriendAndEnemyVisibility);
