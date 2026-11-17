@@ -36,12 +36,14 @@ std::string GpsName(std::string value) {
 } // namespace
 
 void GpsManager::Initialize(std::string path, Notice notice, PositionProvider provider, DestinationRenderer renderer) {
+    arrivalCallback_ = {};
     StopNavigation();
     path_ = std::move(path); notice_ = std::move(notice); positionProvider_ = std::move(provider);
     renderer_ = std::move(renderer);
     if (!Load()) Say("Die GPS-Datei konnte nicht gelesen werden. Vorhandene Daten werden nicht automatisch ersetzt.");
 }
-void GpsManager::Shutdown() { listOpen_ = false; StopNavigation(); }
+void GpsManager::Shutdown() { listOpen_ = false; arrivalCallback_ = {}; StopNavigation(); }
+void GpsManager::SetArrivalCallback(ArrivalCallback callback) { arrivalCallback_ = std::move(callback); }
 void GpsManager::Say(const std::string& text) const {
     if (notice_) notice_("{33CCFF}[NL-BINDER]{FFFFFF} " + text);
 }
@@ -129,24 +131,29 @@ bool GpsManager::Navigate(unsigned int id) {
     BeginNavigation();
     return true;
 }
-bool GpsManager::NavigateTemporary(const GpsEntry& destination) {
+bool GpsManager::NavigateTemporary(const GpsEntry& destination, bool armArrivalWhenInside) {
     const auto name = GpsName(destination.name);
     if ((destination.id & kTemporaryIdMask) == 0 || name.empty() || !IsValidPosition(destination.position)) return false;
     temporaryDestination_ = destination;
     temporaryDestination_->name = name;
     activeId_ = destination.id; listOpen_ = false;
-    BeginNavigation();
+    BeginNavigation(armArrivalWhenInside);
     return true;
 }
-void GpsManager::BeginNavigation() {
+void GpsManager::BeginNavigation(bool armArrivalWhenInside) {
+    // A fresh receipt identifies each navigation, even if the same point is
+    // selected again. Keep the counter across Initialize/Shutdown cycles.
+    ++navigationGeneration_;
+    if (navigationGeneration_ == 0) ++navigationGeneration_;
+    activeGeneration_ = navigationGeneration_;
     GpsPosition current;
-    arrivalArmed_ = positionProvider_ && positionProvider_(current)
-        && !HasArrived(current, ActiveDestination()->position);
+    arrivalArmed_ = armArrivalWhenInside || (positionProvider_ && positionProvider_(current)
+        && !HasArrived(current, ActiveDestination()->position));
     if (renderer_) renderer_(ActiveDestination());
     Say("Navigation gestartet: " + ActiveDestination()->name + ". Das Ziel ist rot markiert.");
 }
 void GpsManager::StopNavigation() {
-    activeId_ = 0; arrivalArmed_ = false; temporaryDestination_.reset();
+    activeId_ = 0; activeGeneration_ = 0; arrivalArmed_ = false; temporaryDestination_.reset();
     if (renderer_) renderer_(nullptr);
 }
 void GpsManager::ShowHelp() const {
@@ -163,11 +170,16 @@ void GpsManager::Update() {
     if (renderer_) renderer_(current.interior == destination->position.interior ? destination : nullptr);
     const bool inside = HasArrived(current, destination->position);
     if (!inside) { arrivalArmed_ = true; return; }
-    // Starting navigation while standing on the saved position must still
-    // show the checkpoint. Arrival is armed after first leaving its radius.
+    // Normal navigation started inside its radius remains visible until the
+    // player leaves and returns. Tours explicitly opt into immediate arrival.
     if (arrivalArmed_) {
-        const auto name = destination->name;
-        StopNavigation(); Say("Du hast dein Ziel erreicht: " + name + ".");
+        const GpsEntry reached = *destination;
+        const auto generation = activeGeneration_;
+        const auto callback = arrivalCallback_;
+        StopNavigation(); Say("Du hast dein Ziel erreicht: " + reached.name + ".");
+        // Call after clearing this route. The callback may safely select the
+        // next tour destination or replace/remove its own callback.
+        if (callback) callback(reached, generation);
     }
 }
 void GpsManager::Render() {

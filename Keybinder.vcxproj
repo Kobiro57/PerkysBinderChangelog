@@ -201,6 +201,8 @@
     <ClCompile Include="src\SAMPBridge.cpp" />
     <ClCompile Include="src\GpsManager.cpp" />
     <ClCompile Include="src\SpraysNavigator.cpp" />
+    <ClCompile Include="src\SprayCatalog.cpp" />
+    <ClCompile Include="src\WaypointTour.cpp" />
     <ClCompile Include="src\GpsGameAdapter.cpp" />
     <ClCompile Include="src\ForumBrowser.cpp" />
 
@@ -558,6 +560,9 @@
     <ClInclude Include="include\NearbyWantedLabels.h" />
     <ClInclude Include="include\SpraySpots.h" />
     <ClInclude Include="include\SpraysNavigator.h" />
+    <ClInclude Include="include\SprayCatalog.h" />
+    <ClInclude Include="include\WaypointTour.h" />
+    <ClInclude Include="include\SprayAccess.h" />
     <ClInclude Include="include\ForumBrowser.h" />
     <ClInclude Include="include\ForumKeyboardInput.h" />
     <ClInclude Include="include\\StatsStorage.h" />

@@ -24,7 +24,9 @@ Advanced keybinder and combat-assist plugin for GTA San Andreas Multiplayer (SA-
 
 
 
-- **Police Spraytag Navigation** — `/sprays` lists 100 fixed spraytag locations for verified SAPD/LSPD members. Targets are sorted by current 3D distance; the nearest is green. Three pages hold 34/34/32 entries. Selection uses the existing red GPS checkpoint and arrival message through a temporary target that preserves all 20 saved GPS slots.
+- **Spraytag Navigation** — `/sprays` provides verified faction and gang members with editable local targets, initially 100 supplied points; civilians are excluded. Add named targets at the current position or remove entries. Distances sort nearest first with a green nearest row. Up to ten pages of 34 points are supported. Local Documents\GTA San Andreas User Files\NLBinder\sprays.xml persists the list; temporary red GPS targets preserve the 20 normal saved slots.
+
+- **Navigation Tours** — `/spraytour` visits the next nearest unvisited configured spray point after checkpoint arrival; `/sprayend` stops. RCB-only `/claimstour` and `/claimsend` provide the same navigation for the 28 static flag points. Tours navigate; in-game spray and flag actions remain manual.
 
 ## Building
 

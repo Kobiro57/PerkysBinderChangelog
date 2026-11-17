@@ -6,6 +6,7 @@
 #include <fstream>
 #include <iterator>
 #include <limits>
+#include <memory>
 #include <optional>
 #include <string>
 #include <vector>
@@ -193,6 +194,130 @@ void ShutdownAndReinitializationDiscardTemporaryTargets() {
     CHECK(!fixture.gps.ActiveDestination() && !fixture.rendered);
     CHECK(fixture.gps.Entries().empty());
 }
+
+void NavigationReceiptsDistinguishReplacementAndSurviveReinitialization() {
+    Fixture fixture;
+    unsigned int arrivals = 0;
+    fixture.gps.SetArrivalCallback([&](const keybinder::GpsEntry&, std::uint64_t) { ++arrivals; });
+    CHECK(fixture.gps.ActiveNavigationGeneration() == 0);
+    CHECK(fixture.gps.Set("Saved receipt"));
+    const auto savedId = fixture.gps.Entries().front().id;
+    CHECK(fixture.gps.Navigate(savedId));
+    const auto savedGeneration = fixture.gps.ActiveNavigationGeneration();
+    CHECK(savedGeneration != 0);
+    CHECK(fixture.gps.NavigateTemporary(Temporary()));
+    const auto firstGeneration = fixture.gps.ActiveNavigationGeneration();
+    CHECK(firstGeneration > savedGeneration);
+    CHECK(fixture.gps.NavigateTemporary(Temporary())); // Same ID, different navigation owner.
+    const auto replacementGeneration = fixture.gps.ActiveNavigationGeneration();
+    CHECK(replacementGeneration > firstGeneration);
+    auto invalid = Temporary(); invalid.id = 1;
+    CHECK(!fixture.gps.NavigateTemporary(invalid));
+    CHECK(fixture.gps.ActiveNavigationGeneration() == replacementGeneration);
+    fixture.gps.StopNavigation();
+    CHECK(fixture.gps.ActiveNavigationGeneration() == 0);
+    CHECK(arrivals == 0); // Replacement and manual stop are not arrivals.
+    CHECK(fixture.gps.Navigate(savedId));
+    const auto laterSavedGeneration = fixture.gps.ActiveNavigationGeneration();
+    CHECK(laterSavedGeneration > replacementGeneration);
+    CHECK(fixture.gps.Remove(savedId));
+    CHECK(fixture.gps.ActiveNavigationGeneration() == 0 && arrivals == 0);
+    CHECK(fixture.gps.NavigateTemporary(Temporary()));
+    const auto beforeShutdown = fixture.gps.ActiveNavigationGeneration();
+    fixture.gps.Shutdown();
+    CHECK(fixture.gps.ActiveNavigationGeneration() == 0 && arrivals == 0);
+    fixture.gps.Initialize(fixture.file.string(), {}, [&](auto& p) { p = fixture.position; return true; });
+    fixture.position = Temporary().position;
+    CHECK(fixture.gps.NavigateTemporary(Temporary(), true));
+    CHECK(fixture.gps.ActiveNavigationGeneration() > beforeShutdown);
+    fixture.gps.Update();
+    CHECK(fixture.gps.ActiveNavigationGeneration() == 0);
+    CHECK(arrivals == 0); // Initialize/Shutdown do not retain the old callback.
+}
+
+void ArrivalCallbackCanStartTheNextTargetUsingTheOriginalReceipt() {
+    Fixture fixture;
+    auto first = Temporary(1);
+    auto second = Temporary(2);
+    second.name = "Second tour destination";
+    second.position = {1072.9f, -1012.8f, 35.5f, 0};
+    std::vector<std::pair<unsigned int, std::uint64_t>> arrivals;
+    std::uint64_t firstGeneration = 0, secondGeneration = 0;
+    fixture.gps.SetArrivalCallback([&](const keybinder::GpsEntry& reached, std::uint64_t generation) {
+        arrivals.emplace_back(reached.id, generation);
+        CHECK(fixture.gps.ActiveNavigationGeneration() == 0);
+        CHECK(!fixture.gps.ActiveDestination());
+        if (reached.id == first.id) {
+            CHECK(generation == firstGeneration && reached.name == first.name);
+            CHECK(fixture.gps.NavigateTemporary(second));
+            secondGeneration = fixture.gps.ActiveNavigationGeneration();
+            CHECK(secondGeneration > generation);
+            CHECK(reached.id == first.id && reached.name == first.name); // Owns the reached-entry copy.
+        } else {
+            CHECK(reached.id == second.id && generation == secondGeneration);
+        }
+    });
+    CHECK(fixture.gps.NavigateTemporary(first));
+    firstGeneration = fixture.gps.ActiveNavigationGeneration();
+    fixture.position = first.position;
+    fixture.gps.Update();
+    CHECK(arrivals.size() == 1);
+    CHECK(fixture.gps.ActiveDestination() && fixture.gps.ActiveDestination()->id == second.id);
+    CHECK(fixture.rendered && fixture.rendered->id == second.id);
+    CHECK(fixture.gps.ActiveNavigationGeneration() == secondGeneration);
+    fixture.gps.Update();
+    CHECK(arrivals.size() == 1);
+    fixture.position = second.position;
+    fixture.gps.Update();
+    CHECK(arrivals.size() == 2 && fixture.Arrivals() == 2);
+    CHECK(!fixture.gps.ActiveDestination() && fixture.gps.ActiveNavigationGeneration() == 0);
+    for (int index = 0; index < 5; ++index) fixture.gps.Update();
+    CHECK(arrivals.size() == 2);
+}
+
+void ImmediateTourArrivalIsOptInAndTheObserverMayRemoveItself() {
+    Fixture fixture;
+    const auto target = Temporary();
+    fixture.position = target.position;
+    unsigned int arrivals = 0;
+    std::uint64_t reachedGeneration = 0;
+    fixture.gps.SetArrivalCallback([&](const keybinder::GpsEntry& reached, std::uint64_t generation) {
+        CHECK(reached.id == target.id);
+        ++arrivals;
+        reachedGeneration = generation;
+    });
+    CHECK(fixture.gps.NavigateTemporary(target));
+    const auto normalGeneration = fixture.gps.ActiveNavigationGeneration();
+    for (int index = 0; index < 4; ++index) fixture.gps.Update();
+    CHECK(arrivals == 0 && fixture.gps.ActiveNavigationGeneration() == normalGeneration);
+    CHECK(fixture.gps.NavigateTemporary(target, true));
+    const auto tourGeneration = fixture.gps.ActiveNavigationGeneration();
+    CHECK(tourGeneration > normalGeneration);
+    fixture.available = false;
+    fixture.gps.Update();
+    CHECK(arrivals == 0 && fixture.gps.ActiveNavigationGeneration() == tourGeneration);
+    fixture.available = true;
+    fixture.gps.Update();
+    CHECK(arrivals == 1 && reachedGeneration == tourGeneration);
+    CHECK(fixture.gps.ActiveNavigationGeneration() == 0);
+
+    auto lifetime = std::make_shared<int>(42);
+    std::weak_ptr<int> weak = lifetime;
+    fixture.gps.SetArrivalCallback([&, retained = lifetime](const keybinder::GpsEntry& reached, std::uint64_t generation) {
+        fixture.gps.SetArrivalCallback({});
+        CHECK(!weak.expired() && *retained == 42);
+        CHECK(reached.id == target.id && generation != 0);
+        ++arrivals;
+    });
+    lifetime.reset();
+    CHECK(!weak.expired());
+    CHECK(fixture.gps.NavigateTemporary(target, true));
+    fixture.gps.Update();
+    CHECK(arrivals == 2 && weak.expired());
+    CHECK(fixture.gps.NavigateTemporary(target, true));
+    fixture.gps.Update();
+    CHECK(arrivals == 2); // Observer removed itself safely, exactly once.
+}
 } // namespace
 
 int RunGpsTemporaryTests() {
@@ -202,6 +327,9 @@ int RunGpsTemporaryTests() {
     InvalidTemporaryTargetsPreserveTheCurrentRoute();
     TemporaryArrivalUsesTheExistingCheckpointLifecycleExactlyOnce();
     ShutdownAndReinitializationDiscardTemporaryTargets();
+    NavigationReceiptsDistinguishReplacementAndSurviveReinitialization();
+    ArrivalCallbackCanStartTheNextTargetUsingTheOriginalReceipt();
+    ImmediateTourArrivalIsOptInAndTheObserverMayRemoveItself();
     std::printf("GpsTemporaryTests: %d checks, %d failures\n", checks, failures);
     return failures;
 }

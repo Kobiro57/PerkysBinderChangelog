@@ -1,5 +1,8 @@
 #include "../include/SpraysNavigator.h"
 #include "../include/SpraySpots.h"
+#include "../include/ThemeManager.h"
+#include "../include/imgui-1.92.7/imgui.h"
+#include "../include/imgui-1.92.7/imgui_internal.h"
 
 #include <algorithm>
 #include <cmath>
@@ -40,10 +43,14 @@ struct Fixture {
                 renderedId = destination ? destination->id : 0;
                 if (destination) renderedPosition = destination->position;
             });
-        sprays.Initialize(&gps, [&](const auto& text) { notices.push_back(text); },
-            [&](auto& current) { current = position; return available; }, [&]() { return session; });
+        ReloadSprays();
     }
     ~Fixture() { sprays.Shutdown(); gps.Shutdown(); }
+
+    void ReloadSprays() {
+        sprays.Initialize(&gps, [&](const auto& text) { notices.push_back(text); },
+            [&](auto& current) { current = position; return available; }, [&]() { return session; }, (path / "sprays.xml").string());
+    }
 
     std::size_t Arrivals() const {
         return std::count_if(notices.begin(), notices.end(), [](const auto& text) {
@@ -142,7 +149,7 @@ void SelectionUsesPointIdentityAndSharedGpsCheckpointWithoutSaving() {
     fixture.sprays.Update();
     CHECK(fixture.sprays.Rows().front().id == 100);
     CHECK(fixture.sprays.Select(100));
-    CHECK(fixture.gps.ActiveDestination()->name == "Graffiti 100 - Los Santos International");
+    CHECK(fixture.gps.ActiveDestination()->name == "Los Santos International");
     CHECK(fixture.renderedPosition.x == 1574.7f && fixture.renderedPosition.y == -2691.9f && fixture.renderedPosition.z == 13.6f);
 }
 
@@ -175,7 +182,7 @@ void PoliceAccessAndSessionChangesNeverCancelAnotherGpsDestination() {
     fixture.session.clear();
     CHECK(!fixture.sprays.Open());
     CHECK(!fixture.sprays.IsOpen() && fixture.gps.ActiveDestination() == nullptr);
-    CHECK(fixture.notices.back().find("Du bist kein Polizist.") != std::string::npos);
+    CHECK(fixture.notices.back().find("Fraktion oder Gang") != std::string::npos);
     const auto notices = fixture.notices.size();
     fixture.sprays.Update();
     fixture.sprays.Update();
@@ -209,7 +216,7 @@ void MissingPositionsAndInteriorsNeverProduceMisleadingPoliceErrors() {
     Fixture fixture;
     fixture.available = false;
     CHECK(!fixture.sprays.Open());
-    CHECK(fixture.notices.back().find("Du bist kein Polizist.") == std::string::npos);
+    CHECK(fixture.notices.back().find("Fraktion oder Gang") == std::string::npos);
     fixture.available = true;
     fixture.position.interior = 1;
     CHECK(!fixture.sprays.Open());
@@ -240,6 +247,195 @@ void MissingPositionsAndInteriorsNeverProduceMisleadingPoliceErrors() {
     CHECK(fixture.gps.ActiveDestination() == nullptr && fixture.renderedId == 0);
 }
 
+void CustomPointsCaptureTheCurrentPositionAndPersistChanges() {
+    Fixture fixture;
+    CHECK(fixture.sprays.Open());
+    CHECK(fixture.sprays.Remove(14));
+    CHECK(fixture.sprays.Catalog().Find(14) == nullptr);
+    fixture.position = {111.25f, 222.5f, 33.75f, 0}; // Changed after opening the list.
+    CHECK(fixture.sprays.AddCurrent("Mein eigener Punkt"));
+    CHECK(fixture.sprays.Catalog().Entries().size() == 100);
+    const unsigned int customId = fixture.sprays.Catalog().Entries().back().id;
+    CHECK(customId > 100);
+    const auto* added = fixture.sprays.Catalog().Find(customId);
+    CHECK(added && added->name == "Mein eigener Punkt");
+    CHECK(added->position.x == 111.25f && added->position.y == 222.5f && added->position.z == 33.75f && added->position.interior == 0);
+    CHECK(fixture.sprays.Rows().front().id == customId && fixture.sprays.Rows().front().distance == 0.0f);
+    fixture.ReloadSprays();
+    CHECK(fixture.sprays.Open());
+    CHECK(fixture.sprays.Catalog().Find(14) == nullptr);
+    CHECK(fixture.sprays.Catalog().Find(customId) && fixture.sprays.Catalog().Find(customId)->name == "Mein eigener Punkt");
+    CHECK(fixture.sprays.Select(customId));
+    CHECK(fixture.renderedPosition.x == 111.25f && fixture.renderedPosition.y == 222.5f && fixture.renderedPosition.z == 33.75f);
+    CHECK(fixture.gps.ActiveDestination()->name == "Mein eigener Punkt");
+    CHECK(fixture.sprays.Open());
+    const std::string maximumName(64, 'A');
+    CHECK(fixture.sprays.AddCurrent(maximumName));
+    const unsigned int longNameId = fixture.sprays.Catalog().Entries().back().id;
+    CHECK(fixture.sprays.Select(longNameId));
+    CHECK(fixture.gps.ActiveDestination()->name == maximumName); // No extra prefix breaks the shared GPS limit.
+}
+
+void DynamicPagesReachTenAndClampAfterDeletingTheLastPage() {
+    Fixture fixture;
+    CHECK(fixture.sprays.Open());
+    for (unsigned int index = 0; index < 240; ++index) {
+        fixture.position = {1000.0f + index, -1500.0f, 20.0f, 0};
+        CHECK(fixture.sprays.AddCurrent("Eigener Punkt " + std::to_string(index + 1)));
+    }
+    CHECK(fixture.sprays.Catalog().Entries().size() == 340);
+    CHECK(fixture.sprays.Rows().size() == 340 && fixture.sprays.PageCount() == 10);
+    fixture.sprays.SetPage(9);
+    CHECK(!fixture.sprays.AddCurrent("Ein Punkt zu viel"));
+    CHECK(fixture.sprays.Catalog().Entries().size() == 340 && fixture.sprays.Page() == 9);
+    for (int index = 0; index < 34; ++index) {
+        const auto id = fixture.sprays.Catalog().Entries().back().id;
+        CHECK(fixture.sprays.Remove(id));
+    }
+    CHECK(fixture.sprays.Catalog().Entries().size() == 306);
+    CHECK(fixture.sprays.PageCount() == 9 && fixture.sprays.Page() == 8);
+    fixture.ReloadSprays();
+    CHECK(fixture.sprays.Open());
+    CHECK(fixture.sprays.Catalog().Entries().size() == 306 && fixture.sprays.PageCount() == 9);
+}
+
+void EmptyCatalogStaysEmptyAfterReloadAndCanBeFilledAgain() {
+    Fixture fixture;
+    CHECK(fixture.sprays.Open());
+    const auto original = fixture.sprays.Catalog().Entries();
+    for (const auto& point : original) CHECK(fixture.sprays.Remove(point.id));
+    CHECK(fixture.sprays.Catalog().Entries().empty() && fixture.sprays.Rows().empty());
+    CHECK(fixture.sprays.PageCount() == 0);
+    fixture.ReloadSprays();
+    CHECK(fixture.sprays.Open());
+    CHECK(fixture.sprays.Catalog().Entries().empty());
+    CHECK(fixture.sprays.AddCurrent("Neustart"));
+    CHECK(fixture.sprays.Catalog().Entries().size() == 1 && fixture.sprays.PageCount() == 1);
+    CHECK(fixture.sprays.Rows().front().place == "Neustart");
+}
+
+void CatalogMutationsRespectAccessAndOnlyStopTheirOwnRemovedRoute() {
+    Fixture fixture;
+    CHECK(fixture.sprays.Open());
+    CHECK(fixture.sprays.Select(14));
+    CHECK(fixture.sprays.Open());
+    CHECK(fixture.sprays.Remove(1));
+    CHECK(fixture.gps.ActiveDestination() && fixture.gps.ActiveDestination()->id == (keybinder::GpsManager::kTemporaryIdMask | 14));
+    CHECK(fixture.sprays.AddCurrent("Weiterer Punkt"));
+    CHECK(fixture.gps.ActiveDestination() && fixture.gps.ActiveDestination()->id == (keybinder::GpsManager::kTemporaryIdMask | 14));
+    CHECK(fixture.sprays.Remove(14));
+    CHECK(fixture.gps.ActiveDestination() == nullptr && fixture.renderedId == 0);
+    CHECK(fixture.gps.Set("Privates GPS"));
+    const auto privateId = fixture.gps.Entries().front().id;
+    CHECK(fixture.gps.Navigate(privateId));
+    CHECK(fixture.sprays.Remove(2));
+    CHECK(fixture.gps.ActiveDestination() && fixture.gps.ActiveDestination()->id == privateId);
+    const auto entries = fixture.sprays.Catalog().Entries().size();
+    fixture.available = false;
+    CHECK(!fixture.sprays.AddCurrent("Ohne Position"));
+    CHECK(!fixture.sprays.Remove(3));
+    fixture.available = true;
+    fixture.position.interior = 1;
+    CHECK(!fixture.sprays.AddCurrent("Innenraum"));
+    CHECK(fixture.notices.back().find("Innenr") != std::string::npos);
+    fixture.position.interior = 0;
+    CHECK(fixture.sprays.Open());
+    fixture.session.clear(); // Dead/disconnected/role-revoked sessions are all denied by the caller.
+    CHECK(!fixture.sprays.AddCurrent("Nicht erlaubt"));
+    CHECK(!fixture.sprays.Remove(3));
+    CHECK(fixture.sprays.Catalog().Entries().size() == entries);
+    CHECK(fixture.gps.ActiveDestination() && fixture.gps.ActiveDestination()->id == privateId);
+    fixture.session = "127.0.0.1:7777/OtherOfficer";
+    CHECK(fixture.sprays.Open());
+    fixture.position.x = std::numeric_limits<float>::quiet_NaN();
+    CHECK(!fixture.sprays.AddCurrent("Ung\xC3\xBC" "ltig"));
+    CHECK(!fixture.sprays.Remove(3));
+    CHECK(fixture.sprays.Catalog().Entries().size() == entries);
+}
+
+void FailedDiskWritesDoNotDeletePointsOrStopTheirRoute() {
+    Fixture fixture;
+    CHECK(fixture.sprays.Open());
+    CHECK(fixture.sprays.AddCurrent("Datei erstellen"));
+    CHECK(fixture.sprays.Select(14));
+    CHECK(fixture.sprays.Open());
+    const auto path = fixture.path / "sprays.xml";
+    std::ifstream beforeFile(path, std::ios::binary);
+    const std::string before((std::istreambuf_iterator<char>(beforeFile)), {});
+    beforeFile.close();
+    CHECK(SetFileAttributesW(path.c_str(), FILE_ATTRIBUTE_READONLY) != FALSE);
+    const auto count = fixture.sprays.Catalog().Entries().size();
+    CHECK(!fixture.sprays.Remove(14));
+    CHECK(fixture.sprays.Catalog().Find(14) != nullptr);
+    CHECK(fixture.gps.ActiveDestination() && fixture.gps.ActiveDestination()->id == (keybinder::GpsManager::kTemporaryIdMask | 14));
+    CHECK(!fixture.sprays.AddCurrent("Nicht gespeichert"));
+    CHECK(fixture.sprays.Catalog().Entries().size() == count);
+    std::ifstream afterFile(path, std::ios::binary);
+    const std::string after((std::istreambuf_iterator<char>(afterFile)), {});
+    CHECK(before == after);
+    CHECK(SetFileAttributesW(path.c_str(), FILE_ATTRIBUTE_NORMAL) != FALSE);
+}
+
+void WindowCanResizeAndKeepsFooterInsideTheVisibleBody() {
+    ImGuiContext* previous = ImGui::GetCurrentContext();
+    const float previousThemeScale = keybinder::ThemeManager::Instance().GetAppliedScale();
+    for (const auto display : {ImVec2(640, 480), ImVec2(1920, 1080)}) {
+        for (float fontScale : {1.0f, 1.3f, 2.0f}) {
+            auto* context = ImGui::CreateContext();
+            auto& io = ImGui::GetIO();
+            io.IniFilename = nullptr;
+            io.DisplaySize = display;
+            io.DeltaTime = 1.0f / 60.0f;
+            io.FontGlobalScale = fontScale;
+            unsigned char* pixels = nullptr;
+            int width = 0, height = 0;
+            io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);
+            keybinder::ThemeManager::Instance().ApplyImGuiStyle(1.0f);
+            Fixture fixture;
+            CHECK(fixture.sprays.Open());
+            CHECK(fixture.sprays.Select(14));
+            CHECK(fixture.sprays.Open()); // Include both Close and navigation stop controls.
+            const ImVec2 requested = display.x < 1000 ? ImVec2(480, 400) : ImVec2(display.x - 20, display.y - 20);
+            for (int frame = 0; frame < 3; ++frame) {
+                ImGui::NewFrame();
+                ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_Always);
+                fixture.sprays.Render();
+                ImGui::Render();
+                if (frame == 0) ImGui::SetWindowSize("Graffiti-Navigation##NLBinderSprays", requested, ImGuiCond_Always);
+            }
+            const auto* window = ImGui::FindWindowByName("Graffiti-Navigation##NLBinderSprays");
+            CHECK(window != nullptr);
+            if (window) {
+                CHECK(window->Size.x <= display.x - 20.0f + 0.5f && window->Size.y <= display.y - 20.0f + 0.5f);
+                CHECK(window->ScrollMax.y <= 0.5f); // The body/table scrolls while the footer remains fixed.
+                CHECK(window->DC.CursorMaxPos.y <= window->InnerClipRect.Max.y + 0.5f);
+                CHECK(window->DC.CursorMaxPos.x <= window->InnerClipRect.Max.x + 0.5f);
+                if (display.x > 1000) CHECK(window->Size.x > 680.0f && window->Size.y > 790.0f);
+            }
+            fixture.sprays.Shutdown();
+            keybinder::ThemeManager::Instance().ApplyImGuiStyle(previousThemeScale);
+            ImGui::DestroyContext(context);
+            ImGui::SetCurrentContext(previous);
+        }
+    }
+}
+
+void ReplacedNavigationWithTheSamePointIdBelongsToTheNewOwner() {
+    Fixture fixture;
+    CHECK(fixture.sprays.Open());
+    CHECK(fixture.sprays.Select(14));
+    const auto replacement = *fixture.gps.ActiveDestination();
+    const auto previous = fixture.gps.ActiveNavigationGeneration();
+    CHECK(fixture.gps.NavigateTemporary(replacement));
+    const auto generation = fixture.gps.ActiveNavigationGeneration();
+    CHECK(generation != previous);
+    CHECK(fixture.sprays.Open());
+    CHECK(fixture.sprays.Remove(14));
+    CHECK(fixture.gps.ActiveDestination() && fixture.gps.ActiveNavigationGeneration() == generation);
+    fixture.sprays.Shutdown();
+    CHECK(fixture.gps.ActiveDestination() && fixture.gps.ActiveNavigationGeneration() == generation);
+}
+
 } // namespace
 
 int RunSpraysNavigatorTests() {
@@ -250,6 +446,13 @@ int RunSpraysNavigatorTests() {
     NavigationFitsAlongsideTwentySavedGpsEntriesAndArrivesExactlyOnce();
     PoliceAccessAndSessionChangesNeverCancelAnotherGpsDestination();
     MissingPositionsAndInteriorsNeverProduceMisleadingPoliceErrors();
+    CustomPointsCaptureTheCurrentPositionAndPersistChanges();
+    DynamicPagesReachTenAndClampAfterDeletingTheLastPage();
+    EmptyCatalogStaysEmptyAfterReloadAndCanBeFilledAgain();
+    CatalogMutationsRespectAccessAndOnlyStopTheirOwnRemovedRoute();
+    FailedDiskWritesDoNotDeletePointsOrStopTheirRoute();
+    WindowCanResizeAndKeepsFooterInsideTheVisibleBody();
+    ReplacedNavigationWithTheSamePointIdBelongsToTheNewOwner();
     std::printf("SpraysNavigatorTests: %d checks, %d failures\n", checks, failures);
     return failures;
 }

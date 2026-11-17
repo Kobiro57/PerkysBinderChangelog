@@ -1,0 +1,9 @@
+NLBinder v.0.1.3 by perkys & edited by KOBiRO – Kurz-Changelog
+- Versionsanzeige und Startmeldung auf 0.1.3 aktualisiert.
+- /sprays für Fraktionen und Gangs: Entfernungssortierung, nächster Punkt grün und rote GPS-Navigation; Zivilisten ausgeschlossen.
+- Graffitipunkte einzeln entfernen und eigene Punkte mit Namen an der aktuellen Position hinzufügen.
+- Persönliche Spray-Liste wird lokal in Dokumente\GTA San Andreas User Files\NLBinder\sprays.xml gespeichert; bis zu zehn Seiten mit jeweils 34 Punkten.
+- Größeres, anpassbares Spray-Fenster mit separat scrollender Liste und sichtbaren Bedienelementen.
+- /spraytour und /sprayend: Tour zum jeweils nächsten unbesuchten Spray-Punkt, automatisch weiter nach Checkpointankunft.
+- /claimstour und /claimsend: entsprechende Navigation durch die 28 RCB-Flaggenpunkte, nur für RCB-Mitglieder. Spray- und Flaggenaktionen bleiben im Spiel manuell.
+- Normale GPS-Speicherplätze bleiben frei; automatische Polizeifunk-Ortung bleibt entfernt.

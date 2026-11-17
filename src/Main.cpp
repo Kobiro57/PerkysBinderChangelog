@@ -27,6 +27,9 @@
 #include "../include/ImGuiOverlay.h"
 #include "../include/GpsManager.h"
 #include "../include/SpraysNavigator.h"
+#include "../include/WaypointTour.h"
+#include "../include/SprayAccess.h"
+#include "../include/ClaimSpots.h"
 #include "../include/FactionAccess.h"
 #include "../include/ForumBrowser.h"
 #include "../include/DrugUseTracker.h"
@@ -704,9 +707,25 @@ public:
             [&](const std::string& text) { bridge_.QueueLocalMessage(text); },
             [&](keybinder::GpsPosition& position) { return keybinder::ReadGpsPlayerPosition(&bridge_, position); },
             [&](const keybinder::GpsEntry* target) { keybinder::RenderGpsDestination(target); });
+        const std::string sprayStorageRoot = keybinder::PersistentPaths::RootDir();
         sprays_.Initialize(&gps_, [&](const std::string& text) { bridge_.QueueLocalMessage(text); },
             [&](keybinder::GpsPosition& position) { return keybinder::ReadGpsPlayerPosition(&bridge_, position); },
-            []() { return CurrentSpraysPoliceSession(); });
+            []() { return CurrentSpraysSession(); }, sprayStorageRoot.empty()
+                ? std::string{} : sprayStorageRoot + "\\sprays.xml");
+        sprayTour_.Initialize(&gps_, "Spray-Tour", "/sprayend", "F\xC3\xBC" "r diese Funktion ben\xC3\xB6" "tigst du eine Fraktion oder Gang.",
+            [&](const std::string& text) { bridge_.QueueLocalMessage(text); },
+            [&](keybinder::GpsPosition& position) { return keybinder::ReadGpsPlayerPosition(&bridge_, position); },
+            []() { return CurrentSpraysSession(); },
+            []() -> const std::vector<keybinder::GpsEntry>& { return sprays_.Catalog().Entries(); });
+        claimsTour_.Initialize(&gps_, "Claim-Tour", "/claimsend", "Du bist kein Mitglied der Red County Brotherhood.",
+            [&](const std::string& text) { bridge_.QueueLocalMessage(text); },
+            [&](keybinder::GpsPosition& position) { return keybinder::ReadGpsPlayerPosition(&bridge_, position); },
+            []() { return CurrentFactionTourSession(keybinder::FactionRole::RedCountyBrotherhood); },
+            []() -> const std::vector<keybinder::GpsEntry>& { return ClaimsTourPoints(); });
+        gps_.SetArrivalCallback([&](const keybinder::GpsEntry& destination, std::uint64_t generation) {
+            sprayTour_.OnArrival(destination, generation);
+            claimsTour_.OnArrival(destination, generation);
+        });
         forumBrowser_.Initialize(&settingsManager_, [&](const std::string& text) { bridge_.QueueLocalMessage(text); },
             [&]() { keybindManager_.Save(&settingsManager_); },
             [&](const std::string& command) {
@@ -755,6 +774,51 @@ public:
             gps_.CloseList(); sprays_.Close(); quickMap_.Hide(); overlay_.Hide();
             onlineOverlayRenderer_.SetPersistentOverlayMoveMode(false); interfaceEditor_.FinishElementMove();
             forumBrowser_.Toggle();
+        });
+
+        bridge_.RegisterCommand("spraytour", [&](const std::string& parameters) {
+            if (parameters.find_first_not_of(" \t\r\n") != std::string::npos) {
+                bridge_.QueueLocalMessage("{33CCFF}[NL-BINDER]{FFFFFF} Nutzung: /spraytour");
+                return;
+            }
+            if (CurrentSpraysSession().empty()) {
+                bridge_.QueueLocalMessage("{33CCFF}[NL-BINDER]{FFFFFF} F\xC3\xBC" "r diese Funktion ben\xC3\xB6" "tigst du eine Fraktion oder Gang.");
+                return;
+            }
+            if (sprayTour_.Start()) claimsTour_.Stop(false);
+        });
+        bridge_.RegisterCommand("sprayend", [&](const std::string& parameters) {
+            if (parameters.find_first_not_of(" \t\r\n") != std::string::npos) {
+                bridge_.QueueLocalMessage("{33CCFF}[NL-BINDER]{FFFFFF} Nutzung: /sprayend");
+                return;
+            }
+            if (CurrentSpraysSession().empty()) {
+                bridge_.QueueLocalMessage("{33CCFF}[NL-BINDER]{FFFFFF} F\xC3\xBC" "r diese Funktion ben\xC3\xB6" "tigst du eine Fraktion oder Gang.");
+                return;
+            }
+            sprayTour_.Stop();
+        });
+        bridge_.RegisterCommand("claimstour", [&](const std::string& parameters) {
+            if (parameters.find_first_not_of(" \t\r\n") != std::string::npos) {
+                bridge_.QueueLocalMessage("{33CCFF}[NL-BINDER]{FFFFFF} Nutzung: /claimstour");
+                return;
+            }
+            if (CurrentFactionTourSession(keybinder::FactionRole::RedCountyBrotherhood).empty()) {
+                bridge_.QueueLocalMessage("{33CCFF}[NL-BINDER]{FFFFFF} Du bist kein Mitglied der Red County Brotherhood.");
+                return;
+            }
+            if (claimsTour_.Start()) sprayTour_.Stop(false);
+        });
+        bridge_.RegisterCommand("claimsend", [&](const std::string& parameters) {
+            if (parameters.find_first_not_of(" \t\r\n") != std::string::npos) {
+                bridge_.QueueLocalMessage("{33CCFF}[NL-BINDER]{FFFFFF} Nutzung: /claimsend");
+                return;
+            }
+            if (CurrentFactionTourSession(keybinder::FactionRole::RedCountyBrotherhood).empty()) {
+                bridge_.QueueLocalMessage("{33CCFF}[NL-BINDER]{FFFFFF} Du bist kein Mitglied der Red County Brotherhood.");
+                return;
+            }
+            claimsTour_.Stop();
         });
 
         bridge_.RegisterCommand("info", [&](const std::string& params) {
@@ -873,7 +937,7 @@ public:
                 return true;
             }
 
-            if (command == "info" || command == "reconnect" || command == "speed" || command == "setgps" || command == "gpslist" || command == "delgpsall" || command == "gps" || command == "sprays" || command == "forum") {
+            if (command == "info" || command == "reconnect" || command == "speed" || command == "setgps" || command == "gpslist" || command == "delgpsall" || command == "gps" || command == "sprays" || command == "spraytour" || command == "sprayend" || command == "claimstour" || command == "claimsend" || command == "forum") {
                 return false;
             }
             
@@ -963,6 +1027,8 @@ public:
             RefreshClaimsAccess();
             forumBrowser_.Update();
             sprays_.Update();
+            sprayTour_.Update();
+            claimsTour_.Update();
             gps_.Update();
             if (const auto* netGame = bridge_.GetNetGame(); netGame
                 && netGame->m_nGameState == sampapi::v03dl::CNetGame::GAME_MODE_CONNECTED) {
@@ -1081,7 +1147,7 @@ public:
         // Prepare the normal GTA checkpoint before the world effects pass.
         // HUD polling below is also retained for clients replacing this call.
         Events::renderSceneEvent += [&]() {
-            if (g_shutdown_phase.load() == 0) { sprays_.Update(); gps_.Update(); }
+            if (g_shutdown_phase.load() == 0) { sprays_.Update(); sprayTour_.Update(); claimsTour_.Update(); gps_.Update(); }
         };
         Events::gameProcessEvent += [&]() {
             if (g_shutdown_phase.load() != 0) return;
@@ -1140,6 +1206,7 @@ public:
             hudSpriteManager_.Shutdown();
             weaponIconManager_.Shutdown();
             forumBrowser_.Shutdown();
+            sprayTour_.Shutdown(); claimsTour_.Shutdown();
             sprays_.Shutdown();
             gps_.Shutdown(); keybinder::ClearGpsDestinationMarker();
             onlineOverlayRenderer_.Shutdown();
@@ -1214,12 +1281,16 @@ private:
     static bool RefreshDrugTimerSession();
     static std::string ResolveCurrentLocalFaction();
     static void RefreshClaimsAccess(bool force = false);
-    static std::string CurrentSpraysPoliceSession();
+    static std::string CurrentSpraysSession();
+    static std::string CurrentTourIdentity();
+    static std::string CurrentFactionTourSession(keybinder::FactionRole role);
+    static const std::vector<keybinder::GpsEntry>& ClaimsTourPoints();
     static std::string claimsSessionIdentity_;
     static std::chrono::steady_clock::time_point nextClaimsAccessRefresh_;
     static keybinder::TextDrawAdapter textDrawAdapter_;
     static keybinder::GpsManager gps_;
     static keybinder::SpraysNavigator sprays_;
+    static keybinder::WaypointTour sprayTour_, claimsTour_;
     static keybinder::ForumBrowser forumBrowser_;
     static keybinder::SpeedometerManager speedometerManager_;
     static keybinder::SpeedometerUI speedometerUI_;
@@ -1257,6 +1328,8 @@ std::chrono::steady_clock::time_point Keybinder::nextClaimsAccessRefresh_{};
 keybinder::TextDrawAdapter Keybinder::textDrawAdapter_{};
 keybinder::GpsManager Keybinder::gps_{};
 keybinder::SpraysNavigator Keybinder::sprays_{};
+keybinder::WaypointTour Keybinder::sprayTour_{};
+keybinder::WaypointTour Keybinder::claimsTour_{};
 keybinder::ForumBrowser Keybinder::forumBrowser_{};
 keybinder::SpeedometerManager Keybinder::speedometerManager_{};
 keybinder::SpeedometerUI Keybinder::speedometerUI_{};
@@ -1277,18 +1350,45 @@ std::string Keybinder::ResolveCurrentLocalFaction() {
     return keybinder::ReconcileLocalFaction(ownFaction, liveFaction);
 }
 
-std::string Keybinder::CurrentSpraysPoliceSession() {
+std::string Keybinder::CurrentTourIdentity() {
     if (g_shutdown_phase.load() != 0) return {};
     const auto* network = bridge_.GetNetGame();
     const auto* player = bridge_.GetLocalPlayer();
     const std::string name = bridge_.GetLocalPlayerName();
     if (!network || network->m_nGameState != sampapi::v03dl::CNetGame::GAME_MODE_CONNECTED
         || name.empty() || !player || !player->m_bIsActive || player->m_bIsWasted
-        || player->m_bDoesSpectating
-        || !keybinder::IsPoliceMember(bridge_.GetLocalFaction())) return {};
+        || player->m_bDoesSpectating) return {};
     return std::string(network->m_szHostAddress, strnlen(network->m_szHostAddress, 257))
         + ":" + std::to_string(network->m_nPort) + "/"
         + keybinder::OnlineOverlayController::NormalizeMarkerName(name);
+}
+
+std::string Keybinder::CurrentFactionTourSession(keybinder::FactionRole role) {
+    const auto identity = CurrentTourIdentity();
+    return !identity.empty() && keybinder::ClassifyFaction(bridge_.GetLocalFaction()) == role
+        ? identity : std::string{};
+}
+
+std::string Keybinder::CurrentSpraysSession() {
+    const auto identity = CurrentTourIdentity();
+    if (identity.empty()) return {};
+    std::optional<std::string> liveAffiliation;
+    if (const auto live = onlineDataManager_.GetLiveAffiliationFor(bridge_.GetLocalPlayerName()))
+        liveAffiliation = live->name;
+    return keybinder::CanUseSprayTags(bridge_.GetSynchronizedFaction(), liveAffiliation)
+        ? identity : std::string{};
+}
+
+const std::vector<keybinder::GpsEntry>& Keybinder::ClaimsTourPoints() {
+    static const auto points = []() {
+        std::vector<keybinder::GpsEntry> result;
+        result.reserve(keybinder::kRcbClaimSpots.size());
+        for (const auto& point : keybinder::kRcbClaimSpots)
+            result.push_back({static_cast<unsigned int>(result.size() + 1), std::string("Flagge ") + point.name,
+                {point.x, point.y, point.z, 0}});
+        return result;
+    }();
+    return points;
 }
 
 void Keybinder::RefreshClaimsAccess(bool force) {

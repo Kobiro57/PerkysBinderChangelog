@@ -1,0 +1,44 @@
+﻿NLBinder v.0.1.3 by perkys & edited by KOBiRO (r30)
+NLBinder.asi (x86): 18973184 Bytes
+SHA256: f313151ef18a2c76a20297895861faa41161948625c3f6e27de0416da73b1836
+
+Gewuenschte farbige Startmeldung ist im finalen PE enthalten.
+Gesamttests und Release-Build: Exitcode 0. Nativer Reconnect-Worker: 83 Checks.
+ASI-Ressourcen 300/301 stimmen mit den gebauten nativen Helfern ueberein.
+Browserhost, GPS-Spieladapter, Wanted-/Drogenoverlay und Browsermanifest sind gegen r29 unveraendert geprueft.
+TakeOver-Killerkennung aus r25 beibehalten: eigener Taetername, bestehender Killtext und Zaehler.
+Quick-Forum-Sonderzeichenkorrektur aus r24 beibehalten.
+SAPD-/LSPD-Wantedlabels: nur zusammen mit dem tatsaechlich gezeichneten nativen Nametag, auch im Fahrzeug.
+Reichweite und Sichtbarkeit folgen dem nativen Nametag; die fruehere eigene 5-Meter-Grenze entfaellt.
+Vorhandene Nametag-Freigabe, Wantedlisten-Schalter und frische Wanteddaten erforderlich.
+Wantedtabelle: aktueller SA-MP-Spieler-ID nach Name; keine API-Account-ID.
+Automatische Polizeifunk-Ortung vollstaendig entfernt: kein Mitlesen der Ortungsmeldungen,
+keine Ortungs-Checkpoint-Auswertung und keine automatische /r-Ortungsmeldung.
+Die ausschliesslich dafuer verwendeten Quellen, Hooks, Zustaende und Tests sind entfernt.
+Manuelle serverseitige Ortung und die normale GPS-/Quick-Map-Anzeige bleiben erhalten.
+/sprays: bearbeitbare lokale Spray-Liste, anfangs 100 Standardpunkte, fuer bestaetigte Nicht-Zivilisten.
+Fraktionen und Gangs koennen die Spray-Navigation verwenden; Zivilisten erhalten keinen Zugriff.
+Entfernung ab aktueller Spielerposition dreidimensional berechnet; naechste Stelle gruen.
+Punkte entfernen und am aktuellen Standort mit Namen hinzufuegen; bis zu 340 Punkte.
+Bis zu zehn Seiten mit jeweils 34 Eintraegen; Auswahl startet die vorhandene rote GPS-Navigation.
+Persoenliche Liste wird lokal unter Dokumente\GTA San Andreas User Files\NLBinder\sprays.xml gespeichert, nicht veroeffentlicht.
+Voruebergehende Spray-Ziele belegen keinen der 20 gespeicherten GPS-Plaetze.
+/spraytour startet die Navigation zum naechsten unbesuchten Punkt der persoenlichen Spray-Liste.
+Nach Checkpointankunft geht es zum naechsten unbesuchten Ziel; /sprayend beendet die Tour.
+/claimstour navigiert RCB-Mitglieder durch die 28 Flaggenpunkte; /claimsend beendet diese Tour.
+Die Touren steuern nur die Navigation. Spray- und Flaggenaktionen werden weiterhin im Spiel ausgefuehrt.
+Fruehere Browser-/GPS-Pruefungen sind separat historisch dokumentiert.
+Der unveraenderte historische Browser-Eingabetest aus r24 ist in FORUM-KEYBOARD-TEST.json enthalten.
+Dieser Browser-Test wurde fuer r30 nicht erneut ausgefuehrt.
+Er verwendet nur synthetische Texte in einem isolierten anonymen Profil, ohne Forumbeitrag.
+Ein neuer r30-GTA-Live-Test wird nicht behauptet.
+
+FORUM-INSTALLATION.txt beschreibt Einrichtung und Speicherorte. Die Dateiliste
+enthaelt alle 236 festgelegten Runtime-Dateien. FORUM-INSTALLATION-QUELLCODE
+enthaelt die eigenen Originalquellen und ihre SHA-256-Nachweise, keine privaten Profile.
+FORUM-CHANGELOG.txt ist der fertige Text fuer die Veroeffentlichung im Forum.
+Der vollstaendige Binder-Quellcode ist im neuen Desktop-Ordner und auf GitHub enthalten.
+Der komplette Drittanbieter-Chromium-/CEF-Upstreamcode wird nicht als enthalten ausgegeben.
+
+Nur NLBinder.asi bei beendetem GTA ersetzen. Browserstand unveraendert: cef156-r1.
+Browser-Download SHA256: 01fc7f1d4dcec644a191e9c63da7088a73aa81a63c9a4c207001f7038a70ff45

@@ -11,6 +11,9 @@ int RunR17FeatureTests();
 int RunR18FeatureTests();
 int RunGpsTemporaryTests();
 int RunSpraysNavigatorTests();
+int RunSprayCatalogTests();
+int RunSprayAccessTests();
+int RunWaypointTourTests();
 int RunDrugUseTrackerTests();
 int RunLocalFactionAccessTests();
 int RunNearbyWantedLabelsTests();
@@ -128,6 +131,9 @@ int main(int argc, char** argv) {
         + run_suite("Running R18FeatureTests...", RunR18FeatureTests)
         + run_suite("Running GpsTemporaryTests...", RunGpsTemporaryTests)
         + run_suite("Running SpraysNavigatorTests...", RunSpraysNavigatorTests)
+        + run_suite("Running SprayCatalogTests...", RunSprayCatalogTests)
+        + run_suite("Running SprayAccessTests...", RunSprayAccessTests)
+        + run_suite("Running WaypointTourTests...", RunWaypointTourTests)
         + run_suite("Running DrugUseTrackerTests...", RunDrugUseTrackerTests)
         + run_suite("Running LocalFactionAccessTests...", RunLocalFactionAccessTests)
         + run_suite("Running NearbyWantedLabelsTests...", RunNearbyWantedLabelsTests)

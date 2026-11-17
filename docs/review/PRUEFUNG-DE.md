@@ -1,6 +1,10 @@
 # Hinweise zur Prüfung durch die Projektleitung
 
-## Aktueller Stand v0.1.2 / r29 – 17. November 2026
+## Aktueller Stand v0.1.3 – 17. November 2026
+
+Bearbeitbare Spray-Liste, Navigationstouren und neue Versionsanzeige: [Prüfumfang](r30-PRUEFUNG-DE.md), [Ergebnisse](r30-validation.json).
+
+## Vorheriger Stand v0.1.2 / r29 – 17. November 2026
 
 Spraytag-Navigation: [Prüfumfang](r29-PRUEFUNG-DE.md), [Ergebnisse](r29-validation.json).
 

@@ -2,22 +2,22 @@
   "original_archive": "NLBinder-master.zip",
   "original_sha256": "a328e78eea63420e9bfe9c084883100177fe0fd9c2d62c4fcaef38c0a44801e9",
   "original_archive_commit_comment": "92ce21971bee2d166d830e23ad20950f1dc98921",
-  "release": "v0.1.2-r29",
-  "release_asi_sha256": "cb9e7e2d0c8bce3d84ca52b03967017891da1be0206b2aec8bb4c55ab12d26e2",
+  "release": "v0.1.3",
+  "release_asi_sha256": "f313151ef18a2c76a20297895861faa41161948625c3f6e27de0416da73b1836",
   "baseline_tag": "original-archive-92ce219",
   "baseline_commit": "2da75e6c54a098243bf00ab48d86c5e3ee3cd261",
-  "hash_scope": "Exact Git blob bytes in original tag versus staged r29 source; generated comparisons and release binaries excluded.",
+  "hash_scope": "Exact Git blob bytes in original tag versus staged r30 source; generated comparisons and release binaries excluded.",
   "generated_paths_excluded": [
     "docs/review/DATEIVERGLEICH.md",
     "docs/review/DIFFSTAT.txt",
-    "docs/review/REVISION29-DIFFSTAT.txt",
+    "docs/review/REVISION30-DIFFSTAT.txt",
     "docs/review/SOURCE-COMPARISON.json",
     "docs/review/first-party-changes.patch",
-    "docs/review/revision29-changes.patch"
+    "docs/review/revision30-changes.patch"
   ],
   "historical_revision_patches_excluded": true,
   "baseline_files": 2006,
-  "current_files": 5924,
+  "current_files": 5947,
   "changes": [
     {
       "path": ".gitattributes",
@@ -49,7 +49,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": "9ce784480d2be6bf031f91ae852de817748a194285ad98e3c53d0af54b612973",
-      "after_sha256": "12d0ce1d619fc47179a9ee6e0fac6a630edce7ca16d42b8bf1673f302c962662"
+      "after_sha256": "de009bf7a353e2fd3fb7870dad1246f442bf919b79edbb3310d8e7d643d61c4f"
     },
     {
       "path": "README.md",
@@ -57,7 +57,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": "65b8ae3822ae33054ece73689612fc8afb758e59282f3ee1185ee5fce62e269d",
-      "after_sha256": "bdc27f3b2c09d05517b3a6a03b09dfa9c2834fb4dcc860c908023b979457c61e"
+      "after_sha256": "3a59f52d20eb43c0713de6fd164af799c1803b0f2ee0a819233d739b47baeec7"
     },
     {
       "path": "browser/CMakeLists.txt",
@@ -81,7 +81,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": null,
-      "after_sha256": "8517514bf7e23bf373c3092b2db901cee5fbf25e7c9d7defb5886d8fc99e5a59"
+      "after_sha256": "5bd1b4dace537b0444f2e54465f782a140579ef193bb50f1d9da57caddf95228"
     },
     {
       "path": "docs/CHANGELOG-GESAMT.txt",
@@ -89,7 +89,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": null,
-      "after_sha256": "bf37b870eb1de8675009f017d5f071bd3df3c0de0c73f62cc40e951ba376ec4c"
+      "after_sha256": "40b5e37c86d9e86b3916709df33e908271a93057a57aa3f4493c1f72b1eb2d8d"
     },
     {
       "path": "docs/FORUM-CHANGELOG-v0.1.2.txt",
@@ -98,6 +98,14 @@
       "line_endings_only": false,
       "before_sha256": null,
       "after_sha256": "a3eefeb46d95e177baccd1d70235abe9d73db7c4e61b696aa65f1a6cc63fddd4"
+    },
+    {
+      "path": "docs/FORUM-CHANGELOG-v0.1.3.txt",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "27506fef9cac7e95b2669e74bac0d6e1dd1ebce5159470cf4d0e2e1e5dd2be87"
     },
     {
       "path": "docs/FORUM-DATEILISTE.txt",
@@ -348,6 +356,14 @@
       "after_sha256": "145c4bed8ebb4a2a28489635b6bc746049c323e6832c63cb55d8c485b393b04b"
     },
     {
+      "path": "docs/NLBinder-0.1.3-DE.md",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "7516b8c03620d7e24e16d650aec80c08f5f6feea7e9b86ce00f4c98dacc86861"
+    },
+    {
       "path": "docs/ORIGINAL-README.md",
       "status": "added",
       "dependency": false,
@@ -377,7 +393,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": null,
-      "after_sha256": "efccaef68d1c2bdd9eaa98a7b1398ba7d74b1345b29c882a618991795e7a1c4b"
+      "after_sha256": "38fbd8cebd2d4a3397113eb72a97af353cd6dd0a9b2dfc37ad20be7b6ce9f7d4"
     },
     {
       "path": "docs/review/DEPENDENCIES.md",
@@ -393,7 +409,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": null,
-      "after_sha256": "010aeeb4d16ed6edd11d449111c27dc65d5c236f72efa3f37e678477445a7237"
+      "after_sha256": "ca3f2b75573f25b20142234713ff9d5188c3ae6f8bdbb119f1cbc69aeae2fdfa"
     },
     {
       "path": "docs/review/PUBLICATION.json",
@@ -401,7 +417,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": null,
-      "after_sha256": "bfbd2d79ae24c591b4e4ff1a1332f83049bf762e0c41d54a3f5ab2b8c4c7b775"
+      "after_sha256": "c44421bea244c5afc442d0096c10c5c4c07f94886625cba71322117f25549889"
     },
     {
       "path": "docs/review/PUBLISHING-DE.md",
@@ -417,7 +433,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": null,
-      "after_sha256": "7b62cd4104c1638bdc0ee755ee12d3a2460629fdd230dcb017209a5bd6f78eb5"
+      "after_sha256": "5f67a1b99512f7c7022586f1baa1aee93a1c690b34bb287f8ee84b4c01fb1cdd"
     },
     {
       "path": "docs/review/r10-validation.json",
@@ -684,6 +700,22 @@
       "after_sha256": "e4a98827083bad2659c7be7bbd23c153dab8da0006feb8922e92f4855ae97fe1"
     },
     {
+      "path": "docs/review/r30-PRUEFUNG-DE.md",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "867527ee16cc929525dddcdb670226eea8d63c24fa7c48731b21241e9f8c310f"
+    },
+    {
+      "path": "docs/review/r30-validation.json",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "4a9f692c379871dfb801b04c07d6c581c1a4ea4d0363efceda5950b6c4bd5252"
+    },
+    {
       "path": "docs/review/r4-validation.json",
       "status": "added",
       "dependency": false,
@@ -841,7 +873,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": null,
-      "after_sha256": "57078ea279520025e216a1a58416ba322b5398082915a18ce45773ce71ef7d94"
+      "after_sha256": "929e1aefabf127bb2bc7d10a5efccd91f4031ad9ad30e1bda19fccc4cd24a94f"
     },
     {
       "path": "include/GpsRadarOwnership.h",
@@ -1460,6 +1492,22 @@
       "after_sha256": "476cbd272580b4c7da072265676347e193f77552cd5d3a4aee49f1ad4ed32fa6"
     },
     {
+      "path": "include/SprayAccess.h",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "a68746c3c5c6c04b1b45a34e2dd3ab1954c6c4492c0065f26e09e3eeaf26520a"
+    },
+    {
+      "path": "include/SprayCatalog.h",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "a2b12f9335802da2982e053d11a9330a98f2a8d4bd02aa8cbb4285101a31db89"
+    },
+    {
       "path": "include/SpraySpots.h",
       "status": "added",
       "dependency": false,
@@ -1473,7 +1521,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": null,
-      "after_sha256": "942892eb6e627bfef8cedf967dd6857f328c577029293117cabbcd116b4f51c6"
+      "after_sha256": "12fdfb7977b416b8822b5a8c892ad7dbde236d340d427fe250db405496dad48e"
     },
     {
       "path": "include/StaminaGauge.h",
@@ -1505,7 +1553,15 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": "75676a06a6943df58b89e7699ab0f350781bd7939bd3fea4e608b2fb68134f45",
-      "after_sha256": "a31a560c17b35d2be964b63b8c5910433ea194bfe5347802a6d83c6b5746ed4d"
+      "after_sha256": "afa01c3bdd2243bc41dfaa9b2e4e46e307cb6319067a657eec74708cdef983c3"
+    },
+    {
+      "path": "include/WaypointTour.h",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "86a40f14ee82c925b7dddc6f6fb20971fb93593045977a47a3387e3484a6c6d9"
     },
     {
       "path": "include/WeaponIconCatalog.h",
@@ -29777,7 +29833,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": null,
-      "after_sha256": "2ff039ddec0abeea2f478b8df6890423e0c9e94a7ca86693ef9240912f52f535"
+      "after_sha256": "177b693036a55b536a612b85dacaf2a04c72726607adc229d1d8bd67dcf691c4"
     },
     {
       "path": "src/ImGuiOverlay.cpp",
@@ -29881,7 +29937,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": "eb9f28895fa6b3b435282a6285e06fff924a252ab88bfe81ad90658a0a222781",
-      "after_sha256": "6f2510d93921783ac37048e90f98aa0f9f80c94a6808270327dbd4d4e142ee32"
+      "after_sha256": "5094ea9f6a69ed6b9110c19cd5ca528108185b00d5cc3cb6b8ecc48dc52ba031"
     },
     {
       "path": "src/MainWindowUI.cpp",
@@ -30012,12 +30068,20 @@
       "after_sha256": "cad519564bfee2904c98992b4b6cc46356c490e5f447a594adc03f32aea7ce36"
     },
     {
+      "path": "src/SprayCatalog.cpp",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "c1034e0add1cc1d36820104d8387ded2d9cb2c581d42afdc77e39ca78fcd56b5"
+    },
+    {
       "path": "src/SpraysNavigator.cpp",
       "status": "added",
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": null,
-      "after_sha256": "b0caa5c7c625d43aa0cf2b725a31f3eae4744d4d0fbd61e3819eb2f8bb17bd2d"
+      "after_sha256": "ff4061e5c359cf9c7b2ae03c5739fd8921598162db07698ee52fc896f19709d3"
     },
     {
       "path": "src/SquareMap.cpp",
@@ -30050,6 +30114,14 @@
       "line_endings_only": false,
       "before_sha256": "936f120a31b933ded8ed246a36c26cd3a22399e94f5e3c9a568551c03c184afc",
       "after_sha256": "f3aeb9257a5bd19632bdab2b5d72c409a0ac2503f2835cbcfc437b9734f9b301"
+    },
+    {
+      "path": "src/WaypointTour.cpp",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "fd045fc43f9ab793ff3e45413ba48d44eb06670737dd9ddf1f67b819982dd238"
     },
     {
       "path": "src/WeaponIconManager.cpp",
@@ -30145,7 +30217,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": null,
-      "after_sha256": "42ce567dfbe36b747c89eef9047b90a5675d9f1a5dc18fd8bc748ba620cfb0e7"
+      "after_sha256": "6d27182db4219710a26f9b8b42f255f03440428cd19f9fcae4b6b751907f833c"
     },
     {
       "path": "tests/ImGuiOverlayTests.cpp",
@@ -30233,7 +30305,7 @@
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": "1fac4a1d9c947b62b3910b9b0cee32c0a604560edf7a048e03dca7f7a461d3f3",
-      "after_sha256": "053294b54b686b4a209ba97dee309c65755e727fadfff9bd9fbf7af726aa899e"
+      "after_sha256": "f4628cc702896ce365ad50ac486f5e9317bce5394b7a7813612f1134ae65a57b"
     },
     {
       "path": "tests/KillMessageTestTests.cpp",
@@ -30396,12 +30468,28 @@
       "after_sha256": "48a8c60a6d0436c73588c9e8ec38e29262def9d153d0924a77f428665ad60509"
     },
     {
+      "path": "tests/SprayAccessTests.cpp",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "51ae452913f916ff8ed225bee6a64369698b08edd59123a6a47f5bbba1b1fb94"
+    },
+    {
+      "path": "tests/SprayCatalogTests.cpp",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "2749dfa8af4ff24182bb40ac58442b2748d68b94df40019f0b91ddf341c798b3"
+    },
+    {
       "path": "tests/SpraysNavigatorTests.cpp",
       "status": "added",
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": null,
-      "after_sha256": "846ff2a0eeeaaf5818d093e278136fccab585fc5eb7040686e6f9da46997965f"
+      "after_sha256": "544143322f2515da0c7f892e081a1efe5f00ad03718ba8de4d9028d59161a24d"
     },
     {
       "path": "tests/StartupStatsSyncTests.cpp",
@@ -30418,6 +30506,14 @@
       "line_endings_only": false,
       "before_sha256": null,
       "after_sha256": "f76a31d65ded4aa4d75b4f10d47b150db7f75fc1e2d2c7eb295890adb2602e58"
+    },
+    {
+      "path": "tests/WaypointTourTests.cpp",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "898e692c0f5b299fd6c1af105d024fc4cdac56bce75bf78102da0fc81f176668"
     },
     {
       "path": "tests/WeaponIconManagerTests.cpp",
@@ -30740,6 +30836,14 @@
       "after_sha256": "d32634ef60e8d03adb3ba480bac9909995d022d5626be6d88516d0d6214808d2"
     },
     {
+      "path": "tools/document_revision30.py",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "2e000438cfb96d395cf9bc88df0bae2c917b380cf6aaafcc36ac29b7b04b7d96"
+    },
+    {
       "path": "tools/export_forum_installation_review.py",
       "status": "added",
       "dependency": false,
@@ -30810,6 +30914,14 @@
       "line_endings_only": false,
       "before_sha256": null,
       "after_sha256": "85165abd89b5ad4503f786a23f8890b860b0e348e116620afa837ea90632bfdf"
+    },
+    {
+      "path": "tools/export_full_changelog_revision30.py",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "6f83e3bbdf8e109a1c466a2f6362cf3530fe514900bdd89242739678940057b1"
     },
     {
       "path": "tools/export_source_bundle.py",
@@ -30906,6 +31018,14 @@
       "line_endings_only": false,
       "before_sha256": null,
       "after_sha256": "d112cb33918179779116fd81e7f1848ac25b84ea95c609744cb2c4a974008dff"
+    },
+    {
+      "path": "tools/export_source_bundle_revision30.py",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "63ce3de330177e321ca48d3f98342a753bb592dee100b51dddcf8e87df4156b8"
     },
     {
       "path": "tools/fetch_cef_runtime.py",
@@ -31026,6 +31146,14 @@
       "line_endings_only": false,
       "before_sha256": null,
       "after_sha256": "93873ced0c20b6942a21bd30b33e6b7f8818b019399aa83e326573d3c220c286"
+    },
+    {
+      "path": "tools/finalize_revision30.py",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "602632f6b39eb3ab7d083b99e170aba220a80641a44a31037e916dd68d96cafd"
     },
     {
       "path": "tools/install_revision18.py",
@@ -31228,6 +31356,14 @@
       "after_sha256": "854367b7194ad8f5af33e705073391d806b0d2c045fad5482bbd6bfb24a9aabc"
     },
     {
+      "path": "tools/package_revision30.py",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "f014d2e6eb55f9fa94e9ee5ed4fb53bfe6ec260abe4c0bf6e3e7e730d8ea4be5"
+    },
+    {
       "path": "tools/package_revision4.ps1",
       "status": "added",
       "dependency": false,
@@ -31420,6 +31556,14 @@
       "after_sha256": "fc169a59c794c33d3940081ca3b2315a2284a26f0d83566261908930caeee3aa"
     },
     {
+      "path": "tools/publish_revision30.py",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "d0634ab10a7f546f149e5f81af4a6a09f1888d1762ee79be656ae27896fc17ac"
+    },
+    {
       "path": "tools/record_gps_native_test.py",
       "status": "added",
       "dependency": false,
@@ -31540,6 +31684,14 @@
       "after_sha256": "2ce2fc2b3d503f81ca9bd40aed418803088e90329dee9abeb378e4dcd51c74a8"
     },
     {
+      "path": "tools/report_revision30_log.py",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "d71217a116e011068469fd5f6c69fa48e33b8aea8c09e7870621741d16730357"
+    },
+    {
       "path": "tools/revision28_scope.py",
       "status": "added",
       "dependency": false,
@@ -31554,6 +31706,14 @@
       "line_endings_only": false,
       "before_sha256": null,
       "after_sha256": "aafa8a82f05a4c963e1249e986edfa244e0398d2926d8c87b9ad6fbfe64a2e63"
+    },
+    {
+      "path": "tools/revision30_scope.py",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "92c1d72b17780a79cc58b7c90897f1cd1e82db6dc6a457342fcadc199a41580d"
     },
     {
       "path": "tools/run_revision16.bat",
@@ -31668,12 +31828,20 @@
       "after_sha256": "f596c32dfd7e4581accacf42c34c3dab1c16cd23cde3793082c687e2c30bcd6b"
     },
     {
+      "path": "tools/run_revision30.bat",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "e3361d4b07254d727076665cbeb14fb3f48cf9594edf008aa858cfe4ecc6ec86"
+    },
+    {
       "path": "tools/run_tests.bat",
       "status": "modified",
       "dependency": false,
       "line_endings_only": false,
       "before_sha256": "e8c7a0a6dde01e6ef6d857c59ffe1fec9278f15863e1f5a690b65d87ad002e69",
-      "after_sha256": "8e22b57ec3cb8c7009c79d4d2327b5c98a0e0fd205ccc7ac67016658219ff370"
+      "after_sha256": "ab8c2408cd33adc1c058d94866f4a0fe8cc8743f359c39b708256beb73c84ddd"
     },
     {
       "path": "tools/setup_msvc.bat",
@@ -31978,6 +32146,22 @@
       "line_endings_only": false,
       "before_sha256": null,
       "after_sha256": "2c14073cbc708f1228e0e99a4633f73786c655d6241a58e301e66e515e167865"
+    },
+    {
+      "path": "tools/verify_revision30_artifact.py",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "bb1b2160f26afb3b0fafbb84e26c16f4a44752aee47d9ecac6406bffe98b0a45"
+    },
+    {
+      "path": "tools/verify_revision30_public.py",
+      "status": "added",
+      "dependency": false,
+      "line_endings_only": false,
+      "before_sha256": null,
+      "after_sha256": "653e10b9763fcded9cdbb2eac74a9be2264f4e4a81f4148908dbd2ebe1bd1a0e"
     },
     {
       "path": "tools/verify_revision4_artifact.py",

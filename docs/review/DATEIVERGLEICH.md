@@ -1,6 +1,6 @@
 # Dateivergleich zum Original
 
-Verglichen werden die unveränderlichen Git-Blobs des Tags `original-archive-92ce219` mit den gestagten r29-Quellen.
+Verglichen werden die unveränderlichen Git-Blobs des Tags `original-archive-92ce219` mit den gestagten r30-Quellen.
 Die Archivherkunft bleibt dokumentiert; diese Hashes beziehen sich ausdrücklich auf Git-Blobs, nicht neu eingelesene ZIP-Rohbytes.
 Generierte Vergleichsdateien, alte Revisionspatches und Binärpakete sind aus diesem rekursionsfreien Vergleich ausgeschlossen.
 Alle betrachteten Änderungen stehen in [SOURCE-COMPARISON.json](SOURCE-COMPARISON.json).
@@ -17,6 +17,7 @@ Alle betrachteten Änderungen stehen in [SOURCE-COMPARISON.json](SOURCE-COMPARIS
 | added | [docs/BUILD-README.md](../../docs/BUILD-README.md) |
 | added | [docs/CHANGELOG-GESAMT.txt](../../docs/CHANGELOG-GESAMT.txt) |
 | added | [docs/FORUM-CHANGELOG-v0.1.2.txt](../../docs/FORUM-CHANGELOG-v0.1.2.txt) |
+| added | [docs/FORUM-CHANGELOG-v0.1.3.txt](../../docs/FORUM-CHANGELOG-v0.1.3.txt) |
 | added | [docs/FORUM-DATEILISTE.txt](../../docs/FORUM-DATEILISTE.txt) |
 | added | [docs/FORUM-INSTALLATION-DE.md](../../docs/FORUM-INSTALLATION-DE.md) |
 | added | [docs/NLBinder-0.1.1-DE.md](../../docs/NLBinder-0.1.1-DE.md) |
@@ -48,6 +49,7 @@ Alle betrachteten Änderungen stehen in [SOURCE-COMPARISON.json](SOURCE-COMPARIS
 | added | [docs/NLBinder-0.1.2-r27-DE.md](../../docs/NLBinder-0.1.2-r27-DE.md) |
 | added | [docs/NLBinder-0.1.2-r28-DE.md](../../docs/NLBinder-0.1.2-r28-DE.md) |
 | added | [docs/NLBinder-0.1.2-r29-DE.md](../../docs/NLBinder-0.1.2-r29-DE.md) |
+| added | [docs/NLBinder-0.1.3-DE.md](../../docs/NLBinder-0.1.3-DE.md) |
 | added | [docs/ORIGINAL-README.md](../../docs/ORIGINAL-README.md) |
 | added | [docs/build-dependencies.md](../../docs/build-dependencies.md) |
 | added | [docs/jobs-support.md](../../docs/jobs-support.md) |
@@ -90,6 +92,8 @@ Alle betrachteten Änderungen stehen in [SOURCE-COMPARISON.json](SOURCE-COMPARIS
 | added | [docs/review/r28-validation.json](../../docs/review/r28-validation.json) |
 | added | [docs/review/r29-PRUEFUNG-DE.md](../../docs/review/r29-PRUEFUNG-DE.md) |
 | added | [docs/review/r29-validation.json](../../docs/review/r29-validation.json) |
+| added | [docs/review/r30-PRUEFUNG-DE.md](../../docs/review/r30-PRUEFUNG-DE.md) |
+| added | [docs/review/r30-validation.json](../../docs/review/r30-validation.json) |
 | added | [docs/review/r4-validation.json](../../docs/review/r4-validation.json) |
 | added | [docs/review/r5-validation.json](../../docs/review/r5-validation.json) |
 | added | [docs/review/r6-validation.json](../../docs/review/r6-validation.json) |
@@ -149,12 +153,15 @@ Alle betrachteten Änderungen stehen in [SOURCE-COMPARISON.json](SOURCE-COMPARIS
 | added | [include/SpeedTicketFlow.h](../../include/SpeedTicketFlow.h) |
 | modified | [include/SpeedometerManager.h](../../include/SpeedometerManager.h) |
 | modified | [include/SpeedometerUI.h](../../include/SpeedometerUI.h) |
+| added | [include/SprayAccess.h](../../include/SprayAccess.h) |
+| added | [include/SprayCatalog.h](../../include/SprayCatalog.h) |
 | added | [include/SpraySpots.h](../../include/SpraySpots.h) |
 | added | [include/SpraysNavigator.h](../../include/SpraysNavigator.h) |
 | added | [include/StaminaGauge.h](../../include/StaminaGauge.h) |
 | added | [include/StatsDialogRPCAdapter.h](../../include/StatsDialogRPCAdapter.h) |
 | modified | [include/TextDrawAdapter.h](../../include/TextDrawAdapter.h) |
 | modified | [include/Version.h](../../include/Version.h) |
+| added | [include/WaypointTour.h](../../include/WaypointTour.h) |
 | added | [include/WeaponIconCatalog.h](../../include/WeaponIconCatalog.h) |
 | added | [include/WeaponIconManager.h](../../include/WeaponIconManager.h) |
 | added | [include/WeaponIconsUI.h](../../include/WeaponIconsUI.h) |
@@ -196,11 +203,13 @@ Alle betrachteten Änderungen stehen in [SOURCE-COMPARISON.json](SOURCE-COMPARIS
 | added | [src/SpeedTicketFlow.cpp](../../src/SpeedTicketFlow.cpp) |
 | modified | [src/SpeedometerManager.cpp](../../src/SpeedometerManager.cpp) |
 | modified | [src/SpeedometerUI.cpp](../../src/SpeedometerUI.cpp) |
+| added | [src/SprayCatalog.cpp](../../src/SprayCatalog.cpp) |
 | added | [src/SpraysNavigator.cpp](../../src/SpraysNavigator.cpp) |
 | modified | [src/SquareMap.cpp](../../src/SquareMap.cpp) |
 | added | [src/StartupStatsSync.cpp](../../src/StartupStatsSync.cpp) |
 | added | [src/StatsDialogRPCAdapter.cpp](../../src/StatsDialogRPCAdapter.cpp) |
 | modified | [src/TextDrawAdapter.cpp](../../src/TextDrawAdapter.cpp) |
+| added | [src/WaypointTour.cpp](../../src/WaypointTour.cpp) |
 | added | [src/WeaponIconManager.cpp](../../src/WeaponIconManager.cpp) |
 | added | [src/WeaponIconsUI.cpp](../../src/WeaponIconsUI.cpp) |
 | modified | [tests/ActionExecutorTests.cpp](../../tests/ActionExecutorTests.cpp) |
@@ -244,9 +253,12 @@ Alle betrachteten Änderungen stehen in [SOURCE-COMPARISON.json](SOURCE-COMPARIS
 | modified | [tests/SourceContractTests.cpp](../../tests/SourceContractTests.cpp) |
 | added | [tests/SpeedTicketFlowTests.cpp](../../tests/SpeedTicketFlowTests.cpp) |
 | modified | [tests/SpeedometerFocusedTests.cpp](../../tests/SpeedometerFocusedTests.cpp) |
+| added | [tests/SprayAccessTests.cpp](../../tests/SprayAccessTests.cpp) |
+| added | [tests/SprayCatalogTests.cpp](../../tests/SprayCatalogTests.cpp) |
 | added | [tests/SpraysNavigatorTests.cpp](../../tests/SpraysNavigatorTests.cpp) |
 | added | [tests/StartupStatsSyncTests.cpp](../../tests/StartupStatsSyncTests.cpp) |
 | added | [tests/StatsDialogRPCAdapterTests.cpp](../../tests/StatsDialogRPCAdapterTests.cpp) |
+| added | [tests/WaypointTourTests.cpp](../../tests/WaypointTourTests.cpp) |
 | added | [tests/WeaponIconManagerTests.cpp](../../tests/WeaponIconManagerTests.cpp) |
 | added | [tests/WeaponIconSettingsTests.cpp](../../tests/WeaponIconSettingsTests.cpp) |
 | added | [third_party/assets/LICENSES/Apache-2.0-full.txt](../../third_party/assets/LICENSES/Apache-2.0-full.txt) |
@@ -276,6 +288,7 @@ Alle betrachteten Änderungen stehen in [SOURCE-COMPARISON.json](SOURCE-COMPARIS
 | added | [tools/document_revision27.py](../../tools/document_revision27.py) |
 | added | [tools/document_revision28.py](../../tools/document_revision28.py) |
 | added | [tools/document_revision29.py](../../tools/document_revision29.py) |
+| added | [tools/document_revision30.py](../../tools/document_revision30.py) |
 | added | [tools/export_forum_installation_review.py](../../tools/export_forum_installation_review.py) |
 | added | [tools/export_full_changelog.py](../../tools/export_full_changelog.py) |
 | added | [tools/export_full_changelog_revision23.py](../../tools/export_full_changelog_revision23.py) |
@@ -285,6 +298,7 @@ Alle betrachteten Änderungen stehen in [SOURCE-COMPARISON.json](SOURCE-COMPARIS
 | added | [tools/export_full_changelog_revision27.py](../../tools/export_full_changelog_revision27.py) |
 | added | [tools/export_full_changelog_revision28.py](../../tools/export_full_changelog_revision28.py) |
 | added | [tools/export_full_changelog_revision29.py](../../tools/export_full_changelog_revision29.py) |
+| added | [tools/export_full_changelog_revision30.py](../../tools/export_full_changelog_revision30.py) |
 | added | [tools/export_source_bundle.py](../../tools/export_source_bundle.py) |
 | added | [tools/export_source_bundle_revision19.py](../../tools/export_source_bundle_revision19.py) |
 | added | [tools/export_source_bundle_revision20.py](../../tools/export_source_bundle_revision20.py) |
@@ -297,6 +311,7 @@ Alle betrachteten Änderungen stehen in [SOURCE-COMPARISON.json](SOURCE-COMPARIS
 | added | [tools/export_source_bundle_revision27.py](../../tools/export_source_bundle_revision27.py) |
 | added | [tools/export_source_bundle_revision28.py](../../tools/export_source_bundle_revision28.py) |
 | added | [tools/export_source_bundle_revision29.py](../../tools/export_source_bundle_revision29.py) |
+| added | [tools/export_source_bundle_revision30.py](../../tools/export_source_bundle_revision30.py) |
 | added | [tools/fetch_cef_runtime.py](../../tools/fetch_cef_runtime.py) |
 | added | [tools/finalize_revision16.py](../../tools/finalize_revision16.py) |
 | added | [tools/finalize_revision17.py](../../tools/finalize_revision17.py) |
@@ -312,6 +327,7 @@ Alle betrachteten Änderungen stehen in [SOURCE-COMPARISON.json](SOURCE-COMPARIS
 | added | [tools/finalize_revision27.py](../../tools/finalize_revision27.py) |
 | added | [tools/finalize_revision28.py](../../tools/finalize_revision28.py) |
 | added | [tools/finalize_revision29.py](../../tools/finalize_revision29.py) |
+| added | [tools/finalize_revision30.py](../../tools/finalize_revision30.py) |
 | added | [tools/install_revision18.py](../../tools/install_revision18.py) |
 | added | [tools/install_revision19.py](../../tools/install_revision19.py) |
 | added | [tools/install_revision20.py](../../tools/install_revision20.py) |
@@ -337,6 +353,7 @@ Alle betrachteten Änderungen stehen in [SOURCE-COMPARISON.json](SOURCE-COMPARIS
 | added | [tools/package_revision27.py](../../tools/package_revision27.py) |
 | added | [tools/package_revision28.py](../../tools/package_revision28.py) |
 | added | [tools/package_revision29.py](../../tools/package_revision29.py) |
+| added | [tools/package_revision30.py](../../tools/package_revision30.py) |
 | added | [tools/package_revision4.ps1](../../tools/package_revision4.ps1) |
 | added | [tools/package_revision5.ps1](../../tools/package_revision5.ps1) |
 | added | [tools/package_revision6.ps1](../../tools/package_revision6.ps1) |
@@ -361,6 +378,7 @@ Alle betrachteten Änderungen stehen in [SOURCE-COMPARISON.json](SOURCE-COMPARIS
 | added | [tools/publish_revision27.py](../../tools/publish_revision27.py) |
 | added | [tools/publish_revision28.py](../../tools/publish_revision28.py) |
 | added | [tools/publish_revision29.py](../../tools/publish_revision29.py) |
+| added | [tools/publish_revision30.py](../../tools/publish_revision30.py) |
 | added | [tools/record_gps_native_test.py](../../tools/record_gps_native_test.py) |
 | added | [tools/report_revision16_log.py](../../tools/report_revision16_log.py) |
 | added | [tools/report_revision17_log.py](../../tools/report_revision17_log.py) |
@@ -376,8 +394,10 @@ Alle betrachteten Änderungen stehen in [SOURCE-COMPARISON.json](SOURCE-COMPARIS
 | added | [tools/report_revision27_log.py](../../tools/report_revision27_log.py) |
 | added | [tools/report_revision28_log.py](../../tools/report_revision28_log.py) |
 | added | [tools/report_revision29_log.py](../../tools/report_revision29_log.py) |
+| added | [tools/report_revision30_log.py](../../tools/report_revision30_log.py) |
 | added | [tools/revision28_scope.py](../../tools/revision28_scope.py) |
 | added | [tools/revision29_scope.py](../../tools/revision29_scope.py) |
+| added | [tools/revision30_scope.py](../../tools/revision30_scope.py) |
 | added | [tools/run_revision16.bat](../../tools/run_revision16.bat) |
 | added | [tools/run_revision17.bat](../../tools/run_revision17.bat) |
 | added | [tools/run_revision18.bat](../../tools/run_revision18.bat) |
@@ -392,6 +412,7 @@ Alle betrachteten Änderungen stehen in [SOURCE-COMPARISON.json](SOURCE-COMPARIS
 | added | [tools/run_revision27.bat](../../tools/run_revision27.bat) |
 | added | [tools/run_revision28.bat](../../tools/run_revision28.bat) |
 | added | [tools/run_revision29.bat](../../tools/run_revision29.bat) |
+| added | [tools/run_revision30.bat](../../tools/run_revision30.bat) |
 | modified | [tools/run_tests.bat](../../tools/run_tests.bat) |
 | added | [tools/setup_msvc.bat](../../tools/setup_msvc.bat) |
 | added | [tools/test_browser_restart.py](../../tools/test_browser_restart.py) |
@@ -431,6 +452,8 @@ Alle betrachteten Änderungen stehen in [SOURCE-COMPARISON.json](SOURCE-COMPARIS
 | added | [tools/verify_revision28_public.py](../../tools/verify_revision28_public.py) |
 | added | [tools/verify_revision29_artifact.py](../../tools/verify_revision29_artifact.py) |
 | added | [tools/verify_revision29_public.py](../../tools/verify_revision29_public.py) |
+| added | [tools/verify_revision30_artifact.py](../../tools/verify_revision30_artifact.py) |
+| added | [tools/verify_revision30_public.py](../../tools/verify_revision30_public.py) |
 | added | [tools/verify_revision4_artifact.py](../../tools/verify_revision4_artifact.py) |
 | added | [tools/verify_revision5_artifact.py](../../tools/verify_revision5_artifact.py) |
 | added | [tools/verify_revision6_artifact.py](../../tools/verify_revision6_artifact.py) |

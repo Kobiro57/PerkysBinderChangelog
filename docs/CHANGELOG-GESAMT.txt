@@ -1,7 +1,7 @@
-﻿Änderungen am Perkys Binder – NLBinder v.0.1.2 by perkys & edited by KOBiRO
+﻿Änderungen am Perkys Binder – NLBinder v.0.1.3 by perkys & edited by KOBiRO
 ===========================================================================
 
-Stand: 17. November 2026, r29 mit Spraytag-Navigation. Die Abschnitte 1 bis 34 dokumentieren die früheren Stände; Abschnitt 35 ergänzt r29.
+Stand: 17. November 2026, v0.1.3 mit bearbeitbaren Spray-Punkten und Navigationstouren. Die Abschnitte 1 bis 35 dokumentieren die früheren Stände; Abschnitt 36 ergänzt v0.1.3.
 
 Die Grundlage ist der vorhandene Perkys/NLBinder. Die Änderungen erweitern dessen bestehende Oberfläche und verwenden weiterhin die vorhandenen ImGui-Komponenten, Karten, Schalter und Darstellungseinstellungen. Der Ordner KOBiRO_ASI diente als funktionale Referenz für die Overlay-Erweiterung; seine Oberfläche wurde nicht als neue Binder-Oberfläche übernommen.
 
@@ -1312,3 +1312,20 @@ Der Nutzer bestätigte nach Einspielen des vorläufigen r18-Stands, dass der ang
 - Regressionen für Spraytag-Auswahl, Sortierung, Fraktionsprüfung und vorübergehende GPS-Ziele ergänzt. Tatsächliche Ergebnisse stehen im r29-Prüfnachweis.
 - Automatische Polizeifunk-Ortung aus r28 weiterhin vollständig entfernt; Wanted-Labels, /speed, Quick Map, Browser und übrige Funktionen erhalten.
 - Neue NLBinder.asi, vollständige aktuelle Quellen und gesamte Changelogs als NLBinder-v0.1.2-r29 vorbereitet. Frühere Veröffentlichungen und Desktop-Exporte erhalten; Spielinstallation unverändert.
+
+36. Veröffentlichung v0.1.3 – 17. November 2026
+===============================================
+
+- Angezeigte Version und Startmeldung von 0.1.2 auf 0.1.3 aktualisiert; Credits perkys & edited by KOBiRO beibehalten.
+- Spray-Liste um das Entfernen einzelner vorhandener Punkte und das Hinzufügen eigener benannter Punkte an der aktuellen Position erweitert.
+- Spray-Navigation für bestätigte Fraktions- und Gangmitglieder freigegeben; Zivilisten bleiben ausgeschlossen. Die eigenen SAPD-/LSPD- beziehungsweise RCB-Berechtigungen anderer Funktionen bleiben erhalten.
+- Persönliche Spray-Liste lokal unter Dokumente\GTA San Andreas User Files\NLBinder\sprays.xml gespeichert und beim nächsten Start wieder geladen; persönliche Datei nicht veröffentlicht.
+- Seitenzahl bedarfsgerecht erweitert: 34 Punkte je Seite, höchstens zehn Seiten beziehungsweise 340 Punkte.
+- Spray-Fenster vergrößert und innerhalb der Bildschirmgröße veränderbar gemacht; Bedienelemente bleiben außerhalb der separat scrollenden Liste sichtbar.
+- Entfernungssortierung, grüne Hervorhebung des nächsten Punkts, rote GPS-Navigation und Ziel-erreicht-Meldung beibehalten.
+- /spraytour und /sprayend ergänzt: persönliche Spray-Liste abfahren und nach Checkpointankunft automatisch zum nächstgelegenen noch nicht besuchten Ziel navigieren.
+- /claimstour und /claimsend für RCB-Mitglieder ergänzt: entsprechende Navigation durch die 28 hinterlegten Flaggenpunkte.
+- Touren steuern ausschließlich die Navigation; Spray-Entfernen und Flaggenaktionen werden weiterhin im Spiel ausgeführt.
+- Spray-Ziele verbrauchen weiterhin keinen der 20 gespeicherten GPS-Plätze. Automatische Polizeifunk-Ortung bleibt entfernt.
+- Neue Gesamttests, Release-Build, eingebettete Helfer und aktuelle Versionsmeldung werden geprüft; tatsächliche Ergebnisse stehen im v0.1.3-Prüfnachweis.
+- Neue NLBinder.asi, vollständige aktuelle Quellen und Changelogs als NLBinder-v0.1.3 vorbereitet; frühere Veröffentlichungen und Desktop-Exporte erhalten.

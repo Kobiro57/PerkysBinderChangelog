@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <functional>
 #include <optional>
 #include <string>
@@ -24,6 +25,7 @@ public:
     using Notice = std::function<void(const std::string&)>;
     using PositionProvider = std::function<bool(GpsPosition&)>;
     using DestinationRenderer = std::function<void(const GpsEntry*)>;
+    using ArrivalCallback = std::function<void(const GpsEntry&, std::uint64_t)>;
     void Initialize(std::string path, Notice notice, PositionProvider provider, DestinationRenderer renderer = {});
     void Shutdown();
     bool Set(const std::string& name);
@@ -32,8 +34,10 @@ public:
     bool Navigate(unsigned int id);
     // Temporary routes share the GPS marker and arrival lifecycle, but are not
     // bookmarks. Callers use stable IDs from the reserved high-bit namespace.
-    bool NavigateTemporary(const GpsEntry& destination);
+    bool NavigateTemporary(const GpsEntry& destination, bool armArrivalWhenInside = false);
     void StopNavigation();
+    void SetArrivalCallback(ArrivalCallback callback);
+    std::uint64_t ActiveNavigationGeneration() const { return activeGeneration_; }
     void ShowList() { listOpen_ = !listOpen_; }
     void CloseList() { listOpen_ = false; }
     bool IsListOpen() const { return listOpen_; }
@@ -48,16 +52,19 @@ private:
     bool Load();
     bool Save() const;
     void Say(const std::string& text) const;
-    void BeginNavigation();
+    void BeginNavigation(bool armArrivalWhenInside = false);
     std::string path_;
     Notice notice_;
     PositionProvider positionProvider_;
     DestinationRenderer renderer_;
+    ArrivalCallback arrivalCallback_;
     std::vector<GpsEntry> entries_;
     std::optional<GpsEntry> temporaryDestination_;
     unsigned int nextId_ = 1;
     unsigned int activeId_ = 0;
     unsigned int selectedId_ = 0;
+    std::uint64_t navigationGeneration_ = 0;
+    std::uint64_t activeGeneration_ = 0;
     bool listOpen_ = false;
     bool arrivalArmed_ = false;
 };
