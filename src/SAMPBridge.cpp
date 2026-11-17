@@ -753,7 +753,6 @@ bool SAMPBridge::Initialize() {
     // and prevent false incoming hitsounds on script-driven HP changes.
     InstallScriptedHealthRpcHook();
     InitializeStartupStatsAdapter();
-    InitializePoliceLocate();
 
     initialized_ = true;
     // Damage feedback/logging stays available independently of the counters.
@@ -811,7 +810,6 @@ void SAMPBridge::Shutdown() {
         return;
     }
     shutting_down_ = true;
-    ShutdownPoliceLocate();
     CancelManualTextInput();
     if (statsDialogAdapter_) statsDialogAdapter_->Shutdown();
     statsDialogAdapter_.reset();
@@ -1108,7 +1106,6 @@ void SAMPBridge::Update() {
     UpdateStartupStats(now);
     UpdateSpeedTicketFlow(now);
     UpdateStartupJobSkills(now);
-    UpdatePoliceLocate(now);
 
     if (!HasCommandRouting()) {
         RegisterPendingCommands();
@@ -1670,7 +1667,6 @@ void SAMPBridge::InitializeJobTracker() {
     jobChatAdapter_->SetCallback([this](const jobs::JobChatEvent& event) {
         if (!event.hasPlayerPrefix) ObserveServerEngineStartMessage(event.normalizedLine);
         if (!event.hasPlayerPrefix && !g_emittingBinderLocalMessage) QueueCombatChat(event.normalizedLine);
-        if (!event.hasPlayerPrefix && !g_emittingBinderLocalMessage) CapturePoliceLocateChat(event.normalizedLine);
         NotifyIncomingChat(event.normalizedLine);
         if (jobTracker_ != nullptr) {
             const std::vector<jobs::JobEvent> recordedEvents = jobTracker_->HandleChatEvent(event);

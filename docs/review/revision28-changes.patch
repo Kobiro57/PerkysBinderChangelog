@@ -1,0 +1,3755 @@
+diff --git a/Keybinder.vcxproj b/Keybinder.vcxproj
+index bc54029..c3299ca 100644
+--- a/Keybinder.vcxproj
++++ b/Keybinder.vcxproj
+@@ -208,9 +208,6 @@
+     <ClCompile Include="src\JobSkillsSync.cpp" />
+     <ClCompile Include="src\SpeedTicketFlow.cpp" />
+     <ClCompile Include="src\SpeedTicketBridge.cpp" />
+-    <ClCompile Include="src\PoliceLocateBridge.cpp" />
+-    <ClCompile Include="src\PoliceLocateTracker.cpp" />
+-    <ClCompile Include="src\ServerCheckpointRPCAdapter.cpp" />
+     <ClCompile Include="src\NearbyWantedLabels.cpp" />
+     <ClCompile Include="src\WeaponIconManager.cpp" />
+     <ClCompile Include="src\NativeHudEditor.cpp" />
+@@ -557,9 +554,6 @@
+     <ClInclude Include="include\FactionAccess.h" />
+     <ClInclude Include="include\LocalFactionAccess.h" />
+     <ClInclude Include="include\ClaimSpots.h" />
+-    <ClInclude Include="include\PoliceLocateTracker.h" />
+-    <ClInclude Include="include\CheckpointLocation.h" />
+-    <ClInclude Include="include\ServerCheckpointRPCAdapter.h" />
+     <ClInclude Include="include\NearbyWantedLabels.h" />
+     <ClInclude Include="include\ForumBrowser.h" />
+     <ClInclude Include="include\ForumKeyboardInput.h" />
+diff --git a/include/CheckpointLocation.h b/include/CheckpointLocation.h
+deleted file mode 100644
+index c40b2d6..0000000
+--- a/include/CheckpointLocation.h
++++ /dev/null
+@@ -1,102 +0,0 @@
+-#pragma once
+-
+-#include "LocationNames.h"
+-#include <algorithm>
+-#include <cmath>
+-#include <cstddef>
+-#include <cstdint>
+-#include <cstring>
+-#include <limits>
+-#include <string>
+-#include <utility>
+-#include <vector>
+-
+-namespace keybinder {
+-
+-// GTA:SA 1.0 US stores navigation/map records in 0x20 bytes. The bundled
+-// legacy SDK's CZone has an embedded CZoneInfo and therefore the wrong stride
+-// and type/level offsets. Read a record returned by the native indexed getter;
+-// never walk the game array using sizeof(the legacy CZone).
+-// Layout reference: https://github.com/gta-reversed/gta-reversed/blob/master/source/game_sa/Zone.h
+-struct NativeCheckpointZoneRecord {
+-    char infoLabel[8];
+-    char textLabel[8];
+-    std::int16_t x1, y1, z1, x2, y2, z2;
+-    std::int16_t infoIndex;
+-    std::uint8_t type, level;
+-};
+-static_assert(sizeof(NativeCheckpointZoneRecord) == 0x20);
+-static_assert(offsetof(NativeCheckpointZoneRecord, x1) == 0x10);
+-static_assert(offsetof(NativeCheckpointZoneRecord, type) == 0x1e);
+-static_assert(offsetof(NativeCheckpointZoneRecord, level) == 0x1f);
+-
+-struct CheckpointLocationZone {
+-    float x1, y1, z1, x2, y2, z2;
+-    unsigned int type;
+-    unsigned int level;
+-    std::string name;
+-};
+-
+-inline std::string CleanCheckpointPlace(const std::string& value) {
+-    const auto begin = value.find_first_not_of(" \t\r\n");
+-    if (begin == std::string::npos) return {};
+-    const auto text = value.substr(begin, value.find_last_not_of(" \t\r\n") - begin + 1);
+-    if (text.size() > 100 || text == "Unknown" || text == "unknown") return {};
+-    for (unsigned char ch : text)
+-        if (ch < 0x20 || ch == 0x7f || ch == '{' || ch == '}' || ch == '[' || ch == ']') return {};
+-    return text;
+-}
+-
+-inline std::string FormatCheckpointLocation(const std::string& cityValue, const std::string& districtValue) {
+-    const auto city = CleanCheckpointPlace(cityValue);
+-    const auto district = CleanCheckpointPlace(districtValue);
+-    if (district.empty()) return {}; // A city alone is not a resolved target district.
+-    if (city.empty()) return district;
+-    auto folded = [](std::string text) {
+-        for (char& ch : text) if (ch >= 'A' && ch <= 'Z') ch += 'a' - 'A';
+-        return text;
+-    };
+-    if (folded(city) == folded(district)) return city;
+-    return city + " " + district;
+-}
+-
+-// Resolve the map position, not the officer's location. Checkpoints can carry
+-// roof/interior heights outside a district's vertical box, so their map district
+-// is selected by X/Y. Small navigation areas beat county/world containers.
+-inline const CheckpointLocationZone* SmallestCheckpointZone(float x, float y, float z,
+-    const std::vector<CheckpointLocationZone>& zones, bool mapZones) {
+-    const CheckpointLocationZone* result = nullptr;
+-    double bestArea = std::numeric_limits<double>::infinity();
+-    float bestHeightDistance = std::numeric_limits<float>::infinity();
+-    for (const auto& zone : zones) {
+-        if ((mapZones ? zone.type != 3 : zone.type > 1) || CleanCheckpointPlace(zone.name).empty()) continue;
+-        if (!std::isfinite(zone.x1) || !std::isfinite(zone.x2) || !std::isfinite(zone.y1)
+-            || !std::isfinite(zone.y2) || !std::isfinite(zone.z1) || !std::isfinite(zone.z2)
+-            || zone.x1 >= zone.x2 || zone.y1 >= zone.y2 || zone.z1 > zone.z2
+-            || x < zone.x1 || x > zone.x2 || y < zone.y1 || y > zone.y2) continue;
+-        const double area = (static_cast<double>(zone.x2) - zone.x1) * (static_cast<double>(zone.y2) - zone.y1);
+-        const float heightDistance = z < zone.z1 ? zone.z1 - z : z > zone.z2 ? z - zone.z2 : 0.0f;
+-        if (area < bestArea || (area == bestArea && heightDistance < bestHeightDistance)) {
+-            result = &zone;
+-            bestArea = area;
+-            bestHeightDistance = heightDistance;
+-        }
+-    }
+-    return result;
+-}
+-
+-inline std::string ResolveCheckpointLocation(float x, float y, float z,
+-    const std::vector<CheckpointLocationZone>& navigation, const std::vector<CheckpointLocationZone>& map) {
+-    if (!std::isfinite(x) || !std::isfinite(y) || !std::isfinite(z)
+-        || std::abs(x) > 20000.0f || std::abs(y) > 20000.0f || std::abs(z) > 20000.0f) return {};
+-    const auto* district = SmallestCheckpointZone(x, y, z, navigation, false);
+-    if (!district) return {};
+-    const auto* region = SmallestCheckpointZone(x, y, z, map, true);
+-    // Map zones supply counties as well as cities. Navigation level is a useful
+-    // city fallback; level zero must not invent a city called "San Andreas".
+-    const std::string city = district->level >= 1 && district->level <= 3
+-        ? CityNameFromGtaLevel(district->level) : region ? region->name : "";
+-    return FormatCheckpointLocation(city, district->name);
+-}
+-
+-} // namespace keybinder
+diff --git a/include/PoliceLocateTracker.h b/include/PoliceLocateTracker.h
+deleted file mode 100644
+index 8b30c67..0000000
+--- a/include/PoliceLocateTracker.h
++++ /dev/null
+@@ -1,61 +0,0 @@
+-#pragma once
+-
+-#include <cstdint>
+-#include <functional>
+-#include <string>
+-
+-namespace keybinder {
+-
+-struct LocateCheckpoint {
+-    float x = 0.0f;
+-    float y = 0.0f;
+-    float z = 0.0f;
+-    float radius = 0.0f;
+-};
+-
+-// Correlates personal detective messages with the active game checkpoint.
+-// It never reads the local GPS destination or sends chat.
+-// All methods are called on the game thread. The caller supplies a current,
+-// verified police role and a host/port/player identity before observing events.
+-class PoliceLocateTracker {
+-public:
+-    using DistrictResolver = std::function<std::string(float, float, float)>;
+-
+-    static constexpr std::uint32_t kOperationTimeoutMs = 120000;
+-    static constexpr std::uint32_t kCompletionWindowMs = 10000;
+-    static constexpr std::uint32_t kNativeCheckpointSettleMs = 150;
+-
+-    void SetSession(bool policeAllowed, const std::string& connectionIdentity);
+-    void Reset();
+-
+-    bool ObserveChat(const std::string& line, std::uint32_t nowMs);
+-    bool ObserveCheckpoint(const LocateCheckpoint& checkpoint, std::uint32_t nowMs);
+-    void ObserveCheckpointDisabled();
+-    bool ReadyForCurrentCheckpoint(std::uint32_t nowMs);
+-
+-    // Returns an already formatted /r command once, only after the matching
+-    // success and checkpoint were observed. A missing district never falls
+-    // back to the local player's location. The bridge supplies the active marker.
+-    std::string TakeRadioMessage(std::uint32_t nowMs, const DistrictResolver& resolveDistrict);
+-
+-    bool HasPendingLocate() const { return pending_; }
+-    bool HasSuccessfulLocate() const { return pending_ && successObserved_; }
+-
+-private:
+-    void ClearOperation();
+-    bool ValidatePending(std::uint32_t nowMs);
+-
+-    bool allowed_ = false;
+-    std::string identity_;
+-    bool pending_ = false;
+-    std::string target_;
+-    std::uint32_t startedAt_ = 0;
+-    std::uint32_t durationMs_ = 0;
+-    bool successObserved_ = false;
+-    std::uint32_t successAt_ = 0;
+-    bool markerObserved_ = false;
+-    std::uint32_t markerAt_ = 0;
+-    LocateCheckpoint marker_{};
+-};
+-
+-} // namespace keybinder
+diff --git a/include/SAMPBridge.h b/include/SAMPBridge.h
+index b2ac966..2b65ddb 100644
+--- a/include/SAMPBridge.h
++++ b/include/SAMPBridge.h
+@@ -21,8 +21,6 @@
+ #include "ServerStatsSnapshot.h"
+ #include "StatsDialogRPCAdapter.h"
+ #include "SpeedTicketFlow.h"
+-#include "PoliceLocateTracker.h"
+-#include "ServerCheckpointRPCAdapter.h"
+ #include "JobSkillsSnapshot.h"
+ #include "DeathMessageRPCAdapter.h"
+ #include "JobChatAdapter.h"
+@@ -177,8 +175,6 @@ public:
+         std::function<bool(float&, float&, int&, const void*&)> readLocalDamageSample;
+         std::function<int()> getCityLevel;
+         std::function<std::string()> getDistrictName;
+-        std::function<std::string(float, float, float)> getDistrictAtPosition;
+-        std::function<std::string(float, float, float)> getCityAtPosition;
+         std::function<bool()> isStartupStatsReady;
+         std::function<bool()> isStartupJobSkillsReady;
+         std::function<void(int)> closeStatsDialog;
+@@ -209,7 +205,6 @@ public:
+     bool ProcessIncomingChatLineForTesting(const char* prefix, const char* text);
+     void ProcessStatsDialogForTesting(const keybinder::StatsDialogEvent& event);
+     bool ProcessStatsDialogRpcForTesting(RakNet::BitStream* payload);
+-    bool ProcessServerCheckpointRpcForTesting(unsigned char id, RakNet::BitStream* payload);
+ #endif
+ 
+ private:
+@@ -231,14 +226,6 @@ private:
+     bool AcceptStartupStatsDialog(const keybinder::StatsDialogEvent& event, unsigned long now);
+     void CloseStartupStatsDialog(unsigned long now);
+     void UpdateSpeedTicketFlow(unsigned long now);
+-    void InitializePoliceLocate();
+-    void ShutdownPoliceLocate();
+-    void CapturePoliceLocateChat(const std::string& text);
+-    void CapturePoliceCheckpoint(const keybinder::ServerCheckpointEvent& event);
+-    void UpdatePoliceLocate(unsigned long now);
+-    bool ReadPoliceCheckpoint(keybinder::LocateCheckpoint& checkpoint) const;
+-    bool ReadPoliceCheckpointKind(bool racing, keybinder::LocateCheckpoint& checkpoint) const;
+-    std::string ResolvePoliceCheckpointDistrict(float x, float y, float z) const;
+     bool SendSpeedDialogChoice(const keybinder::SpeedTicketAction& action);
+     void UpdateStartupJobSkills(unsigned long now);
+     void UpdateAutoEngineStart(unsigned long now);
+@@ -529,39 +516,6 @@ private:
+     std::unique_ptr<keybinder::StatsDialogRPCAdapter> statsDialogAdapter_;
+     keybinder::ServerStatsSnapshot synchronizedStats_;
+     std::function<std::string()> localFactionProvider_;
+-    keybinder::PoliceLocateTracker policeLocateTracker_;
+-    std::unique_ptr<keybinder::ServerCheckpointRPCAdapter> policeCheckpointAdapter_;
+-    struct PoliceLocateNativeSnapshot {
+-        bool enabled = false;
+-        keybinder::LocateCheckpoint checkpoint{};
+-    };
+-    struct PoliceLocateCheckpointState {
+-        PoliceLocateNativeSnapshot lastNative{};
+-        bool nativeChanged = false;
+-        unsigned long nativeChangedAt = 0;
+-        bool blockedAfterDisable = false;
+-        bool rpcObserved = false;
+-        keybinder::LocateCheckpoint rpcCheckpoint{};
+-        unsigned long rpcAt = 0;
+-        unsigned long rpcSequence = 0;
+-    };
+-    struct PendingPoliceLocateEvent {
+-        bool isCheckpoint = false;
+-        std::string text;
+-        keybinder::ServerCheckpointEvent checkpoint;
+-        unsigned long at = 0;
+-        PoliceLocateNativeSnapshot native[2]{};
+-    };
+-    std::mutex policeLocateMutex_;
+-    std::vector<PendingPoliceLocateEvent> pendingPoliceLocateEvents_;
+-    bool policeLocateCaptureActive_ = false;
+-    bool policeLocateQueueOverflow_ = false;
+-    bool policeLocatePreferredRacing_ = false;
+-    bool policeLocateHasSelectedCheckpoint_ = false;
+-    PoliceLocateCheckpointState policeLocateCheckpoints_[2]{};
+-    unsigned long policeLocateCheckpointSequence_ = 0;
+-    unsigned long policeLocateSuccessAt_ = 0;
+-    std::string policeLocateSession_;
+     std::function<bool(const keybinder::ServerStatsSnapshot&)> statsSynchronizedCallback_;
+     bool startupStatsConnected_ = false;
+     bool startupStatsRequested_ = false;
+diff --git a/include/ServerCheckpointRPCAdapter.h b/include/ServerCheckpointRPCAdapter.h
+deleted file mode 100644
+index c650fd6..0000000
+--- a/include/ServerCheckpointRPCAdapter.h
++++ /dev/null
+@@ -1,44 +0,0 @@
+-#pragma once
+-
+-#include <atomic>
+-#include <functional>
+-#include <memory>
+-#include <mutex>
+-
+-namespace RakNet { class BitStream; }
+-
+-namespace keybinder {
+-
+-struct ServerCheckpointEvent {
+-    bool enabled = false;
+-    float x = 0.0f;
+-    float y = 0.0f;
+-    float z = 0.0f;
+-    float radius = 0.0f;
+-    bool racing = false;
+-};
+-
+-struct ServerCheckpointAdapterState {
+-    bool alive = false;
+-    std::function<void(const ServerCheckpointEvent&)> callback;
+-    std::mutex mutex;
+-};
+-
+-// Observes server checkpoints, preserving both the RPC and its read offset.
+-// Local /setgps destinations do not pass through this adapter.
+-class ServerCheckpointRPCAdapter {
+-public:
+-    ServerCheckpointRPCAdapter();
+-    ~ServerCheckpointRPCAdapter();
+-    bool Initialize();
+-    void Shutdown();
+-    void SetCallback(std::function<void(const ServerCheckpointEvent&)> callback);
+-#ifdef KEYBINDER_TESTING
+-    bool ProcessRpcForTesting(unsigned char id, RakNet::BitStream* payload);
+-#endif
+-private:
+-    bool hookRegistered_ = false;
+-    std::shared_ptr<ServerCheckpointAdapterState> state_;
+-};
+-
+-} // namespace keybinder
+diff --git a/src/PoliceLocateBridge.cpp b/src/PoliceLocateBridge.cpp
+deleted file mode 100644
+index 311e27e..0000000
+--- a/src/PoliceLocateBridge.cpp
++++ /dev/null
+@@ -1,325 +0,0 @@
+-#include "../include/SAMPBridge.h"
+-#include "../include/FactionAccess.h"
+-#include "../include/Logger.h"
+-#include "../include/CheckpointLocation.h"
+-#include <algorithm>
+-#include <cctype>
+-#include <cmath>
+-#include <cstring>
+-#ifndef KEYBINDER_TESTING
+-#include "CTheZones.h"
+-#endif
+-
+-namespace {
+-bool SamePoliceCheckpoint(const keybinder::LocateCheckpoint& left, const keybinder::LocateCheckpoint& right) {
+-    return std::abs(left.x - right.x) <= 0.25f && std::abs(left.y - right.y) <= 0.25f
+-        && std::abs(left.z - right.z) <= 0.25f && std::abs(left.radius - right.radius) <= 0.25f;
+-}
+-
+-bool NearPoliceCompletion(unsigned long at, unsigned long completedAt) {
+-    return static_cast<unsigned long>(at - completedAt) <= keybinder::PoliceLocateTracker::kCompletionWindowMs
+-        || static_cast<unsigned long>(completedAt - at) <= keybinder::PoliceLocateTracker::kCompletionWindowMs;
+-}
+-
+-unsigned long PoliceTick() {
+-#ifdef KEYBINDER_TESTING
+-    const auto& hooks = SAMPBridge::GetTestingHooks();
+-    if (hooks.getTickCount) return hooks.getTickCount();
+-#endif
+-    return GetTickCount();
+-}
+-
+-#ifndef KEYBINDER_TESTING
+-std::string ZoneTextToUtf8(const char* text) {
+-    if (!text || !*text) return {};
+-    const int length = static_cast<int>(strnlen(text, 256));
+-    if (length == 256) return {};
+-    if (MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, text, length, nullptr, 0) > 0)
+-        return std::string(text, length);
+-    const int wideLength = MultiByteToWideChar(CP_ACP, 0, text, length, nullptr, 0);
+-    if (wideLength <= 0) return {};
+-    std::wstring wide(wideLength, L'\0');
+-    MultiByteToWideChar(CP_ACP, 0, text, length, wide.data(), wideLength);
+-    const int count = WideCharToMultiByte(CP_UTF8, 0, wide.data(), wideLength, nullptr, 0, nullptr, nullptr);
+-    if (count <= 0) return {};
+-    std::string result(count, '\0');
+-    WideCharToMultiByte(CP_UTF8, 0, wide.data(), wideLength, result.data(), count, nullptr, nullptr);
+-    return result;
+-}
+-
+-std::vector<keybinder::CheckpointLocationZone> ReadCheckpointZones(bool mapZones) {
+-    const int count = mapZones ? CTheZones::TotalNumberOfMapZones : CTheZones::TotalNumberOfInfoZones;
+-    if (count < 1 || count > (mapZones ? 39 : 380)) return {};
+-    std::vector<keybinder::CheckpointLocationZone> zones;
+-    zones.reserve(count - 1);
+-    // Index zero is the whole-world container, not a city or a district.
+-    for (short index = 1; index < count; ++index) {
+-        CZone* native = mapZones ? CTheZones::GetMapZone(index) : CTheZones::GetInfoZone(index);
+-        if (!native) continue;
+-        keybinder::NativeCheckpointZoneRecord record{};
+-        std::memcpy(&record, native, sizeof(record));
+-        if (mapZones ? record.type != 3 : record.type > 1) continue;
+-        const std::string name = ZoneTextToUtf8(native->GetTranslatedName());
+-        if (keybinder::CleanCheckpointPlace(name).empty()) continue;
+-        zones.push_back({static_cast<float>(record.x1), static_cast<float>(record.y1),
+-            static_cast<float>(record.z1), static_cast<float>(record.x2),
+-            static_cast<float>(record.y2), static_cast<float>(record.z2), record.type, record.level, name});
+-    }
+-    return zones;
+-}
+-#endif
+-} // namespace
+-
+-void SAMPBridge::InitializePoliceLocate() {
+-    if (!policeCheckpointAdapter_)
+-        policeCheckpointAdapter_ = std::make_unique<keybinder::ServerCheckpointRPCAdapter>();
+-    policeCheckpointAdapter_->SetCallback([this](const keybinder::ServerCheckpointEvent& event) {
+-        CapturePoliceCheckpoint(event);
+-    });
+-    policeCheckpointAdapter_->Initialize();
+-}
+-
+-void SAMPBridge::ShutdownPoliceLocate() {
+-    {
+-        std::lock_guard<std::mutex> lock(policeLocateMutex_);
+-        policeLocateCaptureActive_ = false;
+-        policeLocateQueueOverflow_ = false;
+-        pendingPoliceLocateEvents_.clear();
+-    }
+-    if (policeCheckpointAdapter_) policeCheckpointAdapter_->Shutdown();
+-    policeCheckpointAdapter_.reset();
+-    policeLocateTracker_.Reset();
+-    policeLocateSession_.clear();
+-    policeLocatePreferredRacing_ = false;
+-    policeLocateHasSelectedCheckpoint_ = false;
+-    for (auto& checkpoint : policeLocateCheckpoints_) checkpoint = {};
+-    policeLocateCheckpointSequence_ = policeLocateSuccessAt_ = 0;
+-}
+-
+-void SAMPBridge::CapturePoliceLocateChat(const std::string& text) {
+-    if (text.empty() || text.size() > 1024) return;
+-    std::lock_guard<std::mutex> lock(policeLocateMutex_);
+-    if (!policeLocateCaptureActive_) {
+-        if (text.rfind("Detektiv: Das Handy und die Ortung von ", 0) == 0
+-            || text == "Detektiv: Das Ziel wurde geortet und wird dir nun auf der Karte angezeigt.")
+-            keybinder::Logger::Info("[SAMPBridge] Detective message ignored: verified police session is not ready.");
+-        return;
+-    }
+-    if (pendingPoliceLocateEvents_.size() >= 64) {
+-        pendingPoliceLocateEvents_.clear();
+-        policeLocateCaptureActive_ = false;
+-        policeLocateQueueOverflow_ = true;
+-        return;
+-    }
+-    PendingPoliceLocateEvent event{false, text, {}, PoliceTick()};
+-    // Snapshot at receive time, before a same-frame checkpoint packet can
+-    // replace the destination. An already active job/GPS marker is baseline.
+-    for (int kind = 0; kind < 2; ++kind)
+-        event.native[kind].enabled = ReadPoliceCheckpointKind(kind != 0, event.native[kind].checkpoint);
+-    pendingPoliceLocateEvents_.push_back(std::move(event));
+-}
+-
+-void SAMPBridge::CapturePoliceCheckpoint(const keybinder::ServerCheckpointEvent& event) {
+-    std::lock_guard<std::mutex> lock(policeLocateMutex_);
+-    if (!policeLocateCaptureActive_) return;
+-    if (pendingPoliceLocateEvents_.size() >= 64) {
+-        pendingPoliceLocateEvents_.clear();
+-        policeLocateCaptureActive_ = false;
+-        policeLocateQueueOverflow_ = true;
+-        return;
+-    }
+-    pendingPoliceLocateEvents_.push_back({true, {}, event, PoliceTick()});
+-}
+-
+-bool SAMPBridge::ReadPoliceCheckpointKind(bool racing, keybinder::LocateCheckpoint& checkpoint) const {
+-    const auto* game = GetGame();
+-    if (!game) return false;
+-    const bool enabled = racing ? game->m_racingCheckpoint.m_bEnabled != FALSE
+-        : game->m_checkpoint.m_bEnabled != FALSE;
+-    if (!enabled) return false;
+-    const auto& position = racing ? game->m_racingCheckpoint.m_currentPosition
+-        : game->m_checkpoint.m_position;
+-    if (!std::isfinite(position.x) || !std::isfinite(position.y) || !std::isfinite(position.z)
+-        || std::abs(position.x) > 20000.0f || std::abs(position.y) > 20000.0f
+-        || std::abs(position.z) > 20000.0f) return false;
+-    const float radius = racing ? game->m_racingCheckpoint.m_fSize : game->m_checkpoint.m_size.x;
+-    checkpoint = {position.x, position.y, position.z,
+-        std::isfinite(radius) && radius > 0.0f && radius <= 1000.0f ? radius : 1.0f};
+-    return true;
+-}
+-
+-bool SAMPBridge::ReadPoliceCheckpoint(keybinder::LocateCheckpoint& checkpoint) const {
+-    // Validation must read the exact kind selected for this operation. Falling
+-    // back to another active marker could report a completely different town.
+-    return policeLocateHasSelectedCheckpoint_
+-        && ReadPoliceCheckpointKind(policeLocatePreferredRacing_, checkpoint);
+-}
+-
+-std::string SAMPBridge::ResolvePoliceCheckpointDistrict(float x, float y, float z) const {
+-    // Validate against the marker actually active in the game, including race
+-    // checkpoints. A missing RPC must not suppress a confirmed detective result.
+-    keybinder::LocateCheckpoint current;
+-    if (!ReadPoliceCheckpoint(current) || std::abs(current.x - x) > 0.25f
+-        || std::abs(current.y - y) > 0.25f || std::abs(current.z - z) > 0.25f) return {};
+-#ifdef KEYBINDER_TESTING
+-    const auto& hooks = GetTestingHooks();
+-    const auto city = hooks.getCityAtPosition ? hooks.getCityAtPosition(x, y, z) : std::string{};
+-    const auto district = hooks.getDistrictAtPosition ? hooks.getDistrictAtPosition(x, y, z) : std::string{};
+-    return keybinder::FormatCheckpointLocation(city, district);
+-#else
+-    return keybinder::ResolveCheckpointLocation(x, y, z, ReadCheckpointZones(false), ReadCheckpointZones(true));
+-#endif
+-}
+-
+-void SAMPBridge::UpdatePoliceLocate(unsigned long now) {
+-    const auto* network = GetNetGame();
+-    const auto* local = GetLocalPlayer();
+-    const std::string playerName = GetLocalPlayerName();
+-    const bool allowed = initialized_ && network && !playerName.empty()
+-        && network->m_nGameState == sampapi::v03dl::CNetGame::GAME_MODE_CONNECTED
+-        && local && local->m_bIsActive && !local->m_bIsWasted
+-        && keybinder::IsPoliceMember(GetLocalFaction());
+-    std::string identity;
+-    if (allowed) {
+-        identity = std::string(network->m_szHostAddress, strnlen(network->m_szHostAddress, 257))
+-            + ":" + std::to_string(network->m_nPort) + "/" + playerName;
+-        std::transform(identity.begin(), identity.end(), identity.begin(), [](unsigned char ch) {
+-            return static_cast<char>(std::tolower(ch));
+-        });
+-    }
+-    std::vector<PendingPoliceLocateEvent> events;
+-    bool overflow = false;
+-    {
+-        std::lock_guard<std::mutex> lock(policeLocateMutex_);
+-        if (!allowed || identity != policeLocateSession_) {
+-            pendingPoliceLocateEvents_.clear();
+-            policeLocatePreferredRacing_ = false;
+-            policeLocateHasSelectedCheckpoint_ = false;
+-            for (auto& checkpoint : policeLocateCheckpoints_) checkpoint = {};
+-            policeLocateCheckpointSequence_ = policeLocateSuccessAt_ = 0;
+-        }
+-        overflow = policeLocateQueueOverflow_;
+-        policeLocateQueueOverflow_ = false;
+-        policeLocateCaptureActive_ = allowed;
+-        policeLocateSession_ = identity;
+-        events.swap(pendingPoliceLocateEvents_);
+-    }
+-    if (overflow) policeLocateTracker_.Reset();
+-    policeLocateTracker_.SetSession(allowed, identity);
+-    if (!allowed) return;
+-    for (const auto& event : events) {
+-        if (!event.isCheckpoint) {
+-            if (policeLocateTracker_.ObserveChat(event.text, event.at)) {
+-                if (policeLocateTracker_.HasSuccessfulLocate()) policeLocateSuccessAt_ = event.at;
+-                else {
+-                    policeLocateHasSelectedCheckpoint_ = false;
+-                    policeLocateCheckpointSequence_ = policeLocateSuccessAt_ = 0;
+-                    for (int kind = 0; kind < 2; ++kind) {
+-                        policeLocateCheckpoints_[kind] = {};
+-                        policeLocateCheckpoints_[kind].lastNative = event.native[kind];
+-                    }
+-                }
+-                keybinder::Logger::Info("[SAMPBridge] Detective locate %s accepted: %s",
+-                    policeLocateTracker_.HasSuccessfulLocate() ? "completion" : "start", event.text.c_str());
+-            }
+-        } else if (policeLocateTracker_.HasPendingLocate()) {
+-            auto& state = policeLocateCheckpoints_[event.checkpoint.racing ? 1 : 0];
+-            if (!event.checkpoint.enabled) {
+-                state.rpcObserved = state.nativeChanged = false;
+-                state.blockedAfterDisable = true;
+-            } else {
+-                state.rpcObserved = true;
+-                state.blockedAfterDisable = false;
+-                state.rpcCheckpoint = {event.checkpoint.x, event.checkpoint.y,
+-                    event.checkpoint.z, event.checkpoint.radius};
+-                state.rpcAt = event.at;
+-                state.rpcSequence = ++policeLocateCheckpointSequence_;
+-            }
+-        }
+-    }
+-    PoliceLocateNativeSnapshot native[2]{};
+-    if (policeLocateTracker_.HasPendingLocate()) {
+-        for (int kind = 0; kind < 2; ++kind) {
+-            auto& state = policeLocateCheckpoints_[kind];
+-            native[kind].enabled = ReadPoliceCheckpointKind(kind != 0, native[kind].checkpoint);
+-            if (!native[kind].enabled) {
+-                state.nativeChanged = false;
+-                // The disable packet has now actually reached the game. A
+-                // later disabled-to-enabled transition is a new destination,
+-                // even if its enable packet is missed by the receive hook.
+-                state.blockedAfterDisable = false;
+-            }
+-            else if ((!state.lastNative.enabled
+-                || !SamePoliceCheckpoint(native[kind].checkpoint, state.lastNative.checkpoint))
+-                && !state.blockedAfterDisable) {
+-                state.nativeChanged = true;
+-                state.nativeChangedAt = now;
+-            }
+-            state.lastNative = native[kind];
+-        }
+-    }
+-    const bool completedBeforePolling = policeLocateTracker_.HasSuccessfulLocate();
+-    const bool allowNativeFallback = policeLocateTracker_.ReadyForCurrentCheckpoint(now);
+-    policeLocateHasSelectedCheckpoint_ = false;
+-    int selected = -1;
+-    unsigned long latestSequence = 0;
+-    bool hasFreshRpc = false;
+-    if (policeLocateTracker_.HasSuccessfulLocate()) {
+-        // A fresh server packet identifies the destination even if another
+-        // checkpoint kind remains active. Wait until native application agrees.
+-        for (int kind = 0; kind < 2; ++kind) {
+-            const auto& state = policeLocateCheckpoints_[kind];
+-            if (!state.rpcObserved || !NearPoliceCompletion(state.rpcAt, policeLocateSuccessAt_)) continue;
+-            hasFreshRpc = true;
+-            if (state.rpcSequence > latestSequence) {
+-                latestSequence = state.rpcSequence;
+-                selected = native[kind].enabled
+-                    && SamePoliceCheckpoint(native[kind].checkpoint, state.rpcCheckpoint) ? kind : -1;
+-            }
+-        }
+-        // A receive hook may miss the packet. In that case use only a native
+-        // marker that actually changed during this locate, near its completion.
+-        // Two changed kinds are ambiguous: never announce an arbitrary first one.
+-        if (selected < 0 && !hasFreshRpc && allowNativeFallback) {
+-            int changedCount = 0;
+-            for (int kind = 0; kind < 2; ++kind) {
+-                const auto& state = policeLocateCheckpoints_[kind];
+-                if (native[kind].enabled && state.nativeChanged && !state.blockedAfterDisable
+-                    && NearPoliceCompletion(state.nativeChangedAt, policeLocateSuccessAt_)) {
+-                    selected = kind;
+-                    ++changedCount;
+-                }
+-            }
+-            if (changedCount != 1) selected = -1;
+-        }
+-    }
+-    if (selected >= 0) {
+-        policeLocatePreferredRacing_ = selected != 0;
+-        policeLocateHasSelectedCheckpoint_ = true;
+-        // Freshness was checked against each original event timestamp above.
+-        // The tracker must receive the current observation time: replaying a
+-        // pre-success timestamp here looks like a wrapped/expired operation.
+-        policeLocateTracker_.ObserveCheckpoint(native[selected].checkpoint, now);
+-    } else policeLocateTracker_.ObserveCheckpointDisabled();
+-    if (completedBeforePolling && !policeLocateTracker_.HasPendingLocate()) {
+-        const auto* game = GetGame();
+-        keybinder::Logger::Warning("[SAMPBridge] Detective result expired before radio dispatch (normal=%d race=%d input=%d selected=%d).",
+-            game && game->m_checkpoint.m_bEnabled ? 1 : 0,
+-            game && game->m_racingCheckpoint.m_bEnabled ? 1 : 0,
+-            GetInput() ? 1 : 0, selected);
+-    }
+-    if (GetInput() == nullptr) return;
+-    const std::string radio = policeLocateTracker_.TakeRadioMessage(now, [this](float x, float y, float z) {
+-        return ResolvePoliceCheckpointDistrict(x, y, z);
+-    });
+-    if (!radio.empty()) {
+-        keybinder::Logger::Info("[SAMPBridge] Detective radio result from the current checkpoint: %s", radio.c_str());
+-        if (!SendCommand(radio)) keybinder::Logger::Warning("[SAMPBridge] Detective radio command could not be sent.");
+-    }
+-}
+-
+-#ifdef KEYBINDER_TESTING
+-bool SAMPBridge::ProcessServerCheckpointRpcForTesting(unsigned char id, RakNet::BitStream* payload) {
+-    return policeCheckpointAdapter_ && policeCheckpointAdapter_->ProcessRpcForTesting(id, payload);
+-}
+-#endif
+diff --git a/src/PoliceLocateTracker.cpp b/src/PoliceLocateTracker.cpp
+deleted file mode 100644
+index ba49c74..0000000
+--- a/src/PoliceLocateTracker.cpp
++++ /dev/null
+@@ -1,195 +0,0 @@
+-#include "../include/PoliceLocateTracker.h"
+-
+-#include <algorithm>
+-#include <cmath>
+-
+-namespace keybinder {
+-namespace {
+-
+-bool IsHex(char ch) {
+-    return (ch >= '0' && ch <= '9') || (ch >= 'A' && ch <= 'F') || (ch >= 'a' && ch <= 'f');
+-}
+-
+-std::string Trim(const std::string& value) {
+-    const auto first = value.find_first_not_of(" \t\r\n");
+-    if (first == std::string::npos) return {};
+-    return value.substr(first, value.find_last_not_of(" \t\r\n") - first + 1);
+-}
+-
+-std::string NormalizeLine(const std::string& line) {
+-    std::string text;
+-    text.reserve(line.size());
+-    for (std::size_t at = 0; at < line.size();) {
+-        if (line[at] == '{') {
+-            const auto end = line.find('}', at + 1);
+-            if (end != std::string::npos && (end - at == 7 || end - at == 9)) {
+-                bool hex = true;
+-                for (auto digit = at + 1; digit < end; ++digit) hex = hex && IsHex(line[digit]);
+-                if (hex) { at = end + 1; continue; }
+-            }
+-        }
+-        text.push_back(line[at++]);
+-    }
+-    text = Trim(text);
+-    // A log-style timestamp is allowed only at the beginning. Never match
+-    // detective text quoted inside another player's chat or a radio message.
+-    if (text.size() >= 11 && text[0] == '[' && text[3] == ':' && text[6] == ':'
+-        && text[9] == ']' && text[10] == ' ') {
+-        bool digits = true;
+-        for (int pos : {1, 2, 4, 5, 7, 8}) digits = digits && text[pos] >= '0' && text[pos] <= '9';
+-        if (digits) text = Trim(text.substr(11));
+-    }
+-    return text;
+-}
+-
+-bool ValidTarget(const std::string& target) {
+-    if (target.empty() || target.size() > 24) return false;
+-    for (unsigned char ch : target) {
+-        if (!((ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z')
+-            || (ch >= '0' && ch <= '9') || ch == '_' || ch == '[' || ch == ']'
+-            || ch == '(' || ch == ')' || ch == '.' || ch == '$' || ch == '@'
+-            || ch == '=' || ch == '-')) return false;
+-    }
+-    return true;
+-}
+-
+-bool ParseStart(const std::string& line, std::string& target, std::uint32_t& durationMs) {
+-    const std::string prefix = "Detektiv: Das Handy und die Ortung von ";
+-    const std::string separator = " wurde gestartet und dauert ";
+-    const std::string suffix = " Sekunden.";
+-    if (line.compare(0, prefix.size(), prefix) != 0 || line.size() <= prefix.size() + suffix.size()
+-        || line.compare(line.size() - suffix.size(), suffix.size(), suffix) != 0) return false;
+-    const auto separatorAt = line.find(separator, prefix.size());
+-    if (separatorAt == std::string::npos) return false;
+-    target = line.substr(prefix.size(), separatorAt - prefix.size());
+-    if (!ValidTarget(target)) return false;
+-    const auto durationAt = separatorAt + separator.size();
+-    const auto durationSize = line.size() - suffix.size() - durationAt;
+-    if (durationSize == 0 || durationSize > 3) return false;
+-    std::uint32_t seconds = 0;
+-    for (std::size_t at = durationAt; at < durationAt + durationSize; ++at) {
+-        if (line[at] < '0' || line[at] > '9') return false;
+-        seconds = seconds * 10 + static_cast<std::uint32_t>(line[at] - '0');
+-    }
+-    if (seconds == 0 || seconds * 1000 > PoliceLocateTracker::kOperationTimeoutMs) return false;
+-    durationMs = seconds * 1000;
+-    return true;
+-}
+-
+-bool ValidCheckpoint(const LocateCheckpoint& checkpoint) {
+-    // GTA's world is well within these limits, including supported interiors.
+-    // Reject corrupt network floats rather than resolving a misleading zone.
+-    return std::isfinite(checkpoint.x) && std::isfinite(checkpoint.y)
+-        && std::isfinite(checkpoint.z) && std::isfinite(checkpoint.radius)
+-        && std::fabs(checkpoint.x) <= 20000.0f && std::fabs(checkpoint.y) <= 20000.0f
+-        && std::fabs(checkpoint.z) <= 20000.0f
+-        && checkpoint.radius > 0.0f && checkpoint.radius <= 1000.0f;
+-}
+-
+-bool WithinWindow(std::uint32_t first, std::uint32_t second) {
+-    return static_cast<std::uint32_t>(first - second) <= PoliceLocateTracker::kCompletionWindowMs
+-        || static_cast<std::uint32_t>(second - first) <= PoliceLocateTracker::kCompletionWindowMs;
+-}
+-
+-std::string SafeDistrict(const std::string& value) {
+-    const std::string district = Trim(value);
+-    if (district.empty() || district.size() > 100 || district == "Unknown" || district == "unknown") return {};
+-    for (unsigned char ch : district) {
+-        if (ch < 0x20 || ch == 0x7f || ch == '{' || ch == '}' || ch == '[' || ch == ']') return {};
+-    }
+-    return district;
+-}
+-
+-} // namespace
+-
+-void PoliceLocateTracker::SetSession(bool policeAllowed, const std::string& connectionIdentity) {
+-    const bool permitted = policeAllowed && !connectionIdentity.empty();
+-    if (!permitted || !allowed_ || connectionIdentity != identity_) ClearOperation();
+-    allowed_ = permitted;
+-    identity_ = permitted ? connectionIdentity : std::string{};
+-}
+-
+-void PoliceLocateTracker::Reset() {
+-    ClearOperation();
+-    allowed_ = false;
+-    identity_.clear();
+-}
+-
+-void PoliceLocateTracker::ClearOperation() {
+-    pending_ = false;
+-    target_.clear();
+-    startedAt_ = durationMs_ = 0;
+-    successObserved_ = markerObserved_ = false;
+-    successAt_ = markerAt_ = 0;
+-    marker_ = {};
+-}
+-
+-bool PoliceLocateTracker::ValidatePending(std::uint32_t nowMs) {
+-    if (!allowed_ || !pending_) return false;
+-    if (static_cast<std::uint32_t>(nowMs - startedAt_) > kOperationTimeoutMs
+-        || (successObserved_ && static_cast<std::uint32_t>(nowMs - successAt_) > kCompletionWindowMs)) {
+-        ClearOperation();
+-        return false;
+-    }
+-    return true;
+-}
+-
+-bool PoliceLocateTracker::ObserveChat(const std::string& line, std::uint32_t nowMs) {
+-    if (!allowed_) return false;
+-    const std::string normalized = NormalizeLine(line);
+-    std::string target;
+-    std::uint32_t durationMs = 0;
+-    if (ParseStart(normalized, target, durationMs)) {
+-        if (ValidatePending(nowMs) && target_ == target && durationMs_ == durationMs
+-            && static_cast<std::uint32_t>(nowMs - startedAt_) < 1000) return false;
+-        ClearOperation();
+-        pending_ = true;
+-        target_ = std::move(target);
+-        startedAt_ = nowMs;
+-        durationMs_ = durationMs;
+-        return true;
+-    }
+-    if (normalized != "Detektiv: Das Ziel wurde geortet und wird dir nun auf der Karte angezeigt."
+-        || !ValidatePending(nowMs) || successObserved_) return false;
+-    // The server confirms completion. Its announced duration is informative;
+-    // packet delivery or a skill change must not invalidate an actual success.
+-    successObserved_ = true;
+-    successAt_ = nowMs;
+-    if (markerObserved_ && !WithinWindow(markerAt_, successAt_)) markerObserved_ = false;
+-    return true;
+-}
+-
+-bool PoliceLocateTracker::ObserveCheckpoint(const LocateCheckpoint& checkpoint, std::uint32_t nowMs) {
+-    if (!ValidatePending(nowMs) || !ValidCheckpoint(checkpoint)) return false;
+-    if (successObserved_ && !WithinWindow(nowMs, successAt_)) return false;
+-    marker_ = checkpoint;
+-    markerAt_ = nowMs;
+-    markerObserved_ = true;
+-    return true;
+-}
+-
+-void PoliceLocateTracker::ObserveCheckpointDisabled() {
+-    markerObserved_ = false;
+-    marker_ = {};
+-    markerAt_ = 0;
+-}
+-
+-bool PoliceLocateTracker::ReadyForCurrentCheckpoint(std::uint32_t nowMs) {
+-    return ValidatePending(nowMs) && successObserved_
+-        && static_cast<std::uint32_t>(nowMs - successAt_) >= kNativeCheckpointSettleMs;
+-}
+-
+-std::string PoliceLocateTracker::TakeRadioMessage(std::uint32_t nowMs, const DistrictResolver& resolveDistrict) {
+-    if (!ValidatePending(nowMs) || !successObserved_ || !markerObserved_
+-        || !WithinWindow(markerAt_, successAt_) || !resolveDistrict) return {};
+-    std::string district;
+-    try { district = SafeDistrict(resolveDistrict(marker_.x, marker_.y, marker_.z)); }
+-    catch (...) { return {}; }
+-    if (district.empty()) return {};
+-    const std::string message = "/r [ORTUNG] Gesuchter " + target_
+-        + " wurde zuletzt in [" + district + "] geortet.";
+-    ClearOperation();
+-    return message;
+-}
+-
+-} // namespace keybinder
+diff --git a/src/SAMPBridge.cpp b/src/SAMPBridge.cpp
+index 0f1097f..fbbadd1 100644
+--- a/src/SAMPBridge.cpp
++++ b/src/SAMPBridge.cpp
+@@ -753,7 +753,6 @@ bool SAMPBridge::Initialize() {
+     // and prevent false incoming hitsounds on script-driven HP changes.
+     InstallScriptedHealthRpcHook();
+     InitializeStartupStatsAdapter();
+-    InitializePoliceLocate();
+ 
+     initialized_ = true;
+     // Damage feedback/logging stays available independently of the counters.
+@@ -811,7 +810,6 @@ void SAMPBridge::Shutdown() {
+         return;
+     }
+     shutting_down_ = true;
+-    ShutdownPoliceLocate();
+     CancelManualTextInput();
+     if (statsDialogAdapter_) statsDialogAdapter_->Shutdown();
+     statsDialogAdapter_.reset();
+@@ -1108,7 +1106,6 @@ void SAMPBridge::Update() {
+     UpdateStartupStats(now);
+     UpdateSpeedTicketFlow(now);
+     UpdateStartupJobSkills(now);
+-    UpdatePoliceLocate(now);
+ 
+     if (!HasCommandRouting()) {
+         RegisterPendingCommands();
+@@ -1670,7 +1667,6 @@ void SAMPBridge::InitializeJobTracker() {
+     jobChatAdapter_->SetCallback([this](const jobs::JobChatEvent& event) {
+         if (!event.hasPlayerPrefix) ObserveServerEngineStartMessage(event.normalizedLine);
+         if (!event.hasPlayerPrefix && !g_emittingBinderLocalMessage) QueueCombatChat(event.normalizedLine);
+-        if (!event.hasPlayerPrefix && !g_emittingBinderLocalMessage) CapturePoliceLocateChat(event.normalizedLine);
+         NotifyIncomingChat(event.normalizedLine);
+         if (jobTracker_ != nullptr) {
+             const std::vector<jobs::JobEvent> recordedEvents = jobTracker_->HandleChatEvent(event);
+diff --git a/src/ServerCheckpointRPCAdapter.cpp b/src/ServerCheckpointRPCAdapter.cpp
+deleted file mode 100644
+index f57f441..0000000
+--- a/src/ServerCheckpointRPCAdapter.cpp
++++ /dev/null
+@@ -1,85 +0,0 @@
+-#include "../include/ServerCheckpointRPCAdapter.h"
+-#include "../include/RakHook/include/RakNet/BitStream.h"
+-#ifndef KEYBINDER_TESTING
+-#include "../include/RakHook/include/RakHook/rakhook.hpp"
+-#endif
+-#include <cmath>
+-#include <utility>
+-
+-namespace keybinder {
+-namespace {
+-// Protocol layout: openmultiplayer/open.mp Shared/NetCode/checkpoint.hpp.
+-// https://github.com/openmultiplayer/open.mp/blob/master/Shared/NetCode/checkpoint.hpp
+-constexpr unsigned char kSetCheckpoint = 107;
+-constexpr unsigned char kDisableCheckpoint = 37;
+-constexpr unsigned char kSetRaceCheckpoint = 38;
+-constexpr unsigned char kDisableRaceCheckpoint = 39;
+-
+-bool Dispatch(const std::shared_ptr<ServerCheckpointAdapterState>& state,
+-              unsigned char id, RakNet::BitStream* payload) {
+-    if (!state || (id != kSetCheckpoint && id != kDisableCheckpoint
+-        && id != kSetRaceCheckpoint && id != kDisableRaceCheckpoint)) return false;
+-    std::lock_guard<std::mutex> lock(state->mutex);
+-    if (!state->alive || !state->callback) return false;
+-    ServerCheckpointEvent event;
+-    event.racing = id == kSetRaceCheckpoint || id == kDisableRaceCheckpoint;
+-    if (id == kSetCheckpoint || id == kSetRaceCheckpoint) {
+-        if (!payload) return false;
+-        const int offset = payload->GetReadOffset();
+-        unsigned char type = 0;
+-        float nextX = 0.0f, nextY = 0.0f, nextZ = 0.0f;
+-        const bool read = (!event.racing || payload->Read(type))
+-            && payload->Read(event.x) && payload->Read(event.y) && payload->Read(event.z)
+-            && (!event.racing || (payload->Read(nextX) && payload->Read(nextY) && payload->Read(nextZ)))
+-            && payload->Read(event.radius);
+-        payload->SetReadOffset(offset);
+-        if (!read || !std::isfinite(event.x) || !std::isfinite(event.y)
+-            || !std::isfinite(event.z) || !std::isfinite(event.radius)
+-            || std::abs(event.x) > 100000.0f || std::abs(event.y) > 100000.0f
+-            || std::abs(event.z) > 100000.0f || event.radius <= 0.0f
+-            || event.radius > 10000.0f) return false;
+-        event.enabled = true;
+-    }
+-    state->callback(event);
+-    return true;
+-}
+-} // namespace
+-
+-ServerCheckpointRPCAdapter::ServerCheckpointRPCAdapter()
+-    : state_(std::make_shared<ServerCheckpointAdapterState>()) {}
+-ServerCheckpointRPCAdapter::~ServerCheckpointRPCAdapter() { Shutdown(); }
+-
+-bool ServerCheckpointRPCAdapter::Initialize() {
+-    {
+-        std::lock_guard<std::mutex> lock(state_->mutex);
+-        state_->alive = true;
+-    }
+-    if (hookRegistered_) return true;
+-#ifndef KEYBINDER_TESTING
+-    std::weak_ptr<ServerCheckpointAdapterState> weak = state_;
+-    rakhook::on_receive_rpc += [weak](unsigned char& id, RakNet::BitStream* payload) -> bool {
+-        if (rakhook::initialized) Dispatch(weak.lock(), id, payload);
+-        return true;
+-    };
+-#endif
+-    hookRegistered_ = true;
+-    return true;
+-}
+-
+-void ServerCheckpointRPCAdapter::Shutdown() {
+-    std::lock_guard<std::mutex> lock(state_->mutex);
+-    state_->alive = false;
+-    state_->callback = nullptr;
+-}
+-
+-void ServerCheckpointRPCAdapter::SetCallback(std::function<void(const ServerCheckpointEvent&)> callback) {
+-    std::lock_guard<std::mutex> lock(state_->mutex);
+-    state_->callback = std::move(callback);
+-}
+-
+-#ifdef KEYBINDER_TESTING
+-bool ServerCheckpointRPCAdapter::ProcessRpcForTesting(unsigned char id, RakNet::BitStream* payload) {
+-    return Dispatch(state_, id, payload);
+-}
+-#endif
+-} // namespace keybinder
+diff --git a/tests/CheckpointLocationTests.cpp b/tests/CheckpointLocationTests.cpp
+deleted file mode 100644
+index b61bd22..0000000
+--- a/tests/CheckpointLocationTests.cpp
++++ /dev/null
+@@ -1,106 +0,0 @@
+-#include "../include/CheckpointLocation.h"
+-#include <cstdio>
+-#include <limits>
+-
+-namespace {
+-int checks = 0, failures = 0;
+-#define CHECK(value) do { ++checks; if (!(value)) { ++failures; std::printf("[FAIL] CheckpointLocation: %s (line %d)\n", #value, __LINE__); } } while (0)
+-using Zone = keybinder::CheckpointLocationZone;
+-
+-void TargetCityAndDistrictComeFromTheSameCoordinates() {
+-    // Representative nested navigation/map records, deliberately shuffled.
+-    const std::vector<Zone> nav{
+-        {-3000, -3000, -1000, 3000, 3000, 1000, 0, 0, "San Andreas"},
+-        {600, -1800, -100, 1500, -1000, 200, 0, 1, "Market"},
+-        {1500, 100, -100, 2400, 500, 200, 0, 0, "Palomino Creek"},
+-        {-100, -500, -100, 3000, 1600, 1000, 0, 0, "Red County"},
+-        {500, -2500, -100, 3000, -600, 1000, 0, 1, "Los Santos"},
+-        {900, -1500, -100, 1100, -1200, 200, 2, 1, "Gang territory, not a district"},
+-        {-2600, -2100, -100, -2100, -1100, 200, 1, 2, "Foster Valley"},
+-        {2000, 2000, -100, 2600, 2800, 200, 0, 3, "Prickle Pine"}};
+-    const std::vector<Zone> map{
+-        {-3000, -3000, -1000, 3000, 3000, 1000, 3, 0, "San Andreas"},
+-        {-100, -500, -1000, 3000, 1600, 1000, 3, 0, "Red County"},
+-        {500, -2500, -1000, 3000, -600, 1000, 3, 1, "Los Santos"},
+-        {-3000, -2600, -1000, -1600, 1800, 1000, 3, 2, "San Fierro"},
+-        {900, 1700, -1000, 3000, 3000, 1000, 3, 3, "Las Venturas"}};
+-    CHECK(keybinder::ResolveCheckpointLocation(1000, -1400, 10, nav, map) == "Los Santos Market");
+-    CHECK(keybinder::ResolveCheckpointLocation(1927.8734f, 168.8767f, 40.1172f, nav, map) == "Red County Palomino Creek");
+-    CHECK(keybinder::ResolveCheckpointLocation(-2300, -1500, 30, nav, map) == "San Fierro Foster Valley");
+-    CHECK(keybinder::ResolveCheckpointLocation(2300, 2300, 30, nav, map) == "Las Venturas Prickle Pine");
+-    // Map targets above/below the ground retain their actual horizontal district.
+-    for (float z : {-5000.0f, -1000.0f, 201.0f, 1000.0f, 15000.0f})
+-        CHECK(keybinder::ResolveCheckpointLocation(1000, -1400, z, nav, map) == "Los Santos Market");
+-    auto reversed = nav;
+-    std::reverse(reversed.begin(), reversed.end());
+-    CHECK(keybinder::ResolveCheckpointLocation(1000, -1400, 10, reversed, map) == "Los Santos Market");
+-    CHECK(keybinder::ResolveCheckpointLocation(1000, -1400, 10, nav, {}) == "Los Santos Market");
+-    CHECK(keybinder::ResolveCheckpointLocation(1000, -1400, 10, nav, {map.front()}) == "Los Santos Market");
+-    CHECK(keybinder::ResolveCheckpointLocation(1927, 168, 40, nav, {}) == "Palomino Creek");
+-}
+-
+-void InvalidOrMissingDataNeverInventsATargetLocation() {
+-    const Zone valid{600, -1800, -100, 1500, -1000, 200, 0, 1, "Market"};
+-    CHECK(keybinder::ResolveCheckpointLocation(1000, -1400, 10, {}, {}).empty());
+-    CHECK(keybinder::ResolveCheckpointLocation(1900, 100, 10, {valid}, {}).empty());
+-    for (float bad : {std::numeric_limits<float>::quiet_NaN(), std::numeric_limits<float>::infinity(), 20001.0f}) {
+-        CHECK(keybinder::ResolveCheckpointLocation(bad, -1400, 10, {valid}, {}).empty());
+-        CHECK(keybinder::ResolveCheckpointLocation(1000, bad, 10, {valid}, {}).empty());
+-        CHECK(keybinder::ResolveCheckpointLocation(1000, -1400, bad, {valid}, {}).empty());
+-    }
+-    for (auto bad : {Zone{1500, -1800, -100, 600, -1000, 200, 0, 1, "Market"},
+-        Zone{600, -1000, -100, 1500, -1800, 200, 0, 1, "Market"},
+-        Zone{600, -1800, 200, 1500, -1000, -100, 0, 1, "Market"},
+-        Zone{600, -1800, -100, 1500, -1000, 200, 3, 1, "Market"},
+-        Zone{600, -1800, -100, 1500, -1000, 200, 2, 1, "Market"}})
+-        CHECK(keybinder::ResolveCheckpointLocation(1000, -1400, 10, {bad}, {}).empty());
+-    for (int field = 0; field < 6; ++field) {
+-        auto bad = valid;
+-        switch (field) {
+-        case 0: bad.x1 = std::numeric_limits<float>::quiet_NaN(); break;
+-        case 1: bad.y1 = std::numeric_limits<float>::quiet_NaN(); break;
+-        case 2: bad.z1 = std::numeric_limits<float>::quiet_NaN(); break;
+-        case 3: bad.x2 = std::numeric_limits<float>::infinity(); break;
+-        case 4: bad.y2 = std::numeric_limits<float>::infinity(); break;
+-        case 5: bad.z2 = std::numeric_limits<float>::infinity(); break;
+-        }
+-        CHECK(keybinder::ResolveCheckpointLocation(1000, -1400, 10, {bad}, {}).empty());
+-    }
+-    for (auto point : {std::pair<float, float>{600, -1800}, {1500, -1000}, {600, -1000}, {1500, -1800}})
+-        CHECK(keybinder::ResolveCheckpointLocation(point.first, point.second, 10, {valid}, {}) == "Los Santos Market");
+-    for (auto text : {"", "Unknown", "Market\n/r injected", "{FFFFFF}Market", "[Market]"}) {
+-        auto bad = valid; bad.name = text;
+-        CHECK(keybinder::ResolveCheckpointLocation(1000, -1400, 10, {bad}, {}).empty());
+-    }
+-    CHECK(keybinder::FormatCheckpointLocation(" Los Santos ", " Market ") == "Los Santos Market");
+-    CHECK(keybinder::FormatCheckpointLocation("Los Santos", "los santos") == "Los Santos");
+-    CHECK(keybinder::FormatCheckpointLocation("Los Santos", "").empty());
+-    CHECK(keybinder::FormatCheckpointLocation("Unknown", "Market") == "Market");
+-}
+-
+-void NativeZoneRecordUsesGameLayoutRatherThanLegacySdkStride() {
+-    unsigned char bytes[64]{}; // Two native 0x20-byte records.
+-    std::memcpy(bytes + 8, "MARKET", 6);
+-    const std::int16_t minimumX = 600, maximumX = 1500;
+-    std::memcpy(bytes + 0x10, &minimumX, sizeof(minimumX));
+-    std::memcpy(bytes + 0x16, &maximumX, sizeof(maximumX));
+-    bytes[0x1e] = 1; bytes[0x1f] = 1;
+-    bytes[0x20 + 0x1e] = 3; bytes[0x20 + 0x1f] = 2;
+-    keybinder::NativeCheckpointZoneRecord first{}, second{};
+-    std::memcpy(&first, bytes, sizeof(first));
+-    std::memcpy(&second, bytes + sizeof(first), sizeof(second));
+-    CHECK(first.x1 == 600 && first.x2 == 1500);
+-    CHECK(first.type == 1 && first.level == 1);
+-    CHECK(second.type == 3 && second.level == 2);
+-    CHECK(std::string(first.textLabel, 6) == "MARKET");
+-}
+-} // namespace
+-
+-int RunCheckpointLocationTests() {
+-    checks = failures = 0;
+-    TargetCityAndDistrictComeFromTheSameCoordinates();
+-    InvalidOrMissingDataNeverInventsATargetLocation();
+-    NativeZoneRecordUsesGameLayoutRatherThanLegacySdkStride();
+-    std::printf("CheckpointLocationTests: %d checks, %d failures\n", checks, failures);
+-    return failures;
+-}
+diff --git a/tests/KeybindTests.cpp b/tests/KeybindTests.cpp
+index e8a8b2c..8ec72c4 100644
+--- a/tests/KeybindTests.cpp
++++ b/tests/KeybindTests.cpp
+@@ -12,10 +12,6 @@ int RunR18FeatureTests();
+ int RunDrugUseTrackerTests();
+ int RunLocalFactionAccessTests();
+ int RunNearbyWantedLabelsTests();
+-int RunPoliceLocateTrackerTests();
+-int RunCheckpointLocationTests();
+-int RunServerCheckpointRPCAdapterTests();
+-int RunPoliceLocateBridgeTests();
+ int RunForumKeyboardInputTests();
+ int RunReconnectTests();
+ int RunKillMessageTestTests();
+@@ -131,10 +127,6 @@ int main(int argc, char** argv) {
+         + run_suite("Running DrugUseTrackerTests...", RunDrugUseTrackerTests)
+         + run_suite("Running LocalFactionAccessTests...", RunLocalFactionAccessTests)
+         + run_suite("Running NearbyWantedLabelsTests...", RunNearbyWantedLabelsTests)
+-        + run_suite("Running PoliceLocateTrackerTests...", RunPoliceLocateTrackerTests)
+-        + run_suite("Running CheckpointLocationTests...", RunCheckpointLocationTests)
+-        + run_suite("Running ServerCheckpointRPCAdapterTests...", RunServerCheckpointRPCAdapterTests)
+-        + run_suite("Running PoliceLocateBridgeTests...", RunPoliceLocateBridgeTests)
+         + run_suite("Running ForumKeyboardInputTests...", RunForumKeyboardInputTests)
+         + run_suite("Running ForumKeyboardRoutingTests...", keybinder::RunForumKeyboardRoutingTests);
+     if (r4_failures != 0) return r4_failures;
+diff --git a/tests/PoliceLocateBridgeTests.cpp b/tests/PoliceLocateBridgeTests.cpp
+deleted file mode 100644
+index adec4e5..0000000
+--- a/tests/PoliceLocateBridgeTests.cpp
++++ /dev/null
+@@ -1,702 +0,0 @@
+-#include "../include/SAMPBridge.h"
+-#include "../include/RakHook/include/RakHook/samp.hpp"
+-#include "../include/RakHook/include/RakNet/BitStream.h"
+-
+-#include <cstdio>
+-#include <cstring>
+-#include <limits>
+-#include <string>
+-#include <tuple>
+-#include <type_traits>
+-#include <vector>
+-
+-namespace {
+-int checks = 0, failures = 0;
+-#define CHECK(value) do { ++checks; if (!(value)) { ++failures; std::printf("[FAIL] PoliceLocateBridge: %s (line %d)\n", #value, __LINE__); } } while (0)
+-
+-template<class Type> struct FakeObject {
+-    std::aligned_storage_t<sizeof(Type), alignof(Type)> bytes{};
+-    Type* get() { return reinterpret_cast<Type*>(&bytes); }
+-};
+-
+-constexpr float markerX = 1927.8734f;
+-constexpr float markerY = 168.8767f;
+-constexpr float markerZ = 40.1172f;
+-constexpr float markerRadius = 4.0f;
+-const char* startLine = "Detektiv: Das Handy und die Ortung von Lesch wurde gestartet und dauert 30 Sekunden.";
+-const char* successLine = "Detektiv: Das Ziel wurde geortet und wird dir nun auf der Karte angezeigt.";
+-const char* expectedRadio = "/r [ORTUNG] Gesuchter Lesch wurde zuletzt in [Palomino Creek] geortet.";
+-
+-struct Context {
+-    FakeObject<sampapi::v03dl::CInput> input;
+-    FakeObject<sampapi::v03dl::CChat> chat;
+-    FakeObject<sampapi::v03dl::CDialog> dialog;
+-    FakeObject<sampapi::v03dl::CGame> game;
+-    FakeObject<sampapi::v03dl::CNetGame> network;
+-    FakeObject<sampapi::v03dl::CLocalPlayer> local;
+-    std::string name = "PoliceOfficer";
+-    std::string faction = "SAPD";
+-    std::string targetCity;
+-    unsigned long now = 100000;
+-    bool inputAvailable = true;
+-    std::vector<std::string> commands, serverChat, localMessages;
+-    std::vector<std::tuple<float, float, float>> resolvedPositions;
+-
+-    Context() {
+-        network.get()->m_nGameState = sampapi::v03dl::CNetGame::GAME_MODE_CONNECTED;
+-        std::strcpy(network.get()->m_szHostAddress, "127.0.0.1");
+-        network.get()->m_nPort = 7777;
+-        local.get()->m_bIsActive = TRUE;
+-        local.get()->m_pPed = reinterpret_cast<sampapi::v03dl::CPed*>(0x2000);
+-    }
+-
+-    void ApplyMarker(float x = markerX, float y = markerY, float z = markerZ) {
+-        auto& checkpoint = game.get()->m_checkpoint;
+-        checkpoint.m_position.x = x;
+-        checkpoint.m_position.y = y;
+-        checkpoint.m_position.z = z;
+-        checkpoint.m_size.x = checkpoint.m_size.y = checkpoint.m_size.z = markerRadius;
+-        checkpoint.m_bEnabled = TRUE;
+-    }
+-
+-    void ApplyRacingMarker(float x = markerX, float y = markerY, float z = markerZ) {
+-        auto& checkpoint = game.get()->m_racingCheckpoint;
+-        checkpoint.m_currentPosition.x = x;
+-        checkpoint.m_currentPosition.y = y;
+-        checkpoint.m_currentPosition.z = z;
+-        checkpoint.m_fSize = markerRadius;
+-        checkpoint.m_bEnabled = TRUE;
+-    }
+-
+-    SAMPBridge::TestingHooks Hooks() {
+-        SAMPBridge::TestingHooks hooks{};
+-        hooks.getModuleHandle = [](const char*) { return reinterpret_cast<HMODULE>(1); };
+-        hooks.getSampBase = []() { return static_cast<uintptr_t>(1); };
+-        hooks.getRakHookVersion = []() { return rakhook::samp_ver::v03dlr1; };
+-        hooks.initializeRakHook = []() { return true; };
+-        hooks.destroyRakHook = []() {};
+-        hooks.getInput = [&]() { return inputAvailable ? input.get() : nullptr; };
+-        hooks.getChat = [&]() { return chat.get(); };
+-        hooks.getDialog = [&]() { return dialog.get(); };
+-        hooks.getGame = [&]() { return game.get(); };
+-        hooks.getNetGame = [&]() { return network.get(); };
+-        hooks.getLocalPlayer = [&]() { return local.get(); };
+-        hooks.getLocalPlayerName = [&]() { return name; };
+-        hooks.getLocalPlayerId = []() { return 5; };
+-        hooks.getPlayerName = [](int) { return std::string("OtherPlayer"); };
+-        hooks.getTickCount = [&]() { return now; };
+-        hooks.readLocalDamageSample = [&](float& health, float& armour, int& source, const void*& ped) {
+-            health = 100.0f; armour = 0.0f; source = 0; ped = local.get()->m_pPed; return true;
+-        };
+-        hooks.isStartupStatsReady = []() { return false; };
+-        hooks.isStartupJobSkillsReady = []() { return false; };
+-        hooks.getDistrictName = []() { return std::string("Market"); };
+-        hooks.getCityAtPosition = [&](float, float, float) { return targetCity; };
+-        hooks.getDistrictAtPosition = [&](float x, float y, float z) {
+-            resolvedPositions.emplace_back(x, y, z);
+-            return std::string("Palomino Creek");
+-        };
+-        hooks.sendInput = [&](sampapi::v03dl::CInput*, const char* text) { commands.emplace_back(text); };
+-        hooks.sendChat = [&](sampapi::v03dl::CLocalPlayer*, const char* text) { serverChat.emplace_back(text); };
+-        hooks.addMessage = [&](sampapi::v03dl::CChat*, unsigned long, const char* text) { localMessages.emplace_back(text); };
+-        hooks.getCommandHandler = [](sampapi::v03dl::CInput*, const char*) -> sampapi::CMDPROC { return nullptr; };
+-        hooks.addCommand = [](sampapi::v03dl::CInput*, const char*, sampapi::CMDPROC) {};
+-        hooks.setDefaultCommand = [](sampapi::v03dl::CInput*, sampapi::CMDPROC) {};
+-        hooks.installIncomingChatInterceptor = [](const auto&) {};
+-        return hooks;
+-    }
+-};
+-
+-struct Fixture {
+-    Context context;
+-    SAMPBridge bridge;
+-
+-    Fixture() {
+-        SAMPBridge::SetTestingHooks(context.Hooks());
+-        bridge.SetLocalFactionProvider([&]() { return context.faction; });
+-        CHECK(bridge.Initialize());
+-        bridge.Update(); // Establish a verified session before server events.
+-        CHECK(context.commands.empty());
+-    }
+-    ~Fixture() {
+-        bridge.Shutdown();
+-        SAMPBridge::ResetTestingHooks();
+-    }
+-    void Chat(const char* text, const char* prefix = nullptr) {
+-        CHECK(bridge.ProcessIncomingChatLineForTesting(prefix, text));
+-    }
+-    void Start() {
+-        Chat(startLine);
+-        bridge.Update();
+-        CHECK(context.commands.empty());
+-    }
+-    void Marker(bool apply = true) {
+-        RakNet::BitStream payload;
+-        payload.Write(markerX); payload.Write(markerY); payload.Write(markerZ); payload.Write(markerRadius);
+-        CHECK(bridge.ProcessServerCheckpointRpcForTesting(107, &payload));
+-        CHECK(payload.GetReadOffset() == 0);
+-        if (apply) context.ApplyMarker();
+-    }
+-    void DisableMarker() {
+-        CHECK(bridge.ProcessServerCheckpointRpcForTesting(37, nullptr));
+-        context.game.get()->m_checkpoint.m_bEnabled = FALSE;
+-    }
+-    void Complete() {
+-        context.now += 30000;
+-        Marker();
+-        Chat(successLine);
+-        bridge.Update();
+-    }
+-};
+-
+-void ActualCheckpointApplicationAndMarkerDistrictAreRequired() {
+-    Fixture fixture;
+-    auto& context = fixture.context;
+-    auto& bridge = fixture.bridge;
+-    context.ApplyMarker(100.0f, 200.0f, 3.0f); // Old checkpoint, unrelated to this locate.
+-    fixture.Start();
+-    context.now += 30000;
+-    fixture.Marker(false); // The receive hook runs before native checkpoint application.
+-    fixture.Chat(successLine);
+-    bridge.Update();
+-    CHECK(context.commands.empty());
+-    CHECK(context.resolvedPositions.empty());
+-    context.ApplyMarker();
+-    ++context.now;
+-    bridge.Update();
+-    CHECK(context.commands == std::vector<std::string>{expectedRadio});
+-    CHECK(context.serverChat.empty());
+-    CHECK((context.resolvedPositions == std::vector<std::tuple<float, float, float>>{
+-        std::make_tuple(markerX, markerY, markerZ)}));
+-    CHECK(bridge.GetDistrictName() == "Market"); // Must not leak into radio's target district.
+-    ++context.now;
+-    fixture.Chat(successLine);
+-    fixture.Marker();
+-    bridge.Update();
+-    bridge.Update();
+-    CHECK(context.commands.size() == 1);
+-}
+-
+-void SuccessBeforeCheckpointWorksAndDuplicateHooksDoNotRepeatRadio() {
+-    Fixture fixture;
+-    fixture.Start();
+-    fixture.context.now += 30000;
+-    fixture.Chat(successLine);
+-    fixture.bridge.Update();
+-    CHECK(fixture.context.commands.empty());
+-    fixture.Chat(successLine);
+-    ++fixture.context.now;
+-    fixture.Marker();
+-    fixture.Marker();
+-    fixture.bridge.Update();
+-    CHECK(fixture.context.commands == std::vector<std::string>{expectedRadio});
+-    CHECK(fixture.context.resolvedPositions.size() == 1);
+-    fixture.Chat(successLine);
+-    fixture.bridge.Update();
+-    CHECK(fixture.context.commands.size() == 1);
+-}
+-
+-void DisabledAndMismatchedNativeMarkersCannotBeAnnounced() {
+-    {
+-        Fixture fixture;
+-        fixture.Start();
+-        fixture.context.now += 30000;
+-        fixture.Marker();
+-        fixture.Chat(successLine);
+-        fixture.DisableMarker();
+-        fixture.bridge.Update();
+-        CHECK(fixture.context.commands.empty());
+-        CHECK(fixture.context.resolvedPositions.empty());
+-        fixture.context.ApplyMarker(); // A local GPS change is still not a fresh server event.
+-        ++fixture.context.now;
+-        fixture.bridge.Update();
+-        CHECK(fixture.context.commands.empty());
+-        fixture.Marker();
+-        fixture.bridge.Update();
+-        CHECK(fixture.context.commands == std::vector<std::string>{expectedRadio});
+-    }
+-    {
+-        Fixture fixture;
+-        fixture.Start();
+-        fixture.context.now += 30000;
+-        fixture.Marker();
+-        fixture.Chat(successLine);
+-        fixture.context.game.get()->m_checkpoint.m_bEnabled = FALSE;
+-        fixture.bridge.Update();
+-        CHECK(fixture.context.commands.empty());
+-        fixture.context.ApplyMarker(markerX + 0.26f, markerY, markerZ);
+-        ++fixture.context.now;
+-        fixture.bridge.Update();
+-        CHECK(fixture.context.commands.empty());
+-        fixture.context.ApplyMarker(markerX, markerY, std::numeric_limits<float>::quiet_NaN());
+-        ++fixture.context.now;
+-        fixture.bridge.Update();
+-        CHECK(fixture.context.commands.empty());
+-        CHECK(fixture.context.resolvedPositions.empty());
+-        fixture.context.ApplyMarker();
+-        ++fixture.context.now;
+-        fixture.bridge.Update();
+-        CHECK(fixture.context.commands == std::vector<std::string>{expectedRadio});
+-    }
+-}
+-
+-void PlayerPrefixesCannotSpoofPersonalDetectiveMessages() {
+-    Fixture fixture;
+-    fixture.Chat(startLine, "OtherPlayer");
+-    fixture.bridge.Update();
+-    fixture.context.now += 30000;
+-    fixture.Marker();
+-    fixture.Chat(successLine);
+-    fixture.bridge.Update();
+-    CHECK(fixture.context.commands.empty());
+-
+-    fixture.context.now += 1000;
+-    fixture.Start();
+-    fixture.context.now += 30000;
+-    fixture.Marker();
+-    fixture.Chat(successLine, "OtherPlayer");
+-    fixture.Chat("Detektiv: Du hast die FÃƒÆ’Ã‚Â¤higkeit auf Stufe 191 verbessert.");
+-    fixture.bridge.Update();
+-    CHECK(fixture.context.commands.empty());
+-    fixture.Chat(successLine);
+-    fixture.bridge.Update();
+-    CHECK(fixture.context.commands == std::vector<std::string>{expectedRadio});
+-}
+-
+-void OnlyVerifiedPoliceAliasesCanUseTheFeature() {
+-    for (const std::string faction : {"", "Zivilist", "Red County Brotherhood", "RCB", "Army", "NotSAPD", "SAPD supporter"}) {
+-        Fixture fixture;
+-        fixture.context.faction = faction;
+-        fixture.bridge.Update();
+-        fixture.Start();
+-        fixture.Complete();
+-        CHECK(fixture.context.commands.empty());
+-        CHECK(fixture.context.resolvedPositions.empty());
+-    }
+-    for (const std::string faction : {"SAPD", "LSPD", "San Andreas Police Department", "Los Santos Police Department"}) {
+-        Fixture fixture;
+-        fixture.context.faction = faction;
+-        fixture.bridge.Update();
+-        fixture.Start();
+-        fixture.Complete();
+-        CHECK(fixture.context.commands == std::vector<std::string>{expectedRadio});
+-    }
+-}
+-
+-void RevokedOrChangedIdentityDiscardsPendingEventsAndNeverReplaysThem() {
+-    // Each case changes identity or validity after receive callbacks queued a
+-    // complete result, proving Update revalidates before any radio output.
+-    for (int change = 0; change < 8; ++change) {
+-        Fixture fixture;
+-        auto& context = fixture.context;
+-        fixture.Start();
+-        context.now += 30000;
+-        fixture.Marker();
+-        fixture.Chat(successLine);
+-        if (change == 0) context.faction = "Red County Brotherhood";
+-        if (change == 1) context.faction.clear();
+-        if (change == 2) context.name = "OtherOfficer";
+-        if (change == 3) std::strcpy(context.network.get()->m_szHostAddress, "192.0.2.42");
+-        if (change == 4) context.network.get()->m_nPort = 8888;
+-        if (change == 5) context.network.get()->m_nGameState = sampapi::v03dl::CNetGame::GAME_MODE_WAITCONNECT;
+-        if (change == 6) context.local.get()->m_bIsActive = FALSE;
+-        if (change == 7) context.local.get()->m_bIsWasted = TRUE;
+-        fixture.bridge.Update();
+-        CHECK(context.commands.empty());
+-        CHECK(context.resolvedPositions.empty());
+-
+-        context.faction = "SAPD";
+-        context.name = "PoliceOfficer";
+-        std::strcpy(context.network.get()->m_szHostAddress, "127.0.0.1");
+-        context.network.get()->m_nPort = 7777;
+-        context.network.get()->m_nGameState = sampapi::v03dl::CNetGame::GAME_MODE_CONNECTED;
+-        context.local.get()->m_bIsActive = TRUE;
+-        context.local.get()->m_bIsWasted = FALSE;
+-        ++context.now;
+-        fixture.bridge.Update();
+-        fixture.Chat(successLine);
+-        fixture.Marker();
+-        fixture.bridge.Update();
+-        CHECK(context.commands.empty());
+-        context.now += 1000;
+-        fixture.Start();
+-        fixture.Complete();
+-        CHECK(context.commands == std::vector<std::string>{expectedRadio});
+-    }
+-}
+-
+-void LocalGpsAndOldServerCheckpointsNeverCountAsLocatedTarget() {
+-    {
+-        Fixture fixture;
+-        fixture.Start();
+-        fixture.context.now += 30000;
+-        fixture.context.ApplyMarker(); // No incoming RPC, as with /setgps.
+-        fixture.Chat(successLine);
+-        fixture.bridge.Update();
+-        CHECK(fixture.context.commands.empty());
+-        CHECK(fixture.context.resolvedPositions.empty());
+-    }
+-    {
+-        Fixture fixture;
+-        fixture.Marker();
+-        fixture.bridge.Update();
+-        fixture.Start();
+-        fixture.context.now += 30000;
+-        fixture.Chat(successLine);
+-        fixture.bridge.Update();
+-        CHECK(fixture.context.commands.empty());
+-        CHECK(fixture.context.resolvedPositions.empty());
+-    }
+-    {
+-        Fixture fixture;
+-        fixture.Start();
+-        fixture.context.now += 1000;
+-        fixture.Marker();
+-        fixture.bridge.Update();
+-        fixture.context.now += 29000;
+-        fixture.Chat(successLine);
+-        fixture.bridge.Update();
+-        CHECK(fixture.context.commands.empty());
+-        fixture.Marker();
+-        fixture.bridge.Update();
+-        CHECK(fixture.context.commands == std::vector<std::string>{expectedRadio});
+-    }
+-}
+-
+-void ExpiredOperationsCannotSendAndUnavailableInputDefersOutput() {
+-    {
+-        Fixture fixture;
+-        fixture.Start();
+-        fixture.context.now += keybinder::PoliceLocateTracker::kOperationTimeoutMs + 1;
+-        fixture.Marker();
+-        fixture.Chat(successLine);
+-        fixture.bridge.Update();
+-        CHECK(fixture.context.commands.empty());
+-    }
+-    {
+-        Fixture fixture;
+-        fixture.Start();
+-        fixture.context.now += 30000;
+-        fixture.Chat(successLine);
+-        fixture.bridge.Update();
+-        fixture.context.now += keybinder::PoliceLocateTracker::kCompletionWindowMs + 1;
+-        fixture.Marker();
+-        fixture.bridge.Update();
+-        CHECK(fixture.context.commands.empty());
+-    }
+-    {
+-        Fixture fixture;
+-        fixture.Start();
+-        fixture.context.now += 30000;
+-        fixture.Marker();
+-        fixture.Chat(successLine);
+-        fixture.context.inputAvailable = false;
+-        fixture.bridge.Update();
+-        CHECK(fixture.context.commands.empty());
+-        fixture.context.inputAvailable = true;
+-        ++fixture.context.now;
+-        fixture.bridge.Update();
+-        CHECK(fixture.context.commands == std::vector<std::string>{expectedRadio});
+-    }
+-}
+-
+-void OverflowDiscardsAmbiguousBatchesInsteadOfReplayingResults() {
+-    Fixture fixture;
+-    fixture.Start();
+-    fixture.context.now += 30000;
+-    fixture.Marker();
+-    fixture.Chat(successLine);
+-    for (int line = 0; line < 65; ++line) fixture.Chat("Ein normaler Serverhinweis");
+-    fixture.bridge.Update();
+-    CHECK(fixture.context.commands.empty());
+-    CHECK(fixture.context.resolvedPositions.empty());
+-    fixture.Chat(successLine);
+-    fixture.Marker();
+-    fixture.bridge.Update();
+-    CHECK(fixture.context.commands.empty());
+-}
+-
+-void SuccessReadsCurrentMarkerEvenWhenNoCheckpointRpcWasReceived() {
+-    for (const bool racing : {false, true}) {
+-        Fixture fixture;
+-        fixture.Start();
+-        fixture.context.now += 1000; // The server success is authoritative, no forced 28-second gate.
+-        fixture.Chat(successLine);
+-        fixture.bridge.Update();
+-        CHECK(fixture.context.commands.empty());
+-        if (racing) fixture.context.ApplyRacingMarker();
+-        else fixture.context.ApplyMarker();
+-        fixture.context.now += keybinder::PoliceLocateTracker::kNativeCheckpointSettleMs;
+-        fixture.bridge.Update();
+-        CHECK(fixture.context.commands == std::vector<std::string>{expectedRadio});
+-        CHECK((fixture.context.resolvedPositions == std::vector<std::tuple<float, float, float>>{
+-            std::make_tuple(markerX, markerY, markerZ)}));
+-        fixture.Chat(successLine);
+-        fixture.context.now += 1000;
+-        fixture.bridge.Update();
+-        CHECK(fixture.context.commands.size() == 1);
+-    }
+-    Fixture fixture;
+-    fixture.Start();
+-    fixture.context.now += 30000;
+-    fixture.Chat(successLine);
+-    fixture.bridge.Update();
+-    fixture.context.now += 8000;
+-    fixture.context.ApplyMarker(); // Marker arrived after the former five-second deadline.
+-    fixture.bridge.Update();
+-    CHECK(fixture.context.commands == std::vector<std::string>{expectedRadio});
+-    CHECK(fixture.bridge.GetDistrictName() == "Market");
+-}
+-
+-void NewRacingCheckpointTakesPriorityOverAnOlderNormalCheckpoint() {
+-    Fixture fixture;
+-    fixture.context.ApplyMarker(100.0f, 200.0f, 3.0f);
+-    fixture.Start();
+-    fixture.context.now += 30000;
+-    RakNet::BitStream payload;
+-    payload.Write(static_cast<unsigned char>(0));
+-    payload.Write(markerX); payload.Write(markerY); payload.Write(markerZ);
+-    payload.Write(markerX + 10.0f); payload.Write(markerY); payload.Write(markerZ);
+-    payload.Write(markerRadius);
+-    CHECK(fixture.bridge.ProcessServerCheckpointRpcForTesting(38, &payload));
+-    CHECK(payload.GetReadOffset() == 0);
+-    fixture.context.ApplyRacingMarker();
+-    fixture.Chat(successLine);
+-    fixture.bridge.Update();
+-    CHECK(fixture.context.commands == std::vector<std::string>{expectedRadio});
+-    CHECK((fixture.context.resolvedPositions == std::vector<std::tuple<float, float, float>>{
+-        std::make_tuple(markerX, markerY, markerZ)}));
+-}
+-
+-void OnlyTheChangedCheckpointKindBelongsToTheCompletedLocate() {
+-    // Regression: an old Red County job checkpoint must not win over the
+-    // detective's Los Santos Market checkpoint, including missed RPCs.
+-    constexpr float marketX = 1100.0f, marketY = -1300.0f, marketZ = 13.4f;
+-    const char* marketRadio = "/r [ORTUNG] Gesuchter KOBiRO wurde zuletzt in [Los Santos Market] geortet.";
+-    for (const bool targetRacing : {false, true}) {
+-        Fixture fixture;
+-        auto& context = fixture.context;
+-        context.name = "KOBiRO";
+-        context.targetCity = "Los Santos";
+-        fixture.bridge.Update(); // Verify the self-locate account before capture.
+-        if (targetRacing) context.ApplyMarker();
+-        else context.ApplyRacingMarker();
+-        auto hooks = context.Hooks();
+-        hooks.getDistrictAtPosition = [&](float x, float y, float z) {
+-            context.resolvedPositions.emplace_back(x, y, z);
+-            return x == marketX && y == marketY && z == marketZ ? std::string("Market") : std::string("Red County");
+-        };
+-        SAMPBridge::SetTestingHooks(hooks);
+-        fixture.Chat("Detektiv: Das Handy und die Ortung von KOBiRO wurde gestartet und dauert 30 Sekunden.");
+-        fixture.bridge.Update();
+-        context.now += 30000;
+-        fixture.Chat(successLine);
+-        fixture.bridge.Update();
+-        context.now += keybinder::PoliceLocateTracker::kNativeCheckpointSettleMs;
+-        fixture.bridge.Update();
+-        CHECK(context.commands.empty()); // Only the unrelated baseline marker is active.
+-        CHECK(context.resolvedPositions.empty());
+-        if (targetRacing) context.ApplyRacingMarker(marketX, marketY, marketZ);
+-        else context.ApplyMarker(marketX, marketY, marketZ);
+-        ++context.now;
+-        fixture.bridge.Update();
+-        CHECK(context.commands == std::vector<std::string>{marketRadio});
+-        CHECK((context.resolvedPositions == std::vector<std::tuple<float, float, float>>{
+-            std::make_tuple(marketX, marketY, marketZ)}));
+-    }
+-}
+-
+-void UnchangedAndAmbiguousCheckpointsDoNotInventALocateDestination() {
+-    for (const bool bothChanged : {false, true}) {
+-        Fixture fixture;
+-        fixture.context.ApplyMarker(100.0f, 200.0f, 3.0f);
+-        fixture.context.ApplyRacingMarker(300.0f, 400.0f, 5.0f);
+-        fixture.Start();
+-        fixture.context.now += 30000;
+-        if (bothChanged) {
+-            fixture.context.ApplyMarker();
+-            fixture.context.ApplyRacingMarker(markerX + 100.0f, markerY, markerZ);
+-        }
+-        fixture.Chat(successLine);
+-        fixture.bridge.Update();
+-        fixture.context.now += keybinder::PoliceLocateTracker::kNativeCheckpointSettleMs;
+-        fixture.bridge.Update();
+-        CHECK(fixture.context.commands.empty());
+-        CHECK(fixture.context.resolvedPositions.empty());
+-    }
+-}
+-
+-void FreshRpcCandidateCannotBeReplacedByTheOtherActiveNativeKind() {
+-    for (const bool racing : {false, true}) {
+-        Fixture fixture;
+-        auto& context = fixture.context;
+-        if (racing) context.ApplyMarker(100.0f, 200.0f, 3.0f);
+-        else context.ApplyRacingMarker(100.0f, 200.0f, 3.0f);
+-        fixture.Start();
+-        context.now += 30000;
+-        RakNet::BitStream payload;
+-        if (racing) payload.Write(static_cast<unsigned char>(0));
+-        payload.Write(markerX); payload.Write(markerY); payload.Write(markerZ);
+-        if (racing) { payload.Write(markerX + 10.0f); payload.Write(markerY); payload.Write(markerZ); }
+-        payload.Write(markerRadius);
+-        CHECK(fixture.bridge.ProcessServerCheckpointRpcForTesting(racing ? 38 : 107, &payload));
+-        fixture.Chat(successLine);
+-        context.inputAvailable = false;
+-        fixture.bridge.Update(); // Packet has not yet been applied natively.
+-        context.now += keybinder::PoliceLocateTracker::kNativeCheckpointSettleMs;
+-        fixture.bridge.Update();
+-        CHECK(context.commands.empty());
+-        CHECK(context.resolvedPositions.empty());
+-        if (racing) context.ApplyRacingMarker(); else context.ApplyMarker();
+-        fixture.bridge.Update();
+-        CHECK(context.commands.empty());
+-        context.inputAvailable = true;
+-        ++context.now;
+-        fixture.bridge.Update();
+-        CHECK(context.commands == std::vector<std::string>{expectedRadio});
+-        CHECK((context.resolvedPositions == std::vector<std::tuple<float, float, float>>{
+-            std::make_tuple(markerX, markerY, markerZ)}));
+-    }
+-}
+-
+-void CheckpointRpcOnAnEarlierTickThanSuccessKeepsTheOperationAlive() {
+-    for (const bool updateBeforeSuccess : {false, true}) {
+-        Fixture fixture;
+-        fixture.Start();
+-        fixture.context.now += 30000;
+-        fixture.Marker();
+-        if (updateBeforeSuccess) fixture.bridge.Update();
+-        ++fixture.context.now;
+-        fixture.Chat(successLine);
+-        fixture.bridge.Update();
+-        CHECK(fixture.context.commands == std::vector<std::string>{expectedRadio});
+-        CHECK(fixture.context.resolvedPositions.size() == 1);
+-    }
+-}
+-
+-void NativeCheckpointOnAnEarlierTickThanSuccessKeepsTheOperationAlive() {
+-    for (const bool racing : {false, true}) {
+-        Fixture fixture;
+-        fixture.Start();
+-        fixture.context.now += 30000;
+-        if (racing) fixture.context.ApplyRacingMarker();
+-        else fixture.context.ApplyMarker();
+-        fixture.bridge.Update(); // Native change observed before the success chat.
+-        ++fixture.context.now;
+-        fixture.Chat(successLine);
+-        fixture.bridge.Update();
+-        CHECK(fixture.context.commands.empty());
+-        fixture.context.now += keybinder::PoliceLocateTracker::kNativeCheckpointSettleMs;
+-        fixture.bridge.Update();
+-        CHECK(fixture.context.commands == std::vector<std::string>{expectedRadio});
+-        CHECK(fixture.context.resolvedPositions.size() == 1);
+-    }
+-}
+-
+-void ConfirmedNativeDisableAllowsANewDestinationWithoutAnEnableRpc() {
+-    Fixture fixture;
+-    fixture.context.ApplyMarker(100.0f, 200.0f, 3.0f);
+-    fixture.Start();
+-    fixture.context.now += 30000;
+-    fixture.DisableMarker();
+-    fixture.bridge.Update(); // Confirm that the native checkpoint is disabled.
+-    ++fixture.context.now;
+-    fixture.context.ApplyMarker(); // Its enable RPC was missed, as in native polling recovery.
+-    fixture.bridge.Update();
+-    ++fixture.context.now;
+-    fixture.Chat(successLine);
+-    fixture.bridge.Update();
+-    CHECK(fixture.context.commands.empty());
+-    fixture.context.now += keybinder::PoliceLocateTracker::kNativeCheckpointSettleMs;
+-    fixture.bridge.Update();
+-    CHECK(fixture.context.commands == std::vector<std::string>{expectedRadio});
+-    CHECK(fixture.context.resolvedPositions.size() == 1);
+-}
+-
+-void TheLatestServerDestinationMustBeAppliedBeforeAnyRadioIsSent() {
+-    Fixture fixture;
+-    fixture.Start();
+-    fixture.context.now += 30000;
+-    fixture.Marker(); // Normal destination applied before the final racing packet.
+-    RakNet::BitStream racing;
+-    racing.Write(static_cast<unsigned char>(0));
+-    racing.Write(markerX + 100.0f); racing.Write(markerY); racing.Write(markerZ);
+-    racing.Write(markerX + 110.0f); racing.Write(markerY); racing.Write(markerZ);
+-    racing.Write(markerRadius);
+-    CHECK(fixture.bridge.ProcessServerCheckpointRpcForTesting(38, &racing));
+-    fixture.Chat(successLine);
+-    fixture.bridge.Update();
+-    CHECK(fixture.context.commands.empty());
+-    CHECK(fixture.context.resolvedPositions.empty());
+-    fixture.context.now += keybinder::PoliceLocateTracker::kNativeCheckpointSettleMs;
+-    fixture.bridge.Update();
+-    CHECK(fixture.context.commands.empty());
+-    fixture.context.ApplyRacingMarker(markerX + 100.0f, markerY, markerZ);
+-    ++fixture.context.now;
+-    fixture.bridge.Update();
+-    CHECK(fixture.context.commands == std::vector<std::string>{expectedRadio});
+-    CHECK((fixture.context.resolvedPositions == std::vector<std::tuple<float, float, float>>{
+-        std::make_tuple(markerX + 100.0f, markerY, markerZ)}));
+-}
+-
+-void BaselineIsCapturedWhenStartArrivesEvenWhenTargetArrivesInTheSameFrame() {
+-    Fixture fixture;
+-    fixture.context.ApplyMarker(100.0f, 200.0f, 3.0f);
+-    fixture.Chat(startLine); // Do not update yet: the callback must retain the old native marker.
+-    fixture.context.ApplyMarker();
+-    fixture.context.now += 1000;
+-    fixture.Chat(successLine);
+-    fixture.bridge.Update();
+-    fixture.context.now += keybinder::PoliceLocateTracker::kNativeCheckpointSettleMs;
+-    fixture.bridge.Update();
+-    CHECK(fixture.context.commands == std::vector<std::string>{expectedRadio});
+-}
+-
+-void NativeChangesLongBeforeCompletionCannotMasqueradeAsTheResult() {
+-    Fixture fixture;
+-    fixture.Start();
+-    fixture.context.now += 1000;
+-    fixture.context.ApplyMarker();
+-    fixture.bridge.Update();
+-    fixture.context.now += 29000;
+-    fixture.Chat(successLine);
+-    fixture.bridge.Update();
+-    fixture.context.now += keybinder::PoliceLocateTracker::kNativeCheckpointSettleMs;
+-    fixture.bridge.Update();
+-    CHECK(fixture.context.commands.empty());
+-    CHECK(fixture.context.resolvedPositions.empty());
+-    fixture.context.ApplyRacingMarker(markerX + 100.0f, markerY, markerZ);
+-    ++fixture.context.now;
+-    fixture.bridge.Update();
+-    CHECK(fixture.context.commands == std::vector<std::string>{expectedRadio});
+-    CHECK((fixture.context.resolvedPositions == std::vector<std::tuple<float, float, float>>{
+-        std::make_tuple(markerX + 100.0f, markerY, markerZ)}));
+-}
+-
+-} // namespace
+-
+-int RunPoliceLocateBridgeTests() {
+-    checks = failures = 0;
+-    ActualCheckpointApplicationAndMarkerDistrictAreRequired();
+-    SuccessBeforeCheckpointWorksAndDuplicateHooksDoNotRepeatRadio();
+-    DisabledAndMismatchedNativeMarkersCannotBeAnnounced();
+-    PlayerPrefixesCannotSpoofPersonalDetectiveMessages();
+-    OnlyVerifiedPoliceAliasesCanUseTheFeature();
+-    RevokedOrChangedIdentityDiscardsPendingEventsAndNeverReplaysThem();
+-    LocalGpsAndOldServerCheckpointsNeverCountAsLocatedTarget();
+-    ExpiredOperationsCannotSendAndUnavailableInputDefersOutput();
+-    OverflowDiscardsAmbiguousBatchesInsteadOfReplayingResults();
+-    SuccessReadsCurrentMarkerEvenWhenNoCheckpointRpcWasReceived();
+-    NewRacingCheckpointTakesPriorityOverAnOlderNormalCheckpoint();
+-    OnlyTheChangedCheckpointKindBelongsToTheCompletedLocate();
+-    UnchangedAndAmbiguousCheckpointsDoNotInventALocateDestination();
+-    FreshRpcCandidateCannotBeReplacedByTheOtherActiveNativeKind();
+-    CheckpointRpcOnAnEarlierTickThanSuccessKeepsTheOperationAlive();
+-    NativeCheckpointOnAnEarlierTickThanSuccessKeepsTheOperationAlive();
+-    ConfirmedNativeDisableAllowsANewDestinationWithoutAnEnableRpc();
+-    TheLatestServerDestinationMustBeAppliedBeforeAnyRadioIsSent();
+-    BaselineIsCapturedWhenStartArrivesEvenWhenTargetArrivesInTheSameFrame();
+-    NativeChangesLongBeforeCompletionCannotMasqueradeAsTheResult();
+-    std::printf("PoliceLocateBridgeTests: %d checks, %d failures\n", checks, failures);
+-    return failures;
+-}
+diff --git a/tests/PoliceLocateTrackerTests.cpp b/tests/PoliceLocateTrackerTests.cpp
+deleted file mode 100644
+index 98bf2af..0000000
+--- a/tests/PoliceLocateTrackerTests.cpp
++++ /dev/null
+@@ -1,261 +0,0 @@
+-#include "../include/PoliceLocateTracker.h"
+-
+-#include <cstdio>
+-#include <limits>
+-#include <stdexcept>
+-
+-namespace {
+-int checks = 0, failures = 0;
+-#define CHECK(x) do { ++checks; if (!(x)) { ++failures; std::printf("[FAIL] PoliceLocateTracker: %s at %d\n", #x, __LINE__); } } while (0)
+-using Tracker = keybinder::PoliceLocateTracker;
+-using Marker = keybinder::LocateCheckpoint;
+-constexpr std::uint32_t start = 100000;
+-const Marker targetMarker{1927.8734f, 168.8767f, 40.1172f, 4.0f};
+-const char* success = "Detektiv: Das Ziel wurde geortet und wird dir nun auf der Karte angezeigt.";
+-const char* locate = "Detektiv: Das Handy und die Ortung von Lesch wurde gestartet und dauert 30 Sekunden.";
+-const std::string expected = "/r [ORTUNG] Gesuchter Lesch wurde zuletzt in [Palomino Creek] geortet.";
+-std::string District(float, float, float) { return "Palomino Creek"; }
+-
+-Tracker Authorized() {
+-    Tracker tracker;
+-    tracker.SetSession(true, "server:7777/Officer");
+-    return tracker;
+-}
+-
+-void MarkerAndSuccessAreBothRequiredInEitherOrder() {
+-    auto tracker = Authorized();
+-    CHECK(!tracker.ObserveCheckpoint(targetMarker, start));
+-    CHECK(!tracker.ObserveChat(success, start));
+-    CHECK(tracker.TakeRadioMessage(start, District).empty());
+-    CHECK(tracker.ObserveChat(locate, start));
+-    CHECK(tracker.HasPendingLocate());
+-    CHECK(tracker.ObserveCheckpoint(targetMarker, start + 1000));
+-    CHECK(!tracker.ObserveChat("Detektiv: Du hast die Fähigkeit auf Stufe 191 verbessert.", start + 1000));
+-    CHECK(tracker.TakeRadioMessage(start + 1000, District).empty());
+-    CHECK(tracker.ObserveCheckpoint(targetMarker, start + 30000));
+-    CHECK(tracker.TakeRadioMessage(start + 30000, District).empty());
+-    CHECK(tracker.ObserveChat(success, start + 30001));
+-    int calls = 0;
+-    const auto message = tracker.TakeRadioMessage(start + 30002, [&](float x, float y, float z) {
+-        ++calls;
+-        CHECK(x == targetMarker.x && y == targetMarker.y && z == targetMarker.z);
+-        return "Palomino Creek";
+-    });
+-    CHECK(message == expected);
+-    CHECK(calls == 1);
+-    CHECK(!tracker.HasPendingLocate());
+-    CHECK(tracker.TakeRadioMessage(start + 30003, District).empty());
+-    CHECK(!tracker.ObserveChat(success, start + 30003));
+-    CHECK(!tracker.ObserveCheckpoint(targetMarker, start + 30003));
+-
+-    tracker = Authorized();
+-    CHECK(tracker.ObserveChat(locate, start));
+-    CHECK(tracker.ObserveChat(success, start + 30000));
+-    CHECK(tracker.TakeRadioMessage(start + 30000, District).empty());
+-    CHECK(tracker.ObserveCheckpoint(targetMarker, start + 30005));
+-    CHECK(tracker.TakeRadioMessage(start + 30006, District) == expected);
+-}
+-
+-void OldMarkersAndUnrelatedChatNeverSupplyTheResult() {
+-    auto tracker = Authorized();
+-    CHECK(!tracker.ObserveCheckpoint(targetMarker, start - 10));
+-    CHECK(tracker.ObserveChat(locate, start));
+-    CHECK(tracker.ObserveCheckpoint(targetMarker, start + 1000));
+-    CHECK(tracker.ObserveChat(success, start + 30000));
+-    CHECK(tracker.TakeRadioMessage(start + 30001, District).empty());
+-    CHECK(!tracker.ObserveChat("Detektiv: Du hast die Fähigkeit auf Stufe 191 verbessert.", start + 30002));
+-    CHECK(tracker.TakeRadioMessage(start + 30003, District).empty());
+-    CHECK(tracker.ObserveCheckpoint(targetMarker, start + 30004));
+-    CHECK(tracker.TakeRadioMessage(start + 30005, District) == expected);
+-
+-    tracker = Authorized();
+-    CHECK(tracker.ObserveChat(locate, start));
+-    CHECK(tracker.ObserveCheckpoint(targetMarker, start + 28000));
+-    CHECK(tracker.ObserveChat(success, start + 39001));
+-    CHECK(tracker.TakeRadioMessage(start + 39002, District).empty());
+-    CHECK(tracker.ObserveCheckpoint(targetMarker, start + 39003));
+-    CHECK(tracker.TakeRadioMessage(start + 39004, District) == expected);
+-
+-    tracker = Authorized();
+-    CHECK(tracker.ObserveChat(locate, start));
+-    CHECK(tracker.ObserveCheckpoint(targetMarker, start + 30000));
+-    tracker.ObserveCheckpointDisabled();
+-    CHECK(tracker.ObserveChat(success, start + 30001));
+-    CHECK(tracker.TakeRadioMessage(start + 30002, District).empty());
+-}
+-
+-void SessionAndRoleChangesDiscardEveryPendingResult() {
+-    for (int change = 0; change < 5; ++change) {
+-        auto tracker = Authorized();
+-        CHECK(tracker.ObserveChat(locate, start));
+-        CHECK(tracker.ObserveCheckpoint(targetMarker, start + 30000));
+-        if (change == 0) tracker.SetSession(false, "server:7777/Officer");
+-        if (change == 1) tracker.SetSession(true, "server:7777/OtherOfficer");
+-        if (change == 2) tracker.SetSession(true, "other-server:7777/Officer");
+-        if (change == 3) tracker.SetSession(true, "");
+-        if (change == 4) tracker.Reset();
+-        CHECK(!tracker.HasPendingLocate());
+-        CHECK(!tracker.ObserveChat(success, start + 30001));
+-        CHECK(tracker.TakeRadioMessage(start + 30002, District).empty());
+-        tracker.SetSession(true, "server:7777/Officer");
+-        CHECK(!tracker.ObserveCheckpoint(targetMarker, start + 30003));
+-        CHECK(!tracker.ObserveChat(success, start + 30004));
+-        CHECK(tracker.TakeRadioMessage(start + 30005, District).empty());
+-    }
+-    Tracker denied;
+-    CHECK(!denied.ObserveChat(locate, start));
+-    CHECK(!denied.ObserveCheckpoint(targetMarker, start + 30000));
+-    denied.SetSession(false, "server:7777/Civilian");
+-    CHECK(!denied.ObserveChat(locate, start));
+-    CHECK(!denied.ObserveChat(success, start + 30000));
+-
+-    auto tracker = Authorized();
+-    CHECK(tracker.ObserveChat(locate, start));
+-    tracker.SetSession(true, "server:7777/Officer");
+-    CHECK(tracker.HasPendingLocate());
+-    CHECK(tracker.ObserveChat(success, start + 30000));
+-    CHECK(tracker.ObserveCheckpoint(targetMarker, start + 30001));
+-    CHECK(tracker.TakeRadioMessage(start + 30002, District) == expected);
+-}
+-
+-void DeadlinesHandleStallsDuplicatesAndCounterWrap() {
+-    auto tracker = Authorized();
+-    CHECK(tracker.ObserveChat(locate, start));
+-    CHECK(!tracker.ObserveChat(locate, start + 999));
+-    CHECK(tracker.ObserveCheckpoint(targetMarker, start + 30000));
+-    CHECK(tracker.ObserveChat(success, start + 30000));
+-    CHECK(!tracker.ObserveChat(success, start + 30001));
+-    CHECK(tracker.TakeRadioMessage(start + 30002, District) == expected);
+-
+-    tracker = Authorized();
+-    CHECK(tracker.ObserveChat(locate, start));
+-    CHECK(!tracker.ObserveCheckpoint(targetMarker, start + Tracker::kOperationTimeoutMs + 1));
+-    CHECK(!tracker.HasPendingLocate());
+-    CHECK(tracker.TakeRadioMessage(start + Tracker::kOperationTimeoutMs + 1, District).empty());
+-
+-    tracker = Authorized();
+-    CHECK(tracker.ObserveChat(locate, start));
+-    CHECK(tracker.ObserveChat(success, start + 30000));
+-    CHECK(!tracker.ObserveCheckpoint(targetMarker, start + 30000 + Tracker::kCompletionWindowMs + 1));
+-    CHECK(!tracker.HasPendingLocate());
+-
+-    tracker = Authorized();
+-    CHECK(tracker.ObserveChat(locate, start));
+-    CHECK(tracker.ObserveCheckpoint(targetMarker, start + 30000));
+-    CHECK(tracker.ObserveChat(success, start + 35000));
+-    CHECK(tracker.TakeRadioMessage(start + 35001, District) == expected);
+-
+-    tracker = Authorized();
+-    const std::uint32_t wrapStart = std::numeric_limits<std::uint32_t>::max() - 1000;
+-    CHECK(tracker.ObserveChat(locate, wrapStart));
+-    CHECK(tracker.ObserveChat(success, wrapStart + 30000));
+-    CHECK(tracker.ObserveCheckpoint(targetMarker, wrapStart + 30001));
+-    CHECK(tracker.TakeRadioMessage(wrapStart + 30002, District) == expected);
+-}
+-
+-void NamesColorCodesAndExactServerEnvelopesAreValidated() {
+-    for (const char* invalid : {
+-        "Other: Detektiv: Das Handy und die Ortung von Lesch wurde gestartet und dauert 30 Sekunden.",
+-        "[r] Detektiv: Das Handy und die Ortung von Lesch wurde gestartet und dauert 30 Sekunden.",
+-        "Detektiv: Das Handy und die Ortung von Lesch wurde gestartet und dauert 0 Sekunden.",
+-        "Detektiv: Das Handy und die Ortung von Lesch wurde gestartet und dauert 121 Sekunden.",
+-        "Detektiv: Das Handy und die Ortung von Lesch wurde gestartet und dauert 3x Sekunden.",
+-        "Detektiv: Das Handy und die Ortung von Lesch wurde gestartet und dauert 30 Sekunden. Zusatz",
+-        "Detektiv: Das Handy und die Ortung von Bad Name wurde gestartet und dauert 30 Sekunden.",
+-        "Detektiv: Das Handy und die Ortung von Evil\n/r injected wurde gestartet und dauert 30 Sekunden.",
+-        "Detektiv: Das Handy und die Ortung von wurde gestartet und dauert 30 Sekunden.",
+-        "Detektiv: Das Handy und die Ortung von AAAAAAAAAAAAAAAAAAAAAAAAA wurde gestartet und dauert 30 Sekunden."}) {
+-        auto tracker = Authorized();
+-        CHECK(!tracker.ObserveChat(invalid, start));
+-        CHECK(!tracker.HasPendingLocate());
+-    }
+-    auto tracker = Authorized();
+-    CHECK(tracker.ObserveChat("[13:20:30] {33CCFF}Detektiv: {FFFFFF}Das Handy und die Ortung von [RCB]Lesch wurde gestartet und dauert 30 Sekunden.\r\n", start));
+-    CHECK(tracker.ObserveCheckpoint(targetMarker, start + 30000));
+-    CHECK(!tracker.ObserveChat("Other: Detektiv: Das Ziel wurde geortet und wird dir nun auf der Karte angezeigt.", start + 30001));
+-    CHECK(tracker.TakeRadioMessage(start + 30001, District).empty());
+-    CHECK(tracker.ObserveChat("{33CCFF}Detektiv: {FFFFFF}Das Ziel wurde geortet und wird dir nun auf der Karte angezeigt.", start + 30002));
+-    CHECK(tracker.TakeRadioMessage(start + 30003, District)
+-        == "/r [ORTUNG] Gesuchter [RCB]Lesch wurde zuletzt in [Palomino Creek] geortet.");
+-
+-    tracker = Authorized();
+-    CHECK(tracker.ObserveChat("Detektiv: Das Handy und die Ortung von New_Target wurde gestartet und dauert 10 Sekunden.", start));
+-    CHECK(tracker.ObserveChat(success, start + 10000));
+-    CHECK(tracker.ObserveCheckpoint(targetMarker, start + 10001));
+-    CHECK(tracker.TakeRadioMessage(start + 10002, District)
+-        == "/r [ORTUNG] Gesuchter New_Target wurde zuletzt in [Palomino Creek] geortet.");
+-}
+-
+-void NewOperationAndInvalidDistrictsNeverRecycleOldData() {
+-    auto tracker = Authorized();
+-    CHECK(tracker.ObserveChat(locate, start));
+-    CHECK(tracker.ObserveCheckpoint(targetMarker, start + 30000));
+-    CHECK(tracker.ObserveChat("Detektiv: Das Handy und die Ortung von Next_Target wurde gestartet und dauert 30 Sekunden.", start + 30001));
+-    CHECK(!tracker.ObserveChat("Detektiv: Du hast die Fähigkeit auf Stufe 191 verbessert.", start + 30002));
+-    CHECK(tracker.TakeRadioMessage(start + 30003, District).empty());
+-    CHECK(tracker.ObserveChat(success, start + 60001));
+-    CHECK(tracker.TakeRadioMessage(start + 60002, District).empty());
+-    CHECK(tracker.ObserveCheckpoint(targetMarker, start + 60003));
+-    CHECK(tracker.TakeRadioMessage(start + 60004, {}).empty());
+-    for (const std::string badDistrict : {"", "Unknown", "unknown", "\r\n", "Market\n/r injected", "{FF0000}Market", "[Market]"}) {
+-        CHECK(tracker.TakeRadioMessage(start + 60004, [&](float, float, float) { return badDistrict; }).empty());
+-    }
+-    CHECK(tracker.TakeRadioMessage(start + 60005, [](float, float, float) -> std::string { throw std::runtime_error("test"); }).empty());
+-    CHECK(tracker.TakeRadioMessage(start + 60006, [](float, float, float) { return " Market "; })
+-        == "/r [ORTUNG] Gesuchter Next_Target wurde zuletzt in [Market] geortet.");
+-
+-    for (const Marker invalid : {
+-        Marker{std::numeric_limits<float>::quiet_NaN(), 1, 2, 3},
+-        Marker{1, std::numeric_limits<float>::infinity(), 2, 3},
+-        Marker{1, 2, -std::numeric_limits<float>::infinity(), 3},
+-        Marker{1, 2, 3, std::numeric_limits<float>::quiet_NaN()},
+-        Marker{1, 2, 3, 0}, Marker{1, 2, 3, -1}, Marker{1, 2, 3, 1001}, Marker{20001, 2, 3, 4}}) {
+-        tracker = Authorized();
+-        CHECK(tracker.ObserveChat(locate, start));
+-        CHECK(!tracker.ObserveCheckpoint(invalid, start + 30000));
+-        CHECK(tracker.ObserveChat(success, start + 30001));
+-        CHECK(tracker.TakeRadioMessage(start + 30002, District).empty());
+-    }
+-}
+-
+-void SuccessIsAuthoritativeAndCurrentCheckpointWaitIsBounded() {
+-    auto tracker = Authorized();
+-    CHECK(tracker.ObserveChat(locate, start));
+-    CHECK(!tracker.ReadyForCurrentCheckpoint(start + 1000));
+-    CHECK(tracker.ObserveChat(success, start + 1000)); // Actual success, even before announced 30 seconds.
+-    CHECK(!tracker.ReadyForCurrentCheckpoint(start + 1149));
+-    CHECK(tracker.ReadyForCurrentCheckpoint(start + 1150));
+-    CHECK(tracker.TakeRadioMessage(start + 1150, District).empty());
+-    CHECK(tracker.ObserveCheckpoint(targetMarker, start + 1150)); // Native memory, no RPC requirement.
+-    CHECK(tracker.TakeRadioMessage(start + 1151, District) == expected);
+-    CHECK(!tracker.ReadyForCurrentCheckpoint(start + 1152));
+-    CHECK(!tracker.ObserveChat(success, start + 1200));
+-
+-    tracker = Authorized();
+-    CHECK(tracker.ObserveChat(locate, start));
+-    CHECK(tracker.ObserveChat(success, start + 30000));
+-    CHECK(tracker.ReadyForCurrentCheckpoint(start + 38000)); // Late marker is still useful.
+-    CHECK(tracker.ObserveCheckpoint(targetMarker, start + 38000));
+-    CHECK(tracker.TakeRadioMessage(start + 38001, District) == expected);
+-
+-    tracker = Authorized();
+-    CHECK(tracker.ObserveChat(locate, start));
+-    CHECK(tracker.ObserveChat(success, start + 30000));
+-    CHECK(!tracker.ReadyForCurrentCheckpoint(start + 30000 + Tracker::kCompletionWindowMs + 1));
+-    CHECK(!tracker.HasPendingLocate());
+-}
+-
+-} // namespace
+-
+-int RunPoliceLocateTrackerTests() {
+-    checks = failures = 0;
+-    MarkerAndSuccessAreBothRequiredInEitherOrder();
+-    OldMarkersAndUnrelatedChatNeverSupplyTheResult();
+-    SessionAndRoleChangesDiscardEveryPendingResult();
+-    DeadlinesHandleStallsDuplicatesAndCounterWrap();
+-    NamesColorCodesAndExactServerEnvelopesAreValidated();
+-    NewOperationAndInvalidDistrictsNeverRecycleOldData();
+-    SuccessIsAuthoritativeAndCurrentCheckpointWaitIsBounded();
+-    std::printf("PoliceLocateTrackerTests: %d checks, %d failures\n", checks, failures);
+-    return failures;
+-}
+diff --git a/tests/SAMPBridgeTests.cpp b/tests/SAMPBridgeTests.cpp
+index d21c84c..7b2fb56 100644
+--- a/tests/SAMPBridgeTests.cpp
++++ b/tests/SAMPBridgeTests.cpp
+@@ -11,6 +11,7 @@
+ #include "../include/MessageVariables.h"
+ #include "../include/RakHook/include/RakNet/BitStream.h"
+ 
++#include <algorithm>
+ #include <cstdio>
+ #include <cstring>
+ #include <new>
+@@ -775,6 +776,60 @@ bool TestJobChatAdapterLifecycleHooksAreWired() {
+     return true;
+ }
+ 
++bool TestDetectiveMessagesAndCheckpointsDoNotSendAutomaticRadio() {
++    for (const std::string faction : {"SAPD", "LSPD"}) {
++        CombatSoundContext context;
++        auto hooks = context.BuildCombatHooks();
++        hooks.getLocalPlayerName = []() { return std::string("PoliceOfficer"); };
++        hooks.isStartupStatsReady = []() { return false; };
++        hooks.isStartupJobSkillsReady = []() { return false; };
++        SAMPBridge::SetTestingHooks(hooks);
++        SAMPBridge bridge;
++        bridge.SetLocalFactionProvider([&]() { return faction; });
++        std::vector<std::string> observedChat;
++        bridge.SetIncomingChatCallback([&](const std::string& line) { observedChat.push_back(line); });
++        ASSERT_TRUE(bridge.Initialize());
++        bridge.Update();
++        ASSERT_EQ(bridge.GetLocalFaction(), faction);
++        ASSERT_TRUE(context.serverMessages.empty());
++
++        // Normal server commands still pass through unchanged. The binder must
++        // not add a radio response to the subsequent personal detective result.
++        ASSERT_TRUE(bridge.SendCommand("/find Lesch"));
++        ASSERT_EQ(context.serverMessages, std::vector<std::string>{"/find Lesch"});
++        const char* start = "Detektiv: Das Handy und die Ortung von Lesch wurde gestartet und dauert 30 Sekunden.";
++        const char* success = "Detektiv: Das Ziel wurde geortet und wird dir nun auf der Karte angezeigt.";
++        ASSERT_TRUE(bridge.ProcessIncomingChatLineForTesting(nullptr, start));
++        bridge.Update();
++        context.tick += 30000;
++        context.game->m_checkpoint.m_bEnabled = TRUE;
++        context.game->m_checkpoint.m_position = {1100.0f, -1300.0f, 13.4f};
++        context.game->m_checkpoint.m_size = {4.0f, 4.0f, 4.0f};
++        context.game->m_racingCheckpoint.m_bEnabled = TRUE;
++        context.game->m_racingCheckpoint.m_currentPosition = {1927.8734f, 168.8767f, 40.1172f};
++        context.game->m_racingCheckpoint.m_fSize = 4.0f;
++        ASSERT_TRUE(bridge.ProcessIncomingChatLineForTesting(nullptr, success));
++        bridge.Update();
++        context.tick += 1000; // Beyond the former native checkpoint settle time.
++        bridge.Update();
++        ASSERT_TRUE(bridge.ProcessIncomingChatLineForTesting(nullptr,
++            "Detektiv: Du hast die F\xC3\xA4higkeit auf Stufe 191 verbessert."));
++        ASSERT_TRUE(bridge.ProcessIncomingChatLineForTesting(nullptr, success));
++        context.tick += 10000;
++        bridge.Update();
++        ASSERT_EQ(context.serverMessages, std::vector<std::string>{"/find Lesch"});
++        ASSERT_EQ(observedChat.size(), std::size_t(4));
++        ASSERT_EQ(observedChat.front(), std::string(start));
++        ASSERT_EQ(observedChat.back(), std::string(success));
++        ASSERT_TRUE(std::none_of(context.localMessages.begin(), context.localMessages.end(), [](const std::string& text) {
++            return text.find("[ORTUNG]") != std::string::npos;
++        }));
++        bridge.Shutdown();
++        SAMPBridge::ResetTestingHooks();
++    }
++    return true;
++}
++
+ bool TestTrackedIncomeShowsLocalKeybinderMessage() {
+     MockContext context;
+     SAMPBridge::SetTestingHooks(context.BuildHooks());
+@@ -2482,6 +2537,7 @@ int RunSAMPBridgeTests() {
+     RUN_TEST(TestQueuedLocalMessageWaitsForChatReady);
+     RUN_TEST(TestFallbackInterceptorIgnoresPlainChatText);
+     RUN_TEST(TestJobChatAdapterLifecycleHooksAreWired);
++    RUN_TEST(TestDetectiveMessagesAndCheckpointsDoNotSendAutomaticRadio);
+     RUN_TEST(TestTrackedIncomeShowsLocalKeybinderMessage);
+     RUN_TEST(TestDamageLogAhkBlueprintReportsDirectServerLossWithoutRpc);
+     RUN_TEST(TestDamageLogSeparatesHealingFromDamageAndFormatsOneDecimal);
+diff --git a/tests/ServerCheckpointRPCAdapterTests.cpp b/tests/ServerCheckpointRPCAdapterTests.cpp
+deleted file mode 100644
+index dbc93d2..0000000
+--- a/tests/ServerCheckpointRPCAdapterTests.cpp
++++ /dev/null
+@@ -1,350 +0,0 @@
+-#include "../include/ServerCheckpointRPCAdapter.h"
+-#include "../include/RakHook/include/RakNet/BitStream.h"
+-
+-#include <atomic>
+-#include <cmath>
+-#include <cstdio>
+-#include <limits>
+-#include <stdexcept>
+-#include <thread>
+-#include <vector>
+-
+-namespace {
+-int checks = 0, failures = 0;
+-#define CHECK(value) do { ++checks; if (!(value)) { ++failures; std::printf("[FAIL] ServerCheckpointRPC: %s (line %d)\n", #value, __LINE__); return; } } while (0)
+-
+-constexpr unsigned char kSetCheckpoint = 107;
+-constexpr unsigned char kDisableCheckpoint = 37;
+-
+-struct PayloadSnapshot {
+-    int readOffset;
+-    int usedBits;
+-    std::vector<unsigned char> bytes;
+-};
+-
+-PayloadSnapshot Snapshot(const RakNet::BitStream& payload) {
+-    return {payload.GetReadOffset(), payload.GetNumberOfBitsUsed(),
+-        std::vector<unsigned char>(payload.GetData(), payload.GetData() + payload.GetNumberOfBytesUsed())};
+-}
+-
+-bool Unchanged(const RakNet::BitStream& payload, const PayloadSnapshot& before) {
+-    return payload.GetReadOffset() == before.readOffset
+-        && payload.GetNumberOfBitsUsed() == before.usedBits
+-        && std::vector<unsigned char>(payload.GetData(),
+-            payload.GetData() + payload.GetNumberOfBytesUsed()) == before.bytes;
+-}
+-
+-void WriteCheckpoint(RakNet::BitStream& payload, float x = 1583.9396f, float y = 33.5867f,
+-                     float z = 26.9868f, float radius = 3.0f) {
+-    payload.Write(x);
+-    payload.Write(y);
+-    payload.Write(z);
+-    payload.Write(radius);
+-}
+-
+-void TestSetCheckpointParsesEveryBitAlignmentAndDoesNotMutateTheRpc() {
+-    keybinder::ServerCheckpointRPCAdapter adapter;
+-    std::vector<keybinder::ServerCheckpointEvent> events;
+-    adapter.SetCallback([&](const auto& event) { events.push_back(event); });
+-    CHECK(adapter.Initialize());
+-    for (int prefixBits = 0; prefixBits < 8; ++prefixBits) {
+-        RakNet::BitStream payload;
+-        for (int bit = 0; bit < prefixBits; ++bit) payload.Write(bit % 2 == 0);
+-        WriteCheckpoint(payload, -2354.125f, 1420.5f, 41.75f, 4.5f);
+-        payload.Write(static_cast<unsigned short>(0xCAFE));
+-        payload.Write(false);
+-        payload.SetReadOffset(prefixBits);
+-        const auto before = Snapshot(payload);
+-        CHECK(adapter.ProcessRpcForTesting(kSetCheckpoint, &payload));
+-        CHECK(Unchanged(payload, before));
+-        CHECK(events.size() == static_cast<std::size_t>(prefixBits + 1));
+-        const auto& event = events.back();
+-        CHECK(event.enabled);
+-        CHECK(event.x == -2354.125f && event.y == 1420.5f && event.z == 41.75f && event.radius == 4.5f);
+-    }
+-}
+-
+-void TestEveryTruncatedPayloadRestoresTheOriginalReadPositionAndBytes() {
+-    keybinder::ServerCheckpointRPCAdapter adapter;
+-    int delivered = 0;
+-    adapter.SetCallback([&](const auto&) { ++delivered; });
+-    CHECK(adapter.Initialize());
+-    CHECK(!adapter.ProcessRpcForTesting(kSetCheckpoint, nullptr));
+-    RakNet::BitStream complete;
+-    complete.Write(true); complete.Write(false); complete.Write(true);
+-    WriteCheckpoint(complete);
+-    for (int bodyBits = 0; bodyBits < 128; ++bodyBits) {
+-        RakNet::BitStream truncated(complete.GetData(), complete.GetNumberOfBytesUsed(), true);
+-        truncated.SetWriteOffset(3 + bodyBits);
+-        truncated.SetReadOffset(3);
+-        const auto before = Snapshot(truncated);
+-        CHECK(!adapter.ProcessRpcForTesting(kSetCheckpoint, &truncated));
+-        CHECK(Unchanged(truncated, before));
+-        CHECK(delivered == 0);
+-    }
+-    complete.SetReadOffset(complete.GetNumberOfBitsUsed());
+-    const auto consumed = Snapshot(complete);
+-    CHECK(!adapter.ProcessRpcForTesting(kSetCheckpoint, &complete));
+-    CHECK(Unchanged(complete, consumed) && delivered == 0);
+-}
+-
+-void TestNanInfinityInvalidCoordinatesAndRadiusNeverReachTheCallback() {
+-    keybinder::ServerCheckpointRPCAdapter adapter;
+-    int delivered = 0;
+-    adapter.SetCallback([&](const auto&) { ++delivered; });
+-    CHECK(adapter.Initialize());
+-    const float nan = std::numeric_limits<float>::quiet_NaN();
+-    const float inf = std::numeric_limits<float>::infinity();
+-    for (int field = 0; field < 4; ++field) {
+-        for (float invalid : {nan, inf, -inf}) {
+-            float values[] = {100.0f, -200.0f, 30.0f, 3.0f};
+-            values[field] = invalid;
+-            RakNet::BitStream payload;
+-            payload.Write(true);
+-            WriteCheckpoint(payload, values[0], values[1], values[2], values[3]);
+-            payload.SetReadOffset(1);
+-            const auto before = Snapshot(payload);
+-            CHECK(!adapter.ProcessRpcForTesting(kSetCheckpoint, &payload));
+-            CHECK(Unchanged(payload, before));
+-        }
+-    }
+-    for (int field = 0; field < 3; ++field) {
+-        for (float outside : {std::nextafter(100000.0f, inf), std::nextafter(-100000.0f, -inf)}) {
+-            float values[] = {100.0f, -200.0f, 30.0f, 3.0f};
+-            values[field] = outside;
+-            RakNet::BitStream payload;
+-            WriteCheckpoint(payload, values[0], values[1], values[2], values[3]);
+-            const auto before = Snapshot(payload);
+-            CHECK(!adapter.ProcessRpcForTesting(kSetCheckpoint, &payload));
+-            CHECK(Unchanged(payload, before));
+-        }
+-    }
+-    for (float invalid : {0.0f, -0.0f, -1.0f, std::nextafter(10000.0f, inf)}) {
+-        RakNet::BitStream payload;
+-        WriteCheckpoint(payload, 0.0f, 0.0f, 0.0f, invalid);
+-        const auto before = Snapshot(payload);
+-        CHECK(!adapter.ProcessRpcForTesting(kSetCheckpoint, &payload));
+-        CHECK(Unchanged(payload, before));
+-    }
+-    CHECK(delivered == 0);
+-}
+-
+-void TestCoordinateAndRadiusBoundariesRemainValidAndReadOnly() {
+-    keybinder::ServerCheckpointRPCAdapter adapter;
+-    std::vector<keybinder::ServerCheckpointEvent> events;
+-    adapter.SetCallback([&](const auto& event) { events.push_back(event); });
+-    CHECK(adapter.Initialize());
+-    for (float radius : {std::numeric_limits<float>::min(), 1.0f, 10000.0f}) {
+-        RakNet::BitStream payload;
+-        WriteCheckpoint(payload, -100000.0f, 100000.0f, -100000.0f, radius);
+-        const auto before = Snapshot(payload);
+-        CHECK(adapter.ProcessRpcForTesting(kSetCheckpoint, &payload));
+-        CHECK(Unchanged(payload, before));
+-        CHECK(events.back().enabled && events.back().x == -100000.0f
+-            && events.back().y == 100000.0f && events.back().z == -100000.0f
+-            && events.back().radius == radius);
+-    }
+-    CHECK(events.size() == 3);
+-}
+-
+-void TestUnrelatedRpcIdsAreIgnored() {
+-    keybinder::ServerCheckpointRPCAdapter adapter;
+-    int delivered = 0;
+-    adapter.SetCallback([&](const auto&) { ++delivered; });
+-    CHECK(adapter.Initialize());
+-    RakNet::BitStream payload;
+-    payload.Write(true); payload.Write(true);
+-    WriteCheckpoint(payload);
+-    payload.SetReadOffset(2);
+-    const auto before = Snapshot(payload);
+-    for (unsigned char rpc : {0, 1, 36, 40, 61, 106, 108, 255}) {
+-        CHECK(!adapter.ProcessRpcForTesting(rpc, &payload));
+-        CHECK(Unchanged(payload, before));
+-        CHECK(!adapter.ProcessRpcForTesting(rpc, nullptr));
+-    }
+-    CHECK(delivered == 0);
+-}
+-
+-void TestRacingCheckpointLayoutAndDisablePreservePayload() {
+-    keybinder::ServerCheckpointRPCAdapter adapter;
+-    std::vector<keybinder::ServerCheckpointEvent> events;
+-    adapter.SetCallback([&](const auto& event) { events.push_back(event); });
+-    CHECK(adapter.Initialize());
+-    for (int prefix = 0; prefix < 8; ++prefix) {
+-        RakNet::BitStream payload;
+-        for (int bit = 0; bit < prefix; ++bit) payload.Write(true);
+-        payload.Write(static_cast<unsigned char>(1));
+-        payload.Write(1927.0f); payload.Write(168.0f); payload.Write(40.0f);
+-        payload.Write(0.0f); payload.Write(0.0f); payload.Write(0.0f);
+-        payload.Write(4.0f);
+-        payload.SetReadOffset(prefix);
+-        const auto before = Snapshot(payload);
+-        CHECK(adapter.ProcessRpcForTesting(38, &payload));
+-        CHECK(Unchanged(payload, before));
+-        CHECK(events.back().enabled && events.back().racing);
+-        CHECK(events.back().x == 1927.0f && events.back().y == 168.0f
+-            && events.back().z == 40.0f && events.back().radius == 4.0f);
+-        const std::size_t count = events.size();
+-        for (int body = 0; body < 232; ++body) {
+-            RakNet::BitStream partial(payload.GetData(), payload.GetNumberOfBytesUsed(), true);
+-            partial.SetWriteOffset(prefix + body); partial.SetReadOffset(prefix);
+-            const auto saved = Snapshot(partial);
+-            CHECK(!adapter.ProcessRpcForTesting(38, &partial));
+-            CHECK(Unchanged(partial, saved));
+-            CHECK(events.size() == count);
+-        }
+-    }
+-    CHECK(adapter.ProcessRpcForTesting(39, nullptr));
+-    CHECK(!events.back().enabled && events.back().racing);
+-    CHECK(adapter.ProcessRpcForTesting(37, nullptr));
+-    CHECK(!events.back().enabled && !events.back().racing);
+-}
+-
+-void TestDisableCheckpointAllowsNullOrUnrelatedPayloadWithoutReadingIt() {
+-    keybinder::ServerCheckpointRPCAdapter adapter;
+-    std::vector<keybinder::ServerCheckpointEvent> events;
+-    adapter.SetCallback([&](const auto& event) { events.push_back(event); });
+-    CHECK(adapter.Initialize());
+-    CHECK(adapter.ProcessRpcForTesting(kDisableCheckpoint, nullptr));
+-    CHECK(events.size() == 1 && !events.back().enabled);
+-    CHECK(events.back().x == 0.0f && events.back().y == 0.0f
+-        && events.back().z == 0.0f && events.back().radius == 0.0f);
+-    RakNet::BitStream arbitrary;
+-    arbitrary.Write(static_cast<unsigned char>(0xEF));
+-    arbitrary.Write(true);
+-    arbitrary.SetReadOffset(4);
+-    const auto before = Snapshot(arbitrary);
+-    CHECK(adapter.ProcessRpcForTesting(kDisableCheckpoint, &arbitrary));
+-    CHECK(Unchanged(arbitrary, before));
+-    CHECK(events.size() == 2 && !events.back().enabled);
+-}
+-
+-void TestLifecycleRequiresInitializationCallbackAndSupportsSafeReinitialize() {
+-    keybinder::ServerCheckpointRPCAdapter adapter;
+-    RakNet::BitStream payload;
+-    WriteCheckpoint(payload);
+-    const auto before = Snapshot(payload);
+-    int delivered = 0;
+-    CHECK(!adapter.ProcessRpcForTesting(kSetCheckpoint, &payload));
+-    CHECK(Unchanged(payload, before));
+-    adapter.SetCallback([&](const auto&) { ++delivered; });
+-    CHECK(!adapter.ProcessRpcForTesting(kSetCheckpoint, &payload));
+-    CHECK(!adapter.ProcessRpcForTesting(kDisableCheckpoint, nullptr));
+-    CHECK(adapter.Initialize());
+-    CHECK(adapter.Initialize());
+-    CHECK(adapter.ProcessRpcForTesting(kSetCheckpoint, &payload));
+-    CHECK(delivered == 1 && Unchanged(payload, before));
+-    adapter.SetCallback([&](const auto&) { delivered += 10; });
+-    CHECK(adapter.ProcessRpcForTesting(kDisableCheckpoint, nullptr));
+-    CHECK(delivered == 11);
+-    adapter.Shutdown();
+-    adapter.Shutdown();
+-    CHECK(!adapter.ProcessRpcForTesting(kSetCheckpoint, &payload));
+-    CHECK(!adapter.ProcessRpcForTesting(kDisableCheckpoint, nullptr));
+-    CHECK(delivered == 11 && Unchanged(payload, before));
+-    CHECK(adapter.Initialize());
+-    CHECK(!adapter.ProcessRpcForTesting(kSetCheckpoint, &payload));
+-    CHECK(!adapter.ProcessRpcForTesting(kDisableCheckpoint, nullptr));
+-    adapter.SetCallback([&](const auto&) { delivered += 100; });
+-    CHECK(adapter.ProcessRpcForTesting(kSetCheckpoint, &payload));
+-    CHECK(delivered == 111 && Unchanged(payload, before));
+-    adapter.SetCallback({});
+-    CHECK(!adapter.ProcessRpcForTesting(kSetCheckpoint, &payload));
+-    CHECK(!adapter.ProcessRpcForTesting(kDisableCheckpoint, nullptr));
+-    CHECK(Unchanged(payload, before));
+-    {
+-        keybinder::ServerCheckpointRPCAdapter scoped;
+-        scoped.SetCallback([&](const auto&) { delivered += 1000; });
+-        CHECK(scoped.Initialize());
+-        CHECK(scoped.ProcessRpcForTesting(kDisableCheckpoint, nullptr));
+-        scoped.Shutdown();
+-        CHECK(!scoped.ProcessRpcForTesting(kDisableCheckpoint, nullptr));
+-    }
+-    CHECK(delivered == 1111);
+-}
+-
+-void TestCallbackFailureStillLeavesTheIncomingPayloadReadOnly() {
+-    keybinder::ServerCheckpointRPCAdapter adapter;
+-    adapter.SetCallback([](const auto&) { throw std::runtime_error("test callback failure"); });
+-    CHECK(adapter.Initialize());
+-    RakNet::BitStream payload;
+-    payload.Write(true);
+-    WriteCheckpoint(payload);
+-    payload.SetReadOffset(1);
+-    const auto before = Snapshot(payload);
+-    bool threw = false;
+-    try { adapter.ProcessRpcForTesting(kSetCheckpoint, &payload); }
+-    catch (const std::runtime_error&) { threw = true; }
+-    CHECK(threw);
+-    CHECK(Unchanged(payload, before));
+-    adapter.Shutdown();
+-    CHECK(!adapter.ProcessRpcForTesting(kSetCheckpoint, &payload));
+-    CHECK(Unchanged(payload, before));
+-}
+-
+-void TestConcurrentShutdownAndDispatchDoNotDeliverAfterShutdownReturns() {
+-    keybinder::ServerCheckpointRPCAdapter adapter;
+-    std::atomic<int> callbacks{0};
+-    std::atomic<bool> malformed{false};
+-    std::atomic<bool> start{false};
+-    auto callback = [&](const keybinder::ServerCheckpointEvent& event) {
+-        if (event.enabled && (event.x != 1.25f || event.y != -2.5f
+-            || event.z != 3.75f || event.radius != 4.0f)) malformed = true;
+-        ++callbacks;
+-    };
+-    adapter.SetCallback(callback);
+-    CHECK(adapter.Initialize());
+-    std::thread dispatcher([&]() {
+-        RakNet::BitStream payload;
+-        payload.Write(true); payload.Write(false);
+-        WriteCheckpoint(payload, 1.25f, -2.5f, 3.75f, 4.0f);
+-        payload.SetReadOffset(2);
+-        const auto before = Snapshot(payload);
+-        while (!start.load()) std::this_thread::yield();
+-        for (int i = 0; i < 1000; ++i) {
+-            adapter.ProcessRpcForTesting(kSetCheckpoint, &payload);
+-            adapter.ProcessRpcForTesting(kDisableCheckpoint, nullptr);
+-            if (adapter.ProcessRpcForTesting(38, &payload) || !Unchanged(payload, before)) malformed = true;
+-        }
+-    });
+-    std::thread lifecycle([&]() {
+-        while (!start.load()) std::this_thread::yield();
+-        for (int i = 0; i < 100; ++i) {
+-            adapter.Shutdown();
+-            adapter.SetCallback(callback);
+-            adapter.Initialize();
+-        }
+-    });
+-    start = true;
+-    dispatcher.join();
+-    lifecycle.join();
+-    adapter.Shutdown();
+-    const int afterShutdown = callbacks.load();
+-    RakNet::BitStream payload;
+-    WriteCheckpoint(payload, 1.25f, -2.5f, 3.75f, 4.0f);
+-    const auto before = Snapshot(payload);
+-    for (int i = 0; i < 32; ++i) {
+-        CHECK(!adapter.ProcessRpcForTesting(kSetCheckpoint, &payload));
+-        CHECK(!adapter.ProcessRpcForTesting(kDisableCheckpoint, nullptr));
+-        CHECK(Unchanged(payload, before));
+-    }
+-    CHECK(callbacks.load() == afterShutdown);
+-    CHECK(!malformed.load());
+-}
+-} // namespace
+-
+-int RunServerCheckpointRPCAdapterTests() {
+-    checks = failures = 0;
+-    TestSetCheckpointParsesEveryBitAlignmentAndDoesNotMutateTheRpc();
+-    TestEveryTruncatedPayloadRestoresTheOriginalReadPositionAndBytes();
+-    TestNanInfinityInvalidCoordinatesAndRadiusNeverReachTheCallback();
+-    TestCoordinateAndRadiusBoundariesRemainValidAndReadOnly();
+-    TestUnrelatedRpcIdsAreIgnored();
+-    TestRacingCheckpointLayoutAndDisablePreservePayload();
+-    TestDisableCheckpointAllowsNullOrUnrelatedPayloadWithoutReadingIt();
+-    TestLifecycleRequiresInitializationCallbackAndSupportsSafeReinitialize();
+-    TestCallbackFailureStillLeavesTheIncomingPayloadReadOnly();
+-    TestConcurrentShutdownAndDispatchDoNotDeliverAfterShutdownReturns();
+-    std::printf("ServerCheckpointRPCAdapterTests: %d checks, %d failures\n", checks, failures);
+-    return failures;
+-}
+diff --git a/tools/document_revision28.py b/tools/document_revision28.py
+new file mode 100644
+index 0000000..eb62c7e
+--- /dev/null
++++ b/tools/document_revision28.py
+@@ -0,0 +1,132 @@
++"""Document removal of the complete Binder-added automatic police locator."""
++from pathlib import Path
++import re
++
++R=Path(__file__).resolve().parents[1]
++TITLE='NLBinder v.0.1.2 by perkys & edited by KOBiRO'
++DETAIL='''Die vom Binder ergänzte automatische Polizeifunk-Ortung ist vollständig
++entfernt. Der Binder verarbeitet die Detektiv-Start- und Erfolgsmeldungen nicht
++mehr für eine Ortung, wertet dazu keine Ziel-Checkpoints aus und sendet keine
++automatische `[ORTUNG]`-Meldung im Radio. Die ausschließlich dafür verwendeten
++Quellen, RPC-Beobachtung, Zustände, Hilfsfunktionen und Tests sind entfernt.
++
++Die normale serverseitige Ortung kann weiterhin manuell benutzt werden.
++Wanted-Overlay, Wanted-Labels einschließlich Fahrern und Mitfahrern, aktuelle
++Spieler-IDs in der Wantedtabelle und `/speed` bleiben erhalten. Die normale
++GPS-Navigation, Quick Map, Stadt-/Bezirksvariablen sowie alle übrigen Funktionen
++werden von dieser Entfernung nicht verändert.
++
++Frühere Beschreibungen der automatischen Ortung bleiben im vollständigen
++Changelog und in alten Veröffentlichungen als Entwicklungshistorie erhalten;
++für den aktuellen Stand gilt deren Entfernung in r28.
++'''
++POST='Neu in r28: Die gesamte vom Binder ergänzte automatische Polizeifunk-Ortung wurde auf Wunsch entfernt. Der Binder liest Detektiv-Meldungen nicht mehr für eine Ortung aus, wertet keine Ortungs-Checkpoints mehr aus und sendet keine automatische Ortungsmeldung im Radio. Die zugehörigen ausschließlich verwendeten Quellen, Hooks, Zustände und Tests wurden ebenfalls entfernt. Wanted-Overlay, Gesucht-Labels, aktuelle Spieler-IDs, /speed, GPS und Quick Map bleiben erhalten. Die serverseitige Ortung kann weiterhin normal manuell benutzt werden.'
++HISTORY='''
++## 34. Nachtrag v0.1.2 / r28 – 17. November 2026
++
++- Gesamte vom Binder ergänzte automatische Polizeifunk-Ortung auf Wunsch entfernt.
++- Mitlesen der Detektiv-Start- und Erfolgsmeldungen für den Ortungsablauf entfernt; keine automatische Ortungsmeldung im Radio mehr.
++- Ausschließlich dafür verwendete Checkpoint-RPC-Beobachtung, Zielmarkerauswahl, Stadt-/Bezirksauflösung, Zustände, Quellen und Tests entfernt.
++- Normale manuelle serverseitige Ortung, Wanted-Overlay, native Wanted-Labels und Spieler-IDs sowie /speed beibehalten.
++- GPS-Navigation, Quick Map, allgemeine Stadt-/Bezirksvariablen und alle übrigen Binder-Funktionen erhalten.
++- Gesamttests und Release-Build sowie das Fehlen der Ortungsvorlage in der fertigen ASI werden geprüft. Tatsächliche Ergebnisse stehen im r28-Prüfnachweis.
++- Frühere Beschreibungen und Veröffentlichungen einschließlich r27 als Entwicklungshistorie erhalten; aktuelle Dokumentation weist die Entfernung aus.
++- Neue NLBinder.asi, vollständige aktuelle Quellen und gesamte Changelogs als NLBinder-v0.1.2-r28 vorbereitet. Frühere Desktop-Exporte und Spielinstallation unverändert.
++'''
++
++def update_history_header(text):
++    heading='# Änderungen am Perkys Binder – '+TITLE
++    status=('Stand: 17. November 2026, **r28 ohne automatische Polizeifunk-Ortung**. '
++            'Die Abschnitte 1 bis 33 dokumentieren die früheren Stände; Abschnitt 34 ergänzt r28.')
++    text,n=re.subn(r'(?m)^# [^\n]*',lambda _:heading,text,count=1)
++    text,m=re.subn(r'(?m)^Stand: [^\n]*',lambda _:status,text,count=1)
++    if n!=1 or m!=1:raise ValueError('Expected changelog title and current status')
++    return text
++
++def main():
++    notes='# '+TITLE+' – r28\n\n## Automatische Ortung entfernt\n\n'+DETAIL+'''
++## Paket übernehmen
++
++Der neue Desktop-Ordner `NLBinder-v0.1.2-r28` enthält die fertige `NLBinder.asi`,
++vollständige aktuelle Binder-Quellen, den gesamten Changelog und `FORUM-CHANGELOG.txt`.
++GTA vollständig beenden, die bisherige ASI ersetzen und neu starten.
++Die Browser-Runtime cef156-r1 benötigt für dieses Update keinen neuen Download.
++
++[Prüfumfang](https://github.com/Kobiro57/PerkysBinderChangelog/blob/v0.1.2-r28/docs/review/r28-PRUEFUNG-DE.md) ·
++[Prüfnachweis](https://github.com/Kobiro57/PerkysBinderChangelog/blob/v0.1.2-r28/docs/review/r28-validation.json)
++'''
++    review='''# Prüfumfang r28 – 17. November 2026
++
++Die Gesamttests und der Release-Build müssen erfolgreich sein. Die entfernten
++Ortungsquellen und ausschließlich zugehörigen Tests dürfen im aktuellen
++Quellstand, Projekt, Testlauf und Desktop-Export nicht mehr enthalten sein.
++Die aktive SAMPBridge darf keinen Ortungsablauf mehr initialisieren, aktualisieren
++oder mit Detektiv-Meldungen versorgen. In der fertigen ASI darf die eindeutige
++Vorlage `[ORTUNG]` nicht vorkommen.
++
++Die bestehenden Tests für Wanted-Overlay und native Gesucht-Labels, /speed,
++Spieler-IDs, GPS, Quick Map, Fraktionsprüfung sowie die übrigen Funktionen
++bleiben maßgeblich. Die normalen serverseitigen Chatmeldungen dürfen keine
++automatische Ortungs-Funkmeldung auslösen. Die frühere Ortungsimplementierung
++wird nicht durch inaktive Quellen oder neue Tests für entfernten Code erhalten.
++
++Der PE-Nachweis prüft die gebaute x86-ASI, ihre eingebetteten Helfer und die
++erhaltene Startmeldung. Der Reconnect-Helfer wird mit lokalen Testprozessen
++geprüft. Unveränderte Browser-, GPS-, Wanted- und Kill-Quellen werden gegen r27
++abgeglichen. FORUM-KEYBOARD-TEST.json bleibt der unveränderte historische
++Browsernachweis aus r24 und wird nicht als neuer r28-Test ausgegeben.
++
++Ein r28-GTA-Livetest wird nicht aus automatischen Tests abgeleitet. Tatsächlich
++durchgeführte Prüfungen stehen in r28-validation.json. Exportierte Quellen und
++ASI werden mit dem veröffentlichten Commit abgeglichen. Private Profile,
++Logs, Spielstände und Zugangsdaten gehören nicht zum Paket. Historische
++Veröffentlichungen und ihre Prüfdateien bleiben erhalten.
++'''
++    readme='# NLBinder – PerkysBinderChangelog\n\nAktueller Stand: **'+TITLE+'**, r28.\n\n'+DETAIL+'''
++- [Fertige ASI und Dokumentation](https://github.com/Kobiro57/PerkysBinderChangelog/releases/tag/v0.1.2-r28)
++- [NLBinder.asi](dist/NLBinder-0.1.2-r28/NLBinder.asi)
++- [Bedienung](docs/NLBinder-0.1.2-r28-DE.md)
++- [Wanted-Labels](src/NearbyWantedLabels.cpp)
++- [Gesamt-Changelog](docs/review/CHANGELOG-DE.md), [TXT](docs/CHANGELOG-GESAMT.txt)
++- [Forumtext](docs/FORUM-CHANGELOG-v0.1.2.txt)
++- [Forum-Installation und Speicherorte](docs/FORUM-INSTALLATION-DE.md)
++- [Dateiliste](docs/FORUM-DATEILISTE.txt)
++- [Eigener Forum-/Installationsquellcode](dist/NLBinder-0.1.2-r28/FORUM-INSTALLATION-QUELLCODE/README.md)
++- [Prüfumfang](docs/review/r28-PRUEFUNG-DE.md), [Ergebnisse](docs/review/r28-validation.json)
++- [Änderungen seit r27](https://github.com/Kobiro57/PerkysBinderChangelog/compare/v0.1.2-r27...v0.1.2-r28)
++- [Originalvergleich](docs/review/DATEIVERGLEICH.md)
++
++Der vollständige aktuelle Binder-Quellstand und die Changelogs liegen auch im
++Desktop-Ordner NLBinder-v0.1.2-r28. Die Browser-Runtime bleibt cef156-r1.
++'''
++    for name,data in [('docs/NLBinder-0.1.2-r28-DE.md',notes),('docs/review/r28-PRUEFUNG-DE.md',review),('build/README-GITHUB-r28.md',readme)]:
++        (R/name).write_text(data,encoding='utf-8',newline='\n')
++    (R/'docs/review/README-GITHUB.md').write_text(re.sub(r'\]\((docs/|dist/|res/|include/|src/)',r'](../../\1',readme),encoding='utf-8',newline='\n')
++    p=R/'docs/review/CHANGELOG-DE.md';old=p.read_text(encoding='utf-8-sig');s=update_history_header(old)
++    if '## 34. Nachtrag v0.1.2 / r28' not in s:s=s.rstrip()+'\n'+HISTORY
++    if s!=old:p.write_text(s,encoding='utf-8',newline='\n')
++    p=R/'docs/review/PRUEFUNG-DE.md';s=p.read_text(encoding='utf-8-sig')
++    if '## Aktueller Stand v0.1.2 / r28' not in s:
++        s=s.replace('## Aktueller Stand v0.1.2 / r27','## Vorheriger Stand v0.1.2 / r27',1)
++        first,_,rest=s.partition('\n')
++        p.write_text(first+'\n\n## Aktueller Stand v0.1.2 / r28 – 17. November 2026\n\nAutomatische Ortung vollständig entfernt: [Prüfumfang](r28-PRUEFUNG-DE.md), [Ergebnisse](r28-validation.json).\n'+rest,encoding='utf-8',newline='\n')
++    p=R/'docs/FORUM-CHANGELOG-v0.1.2.txt';s=p.read_text(encoding='utf-8-sig')
++    if 'Neu in r28:' not in s:
++        marker='NEU IN DIESEM PAKET\n'
++        if marker not in s:raise ValueError('Forum changelog update marker missing')
++        historical=('FRÜHERE ÄNDERUNGEN – HISTORISCHE BESCHREIBUNGEN\n'
++                    'Die folgenden Abschnitte beschreiben frühere Pakete. Die dort genannte automatische Ortung ist seit r28 entfernt.\n')
++        s=s.replace(marker,marker+'\n'+POST+'\n\n'+historical,1).replace('/releases/tag/v0.1.2-r27','/releases/tag/v0.1.2-r28')
++        p.write_text(s,encoding='utf-8-sig',newline='\n')
++    p=R/'docs/BUILD-README.md';old=p.read_text(encoding='utf-8-sig');lines=[]
++    for line in old.splitlines():
++        lower=line.lower()
++        if line.startswith('- **Police Wanted and Location**'):
++            line='- **Police Wanted Labels** — Confirmed SAPD/LSPD members with the Wanted overlay enabled see red wanted labels alongside actually drawn native player names, including drivers and passengers. Visibility and range follow the native nametag. The Wanted table includes current SA-MP player IDs when resolved.'
++        elif line.startswith('- **') and ('police locate' in lower or 'police location' in lower or 'operation-specific police location' in lower):continue
++        lines.append(line)
++    updated='\n'.join(lines)+'\n'
++    if updated!=old:p.write_text(updated,encoding='utf-8',newline='\n')
++    print('Documented complete automatic locator removal; full history section 34')
++
++if __name__=='__main__':main()
+diff --git a/tools/export_full_changelog_revision28.py b/tools/export_full_changelog_revision28.py
+new file mode 100644
+index 0000000..2f7647d
+--- /dev/null
++++ b/tools/export_full_changelog_revision28.py
+@@ -0,0 +1,34 @@
++"""Render the complete reviewed German change history as a portable TXT file."""
++from pathlib import Path
++import re
++
++
++def render(text):
++    text = re.sub(r"!\[([^\]]*)\]\(([^)]+)\)", r"\1 (\2)", text)
++    text = re.sub(r"\[([^\]]+)\]\(([^)]+)\)", r"\1 (\2)", text)
++    lines = []
++    for line in text.splitlines():
++        heading = re.match(r"^(#{1,6})\s+(.+)$", line)
++        if heading:
++            title = heading[2].replace("**", "").replace("`", "")
++            lines += [title, ("=" if len(heading[1]) <= 2 else "-") * len(title)]
++        else:
++            lines.append(line.replace("**", "").replace("`", ""))
++    return "\n".join(lines).rstrip() + "\n"
++
++
++def main():
++    root = Path(__file__).resolve().parents[1]
++    source = root / "docs/review/CHANGELOG-DE.md"
++    target = root / "docs/CHANGELOG-GESAMT.txt"
++    text = source.read_text(encoding="utf-8")
++    required = {f"## {number}. " for number in range(1, 35)}
++    if not all(marker in text for marker in required):
++        raise ValueError("Complete change history sections 1-34 required")
++    result = render(text)
++    target.write_text(result, encoding="utf-8-sig", newline="\n")
++    print(f"Full changelog: {len(result.splitlines())} lines, sections 1-34, {target.name}")
++
++
++if __name__ == "__main__":
++    main()
+diff --git a/tools/export_source_bundle_revision28.py b/tools/export_source_bundle_revision28.py
+new file mode 100644
+index 0000000..2bdd201
+--- /dev/null
++++ b/tools/export_source_bundle_revision28.py
+@@ -0,0 +1,196 @@
++"""Export a verified r28 source snapshot, ASI, automatic-browser manifest and full changelog.
++
++Reads Git blobs without changing Git or the game installation. The destination
++must not exist. Historical release binaries, Git metadata, local build outputs
++and private runtime files are excluded. The proof manifest stays under build/.
++"""
++from pathlib import Path, PurePosixPath
++import argparse
++import hashlib
++import json
++import re
++import subprocess
++from revision28_scope import REMOVED_LOCATE_FILES
++
++
++ROOT = Path(__file__).resolve().parents[1]
++RELEASE = "v0.1.2-r28"
++PACKAGE = "dist/NLBinder-0.1.2-r28"
++PRIVATE_PARTS = {
++    ".git", ".vs", ".aws", ".codex", ".agents", "__pycache__", "build",
++    "output", "debug", "release", "obj", "cmakefiles", ".venv", "venv",
++}
++PRIVATE_NAMES = {
++    "keybinder.json", "jobs_data.json", "imgui.ini", ".env", ".git-credentials",
++    "credentials", "id_rsa", "id_ed25519", "nul", "gps.xml",
++}
++PRIVATE_SUFFIXES = {".log", ".obj", ".pdb", ".ilk", ".exp", ".pyc", ".suo", ".user", ".o"}
++
++
++def require(ok, message):
++    if not ok:
++        raise ValueError(message)
++
++
++def digest(data):
++    return hashlib.sha256(data).hexdigest()
++
++
++def git(repo, *args):
++    return subprocess.check_output(["git", *args], cwd=repo)
++
++
++def safe_source_path(relative):
++    path = PurePosixPath(relative)
++    require(path.parts and not path.is_absolute() and ".." not in path.parts,
++            "Unsafe source path: " + relative)
++    require("\\" not in relative and ":" not in relative, "Invalid source path: " + relative)
++    require(not any(part.lower() in PRIVATE_PARTS for part in path.parts[:-1]),
++            "Private/build directory in source snapshot: " + relative)
++    require(path.name.lower() not in PRIVATE_NAMES and path.suffix.lower() not in PRIVATE_SUFFIXES,
++            "Private/runtime file in source snapshot: " + relative)
++
++
++def source_entries(repo, commit):
++    entries = {}
++    for entry in git(repo, "ls-tree", "-r", "-z", commit).split(b"\0"):
++        if not entry:
++            continue
++        metadata, raw_path = entry.split(b"\t", 1)
++        mode, kind, oid = metadata.split()
++        relative = raw_path.decode("utf-8")
++        require(kind == b"blob" and mode in {b"100644", b"100755"},
++                "Unsupported symlink/submodule: " + relative)
++        entries[relative] = oid
++    return entries
++
++
++def read_blobs(repo, entries):
++    oids = sorted(set(entries.values()))
++    process = subprocess.Popen(["git", "cat-file", "--batch"], cwd=repo,
++                               stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
++    output, errors = process.communicate(b"\n".join(oids) + b"\n")
++    require(process.returncode == 0, "Cannot read Git source objects: " + errors.decode("utf-8", "replace"))
++    offset, blobs = 0, {}
++    for oid in oids:
++        end_header = output.find(b"\n", offset)
++        require(end_header >= offset, "Truncated Git source header")
++        header = output[offset:end_header].split()
++        require(len(header) == 3 and header[0] == oid and header[1] == b"blob", "Unexpected source object")
++        size = int(header[2])
++        start, end = end_header + 1, end_header + 1 + size
++        require(output[end:end + 1] == b"\n", "Truncated source file")
++        blobs[oid] = output[start:end]
++        offset = end + 1
++    require(offset == len(output), "Unexpected trailing Git source data")
++    return {relative: blobs[oid] for relative, oid in entries.items()}
++
++
++def main():
++    parser = argparse.ArgumentParser(description=__doc__)
++    parser.add_argument("--destination", required=True, type=Path)
++    parser.add_argument("--repository", type=Path, default=ROOT / "build/github-publication/repository")
++    parser.add_argument("--revision", default="HEAD")
++    parser.add_argument("--binary", type=Path, default=ROOT / "build/Release/NLBinder.asi")
++    parser.add_argument("--manifest", type=Path, default=ROOT / "build/source-export-r28.json")
++    args = parser.parse_args()
++    repo = args.repository.resolve(strict=True)
++    destination = args.destination.resolve()
++    manifest_path = args.manifest.resolve()
++    require(not destination.exists(), "Destination already exists; nothing will be overwritten: " + str(destination))
++    require(destination.parent.is_dir(), "Destination parent must already exist")
++    require(not destination.is_relative_to(repo), "Export must be outside the publication checkout")
++    require(not manifest_path.is_relative_to(destination), "Manifest must remain outside the source export")
++    commit = git(repo, "rev-parse", "--verify", "--end-of-options", args.revision + "^{commit}").decode().strip()
++    require(re.fullmatch("[0-9a-f]{40}", commit), "Unexpected Git revision")
++    entries = source_entries(repo, commit)
++    selected = {}
++    for relative, oid in entries.items():
++        if PurePosixPath(relative).parts[0] == "dist":
++            continue  # Prior ASIs/ZIPs are available through the Git history.
++        safe_source_path(relative)
++        selected[relative] = oid
++    extras = {
++        "NLBinder.asi": PACKAGE + "/NLBinder.asi",
++        "CHANGELOG-GESAMT.txt": "docs/CHANGELOG-GESAMT.txt",
++        "README.md": "docs/BUILD-README.md",
++        "LIESMICH-DE.md": PACKAGE + "/LIESMICH.md",
++        "BUILD-INFO.txt": PACKAGE + "/BUILD-INFO.txt",
++        "PRUEFBERICHT.json": PACKAGE + "/PRUEFBERICHT.json",
++        "SHA256SUMS.txt": PACKAGE + "/SHA256SUMS.txt",
++        "RECONNECT-TEST.json": PACKAGE + "/RECONNECT-TEST.json",
++        "FORUM-KEYBOARD-TEST.json": PACKAGE + "/FORUM-KEYBOARD-TEST.json",
++        "BROWSER-RUNTIME.json": PACKAGE + "/BROWSER-RUNTIME.json",
++        "FORUM-CHANGELOG.txt": "docs/FORUM-CHANGELOG-v0.1.2.txt",
++        "FORUM-INSTALLATION.txt": "docs/FORUM-INSTALLATION-DE.md",
++        "FORUM-DATEILISTE.txt": "docs/FORUM-DATEILISTE.txt",
++    }
++    focus_prefix = PACKAGE + "/FORUM-INSTALLATION-QUELLCODE/"
++    focus_entries = {name[len(PACKAGE) + 1:]: name for name in entries if name.startswith(focus_prefix)}
++    require(focus_entries, "The verified focused forum installer sources are missing")
++    extras.update(focus_entries)
++    for source in extras.values():
++        require(source in entries, "Verified r28 publication file missing: " + source)
++    read_entries = dict(selected)
++    read_entries.update({source: entries[source] for source in extras.values()})
++    files = read_blobs(repo, read_entries)
++    exported = {relative: files[relative] for relative in selected}
++    for target, source in extras.items():
++        exported[target] = files[source]
++    require(not any(name in exported for name in REMOVED_LOCATE_FILES), "Removed locator source remains in export")
++    binary = exported["NLBinder.asi"]
++    require(b"[ORTUNG]" not in binary, "Removed locate template remains in exported ASI")
++    require(binary == args.binary.read_bytes(), "Published ASI differs from the locally built NLBinder.asi")
++    report = json.loads(exported["PRUEFBERICHT.json"].decode("utf-8-sig"))
++    require(report.get("revision") == RELEASE and report.get("asi") == "NLBinder.asi" and report.get("sha256") == digest(binary)
++            and report.get("bytes") == len(binary) and report.get("embedded_helper_matches") is True,
++            "r28 artifact verification is missing or stale")
++    runtime = json.loads(exported['BROWSER-RUNTIME.json'].decode('utf-8'))
++    runtime_files = {}
++    # r28 installs the pinned browser automatically into Documents on first /forum.
++    require(exported["Keybinder.vcxproj"].count(b"<TargetName>NLBinder</TargetName>") == 2,
++            "Release/Debug project names are not both NLBinder")
++    folded = [relative.casefold() for relative in exported]
++    require(len(folded) == len(set(folded)), "Case-insensitive destination path collision")
++    require(git(repo, "rev-parse", "--verify", "--end-of-options", args.revision + "^{commit}").decode().strip() == commit,
++            "Source revision changed during snapshot reading")
++    # All input and publication checks finish before the first destination write.
++    destination.mkdir()
++    for relative, data in sorted(exported.items()):
++        target = destination / relative
++        require(target.resolve().is_relative_to(destination), "Export escaped the destination")
++        target.parent.mkdir(parents=True, exist_ok=True)
++        target.write_bytes(data)
++    import shutil
++    for relative, source in runtime_files.items():
++        target = destination / relative
++        target.parent.mkdir(parents=True, exist_ok=True)
++        shutil.copyfile(source, target)
++    actual = {path.relative_to(destination).as_posix(): path for path in destination.rglob("*") if path.is_file()}
++    require(set(actual) == set(exported) | set(runtime_files), "Exported file set differs")
++    for relative, data in exported.items():
++        require(actual[relative].read_bytes() == data, "Exported file differs: " + relative)
++        require(not actual[relative].is_symlink(), "Unexpected exported symlink: " + relative)
++    for relative, source in runtime_files.items():
++        with source.open('rb') as stream: before = hashlib.file_digest(stream, 'sha256').hexdigest()
++        with actual[relative].open('rb') as stream: after = hashlib.file_digest(stream, 'sha256').hexdigest()
++        require(before == after, 'Exported runtime differs: ' + relative)
++    manifest = {
++        "release": RELEASE, "source_commit": commit, "destination": str(destination),
++        "exported_files": len(exported) + len(runtime_files),
++        "exported_bytes": sum(map(len, exported.values())) + sum(p.stat().st_size for p in runtime_files.values()),
++        "browser_runtime_files": len(runtime_files),
++        "source_files": len(selected), "all_files_verified": True,
++        "historical_release_binaries_in_export": 0, "private_runtime_files": 0,
++        "asi_bytes": len(binary), "asi_sha256": digest(binary),
++        "changelog_sha256": digest(exported["CHANGELOG-GESAMT.txt"]),
++        "root_file_sources": extras,
++        "files": {relative: digest(data) for relative, data in sorted(exported.items())},
++    }
++    manifest_path.parent.mkdir(parents=True, exist_ok=True)
++    manifest_path.write_text(json.dumps(manifest, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
++    print(json.dumps({key: value for key, value in manifest.items() if key != "files"}, indent=2, ensure_ascii=False))
++
++
++if __name__ == "__main__":
++    main()
+diff --git a/tools/finalize_revision28.py b/tools/finalize_revision28.py
+new file mode 100644
+index 0000000..2b9e67c
+--- /dev/null
++++ b/tools/finalize_revision28.py
+@@ -0,0 +1,58 @@
++"""Export v0.1.2 to a new Desktop folder, preserving every previous export."""
++from pathlib import Path
++import hashlib,json,subprocess,sys
++ROOT=Path(__file__).resolve().parents[1]
++
++def require(ok,message):
++    if not ok:raise ValueError(message)
++
++def sha(path):
++    with path.open('rb') as stream:return hashlib.file_digest(stream,'sha256').hexdigest()
++
++def main():
++    desktop=Path.home()/'Desktop'
++    require(desktop.resolve(strict=True)==ROOT.parent.resolve(strict=True),'Unexpected Desktop location')
++    target=desktop/'NLBinder-v0.1.2-r28'
++    prepared=desktop/'NLBinder-v0.1.2-r28-prepared-20261117'
++    for path in [target,prepared]:
++        require(path.parent.resolve(strict=True)==desktop.resolve(strict=True)
++                and path.resolve().parent==desktop.resolve(strict=True),'Unexpected export path')
++        require(not path.is_symlink() and not path.is_junction(),'Redirected Desktop folder refused')
++        require(not path.exists(),'Existing export is preserved: '+path.name)
++    publication=json.loads((ROOT/'build/revision28-published.json').read_text(encoding='utf-8'))
++    proof=json.loads((ROOT/'build/revision28-package.json').read_text(encoding='utf-8'))
++    require(publication['published'] and publication['tag']=='v0.1.2-r28'
++            and publication['asi_sha256']==proof['asi_sha256'],'Verified publication missing')
++    subprocess.run([sys.executable,str(ROOT/'tools/export_source_bundle_revision28.py'),
++        '--destination',str(prepared),'--revision',publication['commit']],cwd=ROOT,check=True)
++    require(sha(prepared/'NLBinder.asi')==proof['asi_sha256'],'Prepared ASI differs')
++    require(sha(prepared/'CHANGELOG-GESAMT.txt')==proof['changelog_sha256'],'Complete changelog differs')
++    require(sha(prepared/'FORUM-CHANGELOG.txt')==proof['forum_changelog_sha256'],'Postable forum changelog differs')
++    require(sha(prepared/'FORUM-INSTALLATION.txt')==proof['forum_installation_sha256'],'Installer disclosure differs')
++    require(sha(prepared/'FORUM-DATEILISTE.txt')==proof['forum_file_list_sha256'],'Runtime file list differs')
++    native=json.loads((prepared/'FORUM-KEYBOARD-TEST.json').read_text(encoding='utf-8'))
++    require(native==proof['native_forum_keyboard_test'] and native['passed'] is True,
++            'Native CEF keyboard test proof differs')
++    focus=prepared/'FORUM-INSTALLATION-QUELLCODE'
++    actual={p.relative_to(focus).as_posix():p for p in focus.rglob('*') if p.is_file()}
++    require(set(actual)==set(proof['forum_review_files']),'Focused installer source set differs')
++    for name,digest in proof['forum_review_files'].items():
++        require(actual[name].resolve().is_relative_to(focus.resolve()) and sha(actual[name])==digest,
++                'Focused installer file differs: '+name)
++    runtime=json.loads((prepared/'BROWSER-RUNTIME.json').read_text(encoding='utf-8'))
++    require(runtime['runtime_id']=='cef156-r1'
++            and runtime['archive_sha256']=='01fc7f1d4dcec644a191e9c63da7088a73aa81a63c9a4c207001f7038a70ff45',
++            'Unchanged automatic browser manifest differs')
++    require(prepared.resolve().parent==desktop.resolve() and target.resolve().parent==desktop.resolve(),
++            'Unsafe final rename')
++    prepared.rename(target)
++    result={'revision':'v0.1.2-r28','desktop_source':str(target),'source_commit':publication['commit'],
++        'asi_sha256':sha(target/'NLBinder.asi'),'all_source_files_verified':True,
++        'focused_forum_source_files_verified':len(actual),'forum_installation_paths_documented':True,
++        'postable_forum_changelog_verified':True,'native_forum_keyboard_test_verified':True,
++        'previous_desktop_exports_modified':False,
++        'game_installation_modified':False}
++    (ROOT/'build/revision28-desktop-export.json').write_text(json.dumps(result,indent=2)+'\n',encoding='utf-8')
++    print(json.dumps(result,indent=2))
++
++if __name__=='__main__':main()
+diff --git a/tools/package_revision28.py b/tools/package_revision28.py
+new file mode 100644
+index 0000000..69a845a
+--- /dev/null
++++ b/tools/package_revision28.py
+@@ -0,0 +1,205 @@
++"""Package the verified v0.1.2 ASI, forum disclosure and inspectable installer sources."""
++from pathlib import Path
++import hashlib,json,re,shutil,subprocess,sys,zipfile
++from revision28_scope import REMOVED_LOCATE_FILES, assert_locator_removed
++R=Path(__file__).resolve().parents[1]
++PREVIOUS='646c6b478e77e38b88b9d6333520187a0629234d'
++TAG='v0.1.2-r28'
++
++def check(ok,why):
++    if not ok:raise ValueError(why)
++
++def sha(path):
++    with path.open('rb') as stream:return hashlib.file_digest(stream,'sha256').hexdigest()
++
++def main():
++    assert_locator_removed(R)
++    package=R/'dist/NLBinder-0.1.2-r28'
++    archive=R/'dist/NLBinder-v0.1.2-KOBiRO-r28.zip'
++    check(not package.exists() and not archive.exists(),'Existing v0.1.2 package is preserved; do not overwrite')
++    log_path=R/'build/revision28-tests.log'
++    log=log_path.read_text(encoding='utf-8-sig',errors='replace')
++    check(re.search(r'^Test exit code: 0\s*$',log,re.M) and '[FAIL]' not in log,'Full tests not passing')
++    check('[PASS] TestDetectiveMessagesAndCheckpointsDoNotSendAutomaticRadio' in log,
++          'Missing passing regression for detective chat and checkpoints without automatic radio')
++    check('RELEASE_BUILD_EXIT_CODE=0' in (R/'build/revision28-build.log').read_text(errors='replace'),'Release build not passing')
++    suites={}
++    for suite in ['DrugUseTracker','R18Feature','R17Feature','R16Feature','DamageLogRegression','StartupStatsSync','CombatChatBridge','CombatChatParser','ServerStatsParser','LocalFactionAccess','NearbyWantedLabels','ForumKeyboardInput','ForumKeyboardRouting']:
++        found=re.search(suite+r'Tests: (\d+) checks, 0 failures',log)
++        check(found is not None,'Missing passing suite '+suite);suites[suite]=int(found[1])
++    for name,pattern in [('OnlineSettings',r'Online Settings: (\d+) passed, 0 failed'),
++                         ('OnlineOverlayRenderer',r'OnlineOverlayRendererTests: (\d+) passed, 0 failed'),
++                         ('QuickMap',r'QuickMapTests: (\d+) passed, 0 failed')]:
++        found=re.search(pattern,log);check(found is not None,'Missing passing suite '+name);suites[name]=int(found[1])
++    check(suites['CombatChatParser']>190 and suites['CombatChatBridge']>238,'TakeOver regression checks missing')
++    check(suites['DrugUseTracker']>=207,'Existing drug parser regressions missing')
++    check(suites['QuickMap']>149,'Missing claims QuickMap regression checks')
++    check(suites['ServerStatsParser']>156,'Missing own-faction parsing regression checks')
++    check(suites['LocalFactionAccess']>=18,'Missing local/API faction reconciliation checks')
++    check(suites['StartupStatsSync']>401,'Missing speed command and role-loss regression checks')
++    for suite in ['NearbyWantedLabels','ForumKeyboardInput','ForumKeyboardRouting']:
++        check(suites[suite]>0,'Missing r28 regression checks: '+suite)
++    artifact=json.loads((R/'build/revision28-artifact.json').read_text(encoding='utf-8'))
++    asi=R/'build/Release/NLBinder.asi'
++    check(artifact['revision']==TAG and sha(asi)==artifact['sha256'] and artifact['embedded_helper_matches']
++          and artifact['embedded_browser_setup_matches'] and artifact['requested_startup_message_present'] and artifact.get('automatic_police_locate_removed')
++          and artifact.get('automatic_locate_radio_template_absent'),'Artifact proof stale')
++    check(artifact['embedded_browser_setup_sha256']==sha(R/'build/BrowserSetup.exe'),'Installer proof stale')
++    check('libcef.dll' not in [x.lower() for x in artifact['imports']],'CEF must remain outside GTA')
++    worker_path=R/'build/reconnect-worker-tests/result.json'
++    worker=json.loads(worker_path.read_text(encoding='utf-8'))
++    check(worker['failures']==0 and worker['checks']>=83 and worker['nova_cases']==6,'Native reconnect regression failed')
++    check(worker_path.stat().st_mtime>=(R/'build/ReconnectHelper.exe').stat().st_mtime,'Reconnect test predates helper build')
++    native_path=R/'dist/NLBinder-0.1.2-r24/FORUM-KEYBOARD-TEST.json'
++    native=json.loads(native_path.read_text(encoding='utf-8'))
++    check(native.get('passed') is True,'Native CEF forum keyboard test not passing')
++    check(native.get('renderer_input_readiness_checked') is True
++          and native.get('initial_offscreen_frames',0)>=2,
++          'Native keyboard test did not establish renderer readiness and input focus')
++    check(native.get('runtime_id')=='cef156-r1' and native.get('protocol_version')==1,
++          'Native keyboard test did not use the pinned browser and existing IPC protocol')
++    check(native.get('anonymous_isolated_profile') is True and native.get('login_or_post_submitted') is False
++          and native.get('live_gta_gameplay_test_performed') is False and native.get('clean_exit_code')==0,
++          'Native keyboard test scope or browser cleanup differs')
++    check(native.get('fixed_cases',0)>0 and native.get('fixed_cases_passed')==native['fixed_cases']
++          and native.get('actual_cef_ipc_keyboard_path') is True and native.get('local_dom_fixture') is True
++          and native.get('network_blocked_during_fixture') is True
++          and native.get('initial_page_loaded_read_only') is True
++          and native.get('viewport_paint_barriers_checked') is True
++          and native.get('user_clipboard_modified') is False,
++          'Native keyboard editing cases or isolated fixture scope differ')
++    check(native.get('legacy_regression_reproduced') is True,
++          'Native keyboard test did not reproduce the reported AltGr regression with the old route')
++    check(native.get('translator_sha256')==sha(R/'include/ForumKeyboardInput.h'),
++          'Native keyboard proof predates the current translator or probe')
++    before_native=subprocess.check_output(['git','show',PREVIOUS+':dist/NLBinder-0.1.2-r24/FORUM-KEYBOARD-TEST.json'],cwd=R/'build/github-publication/repository')
++    check(native_path.read_bytes().replace(b'\r\n',b'\n')==before_native.replace(b'\r\n',b'\n'),
++          'Historical r24 keyboard proof changed')
++    lock=json.loads((R/'res/browser-runtime.json').read_text(encoding='utf-8'))
++    check(lock['archive_sha256']=='01fc7f1d4dcec644a191e9c63da7088a73aa81a63c9a4c207001f7038a70ff45',
++          'Browser runtime pin changed')
++    check(len(lock['files'])==236 and sum(x['bytes'] for x in lock['files'])==429252102,'Runtime manifest file set changed')
++    runtime_files={entry['path']:entry for entry in lock['files']}
++    check(native.get('cef_host_sha256')==runtime_files['NLBinderBrowser.exe']['sha256']
++          and native.get('cef_host_dll_sha256')==runtime_files['NLBinderBrowser.dll']['sha256'],
++          'Native keyboard proof does not match the unchanged pinned browser host')
++    unchanged=['src/ForumBrowser.cpp','include/ForumBrowser.h','include/ForumKeyboardInput.h','include/ForumBrowserProtocol.h','tests/ForumKeyboardProbe.cpp','tools/test_forum_keyboard.py','browser/ForumBrowserHost.cpp','src/GpsGameAdapter.cpp','src/GpsManager.cpp',
++        'tools/BrowserSetup.cpp','tools/ReconnectHelper.cpp','include/BrowserSetupProtocol.h','include/BrowserRuntimeLock.h',
++        'res/browser-runtime.json','include/DrugUseTracker.h',
++        'src/OnlineOverlayRenderer.cpp','src/SettingsManager.cpp',
++        'include/SettingsManager.h','src/MainWindowUI.cpp','include/Version.h',
++        'include/NearbyWantedLabels.h','src/NearbyWantedLabels.cpp','tests/NearbyWantedLabelsTests.cpp',
++        'include/CombatChatParser.h','src/CombatChatParser.cpp','tests/CombatChatParserTests.cpp','tests/CombatChatBridgeTests.cpp']
++    repo=R/'build/github-publication/repository'
++    for name in unchanged:
++        before=subprocess.check_output(['git','show',PREVIOUS+':'+name],cwd=repo)
++        check((R/name).read_bytes().replace(b'\r\n',b'\n')==before.replace(b'\r\n',b'\n'),
++              'Previously tested runtime source changed: '+name)
++    history=(R/'docs/review/CHANGELOG-DE.md').read_text(encoding='utf-8')
++    check(all(f'## {n}. ' in history for n in range(1,35)),'Full history sections 1-34 required')
++    post=R/'docs/FORUM-CHANGELOG-v0.1.2.txt'
++    check('0.1.2' in post.read_text(encoding='utf-8-sig') and 'perkys & edited by KOBiRO' in post.read_text(encoding='utf-8-sig'),
++          'Postable forum changelog has the wrong version or credits')
++    file_list=R/'docs/FORUM-DATEILISTE.txt'
++    listed=file_list.read_text(encoding='utf-8-sig')
++    for item in lock['files']:
++        check(item['path'] in listed and item['sha256'] in listed,'Disclosed runtime file missing: '+item['path'])
++    review_parent=R/'build/revision28-forum-review'
++    review_parent.mkdir(parents=True,exist_ok=True)
++    review=review_parent/'FORUM-INSTALLATION-QUELLCODE'
++    subprocess.run([sys.executable,str(R/'tools/export_forum_installation_review.py'),
++                    '--destination',str(review)],cwd=R,check=True)
++    review_files={}
++    for path in review.rglob('*'):
++        check(not path.is_symlink() and not path.is_junction(),'Redirected focused review file')
++        if path.is_file():
++            check(path.suffix.lower() not in {'.asi','.exe','.dll','.log','.pyc','.obj'},'Unexpected binary/private focused file')
++            review_files[path.relative_to(review).as_posix()]=sha(path)
++    check('include/ForumKeyboardInput.h' in review_files and 'tools/BrowserSetup.cpp' in review_files and 'browser/ForumBrowserHost.cpp' in review_files
++          and 'SHA256SUMS.txt' in review_files and 'SOURCE-MANIFEST.json' in review_files,
++          'The focused own installer/browser sources or their checksums are missing')
++    package.mkdir(parents=True)
++    shutil.copyfile(asi,package/'NLBinder.asi')
++    for source,target in [('docs/NLBinder-0.1.2-r28-DE.md','LIESMICH.md'),('docs/CHANGELOG-GESAMT.txt','CHANGELOG-GESAMT.txt'),
++        ('docs/FORUM-CHANGELOG-v0.1.2.txt','FORUM-CHANGELOG.txt'),('docs/FORUM-INSTALLATION-DE.md','FORUM-INSTALLATION.txt'),
++        ('docs/FORUM-DATEILISTE.txt','FORUM-DATEILISTE.txt'),('third_party/miniz/LICENSE','MINIZ-LICENSE.txt'),
++        ('res/browser-runtime.json','BROWSER-RUNTIME.json'),('build/reconnect-worker-tests/result.json','RECONNECT-TEST.json'),
++        ('dist/NLBinder-0.1.2-r24/FORUM-KEYBOARD-TEST.json','FORUM-KEYBOARD-TEST.json'),
++        ('docs/review/r28-PRUEFUNG-DE.md','PRUEFUMFANG.md')]:
++        shutil.copyfile(R/source,package/target)
++    shutil.copytree(review,package/'FORUM-INSTALLATION-QUELLCODE')
++    public=dict(artifact,asi='NLBinder.asi')
++    (package/'PRUEFBERICHT.json').write_text(json.dumps(public,indent=2)+'\n',encoding='utf-8')
++    (package/'SHA256SUMS.txt').write_text(sha(asi)+'  NLBinder.asi\n',encoding='ascii')
++    (package/'BUILD-INFO.txt').write_text(f'''NLBinder v.0.1.2 by perkys & edited by KOBiRO (r28)
++NLBinder.asi (x86): {asi.stat().st_size} Bytes
++SHA256: {sha(asi)}
++
++Gewuenschte farbige Startmeldung ist im finalen PE enthalten.
++Gesamttests und Release-Build: Exitcode 0. Nativer Reconnect-Worker: {worker['checks']} Checks.
++ASI-Ressourcen 300/301 stimmen mit den gebauten nativen Helfern ueberein.
++Browserhost/GPS/Drogenoverlay und Browsermanifest sind gegen r27 unveraendert geprueft.
++TakeOver-Killerkennung aus r25 beibehalten: eigener Taetername, bestehender Killtext und Zaehler.
++Quick-Forum-Sonderzeichenkorrektur aus r24 beibehalten.
++SAPD-/LSPD-Wantedlabels: nur zusammen mit dem tatsaechlich gezeichneten nativen Nametag, auch im Fahrzeug.
++Reichweite und Sichtbarkeit folgen dem nativen Nametag; die fruehere eigene 5-Meter-Grenze entfaellt.
++Vorhandene Nametag-Freigabe, Wantedlisten-Schalter und frische Wanteddaten erforderlich.
++Wantedtabelle: aktueller SA-MP-Spieler-ID nach Name; keine API-Account-ID.
++Automatische Polizeifunk-Ortung vollstaendig entfernt: kein Mitlesen der Ortungsmeldungen,
++keine Ortungs-Checkpoint-Auswertung und keine automatische /r-Ortungsmeldung.
++Die ausschliesslich dafuer verwendeten Quellen, Hooks, Zustaende und Tests sind entfernt.
++Manuelle serverseitige Ortung und die normale GPS-/Quick-Map-Anzeige bleiben unveraendert.
++Fruehere Browser-/GPS-Pruefungen sind separat historisch dokumentiert.
++Der unveraenderte historische Browser-Eingabetest aus r24 ist in FORUM-KEYBOARD-TEST.json enthalten.
++Dieser Browser-Test wurde fuer r28 nicht erneut ausgefuehrt.
++Er verwendet nur synthetische Texte in einem isolierten anonymen Profil, ohne Forumbeitrag.
++Ein neuer r28-GTA-Live-Test wird nicht behauptet.
++
++FORUM-INSTALLATION.txt beschreibt Einrichtung und Speicherorte. Die Dateiliste
++enthaelt alle 236 festgelegten Runtime-Dateien. FORUM-INSTALLATION-QUELLCODE
++enthaelt die eigenen Originalquellen und ihre SHA-256-Nachweise, keine privaten Profile.
++FORUM-CHANGELOG.txt ist der fertige Text fuer die Veroeffentlichung im Forum.
++Der vollstaendige Binder-Quellcode ist im neuen Desktop-Ordner und auf GitHub enthalten.
++Der komplette Drittanbieter-Chromium-/CEF-Upstreamcode wird nicht als enthalten ausgegeben.
++
++Nur NLBinder.asi bei beendetem GTA ersetzen. Browserstand unveraendert: cef156-r1.
++Browser-Download SHA256: {lock['archive_sha256']}
++''',encoding='utf-8-sig')
++    with zipfile.ZipFile(archive,'w',zipfile.ZIP_DEFLATED,compresslevel=6) as zipped:
++        for path in sorted(package.rglob('*')):
++            if path.is_file():zipped.write(path,package.name+'/'+path.relative_to(package).as_posix())
++    with zipfile.ZipFile(archive) as zipped:
++        check(zipped.testzip() is None,'ZIP integrity failed')
++        check(hashlib.sha256(zipped.read(package.name+'/NLBinder.asi')).hexdigest()==sha(asi),'Zipped ASI differs')
++        for name,digest in review_files.items():
++            check(hashlib.sha256(zipped.read(package.name+'/FORUM-INSTALLATION-QUELLCODE/'+name)).hexdigest()==digest,
++                  'Zipped focused installer source differs: '+name)
++        check(not any(x.lower().endswith(('.log','.dll','.exe','.obj','.pyc')) for x in zipped.namelist()),
++              'Runtime binary or private data in package')
++    proof={'revision':TAG,'date':'2026-11-17','asi_bytes':asi.stat().st_size,'asi_sha256':sha(asi),
++        'version_and_credit':artifact['version_and_credit'],'requested_startup_message_present':True,
++        'embedded_browser_setup_sha256':artifact['embedded_browser_setup_sha256'],
++        'full_test_suite_exit_code':0,'full_test_log_sha256':sha(log_path),'release_build_exit_code':0,
++        'focused_checks':suites,'wanted_label_native_draw_call_required':True,'wanted_label_follows_server_nametag_range':True,'wanted_label_in_vehicle_supported':True,
++        'wanted_label_native_visibility_required':True,'wanted_table_current_samp_id':True,
++        'automatic_police_locate_removed':True,'automatic_locate_radio_template_absent':True,
++        'detective_chat_and_normal_racing_checkpoints_send_no_automatic_radio_tested':True,
++        'manual_server_detective_command_pass_through_tested':True,
++        'removed_locator_source_files':list(REMOVED_LOCATE_FILES),
++        'local_faction_guards_tested':True,'forum_keyboard_input_regression_tested':True,
++        'forum_browser_runtime_changed':False,'native_forum_keyboard_test':native,'native_forum_keyboard_test_revision':'v0.1.2-r24','native_forum_keyboard_rerun':False,
++        'native_reconnect_checks':worker['checks'],'native_reconnect_nova_cases':worker['nova_cases'],
++        'unchanged_prior_tested_sources':unchanged,'unchanged_sources_baseline':PREVIOUS,
++        'previous_browser_gps_validation':'r18-validation.json','browser_gps_native_integration_rerun':False,
++        'live_gta_gameplay_test_performed':False,'changelog_sections':34,'changelog_sha256':sha(R/'docs/CHANGELOG-GESAMT.txt'),
++        'forum_changelog_sha256':sha(post),'forum_installation_sha256':sha(R/'docs/FORUM-INSTALLATION-DE.md'),
++        'forum_file_list_sha256':sha(file_list),'forum_runtime_files_disclosed':len(lock['files']),
++        'forum_review_files':review_files,'forum_review_file_count':len(review_files),
++        'archive':archive.name,'archive_bytes':archive.stat().st_size,'archive_sha256':sha(archive),'archive_integrity_checked':True,
++        'browser_download_url':lock['download_url'],'browser_download_sha256':lock['archive_sha256'],'browser_download_bytes':lock['archive_bytes']}
++    for target in ['build/revision28-package.json','docs/review/r28-validation.json']:
++        (R/target).write_text(json.dumps(proof,indent=2)+'\n',encoding='utf-8')
++    compact=dict(proof,forum_review_files='Recorded '+str(len(review_files))+' verified source/document files')
++    print(json.dumps(compact,indent=2))
++
++if __name__=='__main__':main()
+diff --git a/tools/publish_revision28.py b/tools/publish_revision28.py
+new file mode 100644
+index 0000000..3731422
+--- /dev/null
++++ b/tools/publish_revision28.py
+@@ -0,0 +1,299 @@
++"""Prepare/publish only the authorized r28 update to Kobiro57/PerkysBinderChangelog.
++
++Uses the existing Git credential manager in memory; never logs or stores tokens.
++Large Chromium binaries belong in the release asset, not Git history.
++"""
++from pathlib import Path, PurePosixPath
++import argparse
++import hashlib
++import json
++import os
++import re
++import shutil
++import subprocess
++import urllib.request
++import urllib.error
++from revision28_scope import REMOVED_LOCATE_FILES, assert_locator_removed
++
++ROOT=Path(__file__).resolve().parents[1]
++REPO=ROOT/'build/github-publication/repository'
++URL='https://github.com/Kobiro57/PerkysBinderChangelog'
++API='https://api.github.com/repos/Kobiro57/PerkysBinderChangelog'
++TAG='v0.1.2-r28'
++PREVIOUS='646c6b478e77e38b88b9d6333520187a0629234d'
++PACKAGE='dist/NLBinder-0.1.2-r28'
++BASE='original-archive-92ce219'
++GENERATED={'docs/review/SOURCE-COMPARISON.json','docs/review/DATEIVERGLEICH.md',
++ 'docs/review/DIFFSTAT.txt','docs/review/first-party-changes.patch',
++ 'docs/review/REVISION28-DIFFSTAT.txt','docs/review/revision28-changes.patch'}
++PRIVATE_DIRS={'.git','.vs','__pycache__','output','debug','release','obj','cmakefiles','.codex','.agents','.aws'}
++PRIVATE_NAMES={'keybinder.json','jobs_data.json','imgui.ini','gps.xml','.env','.git-credentials','nul'}
++PRIVATE_SUFFIXES={'.obj','.pdb','.ilk','.exp','.log','.pyc','.suo','.user','.o'}
++PROGRAM=['src','browser','tests','tools','res','include/*.h','Keybinder.rc','Keybinder.vcxproj','Keybinder.sln']
++
++def require(ok,message):
++    if not ok:raise ValueError(message)
++
++def digest(data):return hashlib.sha256(data).hexdigest()
++
++def filehash(path):
++    with path.open('rb') as f:return hashlib.file_digest(f,'sha256').hexdigest()
++
++def git(*args,input=None):
++    p=subprocess.run(['git',*args],cwd=REPO,input=input,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
++    if p.returncode:raise RuntimeError('Git failed: '+str(args[:3])+': '+p.stderr.decode('utf-8','replace')[:1500])
++    return p.stdout
++
++def write(relative,data):
++    p=REPO/relative;p.parent.mkdir(parents=True,exist_ok=True)
++    p.write_bytes(data.encode('utf-8') if isinstance(data,str) else data)
++
++def paths(revision):
++    entries={}
++    if revision==':':
++        records=git('ls-files','--stage','-z').split(b'\0')
++        for record in records:
++            if not record:continue
++            meta,name=record.split(b'\t',1);mode,oid,stage=meta.split()
++            require(stage==b'0' and mode in {b'100644',b'100755'},'Unmerged/link entry')
++            entries[name.decode()]=oid
++    else:
++        for record in git('ls-tree','-r','-z',revision).split(b'\0'):
++            if not record:continue
++            meta,name=record.split(b'\t',1);mode,kind,oid=meta.split()
++            require(kind==b'blob' and mode in {b'100644',b'100755'},'Submodule/link entry')
++            entries[name.decode()]=oid
++    return entries
++
++def blobs(entries):
++    oids=sorted(set(entries.values()))
++    process=subprocess.Popen(['git','cat-file','--batch'],cwd=REPO,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
++    raw,err=process.communicate(b'\n'.join(oids)+b'\n')
++    require(process.returncode==0,'Cannot read source blobs')
++    values={};at=0
++    for oid in oids:
++        end=raw.index(b'\n',at);header=raw[at:end].split()
++        require(header[0]==oid and header[1]==b'blob','Invalid blob batch')
++        size=int(header[2]);at=end+1;values[oid]=raw[at:at+size];at+=size+1
++    require(at==len(raw),'Trailing source bytes')
++    return {name:values[oid] for name,oid in entries.items()}
++
++def allowed(relative):
++    p=PurePosixPath(relative)
++    return not (p.is_absolute() or '..' in p.parts or ':' in relative or '\\' in relative
++      or any(x.lower() in PRIVATE_DIRS for x in p.parts[:-1])
++      or p.name.lower() in PRIVATE_NAMES or p.suffix.lower() in PRIVATE_SUFFIXES)
++
++def historical(relative):
++    return bool(re.fullmatch(r'docs/review/(REVISION(?:[4-9]|1[0-9]|2[0-7])-DIFFSTAT\.txt|revision(?:[4-9]|1[0-9]|2[0-7])-changes\.patch)',relative))
++
++def stage():
++    require(git('remote','get-url','origin').decode().strip().removesuffix('.git')==URL,'Wrong target repository')
++    require(git('rev-parse','HEAD').decode().strip()==PREVIOUS,'Publication must start on the known r27 commit')
++    if git('status','--porcelain'):
++        # Resume only an explicitly recorded, inspected preparation tree.
++        checkpoint=json.loads((ROOT/'build/revision28-staged-owned.json').read_text())
++        require(git('write-tree').decode().strip()==checkpoint['staged_tree'] and not git('diff','--name-only'),
++                'Publication checkout changed outside the recorded preparation')
++    proof=json.loads((ROOT/'build/revision28-package.json').read_text())
++    require(proof['revision']==TAG and filehash(ROOT/'build/Release/NLBinder.asi')==proof['asi_sha256'],'Package proof stale')
++    original_entries=paths(BASE)
++    previous_entries=paths('HEAD')
++    assert_locator_removed(ROOT)
++    # Delete only the explicit, reviewed first-party removal list. No directory
++    # deletion and no historical documents, packages or patches are touched.
++    for relative in REMOVED_LOCATE_FILES:
++        require(relative in previous_entries,'Expected previous locator file missing: '+relative)
++        source=ROOT/relative; destination=REPO/relative
++        require(not source.exists() and not source.is_symlink(),'Locator source unexpectedly exists: '+relative)
++        require(destination.resolve().is_relative_to(REPO.resolve()) and not destination.is_symlink(),
++                'Unsafe publication deletion target: '+relative)
++    git('rm','--ignore-unmatch','--',*REMOVED_LOCATE_FILES)
++    for start in ['src','tests','tools','docs','res','browser','third_party/miniz']:
++        for parent,dirs,names in os.walk(ROOT/start):
++            dirs[:]=[x for x in dirs if x.lower() not in PRIVATE_DIRS]
++            for name in names:
++                path=Path(parent)/name;relative=path.relative_to(ROOT).as_posix()
++                if relative in GENERATED or historical(relative) or not allowed(relative):continue
++                require(not path.is_symlink() and path.stat().st_size<90*1024*1024,'Unexpected source link/large binary: '+relative)
++                require(path.suffix.lower() not in {'.asi','.exe','.dll','.lib'},'Binary in first-party source: '+relative)
++                write(relative,path.read_bytes())
++    for path in (ROOT/'include').glob('*.h'):write(path.relative_to(ROOT).as_posix(),path.read_bytes())
++    for relative in previous_entries:
++        if relative.startswith(('include/','third_party/')) and len(PurePosixPath(relative).parts)>2:
++            source=ROOT/relative
++            require(source.is_file() and allowed(relative),'Missing required dependency '+relative)
++            write(relative,source.read_bytes())
++    for name in ['.gitignore','.gitattributes','Keybinder.rc','Keybinder.sln','Keybinder.vcxproj']:
++        write(name,(ROOT/name).read_bytes())
++    write('README.md',(ROOT/'build/README-GITHUB-r28.md').read_bytes())
++    for path in (ROOT/PACKAGE).rglob('*'):
++        if path.is_file():
++            relative=path.relative_to(ROOT).as_posix()
++            require(allowed(relative) and not path.is_symlink(),'Unexpected packaged file: '+relative)
++            write(relative,path.read_bytes())
++    publication=json.loads((ROOT/'docs/review/PUBLICATION.json').read_text())
++    publication.update(release=TAG,previous_release='v0.1.2-r27',previous_published_commit=PREVIOUS,
++      asi_sha256=proof['asi_sha256'],history_note='Original and dependency imports remain intact. r28 is a subsequent update; no history is rewritten.',
++      complete_runtime_asset=proof['archive'],complete_runtime_sha256=proof['archive_sha256'])
++    write('docs/review/PUBLICATION.json',json.dumps(publication,indent=2)+'\n')
++    git('add','--all')
++    # Patches describe program changes and avoid recursively including their own bytes.
++    write('docs/review/first-party-changes.patch',git('diff','--cached','--binary','build-dependencies-baseline','--',*PROGRAM))
++    write('docs/review/DIFFSTAT.txt',git('diff','--cached','--stat','build-dependencies-baseline','--',*PROGRAM))
++    write('docs/review/revision28-changes.patch',git('diff','--cached','--binary',PREVIOUS,'--',*PROGRAM))
++    write('docs/review/REVISION28-DIFFSTAT.txt',git('diff','--cached','--stat',PREVIOUS,'--',*PROGRAM))
++    git('add','--all')
++    current_entries=paths(':')
++    selected=lambda name:not name.startswith('dist/') and name not in GENERATED and not historical(name)
++    before=blobs({p:o for p,o in original_entries.items() if selected(p)})
++    after=blobs({p:o for p,o in current_entries.items() if selected(p)})
++    changes=[]
++    for name in sorted(before.keys()|after.keys()):
++        b=before.get(name);a=after.get(name)
++        if a==b:continue
++        changes.append({'path':name,'status':'added' if b is None else 'deleted' if a is None else 'modified',
++          'dependency':name.startswith(('include/plugin-sdk/','include/RakHook/','third_party/miniz/')),
++          'line_endings_only':a is not None and b is not None and a.replace(b'\r\n',b'\n')==b.replace(b'\r\n',b'\n'),
++          'before_sha256':digest(b) if b is not None else None,'after_sha256':digest(a) if a is not None else None})
++    record={'original_archive':'NLBinder-master.zip','original_sha256':'a328e78eea63420e9bfe9c084883100177fe0fd9c2d62c4fcaef38c0a44801e9',
++      'original_archive_commit_comment':'92ce21971bee2d166d830e23ad20950f1dc98921','release':TAG,'release_asi_sha256':proof['asi_sha256'],
++      'baseline_tag':BASE,'baseline_commit':git('rev-parse',BASE+'^{commit}').decode().strip(),
++      'hash_scope':'Exact Git blob bytes in original tag versus staged r28 source; generated comparisons and release binaries excluded.',
++      'generated_paths_excluded':sorted(GENERATED),'historical_revision_patches_excluded':True,
++      'baseline_files':len(before),'current_files':len(after),'changes':changes}
++    write('docs/review/SOURCE-COMPARISON.json',json.dumps(record,indent=2,ensure_ascii=False)+'\n')
++    relevant=[x for x in changes if not x['dependency'] and not x['line_endings_only']]
++    lines=['# Dateivergleich zum Original','',
++      'Verglichen werden die unverÃ¤nderlichen Git-Blobs des Tags `original-archive-92ce219` mit den gestagten r28-Quellen.',
++      'Die Archivherkunft bleibt dokumentiert; diese Hashes beziehen sich ausdrÃ¼cklich auf Git-Blobs, nicht neu eingelesene ZIP-Rohbytes.',
++      'Generierte Vergleichsdateien, alte Revisionspatches und BinÃ¤rpakete sind aus diesem rekursionsfreien Vergleich ausgeschlossen.',
++      'Alle betrachteten Ã„nderungen stehen in [SOURCE-COMPARISON.json](SOURCE-COMPARISON.json).','',
++      '| Status | Datei |','| --- | --- |']
++    for item in relevant:lines.append('| '+item['status']+' | ['+item['path']+'](../../'+item['path']+') |')
++    write('docs/review/DATEIVERGLEICH.md','\n'.join(lines)+'\n')
++    git('add','--all')
++    verify_index(previous_entries)
++    result={'prepared':True,'previous_commit':PREVIOUS,'staged_tree':git('write-tree').decode().strip(),
++      'source_changes':len(changes),'first_party_content_changes':len(relevant),'asi_sha256':proof['asi_sha256'],
++      'changed_paths':len(git('diff','--cached','--name-only').decode().splitlines())}
++    (ROOT/'build/revision28-publication-ready.json').write_text(json.dumps(result,indent=2)+'\n')
++    (ROOT/'build/revision28-staged-owned.json').write_text(json.dumps({'staged_tree':result['staged_tree'],
++        'reason':'Successfully prepared and verified r28 source tree; safe resume requires this exact tree.'},indent=2)+'\n')
++    print(json.dumps(result,indent=2))
++
++def verify_index(previous_entries=None):
++    entries=paths(':')
++    previous_entries=previous_entries or paths(PREVIOUS)
++    for name in entries:
++        require(allowed(name),'Private or generated build data in publication: '+name)
++        require(not name.startswith('NLBinder/Browser/'),'Loose Chromium runtime must not enter Git')
++        if historical(name):require(entries[name]==previous_entries[name],'Historical review patch changed: '+name)
++    assert_locator_removed(ROOT)
++    for relative in REMOVED_LOCATE_FILES:
++        require(relative not in entries,'Removed locator source remains staged: '+relative)
++    proof=json.loads((ROOT/'build/revision28-package.json').read_text())
++    require(proof.get('automatic_police_locate_removed') and proof.get('automatic_locate_radio_template_absent'),
++            'Locator removal proof missing')
++    require(digest(git('show',':'+PACKAGE+'/NLBinder.asi'))==proof['asi_sha256'],'Published ASI differs')
++    require(git('show',':docs/CHANGELOG-GESAMT.txt')==(ROOT/'docs/CHANGELOG-GESAMT.txt').read_bytes(),'Published full changelog differs')
++    for name in ['include/NearbyWantedLabels.h','src/NearbyWantedLabels.cpp','tests/NearbyWantedLabelsTests.cpp','include/CombatChatParser.h','src/CombatChatParser.cpp','tests/CombatChatParserTests.cpp','tests/CombatChatBridgeTests.cpp','include/ForumKeyboardInput.h','include/ForumBrowser.h',
++                 'tests/ForumKeyboardInputTests.cpp','src/ImGuiOverlay.cpp',
++                 'tests/ForumKeyboardProbe.cpp','tools/build_forum_keyboard_probe.bat','tools/test_forum_keyboard.py',
++                 'include/NearbyWantedLabels.h','src/NearbyWantedLabels.cpp','tests/NearbyWantedLabelsTests.cpp',
++                 'include/LocalFactionAccess.h','tests/LocalFactionAccessTests.cpp',
++                 'include/OnlineDataManager.h','src/OnlineDataManager.cpp','tests/OnlineDataManagerTests.cpp',
++                 'src/StartupStatsSync.cpp','tests/StartupStatsSyncTests.cpp',
++                 'include/ClaimSpots.h','include/FactionAccess.h','include/QuickMap.h','src/QuickMap.cpp',
++                 'include/SAMPBridge.h','src/SpeedTicketBridge.cpp','include/ServerStatsSnapshot.h',
++                 'tests/QuickMapTests.cpp','tests/SAMPBridgeTests.cpp','tests/ServerStatsParserTests.cpp',
++                 'include/Version.h','src/SAMPBridge.cpp','src/MainWindowUI.cpp',
++                 'include/DrugUseTracker.h','tests/DrugUseTrackerTests.cpp',
++                 'tools/BrowserSetup.cpp','browser/ForumBrowserHost.cpp','tools/export_forum_installation_review.py',
++                 'docs/FORUM-INSTALLATION-DE.md','docs/FORUM-DATEILISTE.txt','docs/FORUM-CHANGELOG-v0.1.2.txt',
++                 'include/DrugUseTracker.h','tests/DrugUseTrackerTests.cpp','src/Main.cpp',
++                 'include/SettingsManager.h','src/SettingsManager.cpp','include/OnlineOverlayController.h',
++                 'src/OnlineOverlayController.cpp','src/OnlineOverlayRenderer.cpp','src/OnlineUI.cpp',
++                 'tests/OnlineOverlayRendererTests.cpp','tests/OnlineSettingsTests.cpp']:
++        require(git('show',':'+name)==(ROOT/name).read_bytes().replace(b'\r\n',b'\n'),'Published source differs: '+name)
++    prefix=PACKAGE+'/FORUM-INSTALLATION-QUELLCODE/'
++    focused={name:oid for name,oid in entries.items() if name.startswith(prefix)}
++    require({name[len(prefix):] for name in focused}==set(proof['forum_review_files']),
++            'Published focused source file set differs')
++    for name,data in blobs(focused).items():
++        require(digest(data)==proof['forum_review_files'][name[len(prefix):]],
++                'Published focused original source differs: '+name)
++    # These are checksum-verified copies of existing original sources. Keep
++    # their formatting intact instead of rewriting inherited whitespace.
++    git('diff','--cached','--check','--','.',':(exclude)*.patch',':(exclude)third_party/miniz',
++        ':(exclude)dist/NLBinder-0.1.2-r28/FORUM-INSTALLATION-QUELLCODE')
++    require(not git('ls-files','--others','--exclude-standard'),'Unexpected untracked publication file')
++
++def credential():
++    env=dict(os.environ,GCM_INTERACTIVE='Never',GIT_TERMINAL_PROMPT='0')
++    p=subprocess.run(['git','credential','fill'],cwd=REPO,input=b'protocol=https\nhost=github.com\n\n',
++        stdout=subprocess.PIPE,stderr=subprocess.PIPE,env=env)
++    require(p.returncode==0,'Existing GitHub credential not available')
++    fields=dict(line.split('=',1) for line in p.stdout.decode().splitlines() if '=' in line)
++    require(fields.get('password'),'Credential manager returned no token')
++    return fields['password']
++
++def api(token,url,method='GET',data=None,content_type='application/json'):
++    require(url.startswith(('https://api.github.com/','https://uploads.github.com/repos/Kobiro57/PerkysBinderChangelog/')),'Unexpected API host')
++    body=json.dumps(data).encode() if data is not None and content_type=='application/json' else data
++    req=urllib.request.Request(url,data=body,method=method,headers={'Authorization':'Bearer '+token,
++      'Accept':'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28','User-Agent':'NLBinder-authorized-r28-publication','Content-Type':content_type})
++    try:
++        with urllib.request.urlopen(req,timeout=600) as response:return json.load(response)
++    except urllib.error.HTTPError as e:
++        raise RuntimeError('GitHub API status '+str(e.code)+' for '+url.split('?')[0]) from None
++
++def publish():
++    proof=json.loads((ROOT/'build/revision28-package.json').read_text())
++    prepared=json.loads((ROOT/'build/revision28-publication-ready.json').read_text())
++    token=credential()
++    user=api(token,'https://api.github.com/user')
++    require(user['login'].casefold()=='kobiro57','Wrong GitHub account')
++    head=git('rev-parse','HEAD').decode().strip()
++    if head==PREVIOUS:
++        require(git('write-tree').decode().strip()==prepared['staged_tree'],'Staged source changed after review')
++        verify_index()
++        email=str(user['id'])+'+'+user['login']+'@users.noreply.github.com'
++        git('-c','user.name='+user['login'],'-c','user.email='+email,'commit','-m',
++          'r28: remove the complete automatic police locate reporting feature')
++        head=git('rev-parse','HEAD').decode().strip()
++    require(git('rev-parse','HEAD^').decode().strip()==PREVIOUS,'Unexpected parent commit')
++    require(not git('status','--porcelain'),'Publication checkout not clean')
++    tag_exists=subprocess.run(['git','rev-parse','--verify','refs/tags/'+TAG],cwd=REPO,stdout=subprocess.PIPE,stderr=subprocess.PIPE).returncode==0
++    if not tag_exists:git('tag',TAG,head)
++    require(git('rev-parse',TAG+'^{commit}').decode().strip()==head,'Release tag points elsewhere')
++    git('push','--atomic','origin','HEAD:main','refs/tags/'+TAG)
++    require(api(token,API+'/commits/main')['sha']==head,'Remote main commit differs')
++    releases=api(token,API+'/releases?per_page=100')
++    release=next((r for r in releases if r['tag_name']==TAG),None)
++    body=(ROOT/'docs/FORUM-CHANGELOG-v0.1.2.txt').read_text(encoding='utf-8-sig')
++    body+='\nASI SHA-256: `'+proof['asi_sha256']+'`\n\nZIP SHA-256: `'+proof['archive_sha256']+'`\n'
++    if release is None:release=api(token,API+'/releases','POST',{'tag_name':TAG,'target_commitish':head,'name':'NLBinder v0.1.2 by perkys & edited by KOBiRO - r28','body':body,'draft':False,'prerelease':False})
++    archive=ROOT/'dist'/proof['archive']
++    require(filehash(archive)==proof['archive_sha256'],'Release ZIP changed')
++    assets=api(token,API+'/releases/'+str(release['id'])+'/assets')
++    asset=next((a for a in assets if a['name']==archive.name),None)
++    if asset is None:
++        upload='https://uploads.github.com/repos/Kobiro57/PerkysBinderChangelog/releases/'+str(release['id'])+'/assets?name='+archive.name
++        asset=api(token,upload,'POST',archive.read_bytes(),'application/zip')
++    require(asset['state']=='uploaded' and asset['size']==archive.stat().st_size,'Release asset incomplete')
++    remote_digest=asset.get('digest')
++    require(remote_digest=='sha256:'+proof['archive_sha256'],'GitHub release asset digest differs')
++    result={'published':True,'repository':URL,'commit':head,'commit_url':URL+'/commit/'+head,
++      'tag':TAG,'release_url':release['html_url'],'download_url':asset['browser_download_url'],
++      'asset_bytes':asset['size'],'asset_sha256_verified':True,'asi_sha256':proof['asi_sha256']}
++    (ROOT/'build/revision28-published.json').write_text(json.dumps(result,indent=2)+'\n')
++    print(json.dumps(result,indent=2))
++
++if __name__=='__main__':
++    parser=argparse.ArgumentParser(description=__doc__)
++    modes=parser.add_mutually_exclusive_group(required=True)
++    modes.add_argument('--prepare',action='store_true');modes.add_argument('--publish',action='store_true')
++    args=parser.parse_args()
++    if args.prepare:stage()
++    else:publish()
+diff --git a/tools/report_revision28_log.py b/tools/report_revision28_log.py
+new file mode 100644
+index 0000000..2c9fac3
+--- /dev/null
++++ b/tools/report_revision28_log.py
+@@ -0,0 +1,10 @@
++"""Show a compact result from the fixed r28 log paths."""
++from pathlib import Path
++import sys
++root=Path(__file__).resolve().parents[1]
++mode=sys.argv[1]
++if mode not in {'tests','build'}:raise ValueError('Unexpected log kind')
++lines=(root/('build/revision28-'+mode+'.log')).read_text(encoding='utf-8-sig',errors='replace').splitlines()
++important=[line for line in lines if '[FAIL]' in line or 'error ' in line.lower() or 'ForumKeyboardInputTests:' in line or 'DrugUseTrackerTests:' in line
++           or 'Online Settings:' in line or 'OnlineOverlayRendererTests:' in line or 'Test exit code:' in line]
++for line in (important if mode=='tests' else lines[-10:]):print(line)
+diff --git a/tools/revision28_scope.py b/tools/revision28_scope.py
+new file mode 100644
+index 0000000..e36f2f5
+--- /dev/null
++++ b/tools/revision28_scope.py
+@@ -0,0 +1,20 @@
++"""Exact source-removal scope for the authorized r28 locator removal."""
++from pathlib import Path
++import re
++
++REMOVED_LOCATE_FILES = ('include/PoliceLocateTracker.h', 'include/ServerCheckpointRPCAdapter.h', 'include/CheckpointLocation.h', 'src/PoliceLocateBridge.cpp', 'src/PoliceLocateTracker.cpp', 'src/ServerCheckpointRPCAdapter.cpp', 'tests/PoliceLocateTrackerTests.cpp', 'tests/ServerCheckpointRPCAdapterTests.cpp', 'tests/CheckpointLocationTests.cpp', 'tests/PoliceLocateBridgeTests.cpp')
++
++def assert_locator_removed(root):
++    root=Path(root).resolve(strict=True)
++    for relative in REMOVED_LOCATE_FILES:
++        path=root/relative
++        if path.exists() or path.is_symlink():
++            raise ValueError('Removed locator source is still present: '+relative)
++    names=re.compile(r'PoliceLocate|ServerCheckpointRPCAdapter|CheckpointLocation|\[ORTUNG\]')
++    for directory,suffix in [('src','*.cpp'),('include','*.h')]:
++        for path in (root/directory).glob(suffix):
++            if names.search(path.read_text(encoding='utf-8-sig')):
++                raise ValueError('Live production reference to removed locator: '+path.name)
++    for relative in ['Keybinder.vcxproj','tools/run_tests.bat','tests/KeybindTests.cpp']:
++        if names.search((root/relative).read_text(encoding='utf-8-sig')):
++            raise ValueError('Build still includes removed locator: '+relative)
+diff --git a/tools/run_revision28.bat b/tools/run_revision28.bat
+new file mode 100644
+index 0000000..c7f7da3
+--- /dev/null
++++ b/tools/run_revision28.bat
+@@ -0,0 +1,69 @@
++@echo off
++setlocal
++pushd "%~dp0.." || exit /b 2
++if not exist build mkdir build
++if not defined NLBINDER_PYTHON set "NLBINDER_PYTHON=%USERPROFILE%\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe"
++if /i "%~1"=="tests" goto tests
++if /i "%~1"=="build" goto build
++if /i "%~1"=="worker" goto worker
++if /i "%~1"=="document" goto document
++if /i "%~1"=="package" goto package
++if /i "%~1"=="prepare-publication" goto preparepublication
++if /i "%~1"=="publish" goto publish
++if /i "%~1"=="verify-public" goto verifypublic
++if /i "%~1"=="export" goto export
++set "NLBINDER_RESULT=2"
++goto finish
++:tests
++call tools\run_tests.bat > build\revision28-tests.log 2>&1
++set "NLBINDER_RESULT=%ERRORLEVEL%"
++"%NLBINDER_PYTHON%" tools\report_revision28_log.py tests
++goto finish
++:build
++call tools\build_release.bat > build\revision28-build.log 2>&1
++set "NLBINDER_RESULT=%ERRORLEVEL%"
++>>build\revision28-build.log echo RELEASE_BUILD_EXIT_CODE=%NLBINDER_RESULT%
++"%NLBINDER_PYTHON%" tools\report_revision28_log.py build
++goto finish
++:worker
++"%NLBINDER_PYTHON%" tools\test_reconnect_worker.py > build\revision28-reconnect.log 2>&1
++set "NLBINDER_RESULT=%ERRORLEVEL%"
++type build\revision28-reconnect.log
++goto finish
++:document
++"%NLBINDER_PYTHON%" tools\document_revision28.py
++if errorlevel 1 goto failed
++"%NLBINDER_PYTHON%" tools\export_full_changelog_revision28.py
++set "NLBINDER_RESULT=%ERRORLEVEL%"
++goto finish
++:package
++"%NLBINDER_PYTHON%" tools\verify_revision28_artifact.py
++if errorlevel 1 goto failed
++"%NLBINDER_PYTHON%" tools\document_revision28.py
++if errorlevel 1 goto failed
++"%NLBINDER_PYTHON%" tools\export_full_changelog_revision28.py
++if errorlevel 1 goto failed
++"%NLBINDER_PYTHON%" tools\package_revision28.py
++set "NLBINDER_RESULT=%ERRORLEVEL%"
++goto finish
++:preparepublication
++"%NLBINDER_PYTHON%" tools\publish_revision28.py --prepare
++set "NLBINDER_RESULT=%ERRORLEVEL%"
++goto finish
++:publish
++"%NLBINDER_PYTHON%" tools\publish_revision28.py --publish
++set "NLBINDER_RESULT=%ERRORLEVEL%"
++goto finish
++:export
++"%NLBINDER_PYTHON%" tools\finalize_revision28.py
++set "NLBINDER_RESULT=%ERRORLEVEL%"
++goto finish
++:verifypublic
++"%NLBINDER_PYTHON%" tools\verify_revision28_public.py
++set "NLBINDER_RESULT=%ERRORLEVEL%"
++goto finish
++:failed
++set "NLBINDER_RESULT=2"
++:finish
++popd
++exit /b %NLBINDER_RESULT%
+diff --git a/tools/run_tests.bat b/tools/run_tests.bat
+index abf5547..9621a89 100644
+--- a/tools/run_tests.bat
++++ b/tools/run_tests.bat
+@@ -57,10 +57,6 @@ set "KEYBINDER_TEST_RSP=%~dp0..\build\KeybinderTests.rsp"
+     echo "%~dp0..\tests\DrugUseTrackerTests.cpp"
+     echo "%~dp0..\tests\LocalFactionAccessTests.cpp"
+     echo "%~dp0..\tests\NearbyWantedLabelsTests.cpp"
+-    echo "%~dp0..\tests\PoliceLocateTrackerTests.cpp"
+-    echo "%~dp0..\tests\CheckpointLocationTests.cpp"
+-    echo "%~dp0..\tests\ServerCheckpointRPCAdapterTests.cpp"
+-    echo "%~dp0..\tests\PoliceLocateBridgeTests.cpp"
+     echo "%~dp0..\tests\ForumKeyboardInputTests.cpp"
+     echo "%~dp0..\tests\ImGuiOverlayTests.cpp"
+     echo "%~dp0..\tests\HitmarkerTests.cpp"
+@@ -115,9 +111,6 @@ set "KEYBINDER_TEST_RSP=%~dp0..\build\KeybinderTests.rsp"
+     echo "%~dp0..\\src\\JobSkillsSync.cpp"
+     echo "%~dp0..\\src\\SpeedTicketFlow.cpp"
+     echo "%~dp0..\\src\\SpeedTicketBridge.cpp"
+-    echo "%~dp0..\src\PoliceLocateBridge.cpp"
+-    echo "%~dp0..\src\PoliceLocateTracker.cpp"
+-    echo "%~dp0..\src\ServerCheckpointRPCAdapter.cpp"
+     echo "%~dp0..\src\NearbyWantedLabels.cpp"
+     echo "%~dp0..\\src\\WeaponIconManager.cpp"
+     echo "%~dp0..\src\NativeHudEditor.cpp"
+diff --git a/tools/verify_revision28_artifact.py b/tools/verify_revision28_artifact.py
+new file mode 100644
+index 0000000..ab25a30
+--- /dev/null
++++ b/tools/verify_revision28_artifact.py
+@@ -0,0 +1,63 @@
++"""Verify the r28 PE and embedded helpers without loading executable code."""
++import hashlib,json
++from pathlib import Path
++import sys
++from verify_revision18_artifact import PE, require
++from revision28_scope import assert_locator_removed
++
++def main():
++    root = Path(__file__).resolve().parents[1]
++    asi = PE(sys.argv[1] if len(sys.argv) > 1 else root / "build/Release/NLBinder.asi")
++    assert_locator_removed(root)
++    require(b"[ORTUNG]" not in asi.data, "Removed automatic locate radio template remains in the ASI")
++    helper = PE(root / "build/ReconnectHelper.exe")
++    require(asi.machine == helper.machine == 0x14C, "Expected both binaries to be x86")
++    require(asi.characteristics & 0x2000, "ASI must be a DLL")
++    require(not helper.characteristics & 0x2000, "Worker must be an executable")
++    require(asi.resource(10, 300) == helper.data, "Embedded helper differs from built helper")
++    setup = PE(root / "build/BrowserSetup.exe")
++    require(setup.machine == 0x14C and not setup.characteristics & 0x2000, "Installer must be x86 EXE")
++    require(asi.resource(10, 301) == setup.data, "Embedded browser installer differs")
++    require(b"asInvoker" in setup.resource(24, 1), "Browser installer must not request elevation")
++    require(asi.resource(10, 302) == (root / "third_party/miniz/LICENSE").read_bytes(), "Missing embedded miniz notice")
++    imports = asi.imports()
++    require("libcef.dll" not in [name.lower() for name in imports], "Chromium must remain out of the game process")
++    require(not any(name.lower().startswith(("vcruntime", "msvcp", "ucrtbased")) for name in imports),
++            "Unexpected external C++ runtime dependency")
++    startup = (b"{33CCFF}[NLBinder]{FFFFFF} NLBinder v.0.1.2 by perkys & edited by KOBiRO "
++               b"wurde {00CC00}erfolgreich{FFFFFF} gestartet!")
++    require(startup in asi.data, "The requested v0.1.2 startup message is missing from the ASI")
++    require(b"NLBinder v.0.1.2 by perkys & edited by KOBiRO" in asi.data,
++            "The matching version/credit caption is missing")
++    try:
++        display_path = asi.path.resolve().relative_to(root).as_posix()
++    except ValueError:
++        display_path = asi.path.name
++    result = {
++        "revision": "v0.1.2-r28",
++        "asi": display_path,
++        "bytes": len(asi.data),
++        "format": "PE32 x86 DLL",
++        "sha256": hashlib.sha256(asi.data).hexdigest(),
++        "imports": imports,
++        "requested_startup_message_present": True,
++        "automatic_police_locate_removed": True,
++        "automatic_locate_radio_template_absent": True,
++        "version_and_credit": "NLBinder v.0.1.2 by perkys & edited by KOBiRO",
++        "embedded_helper_id": 300,
++        "embedded_helper_bytes": len(helper.data),
++        "helper_sha256": hashlib.sha256(helper.data).hexdigest(),
++        "embedded_helper_matches": True,
++        "embedded_browser_setup_id": 301,
++        "embedded_browser_setup_bytes": len(setup.data),
++        "embedded_browser_setup_sha256": hashlib.sha256(setup.data).hexdigest(),
++        "embedded_browser_setup_matches": True,
++        "browser_setup_as_invoker": True,
++    }
++    report = json.dumps(result, indent=2)
++    (root / "build/revision28-artifact.json").write_text(report + "\n", encoding="utf-8")
++    print(report)
++
++
++if __name__ == "__main__":
++    main()
+diff --git a/tools/verify_revision28_public.py b/tools/verify_revision28_public.py
+new file mode 100644
+index 0000000..6afbc0d
+--- /dev/null
++++ b/tools/verify_revision28_public.py
+@@ -0,0 +1,35 @@
++"""Verify the published r28 viewer and release metadata without using a credential."""
++from pathlib import Path
++import json,posixpath,re,urllib.request
++R=Path(__file__).resolve().parents[1]
++BASE='https://api.github.com/repos/Kobiro57/PerkysBinderChangelog'
++
++def get(path):
++    request=urllib.request.Request(BASE+path,headers={'User-Agent':'NLBinder-r28-anonymous-verification',
++        'Accept':'application/vnd.github+json'})
++    with urllib.request.urlopen(request,timeout=45) as response:return json.load(response)
++
++def require(ok,message):
++    if not ok:raise ValueError(message)
++
++def main():
++    publication=json.loads((R/'build/revision28-published.json').read_text(encoding='utf-8'))
++    proof=json.loads((R/'build/revision28-package.json').read_text(encoding='utf-8'))
++    require(get('')['private'] is False,'Repository is not anonymously readable')
++    require(get('/commits/main')['sha']==publication['commit'],'Remote main differs')
++    release=get('/releases/tags/v0.1.2-r28')
++    asset=next(a for a in release['assets'] if a['name']==proof['archive'])
++    require(asset['digest']=='sha256:'+proof['archive_sha256'] and asset['size']==proof['archive_bytes'],
++            'Release asset digest or size differs')
++    repository=R/'build/github-publication/repository'
++    for name in ['README.md','docs/NLBinder-0.1.2-r28-DE.md','docs/review/r28-PRUEFUNG-DE.md','docs/FORUM-INSTALLATION-DE.md']:
++        for href in re.findall(r'\]\(([^)]+)\)',(repository/name).read_text(encoding='utf-8-sig')):
++            if href.startswith(('http:','https:','#')):continue
++            path=posixpath.normpath(posixpath.join(posixpath.dirname(name),href.split('#')[0]))
++            require((repository/path).exists(),'Broken review link: '+name+' -> '+href)
++    result={'anonymous_viewer_access':True,'main_commit_verified':True,'release_asset_sha256_verified':True,
++        'review_document_links_verified':True,'release_url':release['html_url']}
++    (R/'build/revision28-public-access.json').write_text(json.dumps(result,indent=2)+'\n',encoding='utf-8')
++    print(json.dumps(result,indent=2))
++
++if __name__=='__main__':main()

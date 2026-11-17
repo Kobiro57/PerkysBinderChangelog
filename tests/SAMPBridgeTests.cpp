@@ -11,6 +11,7 @@
 #include "../include/MessageVariables.h"
 #include "../include/RakHook/include/RakNet/BitStream.h"
 
+#include <algorithm>
 #include <cstdio>
 #include <cstring>
 #include <new>
@@ -772,6 +773,60 @@ bool TestJobChatAdapterLifecycleHooksAreWired() {
     bridge.Shutdown();
     ASSERT_TRUE(!context.incomingChatInterceptor);
     SAMPBridge::ResetTestingHooks();
+    return true;
+}
+
+bool TestDetectiveMessagesAndCheckpointsDoNotSendAutomaticRadio() {
+    for (const std::string faction : {"SAPD", "LSPD"}) {
+        CombatSoundContext context;
+        auto hooks = context.BuildCombatHooks();
+        hooks.getLocalPlayerName = []() { return std::string("PoliceOfficer"); };
+        hooks.isStartupStatsReady = []() { return false; };
+        hooks.isStartupJobSkillsReady = []() { return false; };
+        SAMPBridge::SetTestingHooks(hooks);
+        SAMPBridge bridge;
+        bridge.SetLocalFactionProvider([&]() { return faction; });
+        std::vector<std::string> observedChat;
+        bridge.SetIncomingChatCallback([&](const std::string& line) { observedChat.push_back(line); });
+        ASSERT_TRUE(bridge.Initialize());
+        bridge.Update();
+        ASSERT_EQ(bridge.GetLocalFaction(), faction);
+        ASSERT_TRUE(context.serverMessages.empty());
+
+        // Normal server commands still pass through unchanged. The binder must
+        // not add a radio response to the subsequent personal detective result.
+        ASSERT_TRUE(bridge.SendCommand("/find Lesch"));
+        ASSERT_EQ(context.serverMessages, std::vector<std::string>{"/find Lesch"});
+        const char* start = "Detektiv: Das Handy und die Ortung von Lesch wurde gestartet und dauert 30 Sekunden.";
+        const char* success = "Detektiv: Das Ziel wurde geortet und wird dir nun auf der Karte angezeigt.";
+        ASSERT_TRUE(bridge.ProcessIncomingChatLineForTesting(nullptr, start));
+        bridge.Update();
+        context.tick += 30000;
+        context.game->m_checkpoint.m_bEnabled = TRUE;
+        context.game->m_checkpoint.m_position = {1100.0f, -1300.0f, 13.4f};
+        context.game->m_checkpoint.m_size = {4.0f, 4.0f, 4.0f};
+        context.game->m_racingCheckpoint.m_bEnabled = TRUE;
+        context.game->m_racingCheckpoint.m_currentPosition = {1927.8734f, 168.8767f, 40.1172f};
+        context.game->m_racingCheckpoint.m_fSize = 4.0f;
+        ASSERT_TRUE(bridge.ProcessIncomingChatLineForTesting(nullptr, success));
+        bridge.Update();
+        context.tick += 1000; // Beyond the former native checkpoint settle time.
+        bridge.Update();
+        ASSERT_TRUE(bridge.ProcessIncomingChatLineForTesting(nullptr,
+            "Detektiv: Du hast die F\xC3\xA4higkeit auf Stufe 191 verbessert."));
+        ASSERT_TRUE(bridge.ProcessIncomingChatLineForTesting(nullptr, success));
+        context.tick += 10000;
+        bridge.Update();
+        ASSERT_EQ(context.serverMessages, std::vector<std::string>{"/find Lesch"});
+        ASSERT_EQ(observedChat.size(), std::size_t(4));
+        ASSERT_EQ(observedChat.front(), std::string(start));
+        ASSERT_EQ(observedChat.back(), std::string(success));
+        ASSERT_TRUE(std::none_of(context.localMessages.begin(), context.localMessages.end(), [](const std::string& text) {
+            return text.find("[ORTUNG]") != std::string::npos;
+        }));
+        bridge.Shutdown();
+        SAMPBridge::ResetTestingHooks();
+    }
     return true;
 }
 
@@ -2482,6 +2537,7 @@ int RunSAMPBridgeTests() {
     RUN_TEST(TestQueuedLocalMessageWaitsForChatReady);
     RUN_TEST(TestFallbackInterceptorIgnoresPlainChatText);
     RUN_TEST(TestJobChatAdapterLifecycleHooksAreWired);
+    RUN_TEST(TestDetectiveMessagesAndCheckpointsDoNotSendAutomaticRadio);
     RUN_TEST(TestTrackedIncomeShowsLocalKeybinderMessage);
     RUN_TEST(TestDamageLogAhkBlueprintReportsDirectServerLossWithoutRpc);
     RUN_TEST(TestDamageLogSeparatesHealingFromDamageAndFormatsOneDecimal);

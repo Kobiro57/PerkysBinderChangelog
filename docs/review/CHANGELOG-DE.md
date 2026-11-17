@@ -1,6 +1,6 @@
 # Änderungen am Perkys Binder – NLBinder v.0.1.2 by perkys & edited by KOBiRO
 
-Stand: 17. November 2026, **r27 mit Ortung sowie Stadt und Bezirk**. Die Abschnitte 1 bis 32 dokumentieren die früheren Stände; Abschnitt 33 ergänzt r27.
+Stand: 17. November 2026, **r28 ohne automatische Polizeifunk-Ortung**. Die Abschnitte 1 bis 33 dokumentieren die früheren Stände; Abschnitt 34 ergänzt r28.
 
 Die Grundlage ist der vorhandene Perkys/NLBinder. Die Änderungen erweitern dessen bestehende Oberfläche und verwenden weiterhin die vorhandenen ImGui-Komponenten, Karten, Schalter und Darstellungseinstellungen. Der Ordner KOBiRO_ASI diente als funktionale Referenz für die Overlay-Erweiterung; seine Oberfläche wurde nicht als neue Binder-Oberfläche übernommen.
 
@@ -1215,3 +1215,14 @@ Der Nutzer bestätigte nach Einspielen des vorläufigen r18-Stands, dass der ang
 - Regressionen für alte und neue normale beziehungsweise Renn-Checkpoints sowie Stadt-/Bezirksauflösung ergänzt. Tatsächliche Ergebnisse stehen im r27-Prüfnachweis.
 - Native Wanted-Labels aus r26, TakeOver-Killerkennung, Forum-Sonderzeichenkorrektur und bestehende Drogenzeiten erhalten. Browsernachweis aus r24 ausdrücklich als historisch übernommen.
 - Neue NLBinder.asi, vollständige Quellen und gesamte Changelogs als NLBinder-v0.1.2-r27 vorbereitet. Frühere Exporte und Git-Historie erhalten; Spielinstallation unverändert.
+
+## 34. Nachtrag v0.1.2 / r28 – 17. November 2026
+
+- Gesamte vom Binder ergänzte automatische Polizeifunk-Ortung auf Wunsch entfernt.
+- Mitlesen der Detektiv-Start- und Erfolgsmeldungen für den Ortungsablauf entfernt; keine automatische Ortungsmeldung im Radio mehr.
+- Ausschließlich dafür verwendete Checkpoint-RPC-Beobachtung, Zielmarkerauswahl, Stadt-/Bezirksauflösung, Zustände, Quellen und Tests entfernt.
+- Normale manuelle serverseitige Ortung, Wanted-Overlay, native Wanted-Labels und Spieler-IDs sowie /speed beibehalten.
+- GPS-Navigation, Quick Map, allgemeine Stadt-/Bezirksvariablen und alle übrigen Binder-Funktionen erhalten.
+- Gesamttests und Release-Build sowie das Fehlen der Ortungsvorlage in der fertigen ASI werden geprüft. Tatsächliche Ergebnisse stehen im r28-Prüfnachweis.
+- Frühere Beschreibungen und Veröffentlichungen einschließlich r27 als Entwicklungshistorie erhalten; aktuelle Dokumentation weist die Entfernung aus.
+- Neue NLBinder.asi, vollständige aktuelle Quellen und gesamte Changelogs als NLBinder-v0.1.2-r28 vorbereitet. Frühere Desktop-Exporte und Spielinstallation unverändert.

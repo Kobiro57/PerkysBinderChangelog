@@ -16,15 +16,13 @@ Advanced keybinder and combat-assist plugin for GTA San Andreas Multiplayer (SA-
 - **Settings Management** — All configuration is unified in a single `keybinder.json` file: keybinds, kill tracker data, hitmarker presets, interface editor presets, theme settings, and QuickMap options.
 - **State Synchronization** — Stats and job skills synchronize after login. **Einstellungen → General → Tacho → Aktuellen Spielstand synchronisieren** repeats the same import manually and confirms completion locally after the new values are saved.
 
-- **Police Wanted and Location** — Confirmed SAPD/LSPD members with the Wanted overlay enabled see red wanted labels only on immediately nearby visible streamed players (hard maximum 5 metres, clear line of sight and native nametag visibility required). The Wanted table includes current SA-MP player IDs when resolved. Successful detective location plus a fresh server checkpoint sends one radio message with the marker district. Current-session faction checks apply to both new functions.
+- **Police Wanted Labels** — Confirmed SAPD/LSPD members with the Wanted overlay enabled see red wanted labels alongside actually drawn native player names, including drivers and passengers. Visibility and range follow the native nametag. The Wanted table includes current SA-MP player IDs when resolved.
 
 - **Quick Forum Keyboard** — The in-game `/forum` keyboard bridge supports text input including German AltGr special characters, preserving browser copy/paste shortcuts and Esc-close behavior. The pinned browser runtime cef156-r1 remains in use.
 
 - **TakeOver Kills** — Own `[TakeOver]: NAME hat ENEMY getötet.` confirmations use the existing kill counter and configured killbind, with whole-name attribution and existing duplicate correlation.
 
-- **Police Locate and Native Wanted Labels** — Detective success messages trigger current normal/racing-checkpoint lookup and one radio report. Wanted labels follow actual native nametag draw calls, including vehicle occupants and native visibility/range.
 
-- **Operation-specific police location** — Select the target marker for the current detective operation and resolve its city plus district; unrelated pre-existing checkpoints are not substituted.
 
 ## Building
 

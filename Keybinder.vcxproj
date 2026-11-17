@@ -208,9 +208,6 @@
     <ClCompile Include="src\JobSkillsSync.cpp" />
     <ClCompile Include="src\SpeedTicketFlow.cpp" />
     <ClCompile Include="src\SpeedTicketBridge.cpp" />
-    <ClCompile Include="src\PoliceLocateBridge.cpp" />
-    <ClCompile Include="src\PoliceLocateTracker.cpp" />
-    <ClCompile Include="src\ServerCheckpointRPCAdapter.cpp" />
     <ClCompile Include="src\NearbyWantedLabels.cpp" />
     <ClCompile Include="src\WeaponIconManager.cpp" />
     <ClCompile Include="src\NativeHudEditor.cpp" />
@@ -557,9 +554,6 @@
     <ClInclude Include="include\FactionAccess.h" />
     <ClInclude Include="include\LocalFactionAccess.h" />
     <ClInclude Include="include\ClaimSpots.h" />
-    <ClInclude Include="include\PoliceLocateTracker.h" />
-    <ClInclude Include="include\CheckpointLocation.h" />
-    <ClInclude Include="include\ServerCheckpointRPCAdapter.h" />
     <ClInclude Include="include\NearbyWantedLabels.h" />
     <ClInclude Include="include\ForumBrowser.h" />
     <ClInclude Include="include\ForumKeyboardInput.h" />
