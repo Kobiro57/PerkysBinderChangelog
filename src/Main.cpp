@@ -26,6 +26,8 @@
 #include "../include/HitsoundPlayer.h"
 #include "../include/ImGuiOverlay.h"
 #include "../include/GpsManager.h"
+#include "../include/SpraysNavigator.h"
+#include "../include/FactionAccess.h"
 #include "../include/ForumBrowser.h"
 #include "../include/DrugUseTracker.h"
 #include "../include/LocalFactionAccess.h"
@@ -566,7 +568,7 @@ public:
         inputManager_.SetSAMPBridge(&bridge_);
         inputManager_.SetImGuiOverlay(&overlay_);
         inputManager_.SetQuickMapVisibleCallback([&]() {
-            return quickMap_.IsVisible() || interfaceEditor_.IsElementMoveModeActive() || gps_.IsListOpen() || forumBrowser_.IsOpen();
+            return quickMap_.IsVisible() || interfaceEditor_.IsElementMoveModeActive() || gps_.IsListOpen() || sprays_.IsOpen() || forumBrowser_.IsOpen();
         });
         overlay_.SetEarlyKeybindHandler([&](int key, bool keyDown) {
             return inputManager_.HandleEarlyKeyEvent(key, keyDown);
@@ -581,7 +583,7 @@ public:
         bridge_.SetEngineInputBlockedCallback([&]() {
             return overlay_.IsVisible() || quickMap_.IsVisible()
                 || onlineOverlayRenderer_.IsPersistentOverlayMoveModeActive()
-                || interfaceEditor_.IsElementMoveModeActive() || gps_.IsListOpen() || forumBrowser_.IsOpen();
+                || interfaceEditor_.IsElementMoveModeActive() || gps_.IsListOpen() || sprays_.IsOpen() || forumBrowser_.IsOpen();
         });
         mainWindowUI_.SetHitmarker(&hitmarker_);
         mainWindowUI_.SetHitsoundPlayer(&hitsoundPlayer_);
@@ -636,6 +638,7 @@ public:
         overlay_.SetQuickMapRenderCallback([&]() {
             quickMap_.Render();
             gps_.Render();
+            sprays_.Render();
             forumBrowser_.Render(overlay_.GetDevice());
         });
         overlay_.SetQuickMapWheelCaptureCallback([&]() {
@@ -685,15 +688,15 @@ public:
         });
         overlay_.SetAuxiliaryInteractionActiveCallback([&]() {
             return onlineOverlayRenderer_.IsPersistentOverlayMoveModeActive()
-                || interfaceEditor_.IsElementMoveModeActive() || gps_.IsListOpen() || forumBrowser_.IsOpen();
+                || interfaceEditor_.IsElementMoveModeActive() || gps_.IsListOpen() || sprays_.IsOpen() || forumBrowser_.IsOpen();
         });
         overlay_.SetAuxiliaryInteractionCancelCallback([&]() {
             onlineOverlayRenderer_.SetPersistentOverlayMoveMode(false);
             interfaceEditor_.FinishElementMove();
-            gps_.CloseList(); forumBrowser_.Close();
+            gps_.CloseList(); sprays_.Close(); forumBrowser_.Close();
             inputManager_.ClearTransientInputState();
         });
-        overlay_.SetAuxiliaryKeyboardCaptureCallback([&]() { return gps_.IsListOpen() || forumBrowser_.IsOpen(); });
+        overlay_.SetAuxiliaryKeyboardCaptureCallback([&]() { return gps_.IsListOpen() || sprays_.IsOpen() || forumBrowser_.IsOpen(); });
         overlay_.SetAuxiliaryWindowMessageCallback([&](HWND window, UINT message, WPARAM key, LPARAM native) {
             return forumBrowser_.HandleWindowMessage(window, message, key, native);
         });
@@ -701,6 +704,9 @@ public:
             [&](const std::string& text) { bridge_.QueueLocalMessage(text); },
             [&](keybinder::GpsPosition& position) { return keybinder::ReadGpsPlayerPosition(&bridge_, position); },
             [&](const keybinder::GpsEntry* target) { keybinder::RenderGpsDestination(target); });
+        sprays_.Initialize(&gps_, [&](const std::string& text) { bridge_.QueueLocalMessage(text); },
+            [&](keybinder::GpsPosition& position) { return keybinder::ReadGpsPlayerPosition(&bridge_, position); },
+            []() { return CurrentSpraysPoliceSession(); });
         forumBrowser_.Initialize(&settingsManager_, [&](const std::string& text) { bridge_.QueueLocalMessage(text); },
             [&]() { keybindManager_.Save(&settingsManager_); },
             [&](const std::string& command) {
@@ -729,14 +735,24 @@ public:
 
         bridge_.RegisterCommand("setgps", [&](const std::string& parameters) { gps_.Set(parameters); });
         bridge_.RegisterCommand("gpslist", [&](const std::string&) {
-            forumBrowser_.Close(); quickMap_.Hide(); overlay_.Hide();
+            sprays_.Close(); forumBrowser_.Close(); quickMap_.Hide(); overlay_.Hide();
             onlineOverlayRenderer_.SetPersistentOverlayMoveMode(false); interfaceEditor_.FinishElementMove();
             gps_.ShowList();
         });
         bridge_.RegisterCommand("delgpsall", [&](const std::string&) { gps_.RemoveAll(); });
         bridge_.RegisterCommand("gps", [&](const std::string&) { gps_.ShowHelp(); });
+        bridge_.RegisterCommand("sprays", [&](const std::string& parameters) {
+            if (parameters.find_first_not_of(" \t\r\n") != std::string::npos) {
+                bridge_.QueueLocalMessage("{33CCFF}[NL-BINDER]{FFFFFF} Nutzung: /sprays");
+                return;
+            }
+            if (!sprays_.Toggle() || !sprays_.IsOpen()) return;
+            gps_.CloseList(); forumBrowser_.Close(); quickMap_.Hide(); overlay_.Hide();
+            onlineOverlayRenderer_.SetPersistentOverlayMoveMode(false); interfaceEditor_.FinishElementMove();
+            inputManager_.ClearTransientInputState();
+        });
         bridge_.RegisterCommand("forum", [&](const std::string&) {
-            gps_.CloseList(); quickMap_.Hide(); overlay_.Hide();
+            gps_.CloseList(); sprays_.Close(); quickMap_.Hide(); overlay_.Hide();
             onlineOverlayRenderer_.SetPersistentOverlayMoveMode(false); interfaceEditor_.FinishElementMove();
             forumBrowser_.Toggle();
         });
@@ -851,12 +867,13 @@ public:
             }
 
             if (MatchesConfiguredUiOpenCommand(settingsManager_.Get(), command)) {
+                sprays_.Close();
                 quickMap_.Hide();
                 overlay_.Show();
                 return true;
             }
 
-            if (command == "info" || command == "reconnect" || command == "speed" || command == "setgps" || command == "gpslist" || command == "delgpsall" || command == "gps" || command == "forum") {
+            if (command == "info" || command == "reconnect" || command == "speed" || command == "setgps" || command == "gpslist" || command == "delgpsall" || command == "gps" || command == "sprays" || command == "forum") {
                 return false;
             }
             
@@ -945,6 +962,7 @@ public:
             bridge_.Update();
             RefreshClaimsAccess();
             forumBrowser_.Update();
+            sprays_.Update();
             gps_.Update();
             if (const auto* netGame = bridge_.GetNetGame(); netGame
                 && netGame->m_nGameState == sampapi::v03dl::CNetGame::GAME_MODE_CONNECTED) {
@@ -1063,7 +1081,7 @@ public:
         // Prepare the normal GTA checkpoint before the world effects pass.
         // HUD polling below is also retained for clients replacing this call.
         Events::renderSceneEvent += [&]() {
-            if (g_shutdown_phase.load() == 0) gps_.Update();
+            if (g_shutdown_phase.load() == 0) { sprays_.Update(); gps_.Update(); }
         };
         Events::gameProcessEvent += [&]() {
             if (g_shutdown_phase.load() != 0) return;
@@ -1122,6 +1140,7 @@ public:
             hudSpriteManager_.Shutdown();
             weaponIconManager_.Shutdown();
             forumBrowser_.Shutdown();
+            sprays_.Shutdown();
             gps_.Shutdown(); keybinder::ClearGpsDestinationMarker();
             onlineOverlayRenderer_.Shutdown();
             quickMap_.Shutdown();
@@ -1195,10 +1214,12 @@ private:
     static bool RefreshDrugTimerSession();
     static std::string ResolveCurrentLocalFaction();
     static void RefreshClaimsAccess(bool force = false);
+    static std::string CurrentSpraysPoliceSession();
     static std::string claimsSessionIdentity_;
     static std::chrono::steady_clock::time_point nextClaimsAccessRefresh_;
     static keybinder::TextDrawAdapter textDrawAdapter_;
     static keybinder::GpsManager gps_;
+    static keybinder::SpraysNavigator sprays_;
     static keybinder::ForumBrowser forumBrowser_;
     static keybinder::SpeedometerManager speedometerManager_;
     static keybinder::SpeedometerUI speedometerUI_;
@@ -1235,6 +1256,7 @@ std::string Keybinder::claimsSessionIdentity_{};
 std::chrono::steady_clock::time_point Keybinder::nextClaimsAccessRefresh_{};
 keybinder::TextDrawAdapter Keybinder::textDrawAdapter_{};
 keybinder::GpsManager Keybinder::gps_{};
+keybinder::SpraysNavigator Keybinder::sprays_{};
 keybinder::ForumBrowser Keybinder::forumBrowser_{};
 keybinder::SpeedometerManager Keybinder::speedometerManager_{};
 keybinder::SpeedometerUI Keybinder::speedometerUI_{};
@@ -1253,6 +1275,20 @@ std::string Keybinder::ResolveCurrentLocalFaction() {
         liveFaction = affiliation->isFaction ? affiliation->name : "Zivilist";
     }
     return keybinder::ReconcileLocalFaction(ownFaction, liveFaction);
+}
+
+std::string Keybinder::CurrentSpraysPoliceSession() {
+    if (g_shutdown_phase.load() != 0) return {};
+    const auto* network = bridge_.GetNetGame();
+    const auto* player = bridge_.GetLocalPlayer();
+    const std::string name = bridge_.GetLocalPlayerName();
+    if (!network || network->m_nGameState != sampapi::v03dl::CNetGame::GAME_MODE_CONNECTED
+        || name.empty() || !player || !player->m_bIsActive || player->m_bIsWasted
+        || player->m_bDoesSpectating
+        || !keybinder::IsPoliceMember(bridge_.GetLocalFaction())) return {};
+    return std::string(network->m_szHostAddress, strnlen(network->m_szHostAddress, 257))
+        + ":" + std::to_string(network->m_nPort) + "/"
+        + keybinder::OnlineOverlayController::NormalizeMarkerName(name);
 }
 
 void Keybinder::RefreshClaimsAccess(bool force) {

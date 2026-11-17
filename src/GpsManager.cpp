@@ -36,6 +36,7 @@ std::string GpsName(std::string value) {
 } // namespace
 
 void GpsManager::Initialize(std::string path, Notice notice, PositionProvider provider, DestinationRenderer renderer) {
+    StopNavigation();
     path_ = std::move(path); notice_ = std::move(notice); positionProvider_ = std::move(provider);
     renderer_ = std::move(renderer);
     if (!Load()) Say("Die GPS-Datei konnte nicht gelesen werden. Vorhandene Daten werden nicht automatisch ersetzt.");
@@ -56,6 +57,7 @@ bool GpsManager::HasArrived(const GpsPosition& current, const GpsPosition& targe
 }
 bool GpsManager::Load() {
     entries_.clear(); activeId_ = selectedId_ = 0; nextId_ = 1;
+    temporaryDestination_.reset();
     const auto path = WideGpsPath(path_);
     if (GetFileAttributesW(path.c_str()) == INVALID_FILE_ATTRIBUTES) return GetLastError() == ERROR_FILE_NOT_FOUND;
     pugi::xml_document document;
@@ -112,22 +114,41 @@ bool GpsManager::Remove(unsigned int id) {
 bool GpsManager::RemoveAll() {
     const auto before = entries_; entries_.clear();
     if (!Save()) { entries_ = before; Say("Die GPS-Ziele konnten nicht gel\xC3\xB6" "scht werden."); return false; }
-    StopNavigation(); selectedId_ = 0; Say("Alle GPS-Eintr\xC3\xA4ge wurden gel\xC3\xB6" "scht."); return true;
+    if (!temporaryDestination_) StopNavigation();
+    selectedId_ = 0; Say("Alle GPS-Eintr\xC3\xA4ge wurden gel\xC3\xB6" "scht."); return true;
 }
 const GpsEntry* GpsManager::ActiveDestination() const {
+    if (temporaryDestination_ && temporaryDestination_->id == activeId_) return &*temporaryDestination_;
     const auto found = std::find_if(entries_.begin(), entries_.end(), [this](const auto& entry) { return entry.id == activeId_; });
     return found == entries_.end() ? nullptr : &*found;
 }
 bool GpsManager::Navigate(unsigned int id) {
     if (std::none_of(entries_.begin(), entries_.end(), [id](const auto& entry) { return entry.id == id; })) return false;
+    temporaryDestination_.reset();
     activeId_ = id; listOpen_ = false;
+    BeginNavigation();
+    return true;
+}
+bool GpsManager::NavigateTemporary(const GpsEntry& destination) {
+    const auto name = GpsName(destination.name);
+    if ((destination.id & kTemporaryIdMask) == 0 || name.empty() || !IsValidPosition(destination.position)) return false;
+    temporaryDestination_ = destination;
+    temporaryDestination_->name = name;
+    activeId_ = destination.id; listOpen_ = false;
+    BeginNavigation();
+    return true;
+}
+void GpsManager::BeginNavigation() {
     GpsPosition current;
     arrivalArmed_ = positionProvider_ && positionProvider_(current)
         && !HasArrived(current, ActiveDestination()->position);
     if (renderer_) renderer_(ActiveDestination());
-    Say("Navigation gestartet: " + ActiveDestination()->name + ". Das Ziel ist rot markiert."); return true;
+    Say("Navigation gestartet: " + ActiveDestination()->name + ". Das Ziel ist rot markiert.");
 }
-void GpsManager::StopNavigation() { activeId_ = 0; arrivalArmed_ = false; if (renderer_) renderer_(nullptr); }
+void GpsManager::StopNavigation() {
+    activeId_ = 0; arrivalArmed_ = false; temporaryDestination_.reset();
+    if (renderer_) renderer_(nullptr);
+}
 void GpsManager::ShowHelp() const {
     Say("/setgps (Bemerkung) - Marker speichern | /gpslist - GPS-Liste \xC3\xB6" "ffnen");
     Say("/delgpsall - Alle GPS-Eintr\xC3\xA4ge l\xC3\xB6" "schen | /gps - Diese Hilfe");

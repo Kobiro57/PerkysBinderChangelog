@@ -1,7 +1,7 @@
 ﻿Änderungen am Perkys Binder – NLBinder v.0.1.2 by perkys & edited by KOBiRO
 ===========================================================================
 
-Stand: 17. November 2026, r28 ohne automatische Polizeifunk-Ortung. Die Abschnitte 1 bis 33 dokumentieren die früheren Stände; Abschnitt 34 ergänzt r28.
+Stand: 17. November 2026, r29 mit Spraytag-Navigation. Die Abschnitte 1 bis 34 dokumentieren die früheren Stände; Abschnitt 35 ergänzt r29.
 
 Die Grundlage ist der vorhandene Perkys/NLBinder. Die Änderungen erweitern dessen bestehende Oberfläche und verwenden weiterhin die vorhandenen ImGui-Komponenten, Karten, Schalter und Darstellungseinstellungen. Der Ordner KOBiRO_ASI diente als funktionale Referenz für die Overlay-Erweiterung; seine Oberfläche wurde nicht als neue Binder-Oberfläche übernommen.
 
@@ -1299,3 +1299,16 @@ Der Nutzer bestätigte nach Einspielen des vorläufigen r18-Stands, dass der ang
 - Gesamttests und Release-Build sowie das Fehlen der Ortungsvorlage in der fertigen ASI werden geprüft. Tatsächliche Ergebnisse stehen im r28-Prüfnachweis.
 - Frühere Beschreibungen und Veröffentlichungen einschließlich r27 als Entwicklungshistorie erhalten; aktuelle Dokumentation weist die Entfernung aus.
 - Neue NLBinder.asi, vollständige aktuelle Quellen und gesamte Changelogs als NLBinder-v0.1.2-r28 vorbereitet. Frühere Desktop-Exporte und Spielinstallation unverändert.
+
+35. Nachtrag v0.1.2 / r29 – 17. November 2026
+=============================================
+
+- /sprays für bestätigte SAPD-/LSPD-Mitglieder ergänzt; andere Fraktionen erhalten keinen Zugriff auf die Spraytag-Navigation.
+- 100 feste Spraytag-Koordinaten im nachvollziehbaren Quellcode hinterlegt.
+- Stellen nach dreidimensionaler Entfernung zur aktuellen Spielerposition sortiert und die nächstgelegene Stelle grün hervorgehoben.
+- Liste auf drei Seiten mit 34, 34 und 32 Einträgen verteilt; Auswahl startet die vorhandene rote GPS-Checkpoint-Navigation.
+- Vorhandene Ziel-erreicht-Erkennung für Spray-Ziele weiterverwendet.
+- Vorübergehende GPS-Ziele ergänzt, ohne einen der 20 gespeicherten GPS-Plätze zu belegen oder gespeicherte Ziele zu verändern.
+- Regressionen für Spraytag-Auswahl, Sortierung, Fraktionsprüfung und vorübergehende GPS-Ziele ergänzt. Tatsächliche Ergebnisse stehen im r29-Prüfnachweis.
+- Automatische Polizeifunk-Ortung aus r28 weiterhin vollständig entfernt; Wanted-Labels, /speed, Quick Map, Browser und übrige Funktionen erhalten.
+- Neue NLBinder.asi, vollständige aktuelle Quellen und gesamte Changelogs als NLBinder-v0.1.2-r29 vorbereitet. Frühere Veröffentlichungen und Desktop-Exporte erhalten; Spielinstallation unverändert.

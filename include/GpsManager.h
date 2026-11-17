@@ -1,6 +1,7 @@
 #pragma once
 
 #include <functional>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -19,6 +20,7 @@ struct GpsEntry {
 class GpsManager {
 public:
     static constexpr std::size_t kMaximumEntries = 20;
+    static constexpr unsigned int kTemporaryIdMask = 0x80000000u;
     using Notice = std::function<void(const std::string&)>;
     using PositionProvider = std::function<bool(GpsPosition&)>;
     using DestinationRenderer = std::function<void(const GpsEntry*)>;
@@ -28,6 +30,9 @@ public:
     bool Remove(unsigned int id);
     bool RemoveAll();
     bool Navigate(unsigned int id);
+    // Temporary routes share the GPS marker and arrival lifecycle, but are not
+    // bookmarks. Callers use stable IDs from the reserved high-bit namespace.
+    bool NavigateTemporary(const GpsEntry& destination);
     void StopNavigation();
     void ShowList() { listOpen_ = !listOpen_; }
     void CloseList() { listOpen_ = false; }
@@ -43,11 +48,13 @@ private:
     bool Load();
     bool Save() const;
     void Say(const std::string& text) const;
+    void BeginNavigation();
     std::string path_;
     Notice notice_;
     PositionProvider positionProvider_;
     DestinationRenderer renderer_;
     std::vector<GpsEntry> entries_;
+    std::optional<GpsEntry> temporaryDestination_;
     unsigned int nextId_ = 1;
     unsigned int activeId_ = 0;
     unsigned int selectedId_ = 0;

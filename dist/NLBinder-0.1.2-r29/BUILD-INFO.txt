@@ -1,0 +1,37 @@
+﻿NLBinder v.0.1.2 by perkys & edited by KOBiRO (r29)
+NLBinder.asi (x86): 18915328 Bytes
+SHA256: cb9e7e2d0c8bce3d84ca52b03967017891da1be0206b2aec8bb4c55ab12d26e2
+
+Gewuenschte farbige Startmeldung ist im finalen PE enthalten.
+Gesamttests und Release-Build: Exitcode 0. Nativer Reconnect-Worker: 83 Checks.
+ASI-Ressourcen 300/301 stimmen mit den gebauten nativen Helfern ueberein.
+Browserhost, GPS-Spieladapter, Wanted-/Drogenoverlay und Browsermanifest sind gegen r28 unveraendert geprueft.
+TakeOver-Killerkennung aus r25 beibehalten: eigener Taetername, bestehender Killtext und Zaehler.
+Quick-Forum-Sonderzeichenkorrektur aus r24 beibehalten.
+SAPD-/LSPD-Wantedlabels: nur zusammen mit dem tatsaechlich gezeichneten nativen Nametag, auch im Fahrzeug.
+Reichweite und Sichtbarkeit folgen dem nativen Nametag; die fruehere eigene 5-Meter-Grenze entfaellt.
+Vorhandene Nametag-Freigabe, Wantedlisten-Schalter und frische Wanteddaten erforderlich.
+Wantedtabelle: aktueller SA-MP-Spieler-ID nach Name; keine API-Account-ID.
+Automatische Polizeifunk-Ortung vollstaendig entfernt: kein Mitlesen der Ortungsmeldungen,
+keine Ortungs-Checkpoint-Auswertung und keine automatische /r-Ortungsmeldung.
+Die ausschliesslich dafuer verwendeten Quellen, Hooks, Zustaende und Tests sind entfernt.
+Manuelle serverseitige Ortung und die normale GPS-/Quick-Map-Anzeige bleiben erhalten.
+/sprays: 100 feste Spraytag-Koordinaten, nur fuer bestaetigte SAPD-/LSPD-Mitglieder.
+Entfernung ab aktueller Spielerposition dreidimensional berechnet; naechste Stelle gruen.
+Drei Seiten mit 34/34/32 Eintraegen; Auswahl startet die vorhandene rote GPS-Navigation.
+Voruebergehende Spray-Ziele belegen keinen der 20 gespeicherten GPS-Plaetze.
+Fruehere Browser-/GPS-Pruefungen sind separat historisch dokumentiert.
+Der unveraenderte historische Browser-Eingabetest aus r24 ist in FORUM-KEYBOARD-TEST.json enthalten.
+Dieser Browser-Test wurde fuer r29 nicht erneut ausgefuehrt.
+Er verwendet nur synthetische Texte in einem isolierten anonymen Profil, ohne Forumbeitrag.
+Ein neuer r29-GTA-Live-Test wird nicht behauptet.
+
+FORUM-INSTALLATION.txt beschreibt Einrichtung und Speicherorte. Die Dateiliste
+enthaelt alle 236 festgelegten Runtime-Dateien. FORUM-INSTALLATION-QUELLCODE
+enthaelt die eigenen Originalquellen und ihre SHA-256-Nachweise, keine privaten Profile.
+FORUM-CHANGELOG.txt ist der fertige Text fuer die Veroeffentlichung im Forum.
+Der vollstaendige Binder-Quellcode ist im neuen Desktop-Ordner und auf GitHub enthalten.
+Der komplette Drittanbieter-Chromium-/CEF-Upstreamcode wird nicht als enthalten ausgegeben.
+
+Nur NLBinder.asi bei beendetem GTA ersetzen. Browserstand unveraendert: cef156-r1.
+Browser-Download SHA256: 01fc7f1d4dcec644a191e9c63da7088a73aa81a63c9a4c207001f7038a70ff45

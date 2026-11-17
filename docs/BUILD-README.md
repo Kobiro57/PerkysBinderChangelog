@@ -24,6 +24,8 @@ Advanced keybinder and combat-assist plugin for GTA San Andreas Multiplayer (SA-
 
 
 
+- **Police Spraytag Navigation** — `/sprays` lists 100 fixed spraytag locations for verified SAPD/LSPD members. Targets are sorted by current 3D distance; the nearest is green. Three pages hold 34/34/32 entries. Selection uses the existing red GPS checkpoint and arrival message through a temporary target that preserves all 20 saved GPS slots.
+
 ## Building
 
 ### Requirements

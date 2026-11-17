@@ -4,6 +4,10 @@ Hier ist das aktuelle NLBinder-Release mit fertiger ASI und nachvollziehbarer Ä
 
 NEU IN DIESEM PAKET
 
+Neu in r29: Mit /sprays öffnen bestätigte SAPD-/LSPD-Mitglieder eine Liste der 100 fest hinterlegten Spraytag-Stellen. Die Stellen werden nach ihrer dreidimensionalen Entfernung zur aktuellen Spielerposition sortiert; die nächstgelegene Stelle ist grün hervorgehoben. Die Liste hat drei Seiten mit 34, 34 und 32 Einträgen. Ein ausgewählter Eintrag startet die vorhandene rote GPS-Checkpoint-Navigation samt Ziel-erreicht-Meldung. Spray-Ziele sind vorübergehend und verbrauchen keinen der 20 gespeicherten GPS-Plätze. Die automatische Polizeifunk-Ortung bleibt entfernt.
+
+Früherer Stand r28 (weiterhin gültig: automatische Polizeifunk-Ortung entfernt):
+
 Neu in r28: Die gesamte vom Binder ergänzte automatische Polizeifunk-Ortung wurde auf Wunsch entfernt. Der Binder liest Detektiv-Meldungen nicht mehr für eine Ortung aus, wertet keine Ortungs-Checkpoints mehr aus und sendet keine automatische Ortungsmeldung im Radio. Die zugehörigen ausschließlich verwendeten Quellen, Hooks, Zustände und Tests wurden ebenfalls entfernt. Wanted-Overlay, Gesucht-Labels, aktuelle Spieler-IDs, /speed, GPS und Quick Map bleiben erhalten. Die serverseitige Ortung kann weiterhin normal manuell benutzt werden.
 
 FRÜHERE ÄNDERUNGEN – HISTORISCHE BESCHREIBUNGEN
@@ -114,7 +118,7 @@ Repository:
 https://github.com/Kobiro57/PerkysBinderChangelog
 
 Dieses Release:
-https://github.com/Kobiro57/PerkysBinderChangelog/releases/tag/v0.1.2-r28
+https://github.com/Kobiro57/PerkysBinderChangelog/releases/tag/v0.1.2-r29
 
 Das ASI-Downloadpaket enthält den fertigen Binder, die Dokumentation und den gesonderten Installer-Quellcodeauszug. Den vollständigen Binder-Quellbaum gibt es im Repository beziehungsweise über die „Source code“-Downloads des Releases. Der zusammengestellte Desktop-Ordner enthält zusätzlich die fertige ASI.
 

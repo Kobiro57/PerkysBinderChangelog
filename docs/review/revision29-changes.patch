@@ -1,0 +1,2438 @@
+diff --git a/Keybinder.vcxproj b/Keybinder.vcxproj
+index c3299ca..9a255c3 100644
+--- a/Keybinder.vcxproj
++++ b/Keybinder.vcxproj
+@@ -200,6 +200,7 @@
+     <ClCompile Include="src\ImGuiOverlay.cpp" />
+     <ClCompile Include="src\SAMPBridge.cpp" />
+     <ClCompile Include="src\GpsManager.cpp" />
++    <ClCompile Include="src\SpraysNavigator.cpp" />
+     <ClCompile Include="src\GpsGameAdapter.cpp" />
+     <ClCompile Include="src\ForumBrowser.cpp" />
+ 
+@@ -555,6 +556,8 @@
+     <ClInclude Include="include\LocalFactionAccess.h" />
+     <ClInclude Include="include\ClaimSpots.h" />
+     <ClInclude Include="include\NearbyWantedLabels.h" />
++    <ClInclude Include="include\SpraySpots.h" />
++    <ClInclude Include="include\SpraysNavigator.h" />
+     <ClInclude Include="include\ForumBrowser.h" />
+     <ClInclude Include="include\ForumKeyboardInput.h" />
+     <ClInclude Include="include\\StatsStorage.h" />
+diff --git a/include/GpsManager.h b/include/GpsManager.h
+index aba5330..b497db7 100644
+--- a/include/GpsManager.h
++++ b/include/GpsManager.h
+@@ -1,6 +1,7 @@
+ #pragma once
+ 
+ #include <functional>
++#include <optional>
+ #include <string>
+ #include <vector>
+ 
+@@ -19,6 +20,7 @@ struct GpsEntry {
+ class GpsManager {
+ public:
+     static constexpr std::size_t kMaximumEntries = 20;
++    static constexpr unsigned int kTemporaryIdMask = 0x80000000u;
+     using Notice = std::function<void(const std::string&)>;
+     using PositionProvider = std::function<bool(GpsPosition&)>;
+     using DestinationRenderer = std::function<void(const GpsEntry*)>;
+@@ -28,6 +30,9 @@ public:
+     bool Remove(unsigned int id);
+     bool RemoveAll();
+     bool Navigate(unsigned int id);
++    // Temporary routes share the GPS marker and arrival lifecycle, but are not
++    // bookmarks. Callers use stable IDs from the reserved high-bit namespace.
++    bool NavigateTemporary(const GpsEntry& destination);
+     void StopNavigation();
+     void ShowList() { listOpen_ = !listOpen_; }
+     void CloseList() { listOpen_ = false; }
+@@ -43,11 +48,13 @@ private:
+     bool Load();
+     bool Save() const;
+     void Say(const std::string& text) const;
++    void BeginNavigation();
+     std::string path_;
+     Notice notice_;
+     PositionProvider positionProvider_;
+     DestinationRenderer renderer_;
+     std::vector<GpsEntry> entries_;
++    std::optional<GpsEntry> temporaryDestination_;
+     unsigned int nextId_ = 1;
+     unsigned int activeId_ = 0;
+     unsigned int selectedId_ = 0;
+diff --git a/include/SpraySpots.h b/include/SpraySpots.h
+new file mode 100644
+index 0000000..d4328f0
+--- /dev/null
++++ b/include/SpraySpots.h
+@@ -0,0 +1,120 @@
++#pragma once
++
++#include "GpsManager.h"
++#include <array>
++
++namespace keybinder {
++
++struct SpraySpot {
++    unsigned int id;
++    const char* place;
++    GpsPosition position;
++};
++
++// All 100 graffiti positions supplied by the user. IDs stay fixed when the
++// navigation list is sorted by distance. These are static navigation targets;
++// the Binder does not claim whether a graffiti is currently present or clean.
++inline constexpr std::array<SpraySpot, 100> kSpraySpots{{
++    {1, "Vinewood", {944.3f, -985.8f, 39.3f, 0}},
++    {2, "Temple", {1072.9f, -1012.8f, 35.5f, 0}},
++    {3, "Mulholland Intersection", {1519.4f, -1010.9f, 24.6f, 0}},
++    {4, "Mulholland Intersection", {1732.7f, -963.1f, 41.4f, 0}},
++    {5, "Glen Park", {1911.9f, -1064.4f, 25.2f, 0}},
++    {6, "Las Colinas", {2062.7f, -996.5f, 48.3f, 0}},
++    {7, "Las Colinas", {2076.7f, -1071.1f, 27.6f, 0}},
++    {8, "Las Colinas", {2122.7f, -1060.9f, 25.4f, 0}},
++    {9, "Las Colinas", {2239.8f, -999.8f, 59.8f, 0}},
++    {10, "Las Colinas", {2281.5f, -1119.0f, 27.0f, 0}},
++    {11, "Las Colinas", {2621.5f, -1092.2f, 69.8f, 0}},
++    {12, "Las Colinas", {2797.9f, -1097.7f, 31.1f, 0}},
++    {13, "Rodeo", {467.0f, -1283.0f, 16.3f, 0}},
++    {14, "Market", {1098.8f, -1292.5f, 17.1f, 0}},
++    {15, "Market", {1206.2f, -1162.0f, 23.9f, 0}},
++    {16, "Downtown Los Santos", {1498.6f, -1207.4f, 24.7f, 0}},
++    {17, "Downtown Los Santos", {1687.2f, -1239.1f, 15.8f, 0}},
++    {18, "Downtown Los Santos", {1746.8f, -1359.8f, 16.2f, 0}},
++    {19, "Glen Park", {1966.9f, -1174.7f, 20.0f, 0}},
++    {20, "Glen Park", {1969.6f, -1289.7f, 24.6f, 0}},
++    {21, "Glen Park", {1974.1f, -1351.2f, 24.6f, 0}},
++    {22, "Jefferson", {2119.2f, -1196.6f, 24.6f, 0}},
++    {23, "Jefferson", {2132.2f, -1258.1f, 24.1f, 0}},
++    {24, "Jefferson", {2224.8f, -1193.1f, 25.8f, 0}},
++    {25, "Jefferson", {2234.0f, -1367.6f, 24.5f, 0}},
++    {26, "East Los Santos", {2322.5f, -1254.4f, 22.9f, 0}},
++    {27, "East Los Santos", {2346.5f, -1350.8f, 24.3f, 0}},
++    {28, "East Los Santos", {2536.2f, -1352.8f, 31.1f, 0}},
++    {29, "East Los Santos", {2543.0f, -1363.2f, 31.8f, 0}},
++    {30, "East Los Santos", {2576.8f, -1143.3f, 48.2f, 0}},
++    {31, "East Los Santos", {2580.9f, -1274.1f, 46.6f, 0}},
++    {32, "Los Flores", {2603.2f, -1197.8f, 61.0f, 0}},
++    {33, "East Beach", {2766.1f, -1197.1f, 69.1f, 0}},
++    {34, "East Beach", {2820.3f, -1191.0f, 25.7f, 0}},
++    {35, "East Beach", {2841.4f, -1313.0f, 18.8f, 0}},
++    {36, "Rodeo", {583.5f, -1502.1f, 16.0f, 0}},
++    {37, "Marina", {730.4f, -1482.0f, 2.2f, 0}},
++    {38, "Market", {947.5f, -1466.7f, 17.2f, 0}},
++    {39, "Market", {1295.2f, -1465.2f, 10.3f, 0}},
++    {40, "Little Mexico", {1767.2f, -1617.5f, 15.0f, 0}},
++    {41, "Idlewood", {1959.4f, -1577.8f, 13.8f, 0}},
++    {42, "Idlewood", {2074.2f, -1579.1f, 14.0f, 0}},
++    {43, "Jefferson", {2093.8f, -1413.4f, 24.1f, 0}},
++    {44, "Jefferson", {2182.2f, -1467.9f, 25.6f, 0}},
++    {45, "East Los Santos", {2353.5f, -1508.2f, 24.8f, 0}},
++    {46, "East Los Santos", {2394.1f, -1468.4f, 24.8f, 0}},
++    {47, "East Los Santos", {2399.4f, -1552.0f, 28.8f, 0}},
++    {48, "East Los Santos", {2462.3f, -1541.4f, 25.4f, 0}},
++    {49, "East Los Santos", {2522.5f, -1478.7f, 24.2f, 0}},
++    {50, "Los Flores", {2612.9f, -1390.8f, 35.4f, 0}},
++    {51, "East Beach", {2667.9f, -1469.1f, 31.7f, 0}},
++    {52, "East Beach", {2756.0f, -1388.1f, 39.5f, 0}},
++    {53, "East Beach", {2767.8f, -1621.2f, 11.2f, 0}},
++    {54, "East Beach", {2821.2f, -1465.1f, 16.5f, 0}},
++    {55, "Santa Maria Beach", {482.6f, -1761.6f, 5.9f, 0}},
++    {56, "Marina", {810.6f, -1797.6f, 13.6f, 0}},
++    {57, "Verona Beach", {1071.1f, -1863.8f, 14.1f, 0}},
++    {58, "Verona Beach", {1271.5f, -1662.3f, 20.2f, 0}},
++    {59, "Commerce", {1332.1f, -1722.3f, 14.2f, 0}},
++    {60, "Commerce", {1448.2f, -1755.9f, 14.5f, 0}},
++    {61, "Pershing Square", {1549.9f, -1714.5f, 15.1f, 0}},
++    {62, "Little Mexico", {1724.7f, -1741.5f, 14.1f, 0}},
++    {63, "Little Mexico", {1799.1f, -1708.8f, 14.1f, 0}},
++    {64, "Idlewood", {1837.2f, -1814.2f, 4.3f, 0}},
++    {65, "Idlewood", {1837.7f, -1640.4f, 13.8f, 0}},
++    {66, "Idlewood", {1910.2f, -1779.7f, 18.8f, 0}},
++    {67, "Idlewood", {2034.4f, -1801.7f, 14.5f, 0}},
++    {68, "Idlewood", {2046.4f, -1635.8f, 13.6f, 0}},
++    {69, "Idlewood", {2066.4f, -1652.5f, 14.3f, 0}},
++    {70, "Idlewood", {2102.2f, -1648.8f, 13.6f, 0}},
++    {71, "Idlewood", {2162.8f, -1786.1f, 14.2f, 0}},
++    {72, "Ganton", {2273.0f, -1687.4f, 15.0f, 0}},
++    {73, "Ganton", {2422.9f, -1682.3f, 14.0f, 0}},
++    {74, "East Beach", {2767.8f, -1819.9f, 12.2f, 0}},
++    {75, "Santa Maria Beach", {399.0f, -2066.9f, 11.2f, 0}},
++    {76, "Verdant Bluffs", {1118.9f, -2008.2f, 75.0f, 0}},
++    {77, "El Corona", {1808.3f, -2092.3f, 14.2f, 0}},
++    {78, "El Corona", {1850.0f, -1876.8f, 14.4f, 0}},
++    {79, "El Corona", {1889.2f, -1982.5f, 15.8f, 0}},
++    {80, "El Corona", {1950.6f, -2034.4f, 14.1f, 0}},
++    {81, "Willowfield", {2065.4f, -1897.2f, 13.6f, 0}},
++    {82, "Willowfield", {2134.3f, -2011.2f, 10.5f, 0}},
++    {83, "Willowfield", {2392.4f, -1914.6f, 14.7f, 0}},
++    {84, "Willowfield", {2430.3f, -1997.9f, 14.7f, 0}},
++    {85, "Willowfield", {2489.2f, -1959.1f, 13.8f, 0}},
++    {86, "Ocean Docks", {2587.3f, -2063.5f, 4.6f, 0}},
++    {87, "Playa del Seville", {2704.2f, -1966.7f, 13.8f, 0}},
++    {88, "Playa del Seville", {2763.0f, -2012.1f, 14.1f, 0}},
++    {89, "Playa del Seville", {2794.5f, -1906.8f, 14.7f, 0}},
++    {90, "Playa del Seville", {2812.9f, -1942.1f, 11.1f, 0}},
++    {91, "Playa del Seville", {2874.5f, -1909.4f, 8.4f, 0}},
++    {92, "Los Santos International", {1624.6f, -2296.2f, 14.3f, 0}},
++    {93, "El Corona", {1784.0f, -2156.5f, 14.3f, 0}},
++    {94, "El Corona", {1936.9f, -2134.9f, 14.2f, 0}},
++    {95, "Willowfield", {2173.6f, -2165.2f, 15.3f, 0}},
++    {96, "Ocean Docks", {2273.9f, -2265.8f, 14.6f, 0}},
++    {97, "Ocean Docks", {2379.3f, -2166.2f, 24.9f, 0}},
++    {98, "Ocean Docks", {2704.2f, -2144.3f, 11.8f, 0}},
++    {99, "Ocean Docks", {2273.2f, -2529.1f, 8.5f, 0}},
++    {100, "Los Santos International", {1574.7f, -2691.9f, 13.6f, 0}},
++}};
++
++} // namespace keybinder
+diff --git a/include/SpraysNavigator.h b/include/SpraysNavigator.h
+new file mode 100644
+index 0000000..afdba85
+--- /dev/null
++++ b/include/SpraysNavigator.h
+@@ -0,0 +1,60 @@
++#pragma once
++
++#include "GpsManager.h"
++#include <cstddef>
++#include <functional>
++#include <string>
++#include <vector>
++
++namespace keybinder {
++
++struct SprayDistance {
++    unsigned int id = 0;
++    const char* place = "";
++    float distance = 0.0f;
++};
++
++class SpraysNavigator {
++public:
++    using Notice = std::function<void(const std::string&)>;
++    using PositionProvider = GpsManager::PositionProvider;
++    // The caller verifies the current live police role and returns a host /
++    // port / account identity, or an empty string when access is not permitted.
++    using SessionProvider = std::function<std::string()>;
++    using AccessProvider = SessionProvider;
++    static constexpr std::size_t kRowsPerPage = 34;
++
++    void Initialize(GpsManager* gps, Notice notice, PositionProvider position, SessionProvider session);
++    void Shutdown();
++    bool Open();
++    bool Toggle();
++    void Close() { open_ = false; }
++    bool IsOpen() const { return open_; }
++    void Update();
++    void Render();
++    bool Select(unsigned int id);
++    void SetPage(std::size_t page);
++    std::size_t Page() const { return page_; }
++    std::size_t PageCount() const;
++    const std::vector<SprayDistance>& Rows() const { return rows_; }
++    static std::vector<SprayDistance> BuildRows(const GpsPosition& position);
++
++private:
++    bool EnsureAccess(bool notify);
++    bool ReadPosition(GpsPosition& position) const;
++    bool OwnsActiveRoute() const;
++    void StopOwnedRoute();
++    void Say(const std::string& text) const;
++    GpsManager* gps_ = nullptr;
++    Notice notice_;
++    PositionProvider positionProvider_;
++    SessionProvider sessionProvider_;
++    std::string session_;
++    std::vector<SprayDistance> rows_;
++    unsigned int ownedDestinationId_ = 0;
++    std::size_t page_ = 0;
++    bool open_ = false;
++    bool resetScroll_ = false;
++};
++
++} // namespace keybinder
+diff --git a/src/GpsManager.cpp b/src/GpsManager.cpp
+index af2806d..1f96ac4 100644
+--- a/src/GpsManager.cpp
++++ b/src/GpsManager.cpp
+@@ -36,6 +36,7 @@ std::string GpsName(std::string value) {
+ } // namespace
+ 
+ void GpsManager::Initialize(std::string path, Notice notice, PositionProvider provider, DestinationRenderer renderer) {
++    StopNavigation();
+     path_ = std::move(path); notice_ = std::move(notice); positionProvider_ = std::move(provider);
+     renderer_ = std::move(renderer);
+     if (!Load()) Say("Die GPS-Datei konnte nicht gelesen werden. Vorhandene Daten werden nicht automatisch ersetzt.");
+@@ -56,6 +57,7 @@ bool GpsManager::HasArrived(const GpsPosition& current, const GpsPosition& targe
+ }
+ bool GpsManager::Load() {
+     entries_.clear(); activeId_ = selectedId_ = 0; nextId_ = 1;
++    temporaryDestination_.reset();
+     const auto path = WideGpsPath(path_);
+     if (GetFileAttributesW(path.c_str()) == INVALID_FILE_ATTRIBUTES) return GetLastError() == ERROR_FILE_NOT_FOUND;
+     pugi::xml_document document;
+@@ -112,22 +114,41 @@ bool GpsManager::Remove(unsigned int id) {
+ bool GpsManager::RemoveAll() {
+     const auto before = entries_; entries_.clear();
+     if (!Save()) { entries_ = before; Say("Die GPS-Ziele konnten nicht gel\xC3\xB6" "scht werden."); return false; }
+-    StopNavigation(); selectedId_ = 0; Say("Alle GPS-Eintr\xC3\xA4ge wurden gel\xC3\xB6" "scht."); return true;
++    if (!temporaryDestination_) StopNavigation();
++    selectedId_ = 0; Say("Alle GPS-Eintr\xC3\xA4ge wurden gel\xC3\xB6" "scht."); return true;
+ }
+ const GpsEntry* GpsManager::ActiveDestination() const {
++    if (temporaryDestination_ && temporaryDestination_->id == activeId_) return &*temporaryDestination_;
+     const auto found = std::find_if(entries_.begin(), entries_.end(), [this](const auto& entry) { return entry.id == activeId_; });
+     return found == entries_.end() ? nullptr : &*found;
+ }
+ bool GpsManager::Navigate(unsigned int id) {
+     if (std::none_of(entries_.begin(), entries_.end(), [id](const auto& entry) { return entry.id == id; })) return false;
++    temporaryDestination_.reset();
+     activeId_ = id; listOpen_ = false;
++    BeginNavigation();
++    return true;
++}
++bool GpsManager::NavigateTemporary(const GpsEntry& destination) {
++    const auto name = GpsName(destination.name);
++    if ((destination.id & kTemporaryIdMask) == 0 || name.empty() || !IsValidPosition(destination.position)) return false;
++    temporaryDestination_ = destination;
++    temporaryDestination_->name = name;
++    activeId_ = destination.id; listOpen_ = false;
++    BeginNavigation();
++    return true;
++}
++void GpsManager::BeginNavigation() {
+     GpsPosition current;
+     arrivalArmed_ = positionProvider_ && positionProvider_(current)
+         && !HasArrived(current, ActiveDestination()->position);
+     if (renderer_) renderer_(ActiveDestination());
+-    Say("Navigation gestartet: " + ActiveDestination()->name + ". Das Ziel ist rot markiert."); return true;
++    Say("Navigation gestartet: " + ActiveDestination()->name + ". Das Ziel ist rot markiert.");
++}
++void GpsManager::StopNavigation() {
++    activeId_ = 0; arrivalArmed_ = false; temporaryDestination_.reset();
++    if (renderer_) renderer_(nullptr);
+ }
+-void GpsManager::StopNavigation() { activeId_ = 0; arrivalArmed_ = false; if (renderer_) renderer_(nullptr); }
+ void GpsManager::ShowHelp() const {
+     Say("/setgps (Bemerkung) - Marker speichern | /gpslist - GPS-Liste \xC3\xB6" "ffnen");
+     Say("/delgpsall - Alle GPS-Eintr\xC3\xA4ge l\xC3\xB6" "schen | /gps - Diese Hilfe");
+diff --git a/src/Main.cpp b/src/Main.cpp
+index 832e8d6..a9ef648 100644
+--- a/src/Main.cpp
++++ b/src/Main.cpp
+@@ -26,6 +26,8 @@
+ #include "../include/HitsoundPlayer.h"
+ #include "../include/ImGuiOverlay.h"
+ #include "../include/GpsManager.h"
++#include "../include/SpraysNavigator.h"
++#include "../include/FactionAccess.h"
+ #include "../include/ForumBrowser.h"
+ #include "../include/DrugUseTracker.h"
+ #include "../include/LocalFactionAccess.h"
+@@ -566,7 +568,7 @@ public:
+         inputManager_.SetSAMPBridge(&bridge_);
+         inputManager_.SetImGuiOverlay(&overlay_);
+         inputManager_.SetQuickMapVisibleCallback([&]() {
+-            return quickMap_.IsVisible() || interfaceEditor_.IsElementMoveModeActive() || gps_.IsListOpen() || forumBrowser_.IsOpen();
++            return quickMap_.IsVisible() || interfaceEditor_.IsElementMoveModeActive() || gps_.IsListOpen() || sprays_.IsOpen() || forumBrowser_.IsOpen();
+         });
+         overlay_.SetEarlyKeybindHandler([&](int key, bool keyDown) {
+             return inputManager_.HandleEarlyKeyEvent(key, keyDown);
+@@ -581,7 +583,7 @@ public:
+         bridge_.SetEngineInputBlockedCallback([&]() {
+             return overlay_.IsVisible() || quickMap_.IsVisible()
+                 || onlineOverlayRenderer_.IsPersistentOverlayMoveModeActive()
+-                || interfaceEditor_.IsElementMoveModeActive() || gps_.IsListOpen() || forumBrowser_.IsOpen();
++                || interfaceEditor_.IsElementMoveModeActive() || gps_.IsListOpen() || sprays_.IsOpen() || forumBrowser_.IsOpen();
+         });
+         mainWindowUI_.SetHitmarker(&hitmarker_);
+         mainWindowUI_.SetHitsoundPlayer(&hitsoundPlayer_);
+@@ -636,6 +638,7 @@ public:
+         overlay_.SetQuickMapRenderCallback([&]() {
+             quickMap_.Render();
+             gps_.Render();
++            sprays_.Render();
+             forumBrowser_.Render(overlay_.GetDevice());
+         });
+         overlay_.SetQuickMapWheelCaptureCallback([&]() {
+@@ -685,15 +688,15 @@ public:
+         });
+         overlay_.SetAuxiliaryInteractionActiveCallback([&]() {
+             return onlineOverlayRenderer_.IsPersistentOverlayMoveModeActive()
+-                || interfaceEditor_.IsElementMoveModeActive() || gps_.IsListOpen() || forumBrowser_.IsOpen();
++                || interfaceEditor_.IsElementMoveModeActive() || gps_.IsListOpen() || sprays_.IsOpen() || forumBrowser_.IsOpen();
+         });
+         overlay_.SetAuxiliaryInteractionCancelCallback([&]() {
+             onlineOverlayRenderer_.SetPersistentOverlayMoveMode(false);
+             interfaceEditor_.FinishElementMove();
+-            gps_.CloseList(); forumBrowser_.Close();
++            gps_.CloseList(); sprays_.Close(); forumBrowser_.Close();
+             inputManager_.ClearTransientInputState();
+         });
+-        overlay_.SetAuxiliaryKeyboardCaptureCallback([&]() { return gps_.IsListOpen() || forumBrowser_.IsOpen(); });
++        overlay_.SetAuxiliaryKeyboardCaptureCallback([&]() { return gps_.IsListOpen() || sprays_.IsOpen() || forumBrowser_.IsOpen(); });
+         overlay_.SetAuxiliaryWindowMessageCallback([&](HWND window, UINT message, WPARAM key, LPARAM native) {
+             return forumBrowser_.HandleWindowMessage(window, message, key, native);
+         });
+@@ -701,6 +704,9 @@ public:
+             [&](const std::string& text) { bridge_.QueueLocalMessage(text); },
+             [&](keybinder::GpsPosition& position) { return keybinder::ReadGpsPlayerPosition(&bridge_, position); },
+             [&](const keybinder::GpsEntry* target) { keybinder::RenderGpsDestination(target); });
++        sprays_.Initialize(&gps_, [&](const std::string& text) { bridge_.QueueLocalMessage(text); },
++            [&](keybinder::GpsPosition& position) { return keybinder::ReadGpsPlayerPosition(&bridge_, position); },
++            []() { return CurrentSpraysPoliceSession(); });
+         forumBrowser_.Initialize(&settingsManager_, [&](const std::string& text) { bridge_.QueueLocalMessage(text); },
+             [&]() { keybindManager_.Save(&settingsManager_); },
+             [&](const std::string& command) {
+@@ -729,14 +735,24 @@ public:
+ 
+         bridge_.RegisterCommand("setgps", [&](const std::string& parameters) { gps_.Set(parameters); });
+         bridge_.RegisterCommand("gpslist", [&](const std::string&) {
+-            forumBrowser_.Close(); quickMap_.Hide(); overlay_.Hide();
++            sprays_.Close(); forumBrowser_.Close(); quickMap_.Hide(); overlay_.Hide();
+             onlineOverlayRenderer_.SetPersistentOverlayMoveMode(false); interfaceEditor_.FinishElementMove();
+             gps_.ShowList();
+         });
+         bridge_.RegisterCommand("delgpsall", [&](const std::string&) { gps_.RemoveAll(); });
+         bridge_.RegisterCommand("gps", [&](const std::string&) { gps_.ShowHelp(); });
++        bridge_.RegisterCommand("sprays", [&](const std::string& parameters) {
++            if (parameters.find_first_not_of(" \t\r\n") != std::string::npos) {
++                bridge_.QueueLocalMessage("{33CCFF}[NL-BINDER]{FFFFFF} Nutzung: /sprays");
++                return;
++            }
++            if (!sprays_.Toggle() || !sprays_.IsOpen()) return;
++            gps_.CloseList(); forumBrowser_.Close(); quickMap_.Hide(); overlay_.Hide();
++            onlineOverlayRenderer_.SetPersistentOverlayMoveMode(false); interfaceEditor_.FinishElementMove();
++            inputManager_.ClearTransientInputState();
++        });
+         bridge_.RegisterCommand("forum", [&](const std::string&) {
+-            gps_.CloseList(); quickMap_.Hide(); overlay_.Hide();
++            gps_.CloseList(); sprays_.Close(); quickMap_.Hide(); overlay_.Hide();
+             onlineOverlayRenderer_.SetPersistentOverlayMoveMode(false); interfaceEditor_.FinishElementMove();
+             forumBrowser_.Toggle();
+         });
+@@ -851,12 +867,13 @@ public:
+             }
+ 
+             if (MatchesConfiguredUiOpenCommand(settingsManager_.Get(), command)) {
++                sprays_.Close();
+                 quickMap_.Hide();
+                 overlay_.Show();
+                 return true;
+             }
+ 
+-            if (command == "info" || command == "reconnect" || command == "speed" || command == "setgps" || command == "gpslist" || command == "delgpsall" || command == "gps" || command == "forum") {
++            if (command == "info" || command == "reconnect" || command == "speed" || command == "setgps" || command == "gpslist" || command == "delgpsall" || command == "gps" || command == "sprays" || command == "forum") {
+                 return false;
+             }
+             
+@@ -945,6 +962,7 @@ public:
+             bridge_.Update();
+             RefreshClaimsAccess();
+             forumBrowser_.Update();
++            sprays_.Update();
+             gps_.Update();
+             if (const auto* netGame = bridge_.GetNetGame(); netGame
+                 && netGame->m_nGameState == sampapi::v03dl::CNetGame::GAME_MODE_CONNECTED) {
+@@ -1063,7 +1081,7 @@ public:
+         // Prepare the normal GTA checkpoint before the world effects pass.
+         // HUD polling below is also retained for clients replacing this call.
+         Events::renderSceneEvent += [&]() {
+-            if (g_shutdown_phase.load() == 0) gps_.Update();
++            if (g_shutdown_phase.load() == 0) { sprays_.Update(); gps_.Update(); }
+         };
+         Events::gameProcessEvent += [&]() {
+             if (g_shutdown_phase.load() != 0) return;
+@@ -1122,6 +1140,7 @@ public:
+             hudSpriteManager_.Shutdown();
+             weaponIconManager_.Shutdown();
+             forumBrowser_.Shutdown();
++            sprays_.Shutdown();
+             gps_.Shutdown(); keybinder::ClearGpsDestinationMarker();
+             onlineOverlayRenderer_.Shutdown();
+             quickMap_.Shutdown();
+@@ -1195,10 +1214,12 @@ private:
+     static bool RefreshDrugTimerSession();
+     static std::string ResolveCurrentLocalFaction();
+     static void RefreshClaimsAccess(bool force = false);
++    static std::string CurrentSpraysPoliceSession();
+     static std::string claimsSessionIdentity_;
+     static std::chrono::steady_clock::time_point nextClaimsAccessRefresh_;
+     static keybinder::TextDrawAdapter textDrawAdapter_;
+     static keybinder::GpsManager gps_;
++    static keybinder::SpraysNavigator sprays_;
+     static keybinder::ForumBrowser forumBrowser_;
+     static keybinder::SpeedometerManager speedometerManager_;
+     static keybinder::SpeedometerUI speedometerUI_;
+@@ -1235,6 +1256,7 @@ std::string Keybinder::claimsSessionIdentity_{};
+ std::chrono::steady_clock::time_point Keybinder::nextClaimsAccessRefresh_{};
+ keybinder::TextDrawAdapter Keybinder::textDrawAdapter_{};
+ keybinder::GpsManager Keybinder::gps_{};
++keybinder::SpraysNavigator Keybinder::sprays_{};
+ keybinder::ForumBrowser Keybinder::forumBrowser_{};
+ keybinder::SpeedometerManager Keybinder::speedometerManager_{};
+ keybinder::SpeedometerUI Keybinder::speedometerUI_{};
+@@ -1255,6 +1277,20 @@ std::string Keybinder::ResolveCurrentLocalFaction() {
+     return keybinder::ReconcileLocalFaction(ownFaction, liveFaction);
+ }
+ 
++std::string Keybinder::CurrentSpraysPoliceSession() {
++    if (g_shutdown_phase.load() != 0) return {};
++    const auto* network = bridge_.GetNetGame();
++    const auto* player = bridge_.GetLocalPlayer();
++    const std::string name = bridge_.GetLocalPlayerName();
++    if (!network || network->m_nGameState != sampapi::v03dl::CNetGame::GAME_MODE_CONNECTED
++        || name.empty() || !player || !player->m_bIsActive || player->m_bIsWasted
++        || player->m_bDoesSpectating
++        || !keybinder::IsPoliceMember(bridge_.GetLocalFaction())) return {};
++    return std::string(network->m_szHostAddress, strnlen(network->m_szHostAddress, 257))
++        + ":" + std::to_string(network->m_nPort) + "/"
++        + keybinder::OnlineOverlayController::NormalizeMarkerName(name);
++}
++
+ void Keybinder::RefreshClaimsAccess(bool force) {
+     const auto* network = bridge_.GetNetGame();
+     const std::string playerName = bridge_.GetLocalPlayerName();
+diff --git a/src/SpraysNavigator.cpp b/src/SpraysNavigator.cpp
+new file mode 100644
+index 0000000..ce7b5f3
+--- /dev/null
++++ b/src/SpraysNavigator.cpp
+@@ -0,0 +1,220 @@
++#include "../include/SpraysNavigator.h"
++#include "../include/SpraySpots.h"
++#include "../include/UIComponents.h"
++#include "../include/imgui-1.92.7/imgui.h"
++
++#include <algorithm>
++#include <cmath>
++#include <cstdio>
++#include <utility>
++
++namespace keybinder {
++
++void SpraysNavigator::Initialize(GpsManager* gps, Notice notice, PositionProvider position, SessionProvider session) {
++    Shutdown();
++    gps_ = gps;
++    notice_ = std::move(notice);
++    positionProvider_ = std::move(position);
++    sessionProvider_ = std::move(session);
++}
++
++void SpraysNavigator::Shutdown() {
++    StopOwnedRoute();
++    open_ = false;
++    resetScroll_ = false;
++    page_ = 0;
++    rows_.clear();
++    session_.clear();
++    gps_ = nullptr;
++    notice_ = {};
++    positionProvider_ = {};
++    sessionProvider_ = {};
++}
++
++void SpraysNavigator::Say(const std::string& text) const {
++    if (notice_) notice_("{33CCFF}[NL-BINDER]{FFFFFF} " + text);
++}
++
++bool SpraysNavigator::OwnsActiveRoute() const {
++    const auto* destination = gps_ ? gps_->ActiveDestination() : nullptr;
++    return ownedDestinationId_ != 0 && destination && destination->id == ownedDestinationId_;
++}
++
++void SpraysNavigator::StopOwnedRoute() {
++    if (OwnsActiveRoute()) gps_->StopNavigation();
++    ownedDestinationId_ = 0;
++}
++
++bool SpraysNavigator::EnsureAccess(bool notify) {
++    const std::string current = sessionProvider_ ? sessionProvider_() : std::string{};
++    if (current.empty() || (!session_.empty() && current != session_)) {
++        Close();
++        StopOwnedRoute();
++        rows_.clear();
++        page_ = 0;
++    }
++    session_ = current;
++    if (current.empty()) {
++        if (notify) Say("Du bist kein Polizist.");
++        return false;
++    }
++    return true;
++}
++
++bool SpraysNavigator::ReadPosition(GpsPosition& position) const {
++    return positionProvider_ && positionProvider_(position) && GpsManager::IsValidPosition(position);
++}
++
++std::vector<SprayDistance> SpraysNavigator::BuildRows(const GpsPosition& position) {
++    if (!GpsManager::IsValidPosition(position) || position.interior != 0) return {};
++    std::vector<SprayDistance> rows;
++    rows.reserve(kSpraySpots.size());
++    for (const auto& point : kSpraySpots) {
++        const double dx = static_cast<double>(position.x) - point.position.x;
++        const double dy = static_cast<double>(position.y) - point.position.y;
++        const double dz = static_cast<double>(position.z) - point.position.z;
++        rows.push_back({point.id, point.place, static_cast<float>(std::sqrt(dx * dx + dy * dy + dz * dz))});
++    }
++    std::sort(rows.begin(), rows.end(), [](const auto& left, const auto& right) {
++        return left.distance == right.distance ? left.id < right.id : left.distance < right.distance;
++    });
++    return rows;
++}
++
++bool SpraysNavigator::Open() {
++    if (!EnsureAccess(true)) return false;
++    GpsPosition position;
++    if (!gps_ || !ReadPosition(position)) {
++        Close();
++        rows_.clear();
++        Say("Deine aktuelle Spielposition ist noch nicht verf\xC3\xBC" "gbar.");
++        return false;
++    }
++    if (position.interior != 0) {
++        Close();
++        rows_.clear();
++        Say("Spray-Navigation ist nur au\xC3\x9F" "erhalb von Innenr\xC3\xA4" "umen verf\xC3\xBC" "gbar.");
++        return false;
++    }
++    rows_ = BuildRows(position);
++    page_ = 0;
++    resetScroll_ = true;
++    open_ = true;
++    return true;
++}
++
++bool SpraysNavigator::Toggle() {
++    if (open_) { Close(); return true; }
++    return Open();
++}
++
++std::size_t SpraysNavigator::PageCount() const {
++    return (rows_.size() + kRowsPerPage - 1) / kRowsPerPage;
++}
++
++void SpraysNavigator::SetPage(std::size_t page) {
++    const auto count = PageCount();
++    const auto next = count ? (std::min)(page, count - 1) : 0;
++    if (next != page_) resetScroll_ = true;
++    page_ = next;
++}
++
++void SpraysNavigator::Update() {
++    if (!EnsureAccess(false)) return;
++    if (ownedDestinationId_ && !OwnsActiveRoute()) ownedDestinationId_ = 0;
++    if (!open_) return;
++    GpsPosition position;
++    const bool available = ReadPosition(position);
++    if (available && position.interior != 0) Close();
++    rows_ = available ? BuildRows(position) : std::vector<SprayDistance>{};
++    SetPage(page_);
++}
++
++bool SpraysNavigator::Select(unsigned int id) {
++    if (!EnsureAccess(true) || !open_ || !gps_) return false;
++    const auto found = std::find_if(kSpraySpots.begin(), kSpraySpots.end(), [id](const auto& point) {
++        return point.id == id;
++    });
++    if (found == kSpraySpots.end()) return false;
++    GpsPosition current;
++    if (!ReadPosition(current)) {
++        Say("Deine aktuelle Spielposition ist noch nicht verf\xC3\xBC" "gbar.");
++        return false;
++    }
++    if (current.interior != 0) {
++        Close();
++        Say("Spray-Navigation ist nur au\xC3\x9F" "erhalb von Innenr\xC3\xA4" "umen verf\xC3\xBC" "gbar.");
++        return false;
++    }
++    char name[96];
++    std::snprintf(name, sizeof(name), "Graffiti %03u - %s", found->id, found->place);
++    const unsigned int destinationId = GpsManager::kTemporaryIdMask | found->id;
++    if (!gps_->NavigateTemporary({destinationId, name, found->position})) return false;
++    ownedDestinationId_ = destinationId;
++    Close();
++    return true;
++}
++
++void SpraysNavigator::Render() {
++    Update();
++    if (!open_) return;
++    const auto display = ImGui::GetIO().DisplaySize;
++    const float width = (std::max)(260.0f, (std::min)(680.0f, display.x - 40.0f));
++    const float height = (std::max)(280.0f, (std::min)(790.0f, display.y - 60.0f));
++    ImGui::SetNextWindowSize(ImVec2(width, height), ImGuiCond_FirstUseEver);
++    ImGui::SetNextWindowSizeConstraints(ImVec2((std::min)(400.0f, width), (std::min)(340.0f, height)), ImVec2(width, height));
++    if (ImGui::Begin("Graffiti-Navigation##NLBinderSprays", &open_, ImGuiWindowFlags_NoCollapse)) {
++        UIComponents::CardHeader("SAPD / LSPD - Graffitipunkte", "Punkt anklicken, um die Navigation zu starten");
++        ImGui::TextColored(ImVec4(0.35f, 0.9f, 0.45f, 1.0f), "Gr\xC3\xBC" "n: n\xC3\xA4" "chster Punkt");
++        ImGui::SameLine();
++        ImGui::TextDisabled("| Entfernung in Metern (Luftlinie)");
++        if (rows_.empty()) ImGui::TextWrapped("Deine aktuelle Position im Freien ist noch nicht verf\xC3\xBC" "gbar.");
++        const auto begin = page_ * kRowsPerPage;
++        const auto end = (std::min)(begin + kRowsPerPage, rows_.size());
++        if (ImGui::BeginTable("##spray-points", 3, ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersInnerH
++            | ImGuiTableFlags_ScrollY, ImVec2(0.0f, (std::max)(100.0f, ImGui::GetContentRegionAvail().y - 72.0f)))) {
++            ImGui::TableSetupColumn("Nr.", ImGuiTableColumnFlags_WidthFixed, 45.0f);
++            ImGui::TableSetupColumn("Stadtteil / Ort", ImGuiTableColumnFlags_WidthStretch);
++            ImGui::TableSetupColumn("Entfernung", ImGuiTableColumnFlags_WidthFixed, 95.0f);
++            ImGui::TableSetupScrollFreeze(0, 1);
++            ImGui::TableHeadersRow();
++            if (resetScroll_) {
++                ImGui::SetScrollY(0.0f);
++                resetScroll_ = false;
++            }
++            for (std::size_t index = begin; index < end; ++index) {
++                const auto& row = rows_[index];
++                const bool nearest = index == 0;
++                ImGui::PushID(static_cast<int>(row.id));
++                if (nearest) ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.35f, 0.9f, 0.45f, 1.0f));
++                ImGui::TableNextRow();
++                ImGui::TableSetColumnIndex(0);
++                char id[8];
++                std::snprintf(id, sizeof(id), "%03u", row.id);
++                const bool chosen = ImGui::Selectable(id, false, ImGuiSelectableFlags_SpanAllColumns);
++                ImGui::TableSetColumnIndex(1);
++                ImGui::TextUnformatted(row.place);
++                ImGui::TableSetColumnIndex(2);
++                ImGui::Text("%.0f m", row.distance);
++                if (nearest) ImGui::PopStyleColor();
++                ImGui::PopID();
++                if (chosen) { Select(row.id); break; }
++            }
++            ImGui::EndTable();
++        }
++        if (UIComponents::SecondaryButton("Zur\xC3\xBC" "ck", ImVec2(110.0f, 0.0f), page_ == 0)) SetPage(page_ - 1);
++        ImGui::SameLine();
++        ImGui::Text("Seite %u / %u | %u Punkte", static_cast<unsigned int>(PageCount() ? page_ + 1 : 0),
++            static_cast<unsigned int>(PageCount()), static_cast<unsigned int>(rows_.size()));
++        ImGui::SameLine();
++        if (UIComponents::SecondaryButton("Weiter", ImVec2(110.0f, 0.0f), page_ + 1 >= PageCount())) SetPage(page_ + 1);
++        if (UIComponents::SecondaryButton("Schlie\xC3\x9F" "en")) Close();
++        if (OwnsActiveRoute()) {
++            ImGui::SameLine();
++            if (UIComponents::SecondaryButton("Navigation beenden")) StopOwnedRoute();
++        }
++    }
++    ImGui::End();
++}
++
++} // namespace keybinder
+diff --git a/tests/GpsTemporaryTests.cpp b/tests/GpsTemporaryTests.cpp
+new file mode 100644
+index 0000000..25415b9
+--- /dev/null
++++ b/tests/GpsTemporaryTests.cpp
+@@ -0,0 +1,207 @@
++#include "../include/GpsManager.h"
++
++#include <algorithm>
++#include <cstdio>
++#include <filesystem>
++#include <fstream>
++#include <iterator>
++#include <limits>
++#include <optional>
++#include <string>
++#include <vector>
++#include <windows.h>
++
++namespace {
++int checks = 0, failures = 0;
++#define CHECK(value) do { ++checks; if (!(value)) { ++failures; std::printf("[FAIL] GpsTemporary: %s (line %d)\n", #value, __LINE__); } } while (0)
++
++unsigned int nextFixture = 0;
++struct Fixture {
++    std::filesystem::path directory, file;
++    keybinder::GpsPosition position{100, 200, 30, 0};
++    bool available = true;
++    std::vector<std::string> messages;
++    std::optional<keybinder::GpsEntry> rendered;
++    keybinder::GpsManager gps;
++
++    Fixture() {
++        directory = std::filesystem::path("build/gps-temporary-tests") /
++            (std::to_string(GetCurrentProcessId()) + "-" + std::to_string(GetTickCount64()) + "-" + std::to_string(++nextFixture));
++        std::filesystem::create_directories(directory);
++        file = directory / "gps.xml";
++        gps.Initialize(file.string(), [&](const auto& message) { messages.push_back(message); },
++            [&](auto& out) { out = position; return available; },
++            [&](const keybinder::GpsEntry* destination) {
++                if (destination) rendered = *destination;
++                else rendered.reset();
++            });
++    }
++    ~Fixture() { gps.Shutdown(); }
++    std::string Xml() const {
++        std::ifstream input(file, std::ios::binary);
++        return {std::istreambuf_iterator<char>(input), std::istreambuf_iterator<char>()};
++    }
++    std::size_t Arrivals() const {
++        return std::count_if(messages.begin(), messages.end(), [](const auto& message) {
++            return message.find("Du hast dein Ziel erreicht:") != std::string::npos;
++        });
++    }
++};
++
++keybinder::GpsEntry Temporary(unsigned int id = 1) {
++    return {keybinder::GpsManager::kTemporaryIdMask | id,
++        "Spray 001 - Vinewood", {944.3f, -985.8f, 39.3f, 0}};
++}
++
++void TemporaryRouteWorksWithTwentyBookmarksWithoutWritingXml() {
++    Fixture fixture;
++    for (int index = 0; index < 20; ++index) {
++        fixture.position.x = static_cast<float>(index * 10);
++        CHECK(fixture.gps.Set("Saved " + std::to_string(index + 1)));
++    }
++    CHECK(fixture.gps.Entries().size() == 20);
++    const auto before = fixture.Xml();
++    CHECK(!before.empty());
++    const auto target = Temporary();
++    CHECK(fixture.gps.NavigateTemporary(target));
++    CHECK(fixture.gps.ActiveDestination() && fixture.gps.ActiveDestination()->id == target.id);
++    CHECK(fixture.rendered && fixture.rendered->position.x == target.position.x);
++    CHECK(fixture.gps.Entries().size() == 20);
++    CHECK(fixture.Xml() == before);
++    CHECK(!fixture.gps.Set("Twenty-first bookmark"));
++    CHECK(fixture.Xml() == before);
++    CHECK(fixture.gps.ActiveDestination() && fixture.gps.ActiveDestination()->id == target.id);
++    fixture.gps.StopNavigation();
++    CHECK(!fixture.gps.ActiveDestination() && !fixture.rendered);
++    CHECK(fixture.Xml() == before);
++
++    keybinder::GpsManager loaded;
++    loaded.Initialize(fixture.file.string(), {}, {});
++    CHECK(loaded.Entries().size() == 20);
++    CHECK(!loaded.ActiveDestination());
++    for (const auto& entry : loaded.Entries()) CHECK((entry.id & keybinder::GpsManager::kTemporaryIdMask) == 0);
++    loaded.Shutdown();
++}
++
++void SavedAndTemporaryRoutesSwitchAndDeletionDoesNotAffectTheOtherOwner() {
++    Fixture fixture;
++    CHECK(fixture.gps.Set("Saved A"));
++    const auto savedA = fixture.gps.Entries().back().id;
++    fixture.position.x += 20;
++    CHECK(fixture.gps.Set("Saved B"));
++    const auto savedB = fixture.gps.Entries().back().id;
++    CHECK(fixture.gps.Navigate(savedA));
++    CHECK(fixture.rendered && fixture.rendered->id == savedA);
++    CHECK(fixture.gps.NavigateTemporary(Temporary(1)));
++    CHECK(fixture.rendered && fixture.rendered->id == Temporary(1).id);
++    CHECK(fixture.gps.Remove(savedA));
++    CHECK(fixture.gps.ActiveDestination() && fixture.gps.ActiveDestination()->id == Temporary(1).id);
++    CHECK(!fixture.gps.Remove(Temporary(1).id));
++    CHECK(fixture.gps.RemoveAll());
++    CHECK(fixture.gps.Entries().empty());
++    CHECK(fixture.gps.ActiveDestination() && fixture.gps.ActiveDestination()->id == Temporary(1).id);
++    CHECK(!fixture.gps.Navigate(savedB));
++    CHECK(fixture.gps.ActiveDestination() && fixture.gps.ActiveDestination()->id == Temporary(1).id);
++    CHECK(fixture.gps.Set("Saved C"));
++    const auto savedC = fixture.gps.Entries().back().id;
++    CHECK(fixture.gps.Navigate(savedC));
++    CHECK(fixture.rendered && fixture.rendered->id == savedC);
++    CHECK(fixture.gps.ActiveDestination() && fixture.gps.ActiveDestination()->id == savedC);
++    CHECK(fixture.gps.Remove(savedC));
++    CHECK(!fixture.gps.ActiveDestination() && !fixture.rendered);
++
++    auto second = Temporary(2);
++    second.name = "Spray 002 - Temple";
++    second.position = {1072.9f, -1012.8f, 35.5f, 0};
++    CHECK(fixture.gps.NavigateTemporary(Temporary(1)));
++    CHECK(fixture.gps.NavigateTemporary(second));
++    CHECK(fixture.rendered && fixture.rendered->id == second.id);
++    CHECK(fixture.rendered && fixture.rendered->position.x == second.position.x);
++    second.name = "Caller mutated its entry";
++    second.position.x = 0;
++    CHECK(fixture.gps.ActiveDestination() && fixture.gps.ActiveDestination()->name == "Spray 002 - Temple");
++    CHECK(fixture.gps.ActiveDestination() && fixture.gps.ActiveDestination()->position.x == 1072.9f);
++}
++
++void InvalidTemporaryTargetsPreserveTheCurrentRoute() {
++    Fixture fixture;
++    const auto original = Temporary();
++    CHECK(fixture.gps.NavigateTemporary(original));
++    const auto baseline = fixture.messages.size();
++    auto noNamespace = Temporary(2); noNamespace.id = 2;
++    auto empty = Temporary(2); empty.name = " \t ";
++    auto control = Temporary(2); control.name = "Target\n/r injected";
++    auto tooLong = Temporary(2); tooLong.name = std::string(65, 'a');
++    auto nan = Temporary(2); nan.position.x = std::numeric_limits<float>::quiet_NaN();
++    auto infinity = Temporary(2); infinity.position.y = std::numeric_limits<float>::infinity();
++    auto excessive = Temporary(2); excessive.position.z = 1000001.0f;
++    auto negativeInterior = Temporary(2); negativeInterior.position.interior = -1;
++    auto excessiveInterior = Temporary(2); excessiveInterior.position.interior = 256;
++    for (const auto& invalid : {noNamespace, empty, control, tooLong, nan, infinity, excessive, negativeInterior, excessiveInterior}) {
++        CHECK(!fixture.gps.NavigateTemporary(invalid));
++        CHECK(fixture.gps.ActiveDestination() && fixture.gps.ActiveDestination()->id == original.id);
++        CHECK(fixture.rendered && fixture.rendered->id == original.id);
++    }
++    CHECK(fixture.messages.size() == baseline);
++}
++
++void TemporaryArrivalUsesTheExistingCheckpointLifecycleExactlyOnce() {
++    Fixture fixture;
++    const auto target = Temporary();
++    CHECK(fixture.gps.NavigateTemporary(target));
++    fixture.gps.Update();
++    CHECK(fixture.Arrivals() == 0);
++    fixture.available = false;
++    fixture.gps.Update();
++    CHECK(!fixture.rendered && fixture.gps.ActiveDestination());
++    fixture.available = true;
++    fixture.position = target.position;
++    fixture.position.interior = 1;
++    fixture.gps.Update();
++    CHECK(!fixture.rendered && fixture.gps.ActiveDestination());
++    CHECK(fixture.Arrivals() == 0);
++    fixture.position.interior = 0;
++    fixture.gps.Update();
++    CHECK(!fixture.rendered && !fixture.gps.ActiveDestination());
++    CHECK(fixture.Arrivals() == 1);
++    for (int index = 0; index < 10; ++index) fixture.gps.Update();
++    CHECK(fixture.Arrivals() == 1);
++
++    // Selecting a spray while already standing at it follows the GPS rule:
++    // display its marker until the player leaves and comes back.
++    CHECK(fixture.gps.NavigateTemporary(target));
++    for (int index = 0; index < 5; ++index) fixture.gps.Update();
++    CHECK(fixture.gps.ActiveDestination() && fixture.rendered);
++    CHECK(fixture.Arrivals() == 1);
++    fixture.position.x += 5;
++    fixture.gps.Update();
++    fixture.position = target.position;
++    fixture.gps.Update();
++    CHECK(!fixture.gps.ActiveDestination() && !fixture.rendered);
++    CHECK(fixture.Arrivals() == 2);
++    fixture.gps.Update();
++    CHECK(fixture.Arrivals() == 2);
++}
++
++void ShutdownAndReinitializationDiscardTemporaryTargets() {
++    Fixture fixture;
++    CHECK(fixture.gps.NavigateTemporary(Temporary()));
++    fixture.gps.Shutdown();
++    CHECK(!fixture.gps.ActiveDestination() && !fixture.rendered);
++    CHECK(fixture.gps.NavigateTemporary(Temporary()));
++    fixture.gps.Initialize(fixture.file.string(), {}, {});
++    CHECK(!fixture.gps.ActiveDestination() && !fixture.rendered);
++    CHECK(fixture.gps.Entries().empty());
++}
++} // namespace
++
++int RunGpsTemporaryTests() {
++    checks = failures = 0;
++    TemporaryRouteWorksWithTwentyBookmarksWithoutWritingXml();
++    SavedAndTemporaryRoutesSwitchAndDeletionDoesNotAffectTheOtherOwner();
++    InvalidTemporaryTargetsPreserveTheCurrentRoute();
++    TemporaryArrivalUsesTheExistingCheckpointLifecycleExactlyOnce();
++    ShutdownAndReinitializationDiscardTemporaryTargets();
++    std::printf("GpsTemporaryTests: %d checks, %d failures\n", checks, failures);
++    return failures;
++}
+diff --git a/tests/KeybindTests.cpp b/tests/KeybindTests.cpp
+index 8ec72c4..ef9ed2e 100644
+--- a/tests/KeybindTests.cpp
++++ b/tests/KeybindTests.cpp
+@@ -9,6 +9,8 @@ int RunDamageLogRegressionTests();
+ int RunR16FeatureTests();
+ int RunR17FeatureTests();
+ int RunR18FeatureTests();
++int RunGpsTemporaryTests();
++int RunSpraysNavigatorTests();
+ int RunDrugUseTrackerTests();
+ int RunLocalFactionAccessTests();
+ int RunNearbyWantedLabelsTests();
+@@ -124,6 +126,8 @@ int main(int argc, char** argv) {
+         + run_suite("Running R16FeatureTests...", RunR16FeatureTests)
+         + run_suite("Running R17FeatureTests...", RunR17FeatureTests)
+         + run_suite("Running R18FeatureTests...", RunR18FeatureTests)
++        + run_suite("Running GpsTemporaryTests...", RunGpsTemporaryTests)
++        + run_suite("Running SpraysNavigatorTests...", RunSpraysNavigatorTests)
+         + run_suite("Running DrugUseTrackerTests...", RunDrugUseTrackerTests)
+         + run_suite("Running LocalFactionAccessTests...", RunLocalFactionAccessTests)
+         + run_suite("Running NearbyWantedLabelsTests...", RunNearbyWantedLabelsTests)
+diff --git a/tests/SpraysNavigatorTests.cpp b/tests/SpraysNavigatorTests.cpp
+new file mode 100644
+index 0000000..6a2dd52
+--- /dev/null
++++ b/tests/SpraysNavigatorTests.cpp
+@@ -0,0 +1,255 @@
++#include "../include/SpraysNavigator.h"
++#include "../include/SpraySpots.h"
++
++#include <algorithm>
++#include <cmath>
++#include <cstdio>
++#include <filesystem>
++#include <fstream>
++#include <iterator>
++#include <limits>
++#include <set>
++#include <string>
++#include <vector>
++#include <windows.h>
++
++namespace {
++int checks = 0, failures = 0;
++#define CHECK(value) do { ++checks; if (!(value)) { ++failures; std::printf("[FAIL] SpraysNavigator: %s (line %d)\n", #value, __LINE__); } } while (0)
++
++struct Fixture {
++    keybinder::GpsPosition position{1966.9f, -1174.7f, 20.0f, 0};
++    bool available = true;
++    std::string session = "127.0.0.1:7777/PoliceOfficer";
++    std::vector<std::string> notices;
++    unsigned int renderedId = 0;
++    keybinder::GpsPosition renderedPosition;
++    keybinder::GpsManager gps;
++    keybinder::SpraysNavigator sprays;
++    std::filesystem::path path;
++
++    Fixture() {
++        static unsigned int fixtureId = 0;
++        path = std::filesystem::path("build/sprays-navigation-tests")
++            / (std::to_string(GetTickCount64()) + "-" + std::to_string(++fixtureId));
++        std::filesystem::create_directories(path);
++        gps.Initialize((path / "gps.xml").string(),
++            [&](const auto& text) { notices.push_back(text); },
++            [&](auto& current) { current = position; return available; },
++            [&](const keybinder::GpsEntry* destination) {
++                renderedId = destination ? destination->id : 0;
++                if (destination) renderedPosition = destination->position;
++            });
++        sprays.Initialize(&gps, [&](const auto& text) { notices.push_back(text); },
++            [&](auto& current) { current = position; return available; }, [&]() { return session; });
++    }
++    ~Fixture() { sprays.Shutdown(); gps.Shutdown(); }
++
++    std::size_t Arrivals() const {
++        return std::count_if(notices.begin(), notices.end(), [](const auto& text) {
++            return text.find("Du hast dein Ziel erreicht:") != std::string::npos;
++        });
++    }
++};
++
++void CompleteCatalogHasStableIdsAndUsesAllSuppliedPositions() {
++    CHECK(keybinder::kSpraySpots.size() == 100);
++    std::set<unsigned int> ids;
++    for (std::size_t index = 0; index < keybinder::kSpraySpots.size(); ++index) {
++        const auto& point = keybinder::kSpraySpots[index];
++        CHECK(point.id == index + 1);
++        CHECK(ids.insert(point.id).second);
++        CHECK(point.place && *point.place);
++        CHECK(keybinder::GpsManager::IsValidPosition(point.position));
++        CHECK(point.position.interior == 0);
++        const auto rows = keybinder::SpraysNavigator::BuildRows(point.position);
++        CHECK(rows.size() == 100);
++        CHECK(rows.front().id == point.id);
++        CHECK(rows.front().distance == 0.0f);
++        CHECK(std::is_sorted(rows.begin(), rows.end(), [](const auto& left, const auto& right) {
++            return left.distance == right.distance ? left.id < right.id : left.distance < right.distance;
++        }));
++    }
++    CHECK(keybinder::kSpraySpots.front().position.x == 944.3f);
++    CHECK(keybinder::kSpraySpots.front().position.y == -985.8f);
++    CHECK(keybinder::kSpraySpots.front().position.z == 39.3f);
++    CHECK(std::string(keybinder::kSpraySpots[13].place) == "Market");
++    CHECK(keybinder::kSpraySpots[13].position.x == 1098.8f && keybinder::kSpraySpots[13].position.y == -1292.5f);
++    CHECK(std::string(keybinder::kSpraySpots[18].place) == "Glen Park");
++    CHECK(keybinder::kSpraySpots[18].position.x == 1966.9f && keybinder::kSpraySpots[18].position.y == -1174.7f);
++    CHECK(keybinder::kSpraySpots.back().position.x == 1574.7f);
++    CHECK(keybinder::kSpraySpots.back().position.y == -2691.9f);
++    CHECK(keybinder::kSpraySpots.back().position.z == 13.6f);
++}
++
++void SortingShowsRealMeterDistancesAndThreeCompletePages() {
++    Fixture fixture;
++    CHECK(fixture.sprays.Open());
++    CHECK(fixture.sprays.IsOpen());
++    CHECK(fixture.sprays.Rows().front().id == 19);
++    CHECK(fixture.sprays.Page() == 0 && fixture.sprays.PageCount() == 3);
++    std::set<unsigned int> covered;
++    for (std::size_t page = 0; page < 3; ++page) {
++        fixture.sprays.SetPage(page);
++        CHECK(fixture.sprays.Page() == page);
++        const auto begin = page * keybinder::SpraysNavigator::kRowsPerPage;
++        const auto end = (std::min)(begin + keybinder::SpraysNavigator::kRowsPerPage, fixture.sprays.Rows().size());
++        CHECK(end - begin == (page == 2 ? 32 : 34));
++        for (std::size_t index = begin; index < end; ++index)
++            CHECK(covered.insert(fixture.sprays.Rows()[index].id).second);
++    }
++    CHECK(covered.size() == 100);
++    fixture.sprays.SetPage(99);
++    CHECK(fixture.sprays.Page() == 2);
++    fixture.position = keybinder::kSpraySpots.back().position;
++    fixture.position.z += 10.0f;
++    fixture.sprays.Update();
++    CHECK(fixture.sprays.Page() == 2); // Live sort must not jump to the first page.
++    CHECK(fixture.sprays.Rows().front().id == 100);
++    CHECK(std::abs(fixture.sprays.Rows().front().distance - 10.0f) < 0.01f);
++    for (const auto& row : fixture.sprays.Rows()) {
++        const auto& target = keybinder::kSpraySpots[row.id - 1].position;
++        const double dx = static_cast<double>(fixture.position.x) - target.x;
++        const double dy = static_cast<double>(fixture.position.y) - target.y;
++        const double dz = static_cast<double>(fixture.position.z) - target.z;
++        CHECK(std::abs(row.distance - std::sqrt(dx * dx + dy * dy + dz * dz)) < 0.01);
++    }
++    fixture.sprays.Close();
++    CHECK(fixture.sprays.Open());
++    CHECK(fixture.sprays.Page() == 0);
++}
++
++void SelectionUsesPointIdentityAndSharedGpsCheckpointWithoutSaving() {
++    Fixture fixture;
++    CHECK(fixture.sprays.Open());
++    fixture.sprays.SetPage(2);
++    const auto chosenId = fixture.sprays.Rows()[68].id;
++    const auto expected = keybinder::kSpraySpots[chosenId - 1].position;
++    CHECK(fixture.sprays.Select(chosenId));
++    CHECK(!fixture.sprays.IsOpen());
++    CHECK(fixture.gps.ActiveDestination() != nullptr);
++    CHECK(fixture.gps.ActiveDestination()->id == (keybinder::GpsManager::kTemporaryIdMask | chosenId));
++    CHECK(fixture.renderedId == fixture.gps.ActiveDestination()->id);
++    CHECK(fixture.renderedPosition.x == expected.x && fixture.renderedPosition.y == expected.y && fixture.renderedPosition.z == expected.z);
++    CHECK(fixture.gps.Entries().empty());
++    CHECK(!std::filesystem::exists(fixture.path / "gps.xml"));
++    CHECK(fixture.sprays.Open());
++    CHECK(!fixture.sprays.Select(0));
++    CHECK(!fixture.sprays.Select(101));
++    CHECK(fixture.gps.ActiveDestination()->id == fixture.renderedId);
++    // Stable point identity must also work for a point now first in the sort.
++    fixture.position = {1574.7f, -2691.9f, 23.6f, 0};
++    fixture.sprays.Update();
++    CHECK(fixture.sprays.Rows().front().id == 100);
++    CHECK(fixture.sprays.Select(100));
++    CHECK(fixture.gps.ActiveDestination()->name == "Graffiti 100 - Los Santos International");
++    CHECK(fixture.renderedPosition.x == 1574.7f && fixture.renderedPosition.y == -2691.9f && fixture.renderedPosition.z == 13.6f);
++}
++
++void NavigationFitsAlongsideTwentySavedGpsEntriesAndArrivesExactlyOnce() {
++    Fixture fixture;
++    for (unsigned int index = 0; index < 20; ++index) CHECK(fixture.gps.Set("Privates Ziel " + std::to_string(index + 1)));
++    const auto path = fixture.path / "gps.xml";
++    std::ifstream beforeFile(path, std::ios::binary);
++    const std::string before((std::istreambuf_iterator<char>(beforeFile)), {});
++    CHECK(fixture.sprays.Open());
++    CHECK(fixture.sprays.Select(14));
++    CHECK(fixture.gps.Entries().size() == 20);
++    std::ifstream afterFile(path, std::ios::binary);
++    const std::string after((std::istreambuf_iterator<char>(afterFile)), {});
++    CHECK(before == after);
++    CHECK(fixture.renderedId == (keybinder::GpsManager::kTemporaryIdMask | 14));
++    CHECK(fixture.Arrivals() == 0);
++    fixture.position = {1098.8f, -1292.5f, 17.1f, 0};
++    fixture.gps.Update();
++    fixture.sprays.Update();
++    CHECK(fixture.Arrivals() == 1);
++    CHECK(fixture.gps.ActiveDestination() == nullptr && fixture.renderedId == 0);
++    for (int frame = 0; frame < 10; ++frame) { fixture.sprays.Update(); fixture.gps.Update(); }
++    CHECK(fixture.Arrivals() == 1);
++    CHECK(fixture.gps.Entries().size() == 20);
++}
++
++void PoliceAccessAndSessionChangesNeverCancelAnotherGpsDestination() {
++    Fixture fixture;
++    fixture.session.clear();
++    CHECK(!fixture.sprays.Open());
++    CHECK(!fixture.sprays.IsOpen() && fixture.gps.ActiveDestination() == nullptr);
++    CHECK(fixture.notices.back().find("Du bist kein Polizist.") != std::string::npos);
++    const auto notices = fixture.notices.size();
++    fixture.sprays.Update();
++    fixture.sprays.Update();
++    CHECK(fixture.notices.size() == notices);
++    fixture.session = "127.0.0.1:7777/OfficerA";
++    CHECK(fixture.sprays.Open());
++    CHECK(fixture.sprays.Select(14));
++    fixture.session.clear();
++    fixture.sprays.Update();
++    CHECK(fixture.gps.ActiveDestination() == nullptr && fixture.renderedId == 0);
++    fixture.session = "127.0.0.1:7777/OfficerA";
++    CHECK(fixture.sprays.Open());
++    CHECK(fixture.sprays.Select(100));
++    CHECK(fixture.sprays.Open());
++    fixture.session = "127.0.0.1:7777/OfficerB";
++    CHECK(!fixture.sprays.Select(14)); // A stale row must not act for a new account.
++    CHECK(!fixture.sprays.IsOpen() && fixture.gps.ActiveDestination() == nullptr);
++    CHECK(fixture.sprays.Open());
++    CHECK(fixture.sprays.Select(14));
++    CHECK(fixture.gps.Set("Mein eigenes GPS-Ziel"));
++    const auto savedId = fixture.gps.Entries().front().id;
++    CHECK(fixture.gps.Navigate(savedId));
++    fixture.session.clear();
++    fixture.sprays.Update();
++    CHECK(fixture.gps.ActiveDestination() != nullptr && fixture.gps.ActiveDestination()->id == savedId);
++    fixture.sprays.Shutdown();
++    CHECK(fixture.gps.ActiveDestination() != nullptr && fixture.gps.ActiveDestination()->id == savedId);
++}
++
++void MissingPositionsAndInteriorsNeverProduceMisleadingPoliceErrors() {
++    Fixture fixture;
++    fixture.available = false;
++    CHECK(!fixture.sprays.Open());
++    CHECK(fixture.notices.back().find("Du bist kein Polizist.") == std::string::npos);
++    fixture.available = true;
++    fixture.position.interior = 1;
++    CHECK(!fixture.sprays.Open());
++    CHECK(fixture.notices.back().find("Innenr") != std::string::npos);
++    fixture.position.interior = 0;
++    CHECK(fixture.sprays.Open());
++    fixture.available = false;
++    fixture.sprays.Update();
++    CHECK(fixture.sprays.Rows().empty());
++    CHECK(!fixture.sprays.Select(14));
++    fixture.available = true;
++    fixture.position.x = std::numeric_limits<float>::quiet_NaN();
++    CHECK(!fixture.sprays.Select(14));
++    CHECK(fixture.gps.ActiveDestination() == nullptr);
++    CHECK(keybinder::SpraysNavigator::BuildRows(fixture.position).empty());
++    fixture.position = {1966.9f, -1174.7f, 20.0f, 0};
++    CHECK(fixture.sprays.Select(14));
++    CHECK(fixture.sprays.Open());
++    fixture.position.interior = 1;
++    fixture.sprays.Update();
++    CHECK(!fixture.sprays.IsOpen());
++    fixture.gps.Update();
++    CHECK(fixture.renderedId == 0 && fixture.gps.ActiveDestination() != nullptr);
++    fixture.position.interior = 0;
++    fixture.gps.Update();
++    CHECK(fixture.renderedId == (keybinder::GpsManager::kTemporaryIdMask | 14));
++    fixture.sprays.Shutdown();
++    CHECK(fixture.gps.ActiveDestination() == nullptr && fixture.renderedId == 0);
++}
++
++} // namespace
++
++int RunSpraysNavigatorTests() {
++    checks = failures = 0;
++    CompleteCatalogHasStableIdsAndUsesAllSuppliedPositions();
++    SortingShowsRealMeterDistancesAndThreeCompletePages();
++    SelectionUsesPointIdentityAndSharedGpsCheckpointWithoutSaving();
++    NavigationFitsAlongsideTwentySavedGpsEntriesAndArrivesExactlyOnce();
++    PoliceAccessAndSessionChangesNeverCancelAnotherGpsDestination();
++    MissingPositionsAndInteriorsNeverProduceMisleadingPoliceErrors();
++    std::printf("SpraysNavigatorTests: %d checks, %d failures\n", checks, failures);
++    return failures;
++}
+diff --git a/tools/document_revision29.py b/tools/document_revision29.py
+new file mode 100644
+index 0000000..62b3a98
+--- /dev/null
++++ b/tools/document_revision29.py
+@@ -0,0 +1,138 @@
++"""Document police spraytag navigation through temporary existing GPS targets."""
++from pathlib import Path
++import re
++
++R=Path(__file__).resolve().parents[1]
++TITLE='NLBinder v.0.1.2 by perkys & edited by KOBiRO'
++DETAIL='''Mit `/sprays` öffnen bestätigte SAPD-/LSPD-Mitglieder die Navigation zu
++100 fest hinterlegten Spraytag-Stellen. Die Liste berechnet die dreidimensionale
++Entfernung von der aktuellen Spielerposition zu den Stellen und sortiert sie
++aufsteigend. Die nächstgelegene Stelle wird grün hervorgehoben.
++
++Die 100 Einträge verteilen sich auf drei Seiten mit 34, 34 und 32 Stellen.
++Bei Auswahl eines Eintrags startet die vorhandene GPS-Navigation zum gewählten
++Punkt mit dem roten Checkpoint. Beim Erreichen wird wie bei der bisherigen
++GPS-Navigation das Ziel als erreicht gemeldet.
++
++Spray-Ziele sind vorübergehende Navigationsziele. Sie belegen keinen der
++20 gespeicherten GPS-Plätze und verändern die gespeicherten Ziele nicht.
++Die Koordinaten sind im Quellcode unter `include/SpraySpots.h` nachvollziehbar.
++Das System zeigt diese festen Stellen an; es liest keine fremden Spielerorte
++oder serverseitigen Spray-Zustände aus.
++
++Die in r28 entfernte automatische Polizeifunk-Ortung bleibt vollständig entfernt.
++Wanted-Overlay, native Wanted-Labels, Spieler-IDs, `/speed`, Quick Map,
++Browser-Funktionen und die bisherigen übrigen Binder-Funktionen bleiben erhalten.
++'''
++POST='Neu in r29: Mit /sprays öffnen bestätigte SAPD-/LSPD-Mitglieder eine Liste der 100 fest hinterlegten Spraytag-Stellen. Die Stellen werden nach ihrer dreidimensionalen Entfernung zur aktuellen Spielerposition sortiert; die nächstgelegene Stelle ist grün hervorgehoben. Die Liste hat drei Seiten mit 34, 34 und 32 Einträgen. Ein ausgewählter Eintrag startet die vorhandene rote GPS-Checkpoint-Navigation samt Ziel-erreicht-Meldung. Spray-Ziele sind vorübergehend und verbrauchen keinen der 20 gespeicherten GPS-Plätze. Die automatische Polizeifunk-Ortung bleibt entfernt.'
++HISTORY='''
++## 35. Nachtrag v0.1.2 / r29 – 17. November 2026
++
++- /sprays für bestätigte SAPD-/LSPD-Mitglieder ergänzt; andere Fraktionen erhalten keinen Zugriff auf die Spraytag-Navigation.
++- 100 feste Spraytag-Koordinaten im nachvollziehbaren Quellcode hinterlegt.
++- Stellen nach dreidimensionaler Entfernung zur aktuellen Spielerposition sortiert und die nächstgelegene Stelle grün hervorgehoben.
++- Liste auf drei Seiten mit 34, 34 und 32 Einträgen verteilt; Auswahl startet die vorhandene rote GPS-Checkpoint-Navigation.
++- Vorhandene Ziel-erreicht-Erkennung für Spray-Ziele weiterverwendet.
++- Vorübergehende GPS-Ziele ergänzt, ohne einen der 20 gespeicherten GPS-Plätze zu belegen oder gespeicherte Ziele zu verändern.
++- Regressionen für Spraytag-Auswahl, Sortierung, Fraktionsprüfung und vorübergehende GPS-Ziele ergänzt. Tatsächliche Ergebnisse stehen im r29-Prüfnachweis.
++- Automatische Polizeifunk-Ortung aus r28 weiterhin vollständig entfernt; Wanted-Labels, /speed, Quick Map, Browser und übrige Funktionen erhalten.
++- Neue NLBinder.asi, vollständige aktuelle Quellen und gesamte Changelogs als NLBinder-v0.1.2-r29 vorbereitet. Frühere Veröffentlichungen und Desktop-Exporte erhalten; Spielinstallation unverändert.
++'''
++
++def update_history_header(text):
++    heading='# Änderungen am Perkys Binder – '+TITLE
++    status=('Stand: 17. November 2026, **r29 mit Spraytag-Navigation**. '
++            'Die Abschnitte 1 bis 34 dokumentieren die früheren Stände; Abschnitt 35 ergänzt r29.')
++    text,n=re.subn(r'(?m)^# [^\n]*',lambda _:heading,text,count=1)
++    text,m=re.subn(r'(?m)^Stand: [^\n]*',lambda _:status,text,count=1)
++    if n!=1 or m!=1:raise ValueError('Expected changelog title and current status')
++    return text
++
++def main():
++    notes='# '+TITLE+' – r29\n\n## Spraytag-Navigation\n\n'+DETAIL+'''
++## Paket übernehmen
++
++Der neue Desktop-Ordner `NLBinder-v0.1.2-r29` enthält die fertige `NLBinder.asi`,
++vollständige aktuelle Binder-Quellen, den gesamten Changelog und `FORUM-CHANGELOG.txt`.
++GTA vollständig beenden, die bisherige ASI ersetzen und neu starten.
++Die Browser-Runtime cef156-r1 benötigt für dieses Update keinen neuen Download.
++
++[Prüfumfang](https://github.com/Kobiro57/PerkysBinderChangelog/blob/v0.1.2-r29/docs/review/r29-PRUEFUNG-DE.md) ·
++[Prüfnachweis](https://github.com/Kobiro57/PerkysBinderChangelog/blob/v0.1.2-r29/docs/review/r29-validation.json)
++'''
++    review='''# Prüfumfang r29 – 17. November 2026
++
++Die Gesamttests und der Release-Build müssen erfolgreich sein. SpraysNavigatorTests
++prüfen die 100 festen Koordinaten, aufsteigende dreidimensionale Entfernung,
++grüne Hervorhebung der nächsten Stelle, die Seitenaufteilung 34/34/32 und die
++Zuordnung einer Auswahl zur tatsächlich angezeigten Zielposition. Die bestätigte
++SAPD-/LSPD-Mitgliedschaft ist Voraussetzung für die Funktion.
++
++GpsTemporaryTests prüfen die vorübergehende Navigation über das vorhandene
++GPS-System. Ein Spray-Ziel darf auch bei 20 gespeicherten Zielen funktionieren,
++keinen Speicherplatz verbrauchen und gespeicherte Ziele nicht verändern.
++Der vorhandene rote Checkpoint und die Ziel-erreicht-Erkennung werden verwendet.
++GPS-Spieladapter, Browser, Wanted-Labels und Kill-Erkennung werden gegen r28
++abgeglichen. Angepasste GPS-Verwaltung und Main-Integration werden neu geprüft.
++
++Die automatische Polizeifunk-Ortung bleibt entfernt. Frühere Ortungsquellen dürfen
++im aktuellen Quellstand, Projekt und Desktop-Export nicht wieder auftauchen.
++Die fertige ASI darf die eindeutige Vorlage `[ORTUNG]` nicht enthalten. Die
++Negativregression zu Detektiv-Meldungen und Checkpoints ohne automatischen
++Funktext bleibt Teil der Gesamttests.
++
++Der PE-Nachweis prüft die x86-ASI, ihre eingebetteten Helfer und die Startmeldung.
++Der Reconnect-Helfer wird mit lokalen Testprozessen geprüft. Der unveränderte
++historische Browsernachweis aus r24 wird nicht als neuer r29-Test ausgegeben.
++Ein r29-GTA-Livetest wird nicht aus automatischen Tests abgeleitet. Tatsächlich
++durchgeführte Prüfungen stehen in r29-validation.json. Exportierte Quellen und
++ASI werden mit dem veröffentlichten Commit abgeglichen. Private Profile,
++Logs, Spielstände und Zugangsdaten gehören nicht zum Paket.
++'''
++    readme='# NLBinder – PerkysBinderChangelog\n\nAktueller Stand: **'+TITLE+'**, r29.\n\n'+DETAIL+'''
++- [Fertige ASI und Dokumentation](https://github.com/Kobiro57/PerkysBinderChangelog/releases/tag/v0.1.2-r29)
++- [NLBinder.asi](dist/NLBinder-0.1.2-r29/NLBinder.asi)
++- [Bedienung](docs/NLBinder-0.1.2-r29-DE.md)
++- [Spraytag-Koordinaten](include/SpraySpots.h), [Navigation](src/SpraysNavigator.cpp)
++- [Wanted-Labels](src/NearbyWantedLabels.cpp)
++- [Gesamt-Changelog](docs/review/CHANGELOG-DE.md), [TXT](docs/CHANGELOG-GESAMT.txt)
++- [Forumtext](docs/FORUM-CHANGELOG-v0.1.2.txt)
++- [Forum-Installation und Speicherorte](docs/FORUM-INSTALLATION-DE.md)
++- [Dateiliste](docs/FORUM-DATEILISTE.txt)
++- [Eigener Forum-/Installationsquellcode](dist/NLBinder-0.1.2-r29/FORUM-INSTALLATION-QUELLCODE/README.md)
++- [Prüfumfang](docs/review/r29-PRUEFUNG-DE.md), [Ergebnisse](docs/review/r29-validation.json)
++- [Änderungen seit r28](https://github.com/Kobiro57/PerkysBinderChangelog/compare/v0.1.2-r28...v0.1.2-r29)
++- [Originalvergleich](docs/review/DATEIVERGLEICH.md)
++
++Der vollständige aktuelle Binder-Quellstand und die Changelogs liegen auch im
++Desktop-Ordner NLBinder-v0.1.2-r29. Die Browser-Runtime bleibt cef156-r1.
++'''
++    for name,data in [('docs/NLBinder-0.1.2-r29-DE.md',notes),('docs/review/r29-PRUEFUNG-DE.md',review),('build/README-GITHUB-r29.md',readme)]:
++        (R/name).write_text(data,encoding='utf-8',newline='\n')
++    (R/'docs/review/README-GITHUB.md').write_text(re.sub(r'\]\((docs/|dist/|res/|include/|src/)',r'](../../\1',readme),encoding='utf-8',newline='\n')
++    p=R/'docs/review/CHANGELOG-DE.md';old=p.read_text(encoding='utf-8-sig');s=update_history_header(old)
++    if '## 35. Nachtrag v0.1.2 / r29' not in s:s=s.rstrip()+'\n'+HISTORY
++    if s!=old:p.write_text(s,encoding='utf-8',newline='\n')
++    p=R/'docs/review/PRUEFUNG-DE.md';s=p.read_text(encoding='utf-8-sig')
++    if '## Aktueller Stand v0.1.2 / r29' not in s:
++        s=s.replace('## Aktueller Stand v0.1.2 / r28','## Vorheriger Stand v0.1.2 / r28',1)
++        first,_,rest=s.partition('\n')
++        p.write_text(first+'\n\n## Aktueller Stand v0.1.2 / r29 – 17. November 2026\n\nSpraytag-Navigation: [Prüfumfang](r29-PRUEFUNG-DE.md), [Ergebnisse](r29-validation.json).\n'+rest,encoding='utf-8',newline='\n')
++    p=R/'docs/FORUM-CHANGELOG-v0.1.2.txt';s=p.read_text(encoding='utf-8-sig')
++    if 'Neu in r29:' not in s:
++        marker='NEU IN DIESEM PAKET\n'
++        if marker not in s:raise ValueError('Forum changelog update marker missing')
++        s=s.replace(marker,marker+'\n'+POST+'\n\nFrüherer Stand r28 (weiterhin gültig: automatische Polizeifunk-Ortung entfernt):\n',1)
++        s=s.replace('/releases/tag/v0.1.2-r28','/releases/tag/v0.1.2-r29')
++        p.write_text(s,encoding='utf-8-sig',newline='\n')
++    p=R/'docs/BUILD-README.md';old=p.read_text(encoding='utf-8-sig')
++    if '**Police Spraytag Navigation**' not in old:
++        text=('- **Police Spraytag Navigation** — `/sprays` lists 100 fixed spraytag locations for verified SAPD/LSPD members. '
++              'Targets are sorted by current 3D distance; the nearest is green. Three pages hold 34/34/32 entries. '
++              'Selection uses the existing red GPS checkpoint and arrival message through a temporary target that preserves all 20 saved GPS slots.\n\n')
++        updated=old.replace('## Building',text+'## Building',1)
++        if updated==old:raise ValueError('Build README section marker missing')
++        p.write_text(updated,encoding='utf-8',newline='\n')
++    print('Documented police spraytag navigation; full history section 35')
++
++if __name__=='__main__':main()
+diff --git a/tools/export_full_changelog_revision29.py b/tools/export_full_changelog_revision29.py
+new file mode 100644
+index 0000000..18e47ac
+--- /dev/null
++++ b/tools/export_full_changelog_revision29.py
+@@ -0,0 +1,34 @@
++"""Render the complete reviewed German change history as a portable TXT file."""
++from pathlib import Path
++import re
++
++
++def render(text):
++    text = re.sub(r"!\[([^\]]*)\]\(([^)]+)\)", r"\1 (\2)", text)
++    text = re.sub(r"\[([^\]]+)\]\(([^)]+)\)", r"\1 (\2)", text)
++    lines = []
++    for line in text.splitlines():
++        heading = re.match(r"^(#{1,6})\s+(.+)$", line)
++        if heading:
++            title = heading[2].replace("**", "").replace("`", "")
++            lines += [title, ("=" if len(heading[1]) <= 2 else "-") * len(title)]
++        else:
++            lines.append(line.replace("**", "").replace("`", ""))
++    return "\n".join(lines).rstrip() + "\n"
++
++
++def main():
++    root = Path(__file__).resolve().parents[1]
++    source = root / "docs/review/CHANGELOG-DE.md"
++    target = root / "docs/CHANGELOG-GESAMT.txt"
++    text = source.read_text(encoding="utf-8")
++    required = {f"## {number}. " for number in range(1, 36)}
++    if not all(marker in text for marker in required):
++        raise ValueError("Complete change history sections 1-35 required")
++    result = render(text)
++    target.write_text(result, encoding="utf-8-sig", newline="\n")
++    print(f"Full changelog: {len(result.splitlines())} lines, sections 1-35, {target.name}")
++
++
++if __name__ == "__main__":
++    main()
+diff --git a/tools/export_source_bundle_revision29.py b/tools/export_source_bundle_revision29.py
+new file mode 100644
+index 0000000..cc65c2d
+--- /dev/null
++++ b/tools/export_source_bundle_revision29.py
+@@ -0,0 +1,197 @@
++"""Export a verified r29 source snapshot, ASI, automatic-browser manifest and full changelog.
++
++Reads Git blobs without changing Git or the game installation. The destination
++must not exist. Historical release binaries, Git metadata, local build outputs
++and private runtime files are excluded. The proof manifest stays under build/.
++"""
++from pathlib import Path, PurePosixPath
++import argparse
++import hashlib
++import json
++import re
++import subprocess
++from revision29_scope import REMOVED_LOCATE_FILES, SPRAY_SOURCE_FILES
++
++
++ROOT = Path(__file__).resolve().parents[1]
++RELEASE = "v0.1.2-r29"
++PACKAGE = "dist/NLBinder-0.1.2-r29"
++PRIVATE_PARTS = {
++    ".git", ".vs", ".aws", ".codex", ".agents", "__pycache__", "build",
++    "output", "debug", "release", "obj", "cmakefiles", ".venv", "venv",
++}
++PRIVATE_NAMES = {
++    "keybinder.json", "jobs_data.json", "imgui.ini", ".env", ".git-credentials",
++    "credentials", "id_rsa", "id_ed25519", "nul", "gps.xml",
++}
++PRIVATE_SUFFIXES = {".log", ".obj", ".pdb", ".ilk", ".exp", ".pyc", ".suo", ".user", ".o"}
++
++
++def require(ok, message):
++    if not ok:
++        raise ValueError(message)
++
++
++def digest(data):
++    return hashlib.sha256(data).hexdigest()
++
++
++def git(repo, *args):
++    return subprocess.check_output(["git", *args], cwd=repo)
++
++
++def safe_source_path(relative):
++    path = PurePosixPath(relative)
++    require(path.parts and not path.is_absolute() and ".." not in path.parts,
++            "Unsafe source path: " + relative)
++    require("\\" not in relative and ":" not in relative, "Invalid source path: " + relative)
++    require(not any(part.lower() in PRIVATE_PARTS for part in path.parts[:-1]),
++            "Private/build directory in source snapshot: " + relative)
++    require(path.name.lower() not in PRIVATE_NAMES and path.suffix.lower() not in PRIVATE_SUFFIXES,
++            "Private/runtime file in source snapshot: " + relative)
++
++
++def source_entries(repo, commit):
++    entries = {}
++    for entry in git(repo, "ls-tree", "-r", "-z", commit).split(b"\0"):
++        if not entry:
++            continue
++        metadata, raw_path = entry.split(b"\t", 1)
++        mode, kind, oid = metadata.split()
++        relative = raw_path.decode("utf-8")
++        require(kind == b"blob" and mode in {b"100644", b"100755"},
++                "Unsupported symlink/submodule: " + relative)
++        entries[relative] = oid
++    return entries
++
++
++def read_blobs(repo, entries):
++    oids = sorted(set(entries.values()))
++    process = subprocess.Popen(["git", "cat-file", "--batch"], cwd=repo,
++                               stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
++    output, errors = process.communicate(b"\n".join(oids) + b"\n")
++    require(process.returncode == 0, "Cannot read Git source objects: " + errors.decode("utf-8", "replace"))
++    offset, blobs = 0, {}
++    for oid in oids:
++        end_header = output.find(b"\n", offset)
++        require(end_header >= offset, "Truncated Git source header")
++        header = output[offset:end_header].split()
++        require(len(header) == 3 and header[0] == oid and header[1] == b"blob", "Unexpected source object")
++        size = int(header[2])
++        start, end = end_header + 1, end_header + 1 + size
++        require(output[end:end + 1] == b"\n", "Truncated source file")
++        blobs[oid] = output[start:end]
++        offset = end + 1
++    require(offset == len(output), "Unexpected trailing Git source data")
++    return {relative: blobs[oid] for relative, oid in entries.items()}
++
++
++def main():
++    parser = argparse.ArgumentParser(description=__doc__)
++    parser.add_argument("--destination", required=True, type=Path)
++    parser.add_argument("--repository", type=Path, default=ROOT / "build/github-publication/repository")
++    parser.add_argument("--revision", default="HEAD")
++    parser.add_argument("--binary", type=Path, default=ROOT / "build/Release/NLBinder.asi")
++    parser.add_argument("--manifest", type=Path, default=ROOT / "build/source-export-r29.json")
++    args = parser.parse_args()
++    repo = args.repository.resolve(strict=True)
++    destination = args.destination.resolve()
++    manifest_path = args.manifest.resolve()
++    require(not destination.exists(), "Destination already exists; nothing will be overwritten: " + str(destination))
++    require(destination.parent.is_dir(), "Destination parent must already exist")
++    require(not destination.is_relative_to(repo), "Export must be outside the publication checkout")
++    require(not manifest_path.is_relative_to(destination), "Manifest must remain outside the source export")
++    commit = git(repo, "rev-parse", "--verify", "--end-of-options", args.revision + "^{commit}").decode().strip()
++    require(re.fullmatch("[0-9a-f]{40}", commit), "Unexpected Git revision")
++    entries = source_entries(repo, commit)
++    selected = {}
++    for relative, oid in entries.items():
++        if PurePosixPath(relative).parts[0] == "dist":
++            continue  # Prior ASIs/ZIPs are available through the Git history.
++        safe_source_path(relative)
++        selected[relative] = oid
++    extras = {
++        "NLBinder.asi": PACKAGE + "/NLBinder.asi",
++        "CHANGELOG-GESAMT.txt": "docs/CHANGELOG-GESAMT.txt",
++        "README.md": "docs/BUILD-README.md",
++        "LIESMICH-DE.md": PACKAGE + "/LIESMICH.md",
++        "BUILD-INFO.txt": PACKAGE + "/BUILD-INFO.txt",
++        "PRUEFBERICHT.json": PACKAGE + "/PRUEFBERICHT.json",
++        "SHA256SUMS.txt": PACKAGE + "/SHA256SUMS.txt",
++        "RECONNECT-TEST.json": PACKAGE + "/RECONNECT-TEST.json",
++        "FORUM-KEYBOARD-TEST.json": PACKAGE + "/FORUM-KEYBOARD-TEST.json",
++        "BROWSER-RUNTIME.json": PACKAGE + "/BROWSER-RUNTIME.json",
++        "FORUM-CHANGELOG.txt": "docs/FORUM-CHANGELOG-v0.1.2.txt",
++        "FORUM-INSTALLATION.txt": "docs/FORUM-INSTALLATION-DE.md",
++        "FORUM-DATEILISTE.txt": "docs/FORUM-DATEILISTE.txt",
++    }
++    focus_prefix = PACKAGE + "/FORUM-INSTALLATION-QUELLCODE/"
++    focus_entries = {name[len(PACKAGE) + 1:]: name for name in entries if name.startswith(focus_prefix)}
++    require(focus_entries, "The verified focused forum installer sources are missing")
++    extras.update(focus_entries)
++    for source in extras.values():
++        require(source in entries, "Verified r29 publication file missing: " + source)
++    read_entries = dict(selected)
++    read_entries.update({source: entries[source] for source in extras.values()})
++    files = read_blobs(repo, read_entries)
++    exported = {relative: files[relative] for relative in selected}
++    for target, source in extras.items():
++        exported[target] = files[source]
++    require(not any(name in exported for name in REMOVED_LOCATE_FILES), "Removed locator source remains in export")
++    require(all(name in exported for name in SPRAY_SOURCE_FILES), "Spray navigation source missing in export")
++    binary = exported["NLBinder.asi"]
++    require(b"[ORTUNG]" not in binary, "Removed locate template remains in exported ASI")
++    require(binary == args.binary.read_bytes(), "Published ASI differs from the locally built NLBinder.asi")
++    report = json.loads(exported["PRUEFBERICHT.json"].decode("utf-8-sig"))
++    require(report.get("revision") == RELEASE and report.get("asi") == "NLBinder.asi" and report.get("sha256") == digest(binary)
++            and report.get("bytes") == len(binary) and report.get("embedded_helper_matches") is True,
++            "r29 artifact verification is missing or stale")
++    runtime = json.loads(exported['BROWSER-RUNTIME.json'].decode('utf-8'))
++    runtime_files = {}
++    # r29 installs the pinned browser automatically into Documents on first /forum.
++    require(exported["Keybinder.vcxproj"].count(b"<TargetName>NLBinder</TargetName>") == 2,
++            "Release/Debug project names are not both NLBinder")
++    folded = [relative.casefold() for relative in exported]
++    require(len(folded) == len(set(folded)), "Case-insensitive destination path collision")
++    require(git(repo, "rev-parse", "--verify", "--end-of-options", args.revision + "^{commit}").decode().strip() == commit,
++            "Source revision changed during snapshot reading")
++    # All input and publication checks finish before the first destination write.
++    destination.mkdir()
++    for relative, data in sorted(exported.items()):
++        target = destination / relative
++        require(target.resolve().is_relative_to(destination), "Export escaped the destination")
++        target.parent.mkdir(parents=True, exist_ok=True)
++        target.write_bytes(data)
++    import shutil
++    for relative, source in runtime_files.items():
++        target = destination / relative
++        target.parent.mkdir(parents=True, exist_ok=True)
++        shutil.copyfile(source, target)
++    actual = {path.relative_to(destination).as_posix(): path for path in destination.rglob("*") if path.is_file()}
++    require(set(actual) == set(exported) | set(runtime_files), "Exported file set differs")
++    for relative, data in exported.items():
++        require(actual[relative].read_bytes() == data, "Exported file differs: " + relative)
++        require(not actual[relative].is_symlink(), "Unexpected exported symlink: " + relative)
++    for relative, source in runtime_files.items():
++        with source.open('rb') as stream: before = hashlib.file_digest(stream, 'sha256').hexdigest()
++        with actual[relative].open('rb') as stream: after = hashlib.file_digest(stream, 'sha256').hexdigest()
++        require(before == after, 'Exported runtime differs: ' + relative)
++    manifest = {
++        "release": RELEASE, "source_commit": commit, "destination": str(destination),
++        "exported_files": len(exported) + len(runtime_files),
++        "exported_bytes": sum(map(len, exported.values())) + sum(p.stat().st_size for p in runtime_files.values()),
++        "browser_runtime_files": len(runtime_files),
++        "source_files": len(selected), "all_files_verified": True,
++        "historical_release_binaries_in_export": 0, "private_runtime_files": 0,
++        "asi_bytes": len(binary), "asi_sha256": digest(binary),
++        "changelog_sha256": digest(exported["CHANGELOG-GESAMT.txt"]),
++        "root_file_sources": extras,
++        "files": {relative: digest(data) for relative, data in sorted(exported.items())},
++    }
++    manifest_path.parent.mkdir(parents=True, exist_ok=True)
++    manifest_path.write_text(json.dumps(manifest, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
++    print(json.dumps({key: value for key, value in manifest.items() if key != "files"}, indent=2, ensure_ascii=False))
++
++
++if __name__ == "__main__":
++    main()
+diff --git a/tools/finalize_revision29.py b/tools/finalize_revision29.py
+new file mode 100644
+index 0000000..1bfe71b
+--- /dev/null
++++ b/tools/finalize_revision29.py
+@@ -0,0 +1,58 @@
++"""Export v0.1.2 to a new Desktop folder, preserving every previous export."""
++from pathlib import Path
++import hashlib,json,subprocess,sys
++ROOT=Path(__file__).resolve().parents[1]
++
++def require(ok,message):
++    if not ok:raise ValueError(message)
++
++def sha(path):
++    with path.open('rb') as stream:return hashlib.file_digest(stream,'sha256').hexdigest()
++
++def main():
++    desktop=Path.home()/'Desktop'
++    require(desktop.resolve(strict=True)==ROOT.parent.resolve(strict=True),'Unexpected Desktop location')
++    target=desktop/'NLBinder-v0.1.2-r29'
++    prepared=desktop/'NLBinder-v0.1.2-r29-prepared-20261117'
++    for path in [target,prepared]:
++        require(path.parent.resolve(strict=True)==desktop.resolve(strict=True)
++                and path.resolve().parent==desktop.resolve(strict=True),'Unexpected export path')
++        require(not path.is_symlink() and not path.is_junction(),'Redirected Desktop folder refused')
++        require(not path.exists(),'Existing export is preserved: '+path.name)
++    publication=json.loads((ROOT/'build/revision29-published.json').read_text(encoding='utf-8'))
++    proof=json.loads((ROOT/'build/revision29-package.json').read_text(encoding='utf-8'))
++    require(publication['published'] and publication['tag']=='v0.1.2-r29'
++            and publication['asi_sha256']==proof['asi_sha256'],'Verified publication missing')
++    subprocess.run([sys.executable,str(ROOT/'tools/export_source_bundle_revision29.py'),
++        '--destination',str(prepared),'--revision',publication['commit']],cwd=ROOT,check=True)
++    require(sha(prepared/'NLBinder.asi')==proof['asi_sha256'],'Prepared ASI differs')
++    require(sha(prepared/'CHANGELOG-GESAMT.txt')==proof['changelog_sha256'],'Complete changelog differs')
++    require(sha(prepared/'FORUM-CHANGELOG.txt')==proof['forum_changelog_sha256'],'Postable forum changelog differs')
++    require(sha(prepared/'FORUM-INSTALLATION.txt')==proof['forum_installation_sha256'],'Installer disclosure differs')
++    require(sha(prepared/'FORUM-DATEILISTE.txt')==proof['forum_file_list_sha256'],'Runtime file list differs')
++    native=json.loads((prepared/'FORUM-KEYBOARD-TEST.json').read_text(encoding='utf-8'))
++    require(native==proof['native_forum_keyboard_test'] and native['passed'] is True,
++            'Native CEF keyboard test proof differs')
++    focus=prepared/'FORUM-INSTALLATION-QUELLCODE'
++    actual={p.relative_to(focus).as_posix():p for p in focus.rglob('*') if p.is_file()}
++    require(set(actual)==set(proof['forum_review_files']),'Focused installer source set differs')
++    for name,digest in proof['forum_review_files'].items():
++        require(actual[name].resolve().is_relative_to(focus.resolve()) and sha(actual[name])==digest,
++                'Focused installer file differs: '+name)
++    runtime=json.loads((prepared/'BROWSER-RUNTIME.json').read_text(encoding='utf-8'))
++    require(runtime['runtime_id']=='cef156-r1'
++            and runtime['archive_sha256']=='01fc7f1d4dcec644a191e9c63da7088a73aa81a63c9a4c207001f7038a70ff45',
++            'Unchanged automatic browser manifest differs')
++    require(prepared.resolve().parent==desktop.resolve() and target.resolve().parent==desktop.resolve(),
++            'Unsafe final rename')
++    prepared.rename(target)
++    result={'revision':'v0.1.2-r29','desktop_source':str(target),'source_commit':publication['commit'],
++        'asi_sha256':sha(target/'NLBinder.asi'),'all_source_files_verified':True,
++        'focused_forum_source_files_verified':len(actual),'forum_installation_paths_documented':True,
++        'postable_forum_changelog_verified':True,'native_forum_keyboard_test_verified':True,
++        'previous_desktop_exports_modified':False,
++        'game_installation_modified':False}
++    (ROOT/'build/revision29-desktop-export.json').write_text(json.dumps(result,indent=2)+'\n',encoding='utf-8')
++    print(json.dumps(result,indent=2))
++
++if __name__=='__main__':main()
+diff --git a/tools/package_revision29.py b/tools/package_revision29.py
+new file mode 100644
+index 0000000..98b7542
+--- /dev/null
++++ b/tools/package_revision29.py
+@@ -0,0 +1,216 @@
++"""Package the verified v0.1.2 ASI, forum disclosure and inspectable installer sources."""
++from pathlib import Path
++import hashlib,json,re,shutil,subprocess,sys,zipfile
++from revision29_scope import REMOVED_LOCATE_FILES, assert_locator_removed, assert_sprays_sources
++R=Path(__file__).resolve().parents[1]
++PREVIOUS='91ea56354d0a997058a85c0563ddb48f8c0153b6'
++TAG='v0.1.2-r29'
++
++def check(ok,why):
++    if not ok:raise ValueError(why)
++
++def sha(path):
++    with path.open('rb') as stream:return hashlib.file_digest(stream,'sha256').hexdigest()
++
++def main():
++    assert_sprays_sources(R)
++    package=R/'dist/NLBinder-0.1.2-r29'
++    archive=R/'dist/NLBinder-v0.1.2-KOBiRO-r29.zip'
++    check(not package.exists() and not archive.exists(),'Existing v0.1.2 package is preserved; do not overwrite')
++    log_path=R/'build/revision29-tests.log'
++    log=log_path.read_text(encoding='utf-8-sig',errors='replace')
++    check(re.search(r'^Test exit code: 0\s*$',log,re.M) and '[FAIL]' not in log,'Full tests not passing')
++    check('[PASS] TestDetectiveMessagesAndCheckpointsDoNotSendAutomaticRadio' in log,
++          'Missing passing regression for detective chat and checkpoints without automatic radio')
++    check('RELEASE_BUILD_EXIT_CODE=0' in (R/'build/revision29-build.log').read_text(errors='replace'),'Release build not passing')
++    suites={}
++    for suite in ['SpraysNavigator','GpsTemporary','DrugUseTracker','R18Feature','R17Feature','R16Feature','DamageLogRegression','StartupStatsSync','CombatChatBridge','CombatChatParser','ServerStatsParser','LocalFactionAccess','NearbyWantedLabels','ForumKeyboardInput','ForumKeyboardRouting']:
++        found=re.search(suite+r'Tests: (\d+) checks, 0 failures',log)
++        check(found is not None,'Missing passing suite '+suite);suites[suite]=int(found[1])
++    for name,pattern in [('OnlineSettings',r'Online Settings: (\d+) passed, 0 failed'),
++                         ('OnlineOverlayRenderer',r'OnlineOverlayRendererTests: (\d+) passed, 0 failed'),
++                         ('QuickMap',r'QuickMapTests: (\d+) passed, 0 failed')]:
++        found=re.search(pattern,log);check(found is not None,'Missing passing suite '+name);suites[name]=int(found[1])
++    check(suites['CombatChatParser']>190 and suites['CombatChatBridge']>238,'TakeOver regression checks missing')
++    check(suites['DrugUseTracker']>=207,'Existing drug parser regressions missing')
++    check(suites['QuickMap']>149,'Missing claims QuickMap regression checks')
++    check(suites['ServerStatsParser']>156,'Missing own-faction parsing regression checks')
++    check(suites['LocalFactionAccess']>=18,'Missing local/API faction reconciliation checks')
++    check(suites['StartupStatsSync']>401,'Missing speed command and role-loss regression checks')
++    for suite in ['SpraysNavigator','GpsTemporary','NearbyWantedLabels','ForumKeyboardInput','ForumKeyboardRouting']:
++        check(suites[suite]>0,'Missing r29 regression checks: '+suite)
++    artifact=json.loads((R/'build/revision29-artifact.json').read_text(encoding='utf-8'))
++    asi=R/'build/Release/NLBinder.asi'
++    check(artifact['revision']==TAG and sha(asi)==artifact['sha256'] and artifact['embedded_helper_matches']
++          and artifact['embedded_browser_setup_matches'] and artifact['requested_startup_message_present'] and artifact.get('automatic_police_locate_removed')
++          and artifact.get('automatic_locate_radio_template_absent'),'Artifact proof stale')
++    check(artifact['embedded_browser_setup_sha256']==sha(R/'build/BrowserSetup.exe'),'Installer proof stale')
++    check('libcef.dll' not in [x.lower() for x in artifact['imports']],'CEF must remain outside GTA')
++    worker_path=R/'build/reconnect-worker-tests/result.json'
++    worker=json.loads(worker_path.read_text(encoding='utf-8'))
++    check(worker['failures']==0 and worker['checks']>=83 and worker['nova_cases']==6,'Native reconnect regression failed')
++    check(worker_path.stat().st_mtime>=(R/'build/ReconnectHelper.exe').stat().st_mtime,'Reconnect test predates helper build')
++    native_path=R/'dist/NLBinder-0.1.2-r24/FORUM-KEYBOARD-TEST.json'
++    native=json.loads(native_path.read_text(encoding='utf-8'))
++    check(native.get('passed') is True,'Native CEF forum keyboard test not passing')
++    check(native.get('renderer_input_readiness_checked') is True
++          and native.get('initial_offscreen_frames',0)>=2,
++          'Native keyboard test did not establish renderer readiness and input focus')
++    check(native.get('runtime_id')=='cef156-r1' and native.get('protocol_version')==1,
++          'Native keyboard test did not use the pinned browser and existing IPC protocol')
++    check(native.get('anonymous_isolated_profile') is True and native.get('login_or_post_submitted') is False
++          and native.get('live_gta_gameplay_test_performed') is False and native.get('clean_exit_code')==0,
++          'Native keyboard test scope or browser cleanup differs')
++    check(native.get('fixed_cases',0)>0 and native.get('fixed_cases_passed')==native['fixed_cases']
++          and native.get('actual_cef_ipc_keyboard_path') is True and native.get('local_dom_fixture') is True
++          and native.get('network_blocked_during_fixture') is True
++          and native.get('initial_page_loaded_read_only') is True
++          and native.get('viewport_paint_barriers_checked') is True
++          and native.get('user_clipboard_modified') is False,
++          'Native keyboard editing cases or isolated fixture scope differ')
++    check(native.get('legacy_regression_reproduced') is True,
++          'Native keyboard test did not reproduce the reported AltGr regression with the old route')
++    check(native.get('translator_sha256')==sha(R/'include/ForumKeyboardInput.h'),
++          'Native keyboard proof predates the current translator or probe')
++    before_native=subprocess.check_output(['git','show',PREVIOUS+':dist/NLBinder-0.1.2-r24/FORUM-KEYBOARD-TEST.json'],cwd=R/'build/github-publication/repository')
++    check(native_path.read_bytes().replace(b'\r\n',b'\n')==before_native.replace(b'\r\n',b'\n'),
++          'Historical r24 keyboard proof changed')
++    lock=json.loads((R/'res/browser-runtime.json').read_text(encoding='utf-8'))
++    check(lock['archive_sha256']=='01fc7f1d4dcec644a191e9c63da7088a73aa81a63c9a4c207001f7038a70ff45',
++          'Browser runtime pin changed')
++    check(len(lock['files'])==236 and sum(x['bytes'] for x in lock['files'])==429252102,'Runtime manifest file set changed')
++    runtime_files={entry['path']:entry for entry in lock['files']}
++    check(native.get('cef_host_sha256')==runtime_files['NLBinderBrowser.exe']['sha256']
++          and native.get('cef_host_dll_sha256')==runtime_files['NLBinderBrowser.dll']['sha256'],
++          'Native keyboard proof does not match the unchanged pinned browser host')
++    unchanged=['src/ForumBrowser.cpp','include/ForumBrowser.h','include/ForumKeyboardInput.h','include/ForumBrowserProtocol.h','tests/ForumKeyboardProbe.cpp','tools/test_forum_keyboard.py','browser/ForumBrowserHost.cpp','src/GpsGameAdapter.cpp',
++        'tools/BrowserSetup.cpp','tools/ReconnectHelper.cpp','include/BrowserSetupProtocol.h','include/BrowserRuntimeLock.h',
++        'res/browser-runtime.json','include/DrugUseTracker.h',
++        'src/OnlineOverlayRenderer.cpp','src/SettingsManager.cpp',
++        'include/SettingsManager.h','src/MainWindowUI.cpp','include/Version.h',
++        'include/NearbyWantedLabels.h','src/NearbyWantedLabels.cpp','tests/NearbyWantedLabelsTests.cpp',
++        'include/CombatChatParser.h','src/CombatChatParser.cpp','tests/CombatChatParserTests.cpp','tests/CombatChatBridgeTests.cpp']
++    repo=R/'build/github-publication/repository'
++    for name in unchanged:
++        before=subprocess.check_output(['git','show',PREVIOUS+':'+name],cwd=repo)
++        check((R/name).read_bytes().replace(b'\r\n',b'\n')==before.replace(b'\r\n',b'\n'),
++              'Previously tested runtime source changed: '+name)
++    history=(R/'docs/review/CHANGELOG-DE.md').read_text(encoding='utf-8')
++    check(all(f'## {n}. ' in history for n in range(1,36)),'Full history sections 1-35 required')
++    post=R/'docs/FORUM-CHANGELOG-v0.1.2.txt'
++    check('0.1.2' in post.read_text(encoding='utf-8-sig') and 'perkys & edited by KOBiRO' in post.read_text(encoding='utf-8-sig'),
++          'Postable forum changelog has the wrong version or credits')
++    file_list=R/'docs/FORUM-DATEILISTE.txt'
++    listed=file_list.read_text(encoding='utf-8-sig')
++    for item in lock['files']:
++        check(item['path'] in listed and item['sha256'] in listed,'Disclosed runtime file missing: '+item['path'])
++    review_parent=R/'build/revision29-forum-review'
++    review_parent.mkdir(parents=True,exist_ok=True)
++    review=review_parent/'FORUM-INSTALLATION-QUELLCODE'
++    subprocess.run([sys.executable,str(R/'tools/export_forum_installation_review.py'),
++                    '--destination',str(review)],cwd=R,check=True)
++    review_files={}
++    for path in review.rglob('*'):
++        check(not path.is_symlink() and not path.is_junction(),'Redirected focused review file')
++        if path.is_file():
++            check(path.suffix.lower() not in {'.asi','.exe','.dll','.log','.pyc','.obj'},'Unexpected binary/private focused file')
++            review_files[path.relative_to(review).as_posix()]=sha(path)
++    check('include/ForumKeyboardInput.h' in review_files and 'tools/BrowserSetup.cpp' in review_files and 'browser/ForumBrowserHost.cpp' in review_files
++          and 'SHA256SUMS.txt' in review_files and 'SOURCE-MANIFEST.json' in review_files,
++          'The focused own installer/browser sources or their checksums are missing')
++    package.mkdir(parents=True)
++    shutil.copyfile(asi,package/'NLBinder.asi')
++    for source,target in [('docs/NLBinder-0.1.2-r29-DE.md','LIESMICH.md'),('docs/CHANGELOG-GESAMT.txt','CHANGELOG-GESAMT.txt'),
++        ('docs/FORUM-CHANGELOG-v0.1.2.txt','FORUM-CHANGELOG.txt'),('docs/FORUM-INSTALLATION-DE.md','FORUM-INSTALLATION.txt'),
++        ('docs/FORUM-DATEILISTE.txt','FORUM-DATEILISTE.txt'),('third_party/miniz/LICENSE','MINIZ-LICENSE.txt'),
++        ('res/browser-runtime.json','BROWSER-RUNTIME.json'),('build/reconnect-worker-tests/result.json','RECONNECT-TEST.json'),
++        ('dist/NLBinder-0.1.2-r24/FORUM-KEYBOARD-TEST.json','FORUM-KEYBOARD-TEST.json'),
++        ('docs/review/r29-PRUEFUNG-DE.md','PRUEFUMFANG.md')]:
++        shutil.copyfile(R/source,package/target)
++    shutil.copytree(review,package/'FORUM-INSTALLATION-QUELLCODE')
++    public=dict(artifact,asi='NLBinder.asi')
++    (package/'PRUEFBERICHT.json').write_text(json.dumps(public,indent=2)+'\n',encoding='utf-8')
++    (package/'SHA256SUMS.txt').write_text(sha(asi)+'  NLBinder.asi\n',encoding='ascii')
++    (package/'BUILD-INFO.txt').write_text(f'''NLBinder v.0.1.2 by perkys & edited by KOBiRO (r29)
++NLBinder.asi (x86): {asi.stat().st_size} Bytes
++SHA256: {sha(asi)}
++
++Gewuenschte farbige Startmeldung ist im finalen PE enthalten.
++Gesamttests und Release-Build: Exitcode 0. Nativer Reconnect-Worker: {worker['checks']} Checks.
++ASI-Ressourcen 300/301 stimmen mit den gebauten nativen Helfern ueberein.
++Browserhost, GPS-Spieladapter, Wanted-/Drogenoverlay und Browsermanifest sind gegen r28 unveraendert geprueft.
++TakeOver-Killerkennung aus r25 beibehalten: eigener Taetername, bestehender Killtext und Zaehler.
++Quick-Forum-Sonderzeichenkorrektur aus r24 beibehalten.
++SAPD-/LSPD-Wantedlabels: nur zusammen mit dem tatsaechlich gezeichneten nativen Nametag, auch im Fahrzeug.
++Reichweite und Sichtbarkeit folgen dem nativen Nametag; die fruehere eigene 5-Meter-Grenze entfaellt.
++Vorhandene Nametag-Freigabe, Wantedlisten-Schalter und frische Wanteddaten erforderlich.
++Wantedtabelle: aktueller SA-MP-Spieler-ID nach Name; keine API-Account-ID.
++Automatische Polizeifunk-Ortung vollstaendig entfernt: kein Mitlesen der Ortungsmeldungen,
++keine Ortungs-Checkpoint-Auswertung und keine automatische /r-Ortungsmeldung.
++Die ausschliesslich dafuer verwendeten Quellen, Hooks, Zustaende und Tests sind entfernt.
++Manuelle serverseitige Ortung und die normale GPS-/Quick-Map-Anzeige bleiben erhalten.
++/sprays: 100 feste Spraytag-Koordinaten, nur fuer bestaetigte SAPD-/LSPD-Mitglieder.
++Entfernung ab aktueller Spielerposition dreidimensional berechnet; naechste Stelle gruen.
++Drei Seiten mit 34/34/32 Eintraegen; Auswahl startet die vorhandene rote GPS-Navigation.
++Voruebergehende Spray-Ziele belegen keinen der 20 gespeicherten GPS-Plaetze.
++Fruehere Browser-/GPS-Pruefungen sind separat historisch dokumentiert.
++Der unveraenderte historische Browser-Eingabetest aus r24 ist in FORUM-KEYBOARD-TEST.json enthalten.
++Dieser Browser-Test wurde fuer r29 nicht erneut ausgefuehrt.
++Er verwendet nur synthetische Texte in einem isolierten anonymen Profil, ohne Forumbeitrag.
++Ein neuer r29-GTA-Live-Test wird nicht behauptet.
++
++FORUM-INSTALLATION.txt beschreibt Einrichtung und Speicherorte. Die Dateiliste
++enthaelt alle 236 festgelegten Runtime-Dateien. FORUM-INSTALLATION-QUELLCODE
++enthaelt die eigenen Originalquellen und ihre SHA-256-Nachweise, keine privaten Profile.
++FORUM-CHANGELOG.txt ist der fertige Text fuer die Veroeffentlichung im Forum.
++Der vollstaendige Binder-Quellcode ist im neuen Desktop-Ordner und auf GitHub enthalten.
++Der komplette Drittanbieter-Chromium-/CEF-Upstreamcode wird nicht als enthalten ausgegeben.
++
++Nur NLBinder.asi bei beendetem GTA ersetzen. Browserstand unveraendert: cef156-r1.
++Browser-Download SHA256: {lock['archive_sha256']}
++''',encoding='utf-8-sig')
++    with zipfile.ZipFile(archive,'w',zipfile.ZIP_DEFLATED,compresslevel=6) as zipped:
++        for path in sorted(package.rglob('*')):
++            if path.is_file():zipped.write(path,package.name+'/'+path.relative_to(package).as_posix())
++    with zipfile.ZipFile(archive) as zipped:
++        check(zipped.testzip() is None,'ZIP integrity failed')
++        check(hashlib.sha256(zipped.read(package.name+'/NLBinder.asi')).hexdigest()==sha(asi),'Zipped ASI differs')
++        for name,digest in review_files.items():
++            check(hashlib.sha256(zipped.read(package.name+'/FORUM-INSTALLATION-QUELLCODE/'+name)).hexdigest()==digest,
++                  'Zipped focused installer source differs: '+name)
++        check(not any(x.lower().endswith(('.log','.dll','.exe','.obj','.pyc')) for x in zipped.namelist()),
++              'Runtime binary or private data in package')
++    proof={'revision':TAG,'date':'2026-11-17','asi_bytes':asi.stat().st_size,'asi_sha256':sha(asi),
++        'version_and_credit':artifact['version_and_credit'],'requested_startup_message_present':True,
++        'embedded_browser_setup_sha256':artifact['embedded_browser_setup_sha256'],
++        'full_test_suite_exit_code':0,'full_test_log_sha256':sha(log_path),'release_build_exit_code':0,
++        'focused_checks':suites,'wanted_label_native_draw_call_required':True,'wanted_label_follows_server_nametag_range':True,'wanted_label_in_vehicle_supported':True,
++        'wanted_label_native_visibility_required':True,'wanted_table_current_samp_id':True,
++        'sprays_navigation_fixed_coordinate_count':100,
++        'sprays_navigation_police_role_required':True,
++        'sprays_navigation_distance_sort':'ascending_3d_from_current_player',
++        'sprays_navigation_nearest_highlight':'green',
++        'sprays_navigation_page_sizes':[34,34,32],
++        'sprays_navigation_existing_red_gps_checkpoint':True,
++        'sprays_navigation_temporary_target_preserves_20_saved_slots':True,
++        'automatic_police_locate_removed':True,'automatic_locate_radio_template_absent':True,
++        'detective_chat_and_normal_racing_checkpoints_send_no_automatic_radio_tested':True,
++        'manual_server_detective_command_pass_through_tested':True,
++        'removed_locator_source_files':list(REMOVED_LOCATE_FILES),
++        'local_faction_guards_tested':True,'forum_keyboard_input_regression_tested':True,
++        'forum_browser_runtime_changed':False,'native_forum_keyboard_test':native,'native_forum_keyboard_test_revision':'v0.1.2-r24','native_forum_keyboard_rerun':False,
++        'native_reconnect_checks':worker['checks'],'native_reconnect_nova_cases':worker['nova_cases'],
++        'unchanged_prior_tested_sources':unchanged,'unchanged_sources_baseline':PREVIOUS,
++        'previous_browser_gps_validation':'r18-validation.json','browser_gps_native_integration_rerun':False,
++        'live_gta_gameplay_test_performed':False,'changelog_sections':35,'changelog_sha256':sha(R/'docs/CHANGELOG-GESAMT.txt'),
++        'forum_changelog_sha256':sha(post),'forum_installation_sha256':sha(R/'docs/FORUM-INSTALLATION-DE.md'),
++        'forum_file_list_sha256':sha(file_list),'forum_runtime_files_disclosed':len(lock['files']),
++        'forum_review_files':review_files,'forum_review_file_count':len(review_files),
++        'archive':archive.name,'archive_bytes':archive.stat().st_size,'archive_sha256':sha(archive),'archive_integrity_checked':True,
++        'browser_download_url':lock['download_url'],'browser_download_sha256':lock['archive_sha256'],'browser_download_bytes':lock['archive_bytes']}
++    for target in ['build/revision29-package.json','docs/review/r29-validation.json']:
++        (R/target).write_text(json.dumps(proof,indent=2)+'\n',encoding='utf-8')
++    compact=dict(proof,forum_review_files='Recorded '+str(len(review_files))+' verified source/document files')
++    print(json.dumps(compact,indent=2))
++
++if __name__=='__main__':main()
+diff --git a/tools/publish_revision29.py b/tools/publish_revision29.py
+new file mode 100644
+index 0000000..81eb2d3
+--- /dev/null
++++ b/tools/publish_revision29.py
+@@ -0,0 +1,294 @@
++"""Prepare/publish only the authorized r29 update to Kobiro57/PerkysBinderChangelog.
++
++Uses the existing Git credential manager in memory; never logs or stores tokens.
++Large Chromium binaries belong in the release asset, not Git history.
++"""
++from pathlib import Path, PurePosixPath
++import argparse
++import hashlib
++import json
++import os
++import re
++import shutil
++import subprocess
++import urllib.request
++import urllib.error
++from revision29_scope import REMOVED_LOCATE_FILES, assert_locator_removed, SPRAY_SOURCE_FILES, assert_sprays_sources
++
++ROOT=Path(__file__).resolve().parents[1]
++REPO=ROOT/'build/github-publication/repository'
++URL='https://github.com/Kobiro57/PerkysBinderChangelog'
++API='https://api.github.com/repos/Kobiro57/PerkysBinderChangelog'
++TAG='v0.1.2-r29'
++PREVIOUS='91ea56354d0a997058a85c0563ddb48f8c0153b6'
++PACKAGE='dist/NLBinder-0.1.2-r29'
++BASE='original-archive-92ce219'
++GENERATED={'docs/review/SOURCE-COMPARISON.json','docs/review/DATEIVERGLEICH.md',
++ 'docs/review/DIFFSTAT.txt','docs/review/first-party-changes.patch',
++ 'docs/review/REVISION29-DIFFSTAT.txt','docs/review/revision29-changes.patch'}
++PRIVATE_DIRS={'.git','.vs','__pycache__','output','debug','release','obj','cmakefiles','.codex','.agents','.aws'}
++PRIVATE_NAMES={'keybinder.json','jobs_data.json','imgui.ini','gps.xml','.env','.git-credentials','nul'}
++PRIVATE_SUFFIXES={'.obj','.pdb','.ilk','.exp','.log','.pyc','.suo','.user','.o'}
++PROGRAM=['src','browser','tests','tools','res','include/*.h','Keybinder.rc','Keybinder.vcxproj','Keybinder.sln']
++
++def require(ok,message):
++    if not ok:raise ValueError(message)
++
++def digest(data):return hashlib.sha256(data).hexdigest()
++
++def filehash(path):
++    with path.open('rb') as f:return hashlib.file_digest(f,'sha256').hexdigest()
++
++def git(*args,input=None):
++    p=subprocess.run(['git',*args],cwd=REPO,input=input,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
++    if p.returncode:raise RuntimeError('Git failed: '+str(args[:3])+': '+p.stderr.decode('utf-8','replace')[:1500])
++    return p.stdout
++
++def write(relative,data):
++    p=REPO/relative;p.parent.mkdir(parents=True,exist_ok=True)
++    p.write_bytes(data.encode('utf-8') if isinstance(data,str) else data)
++
++def paths(revision):
++    entries={}
++    if revision==':':
++        records=git('ls-files','--stage','-z').split(b'\0')
++        for record in records:
++            if not record:continue
++            meta,name=record.split(b'\t',1);mode,oid,stage=meta.split()
++            require(stage==b'0' and mode in {b'100644',b'100755'},'Unmerged/link entry')
++            entries[name.decode()]=oid
++    else:
++        for record in git('ls-tree','-r','-z',revision).split(b'\0'):
++            if not record:continue
++            meta,name=record.split(b'\t',1);mode,kind,oid=meta.split()
++            require(kind==b'blob' and mode in {b'100644',b'100755'},'Submodule/link entry')
++            entries[name.decode()]=oid
++    return entries
++
++def blobs(entries):
++    oids=sorted(set(entries.values()))
++    process=subprocess.Popen(['git','cat-file','--batch'],cwd=REPO,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
++    raw,err=process.communicate(b'\n'.join(oids)+b'\n')
++    require(process.returncode==0,'Cannot read source blobs')
++    values={};at=0
++    for oid in oids:
++        end=raw.index(b'\n',at);header=raw[at:end].split()
++        require(header[0]==oid and header[1]==b'blob','Invalid blob batch')
++        size=int(header[2]);at=end+1;values[oid]=raw[at:at+size];at+=size+1
++    require(at==len(raw),'Trailing source bytes')
++    return {name:values[oid] for name,oid in entries.items()}
++
++def allowed(relative):
++    p=PurePosixPath(relative)
++    return not (p.is_absolute() or '..' in p.parts or ':' in relative or '\\' in relative
++      or any(x.lower() in PRIVATE_DIRS for x in p.parts[:-1])
++      or p.name.lower() in PRIVATE_NAMES or p.suffix.lower() in PRIVATE_SUFFIXES)
++
++def historical(relative):
++    return bool(re.fullmatch(r'docs/review/(REVISION(?:[4-9]|1[0-9]|2[0-8])-DIFFSTAT\.txt|revision(?:[4-9]|1[0-9]|2[0-8])-changes\.patch)',relative))
++
++def stage():
++    require(git('remote','get-url','origin').decode().strip().removesuffix('.git')==URL,'Wrong target repository')
++    require(git('rev-parse','HEAD').decode().strip()==PREVIOUS,'Publication must start on the known r28 commit')
++    if git('status','--porcelain'):
++        # Resume only an explicitly recorded, inspected preparation tree.
++        checkpoint=json.loads((ROOT/'build/revision29-staged-owned.json').read_text())
++        require(git('write-tree').decode().strip()==checkpoint['staged_tree'] and not git('diff','--name-only'),
++                'Publication checkout changed outside the recorded preparation')
++    proof=json.loads((ROOT/'build/revision29-package.json').read_text())
++    require(proof['revision']==TAG and filehash(ROOT/'build/Release/NLBinder.asi')==proof['asi_sha256'],'Package proof stale')
++    original_entries=paths(BASE)
++    previous_entries=paths('HEAD')
++    assert_sprays_sources(ROOT)
++    # The r28 removal is already part of PREVIOUS. Keep it absent without
++    # attempting to remove old files a second time or touching historical data.
++    for relative in REMOVED_LOCATE_FILES:
++        require(relative not in previous_entries,'Removed locator unexpectedly exists in r28 baseline: '+relative)
++    for start in ['src','tests','tools','docs','res','browser','third_party/miniz']:
++        for parent,dirs,names in os.walk(ROOT/start):
++            dirs[:]=[x for x in dirs if x.lower() not in PRIVATE_DIRS]
++            for name in names:
++                path=Path(parent)/name;relative=path.relative_to(ROOT).as_posix()
++                if relative in GENERATED or historical(relative) or not allowed(relative):continue
++                require(not path.is_symlink() and path.stat().st_size<90*1024*1024,'Unexpected source link/large binary: '+relative)
++                require(path.suffix.lower() not in {'.asi','.exe','.dll','.lib'},'Binary in first-party source: '+relative)
++                write(relative,path.read_bytes())
++    for path in (ROOT/'include').glob('*.h'):write(path.relative_to(ROOT).as_posix(),path.read_bytes())
++    for relative in previous_entries:
++        if relative.startswith(('include/','third_party/')) and len(PurePosixPath(relative).parts)>2:
++            source=ROOT/relative
++            require(source.is_file() and allowed(relative),'Missing required dependency '+relative)
++            write(relative,source.read_bytes())
++    for name in ['.gitignore','.gitattributes','Keybinder.rc','Keybinder.sln','Keybinder.vcxproj']:
++        write(name,(ROOT/name).read_bytes())
++    write('README.md',(ROOT/'build/README-GITHUB-r29.md').read_bytes())
++    for path in (ROOT/PACKAGE).rglob('*'):
++        if path.is_file():
++            relative=path.relative_to(ROOT).as_posix()
++            require(allowed(relative) and not path.is_symlink(),'Unexpected packaged file: '+relative)
++            write(relative,path.read_bytes())
++    publication=json.loads((ROOT/'docs/review/PUBLICATION.json').read_text())
++    publication.update(release=TAG,previous_release='v0.1.2-r28',previous_published_commit=PREVIOUS,
++      asi_sha256=proof['asi_sha256'],history_note='Original and dependency imports remain intact. r29 is a subsequent update; no history is rewritten.',
++      complete_runtime_asset=proof['archive'],complete_runtime_sha256=proof['archive_sha256'])
++    write('docs/review/PUBLICATION.json',json.dumps(publication,indent=2)+'\n')
++    git('add','--all')
++    # Patches describe program changes and avoid recursively including their own bytes.
++    write('docs/review/first-party-changes.patch',git('diff','--cached','--binary','build-dependencies-baseline','--',*PROGRAM))
++    write('docs/review/DIFFSTAT.txt',git('diff','--cached','--stat','build-dependencies-baseline','--',*PROGRAM))
++    write('docs/review/revision29-changes.patch',git('diff','--cached','--binary',PREVIOUS,'--',*PROGRAM))
++    write('docs/review/REVISION29-DIFFSTAT.txt',git('diff','--cached','--stat',PREVIOUS,'--',*PROGRAM))
++    git('add','--all')
++    current_entries=paths(':')
++    selected=lambda name:not name.startswith('dist/') and name not in GENERATED and not historical(name)
++    before=blobs({p:o for p,o in original_entries.items() if selected(p)})
++    after=blobs({p:o for p,o in current_entries.items() if selected(p)})
++    changes=[]
++    for name in sorted(before.keys()|after.keys()):
++        b=before.get(name);a=after.get(name)
++        if a==b:continue
++        changes.append({'path':name,'status':'added' if b is None else 'deleted' if a is None else 'modified',
++          'dependency':name.startswith(('include/plugin-sdk/','include/RakHook/','third_party/miniz/')),
++          'line_endings_only':a is not None and b is not None and a.replace(b'\r\n',b'\n')==b.replace(b'\r\n',b'\n'),
++          'before_sha256':digest(b) if b is not None else None,'after_sha256':digest(a) if a is not None else None})
++    record={'original_archive':'NLBinder-master.zip','original_sha256':'a328e78eea63420e9bfe9c084883100177fe0fd9c2d62c4fcaef38c0a44801e9',
++      'original_archive_commit_comment':'92ce21971bee2d166d830e23ad20950f1dc98921','release':TAG,'release_asi_sha256':proof['asi_sha256'],
++      'baseline_tag':BASE,'baseline_commit':git('rev-parse',BASE+'^{commit}').decode().strip(),
++      'hash_scope':'Exact Git blob bytes in original tag versus staged r29 source; generated comparisons and release binaries excluded.',
++      'generated_paths_excluded':sorted(GENERATED),'historical_revision_patches_excluded':True,
++      'baseline_files':len(before),'current_files':len(after),'changes':changes}
++    write('docs/review/SOURCE-COMPARISON.json',json.dumps(record,indent=2,ensure_ascii=False)+'\n')
++    relevant=[x for x in changes if not x['dependency'] and not x['line_endings_only']]
++    lines=['# Dateivergleich zum Original','',
++      'Verglichen werden die unveränderlichen Git-Blobs des Tags `original-archive-92ce219` mit den gestagten r29-Quellen.',
++      'Die Archivherkunft bleibt dokumentiert; diese Hashes beziehen sich ausdrücklich auf Git-Blobs, nicht neu eingelesene ZIP-Rohbytes.',
++      'Generierte Vergleichsdateien, alte Revisionspatches und Binärpakete sind aus diesem rekursionsfreien Vergleich ausgeschlossen.',
++      'Alle betrachteten Änderungen stehen in [SOURCE-COMPARISON.json](SOURCE-COMPARISON.json).','',
++      '| Status | Datei |','| --- | --- |']
++    for item in relevant:lines.append('| '+item['status']+' | ['+item['path']+'](../../'+item['path']+') |')
++    write('docs/review/DATEIVERGLEICH.md','\n'.join(lines)+'\n')
++    git('add','--all')
++    verify_index(previous_entries)
++    result={'prepared':True,'previous_commit':PREVIOUS,'staged_tree':git('write-tree').decode().strip(),
++      'source_changes':len(changes),'first_party_content_changes':len(relevant),'asi_sha256':proof['asi_sha256'],
++      'changed_paths':len(git('diff','--cached','--name-only').decode().splitlines())}
++    (ROOT/'build/revision29-publication-ready.json').write_text(json.dumps(result,indent=2)+'\n')
++    (ROOT/'build/revision29-staged-owned.json').write_text(json.dumps({'staged_tree':result['staged_tree'],
++        'reason':'Successfully prepared and verified r29 source tree; safe resume requires this exact tree.'},indent=2)+'\n')
++    print(json.dumps(result,indent=2))
++
++def verify_index(previous_entries=None):
++    entries=paths(':')
++    previous_entries=previous_entries or paths(PREVIOUS)
++    for name in entries:
++        require(allowed(name),'Private or generated build data in publication: '+name)
++        require(not name.startswith('NLBinder/Browser/'),'Loose Chromium runtime must not enter Git')
++        if historical(name):require(entries[name]==previous_entries[name],'Historical review patch changed: '+name)
++    assert_locator_removed(ROOT)
++    for relative in REMOVED_LOCATE_FILES:
++        require(relative not in entries,'Removed locator source remains staged: '+relative)
++    proof=json.loads((ROOT/'build/revision29-package.json').read_text())
++    require(proof.get('automatic_police_locate_removed') and proof.get('automatic_locate_radio_template_absent'),
++            'Locator removal proof missing')
++    require(digest(git('show',':'+PACKAGE+'/NLBinder.asi'))==proof['asi_sha256'],'Published ASI differs')
++    require(git('show',':docs/CHANGELOG-GESAMT.txt')==(ROOT/'docs/CHANGELOG-GESAMT.txt').read_bytes(),'Published full changelog differs')
++    for name in list(SPRAY_SOURCE_FILES)+['include/NearbyWantedLabels.h','src/NearbyWantedLabels.cpp','tests/NearbyWantedLabelsTests.cpp','include/CombatChatParser.h','src/CombatChatParser.cpp','tests/CombatChatParserTests.cpp','tests/CombatChatBridgeTests.cpp','include/ForumKeyboardInput.h','include/ForumBrowser.h',
++                 'tests/ForumKeyboardInputTests.cpp','src/ImGuiOverlay.cpp',
++                 'tests/ForumKeyboardProbe.cpp','tools/build_forum_keyboard_probe.bat','tools/test_forum_keyboard.py',
++                 'include/NearbyWantedLabels.h','src/NearbyWantedLabels.cpp','tests/NearbyWantedLabelsTests.cpp',
++                 'include/LocalFactionAccess.h','tests/LocalFactionAccessTests.cpp',
++                 'include/OnlineDataManager.h','src/OnlineDataManager.cpp','tests/OnlineDataManagerTests.cpp',
++                 'src/StartupStatsSync.cpp','tests/StartupStatsSyncTests.cpp',
++                 'include/ClaimSpots.h','include/FactionAccess.h','include/QuickMap.h','src/QuickMap.cpp',
++                 'include/SAMPBridge.h','src/SpeedTicketBridge.cpp','include/ServerStatsSnapshot.h',
++                 'tests/QuickMapTests.cpp','tests/SAMPBridgeTests.cpp','tests/ServerStatsParserTests.cpp',
++                 'include/Version.h','src/SAMPBridge.cpp','src/MainWindowUI.cpp',
++                 'include/DrugUseTracker.h','tests/DrugUseTrackerTests.cpp',
++                 'tools/BrowserSetup.cpp','browser/ForumBrowserHost.cpp','tools/export_forum_installation_review.py',
++                 'docs/FORUM-INSTALLATION-DE.md','docs/FORUM-DATEILISTE.txt','docs/FORUM-CHANGELOG-v0.1.2.txt',
++                 'include/DrugUseTracker.h','tests/DrugUseTrackerTests.cpp','src/Main.cpp',
++                 'include/SettingsManager.h','src/SettingsManager.cpp','include/OnlineOverlayController.h',
++                 'src/OnlineOverlayController.cpp','src/OnlineOverlayRenderer.cpp','src/OnlineUI.cpp',
++                 'tests/OnlineOverlayRendererTests.cpp','tests/OnlineSettingsTests.cpp']:
++        require(git('show',':'+name)==(ROOT/name).read_bytes().replace(b'\r\n',b'\n'),'Published source differs: '+name)
++    prefix=PACKAGE+'/FORUM-INSTALLATION-QUELLCODE/'
++    focused={name:oid for name,oid in entries.items() if name.startswith(prefix)}
++    require({name[len(prefix):] for name in focused}==set(proof['forum_review_files']),
++            'Published focused source file set differs')
++    for name,data in blobs(focused).items():
++        require(digest(data)==proof['forum_review_files'][name[len(prefix):]],
++                'Published focused original source differs: '+name)
++    # These are checksum-verified copies of existing original sources. Keep
++    # their formatting intact instead of rewriting inherited whitespace.
++    git('diff','--cached','--check','--','.',':(exclude)*.patch',':(exclude)third_party/miniz',
++        ':(exclude)dist/NLBinder-0.1.2-r29/FORUM-INSTALLATION-QUELLCODE')
++    require(not git('ls-files','--others','--exclude-standard'),'Unexpected untracked publication file')
++
++def credential():
++    env=dict(os.environ,GCM_INTERACTIVE='Never',GIT_TERMINAL_PROMPT='0')
++    p=subprocess.run(['git','credential','fill'],cwd=REPO,input=b'protocol=https\nhost=github.com\n\n',
++        stdout=subprocess.PIPE,stderr=subprocess.PIPE,env=env)
++    require(p.returncode==0,'Existing GitHub credential not available')
++    fields=dict(line.split('=',1) for line in p.stdout.decode().splitlines() if '=' in line)
++    require(fields.get('password'),'Credential manager returned no token')
++    return fields['password']
++
++def api(token,url,method='GET',data=None,content_type='application/json'):
++    require(url.startswith(('https://api.github.com/','https://uploads.github.com/repos/Kobiro57/PerkysBinderChangelog/')),'Unexpected API host')
++    body=json.dumps(data).encode() if data is not None and content_type=='application/json' else data
++    req=urllib.request.Request(url,data=body,method=method,headers={'Authorization':'Bearer '+token,
++      'Accept':'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28','User-Agent':'NLBinder-authorized-r29-publication','Content-Type':content_type})
++    try:
++        with urllib.request.urlopen(req,timeout=600) as response:return json.load(response)
++    except urllib.error.HTTPError as e:
++        raise RuntimeError('GitHub API status '+str(e.code)+' for '+url.split('?')[0]) from None
++
++def publish():
++    proof=json.loads((ROOT/'build/revision29-package.json').read_text())
++    prepared=json.loads((ROOT/'build/revision29-publication-ready.json').read_text())
++    token=credential()
++    user=api(token,'https://api.github.com/user')
++    require(user['login'].casefold()=='kobiro57','Wrong GitHub account')
++    head=git('rev-parse','HEAD').decode().strip()
++    if head==PREVIOUS:
++        require(git('write-tree').decode().strip()==prepared['staged_tree'],'Staged source changed after review')
++        verify_index()
++        email=str(user['id'])+'+'+user['login']+'@users.noreply.github.com'
++        git('-c','user.name='+user['login'],'-c','user.email='+email,'commit','-m',
++          'r29: add police spraytag navigation with temporary GPS targets')
++        head=git('rev-parse','HEAD').decode().strip()
++    require(git('rev-parse','HEAD^').decode().strip()==PREVIOUS,'Unexpected parent commit')
++    require(not git('status','--porcelain'),'Publication checkout not clean')
++    tag_exists=subprocess.run(['git','rev-parse','--verify','refs/tags/'+TAG],cwd=REPO,stdout=subprocess.PIPE,stderr=subprocess.PIPE).returncode==0
++    if not tag_exists:git('tag',TAG,head)
++    require(git('rev-parse',TAG+'^{commit}').decode().strip()==head,'Release tag points elsewhere')
++    git('push','--atomic','origin','HEAD:main','refs/tags/'+TAG)
++    require(api(token,API+'/commits/main')['sha']==head,'Remote main commit differs')
++    releases=api(token,API+'/releases?per_page=100')
++    release=next((r for r in releases if r['tag_name']==TAG),None)
++    body=(ROOT/'docs/FORUM-CHANGELOG-v0.1.2.txt').read_text(encoding='utf-8-sig')
++    body+='\nASI SHA-256: `'+proof['asi_sha256']+'`\n\nZIP SHA-256: `'+proof['archive_sha256']+'`\n'
++    if release is None:release=api(token,API+'/releases','POST',{'tag_name':TAG,'target_commitish':head,'name':'NLBinder v0.1.2 by perkys & edited by KOBiRO - r29','body':body,'draft':False,'prerelease':False})
++    archive=ROOT/'dist'/proof['archive']
++    require(filehash(archive)==proof['archive_sha256'],'Release ZIP changed')
++    assets=api(token,API+'/releases/'+str(release['id'])+'/assets')
++    asset=next((a for a in assets if a['name']==archive.name),None)
++    if asset is None:
++        upload='https://uploads.github.com/repos/Kobiro57/PerkysBinderChangelog/releases/'+str(release['id'])+'/assets?name='+archive.name
++        asset=api(token,upload,'POST',archive.read_bytes(),'application/zip')
++    require(asset['state']=='uploaded' and asset['size']==archive.stat().st_size,'Release asset incomplete')
++    remote_digest=asset.get('digest')
++    require(remote_digest=='sha256:'+proof['archive_sha256'],'GitHub release asset digest differs')
++    result={'published':True,'repository':URL,'commit':head,'commit_url':URL+'/commit/'+head,
++      'tag':TAG,'release_url':release['html_url'],'download_url':asset['browser_download_url'],
++      'asset_bytes':asset['size'],'asset_sha256_verified':True,'asi_sha256':proof['asi_sha256']}
++    (ROOT/'build/revision29-published.json').write_text(json.dumps(result,indent=2)+'\n')
++    print(json.dumps(result,indent=2))
++
++if __name__=='__main__':
++    parser=argparse.ArgumentParser(description=__doc__)
++    modes=parser.add_mutually_exclusive_group(required=True)
++    modes.add_argument('--prepare',action='store_true');modes.add_argument('--publish',action='store_true')
++    args=parser.parse_args()
++    if args.prepare:stage()
++    else:publish()
+diff --git a/tools/report_revision29_log.py b/tools/report_revision29_log.py
+new file mode 100644
+index 0000000..f0108a7
+--- /dev/null
++++ b/tools/report_revision29_log.py
+@@ -0,0 +1,10 @@
++"""Show a compact result from the fixed r29 log paths."""
++from pathlib import Path
++import sys
++root=Path(__file__).resolve().parents[1]
++mode=sys.argv[1]
++if mode not in {'tests','build'}:raise ValueError('Unexpected log kind')
++lines=(root/('build/revision29-'+mode+'.log')).read_text(encoding='utf-8-sig',errors='replace').splitlines()
++important=[line for line in lines if '[FAIL]' in line or 'error ' in line.lower() or 'ForumKeyboardInputTests:' in line or 'DrugUseTrackerTests:' in line
++           or 'Online Settings:' in line or 'OnlineOverlayRendererTests:' in line or 'Test exit code:' in line]
++for line in (important if mode=='tests' else lines[-10:]):print(line)
+diff --git a/tools/revision29_scope.py b/tools/revision29_scope.py
+new file mode 100644
+index 0000000..43af897
+--- /dev/null
++++ b/tools/revision29_scope.py
+@@ -0,0 +1,16 @@
++"""Current r29 spray-navigation source scope; the r28 locator stays removed."""
++from revision28_scope import REMOVED_LOCATE_FILES, assert_locator_removed
++
++SPRAY_SOURCE_FILES = (
++    'include/SpraySpots.h', 'include/SpraysNavigator.h', 'src/SpraysNavigator.cpp',
++    'tests/SpraysNavigatorTests.cpp', 'tests/GpsTemporaryTests.cpp',
++    'include/GpsManager.h', 'src/GpsManager.cpp', 'src/Main.cpp',
++    'Keybinder.vcxproj', 'tools/run_tests.bat', 'tests/KeybindTests.cpp',
++)
++
++def assert_sprays_sources(root):
++    assert_locator_removed(root)
++    for relative in SPRAY_SOURCE_FILES:
++        path=root/relative
++        if not path.is_file() or path.is_symlink():
++            raise ValueError('Spray navigation source missing or redirected: '+relative)
+diff --git a/tools/run_revision29.bat b/tools/run_revision29.bat
+new file mode 100644
+index 0000000..4f335a3
+--- /dev/null
++++ b/tools/run_revision29.bat
+@@ -0,0 +1,69 @@
++@echo off
++setlocal
++pushd "%~dp0.." || exit /b 2
++if not exist build mkdir build
++if not defined NLBINDER_PYTHON set "NLBINDER_PYTHON=%USERPROFILE%\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe"
++if /i "%~1"=="tests" goto tests
++if /i "%~1"=="build" goto build
++if /i "%~1"=="worker" goto worker
++if /i "%~1"=="document" goto document
++if /i "%~1"=="package" goto package
++if /i "%~1"=="prepare-publication" goto preparepublication
++if /i "%~1"=="publish" goto publish
++if /i "%~1"=="verify-public" goto verifypublic
++if /i "%~1"=="export" goto export
++set "NLBINDER_RESULT=2"
++goto finish
++:tests
++call tools\run_tests.bat > build\revision29-tests.log 2>&1
++set "NLBINDER_RESULT=%ERRORLEVEL%"
++"%NLBINDER_PYTHON%" tools\report_revision29_log.py tests
++goto finish
++:build
++call tools\build_release.bat > build\revision29-build.log 2>&1
++set "NLBINDER_RESULT=%ERRORLEVEL%"
++>>build\revision29-build.log echo RELEASE_BUILD_EXIT_CODE=%NLBINDER_RESULT%
++"%NLBINDER_PYTHON%" tools\report_revision29_log.py build
++goto finish
++:worker
++"%NLBINDER_PYTHON%" tools\test_reconnect_worker.py > build\revision29-reconnect.log 2>&1
++set "NLBINDER_RESULT=%ERRORLEVEL%"
++type build\revision29-reconnect.log
++goto finish
++:document
++"%NLBINDER_PYTHON%" tools\document_revision29.py
++if errorlevel 1 goto failed
++"%NLBINDER_PYTHON%" tools\export_full_changelog_revision29.py
++set "NLBINDER_RESULT=%ERRORLEVEL%"
++goto finish
++:package
++"%NLBINDER_PYTHON%" tools\verify_revision29_artifact.py
++if errorlevel 1 goto failed
++"%NLBINDER_PYTHON%" tools\document_revision29.py
++if errorlevel 1 goto failed
++"%NLBINDER_PYTHON%" tools\export_full_changelog_revision29.py
++if errorlevel 1 goto failed
++"%NLBINDER_PYTHON%" tools\package_revision29.py
++set "NLBINDER_RESULT=%ERRORLEVEL%"
++goto finish
++:preparepublication
++"%NLBINDER_PYTHON%" tools\publish_revision29.py --prepare
++set "NLBINDER_RESULT=%ERRORLEVEL%"
++goto finish
++:publish
++"%NLBINDER_PYTHON%" tools\publish_revision29.py --publish
++set "NLBINDER_RESULT=%ERRORLEVEL%"
++goto finish
++:export
++"%NLBINDER_PYTHON%" tools\finalize_revision29.py
++set "NLBINDER_RESULT=%ERRORLEVEL%"
++goto finish
++:verifypublic
++"%NLBINDER_PYTHON%" tools\verify_revision29_public.py
++set "NLBINDER_RESULT=%ERRORLEVEL%"
++goto finish
++:failed
++set "NLBINDER_RESULT=2"
++:finish
++popd
++exit /b %NLBINDER_RESULT%
+diff --git a/tools/run_tests.bat b/tools/run_tests.bat
+index 9621a89..9058368 100644
+--- a/tools/run_tests.bat
++++ b/tools/run_tests.bat
+@@ -54,6 +54,8 @@ set "KEYBINDER_TEST_RSP=%~dp0..\build\KeybinderTests.rsp"
+     echo "%~dp0..\tests\R16FeatureTests.cpp"
+     echo "%~dp0..\tests\R17FeatureTests.cpp"
+     echo "%~dp0..\tests\R18FeatureTests.cpp"
++    echo "%~dp0..\tests\GpsTemporaryTests.cpp"
++    echo "%~dp0..\tests\SpraysNavigatorTests.cpp"
+     echo "%~dp0..\tests\DrugUseTrackerTests.cpp"
+     echo "%~dp0..\tests\LocalFactionAccessTests.cpp"
+     echo "%~dp0..\tests\NearbyWantedLabelsTests.cpp"
+@@ -104,6 +106,7 @@ set "KEYBINDER_TEST_RSP=%~dp0..\build\KeybinderTests.rsp"
+     echo "%~dp0..\\src\\PersistentPaths.cpp"
+     echo "%~dp0..\\src\\SAMPBridge.cpp"
+     echo "%~dp0..\\src\\GpsManager.cpp"
++    echo "%~dp0..\src\SpraysNavigator.cpp"
+     echo "%~dp0..\\src\\GpsGameAdapter.cpp"
+     echo "%~dp0..\\src\\ForumBrowser.cpp"
+     echo "%~dp0..\src\CombatChatParser.cpp"
+diff --git a/tools/verify_revision29_artifact.py b/tools/verify_revision29_artifact.py
+new file mode 100644
+index 0000000..38fe915
+--- /dev/null
++++ b/tools/verify_revision29_artifact.py
+@@ -0,0 +1,63 @@
++"""Verify the r29 PE and embedded helpers without loading executable code."""
++import hashlib,json
++from pathlib import Path
++import sys
++from verify_revision18_artifact import PE, require
++from revision29_scope import assert_locator_removed
++
++def main():
++    root = Path(__file__).resolve().parents[1]
++    asi = PE(sys.argv[1] if len(sys.argv) > 1 else root / "build/Release/NLBinder.asi")
++    assert_locator_removed(root)
++    require(b"[ORTUNG]" not in asi.data, "Removed automatic locate radio template remains in the ASI")
++    helper = PE(root / "build/ReconnectHelper.exe")
++    require(asi.machine == helper.machine == 0x14C, "Expected both binaries to be x86")
++    require(asi.characteristics & 0x2000, "ASI must be a DLL")
++    require(not helper.characteristics & 0x2000, "Worker must be an executable")
++    require(asi.resource(10, 300) == helper.data, "Embedded helper differs from built helper")
++    setup = PE(root / "build/BrowserSetup.exe")
++    require(setup.machine == 0x14C and not setup.characteristics & 0x2000, "Installer must be x86 EXE")
++    require(asi.resource(10, 301) == setup.data, "Embedded browser installer differs")
++    require(b"asInvoker" in setup.resource(24, 1), "Browser installer must not request elevation")
++    require(asi.resource(10, 302) == (root / "third_party/miniz/LICENSE").read_bytes(), "Missing embedded miniz notice")
++    imports = asi.imports()
++    require("libcef.dll" not in [name.lower() for name in imports], "Chromium must remain out of the game process")
++    require(not any(name.lower().startswith(("vcruntime", "msvcp", "ucrtbased")) for name in imports),
++            "Unexpected external C++ runtime dependency")
++    startup = (b"{33CCFF}[NLBinder]{FFFFFF} NLBinder v.0.1.2 by perkys & edited by KOBiRO "
++               b"wurde {00CC00}erfolgreich{FFFFFF} gestartet!")
++    require(startup in asi.data, "The requested v0.1.2 startup message is missing from the ASI")
++    require(b"NLBinder v.0.1.2 by perkys & edited by KOBiRO" in asi.data,
++            "The matching version/credit caption is missing")
++    try:
++        display_path = asi.path.resolve().relative_to(root).as_posix()
++    except ValueError:
++        display_path = asi.path.name
++    result = {
++        "revision": "v0.1.2-r29",
++        "asi": display_path,
++        "bytes": len(asi.data),
++        "format": "PE32 x86 DLL",
++        "sha256": hashlib.sha256(asi.data).hexdigest(),
++        "imports": imports,
++        "requested_startup_message_present": True,
++        "automatic_police_locate_removed": True,
++        "automatic_locate_radio_template_absent": True,
++        "version_and_credit": "NLBinder v.0.1.2 by perkys & edited by KOBiRO",
++        "embedded_helper_id": 300,
++        "embedded_helper_bytes": len(helper.data),
++        "helper_sha256": hashlib.sha256(helper.data).hexdigest(),
++        "embedded_helper_matches": True,
++        "embedded_browser_setup_id": 301,
++        "embedded_browser_setup_bytes": len(setup.data),
++        "embedded_browser_setup_sha256": hashlib.sha256(setup.data).hexdigest(),
++        "embedded_browser_setup_matches": True,
++        "browser_setup_as_invoker": True,
++    }
++    report = json.dumps(result, indent=2)
++    (root / "build/revision29-artifact.json").write_text(report + "\n", encoding="utf-8")
++    print(report)
++
++
++if __name__ == "__main__":
++    main()
+diff --git a/tools/verify_revision29_public.py b/tools/verify_revision29_public.py
+new file mode 100644
+index 0000000..27a628a
+--- /dev/null
++++ b/tools/verify_revision29_public.py
+@@ -0,0 +1,35 @@
++"""Verify the published r29 viewer and release metadata without using a credential."""
++from pathlib import Path
++import json,posixpath,re,urllib.request
++R=Path(__file__).resolve().parents[1]
++BASE='https://api.github.com/repos/Kobiro57/PerkysBinderChangelog'
++
++def get(path):
++    request=urllib.request.Request(BASE+path,headers={'User-Agent':'NLBinder-r29-anonymous-verification',
++        'Accept':'application/vnd.github+json'})
++    with urllib.request.urlopen(request,timeout=45) as response:return json.load(response)
++
++def require(ok,message):
++    if not ok:raise ValueError(message)
++
++def main():
++    publication=json.loads((R/'build/revision29-published.json').read_text(encoding='utf-8'))
++    proof=json.loads((R/'build/revision29-package.json').read_text(encoding='utf-8'))
++    require(get('')['private'] is False,'Repository is not anonymously readable')
++    require(get('/commits/main')['sha']==publication['commit'],'Remote main differs')
++    release=get('/releases/tags/v0.1.2-r29')
++    asset=next(a for a in release['assets'] if a['name']==proof['archive'])
++    require(asset['digest']=='sha256:'+proof['archive_sha256'] and asset['size']==proof['archive_bytes'],
++            'Release asset digest or size differs')
++    repository=R/'build/github-publication/repository'
++    for name in ['README.md','docs/NLBinder-0.1.2-r29-DE.md','docs/review/r29-PRUEFUNG-DE.md','docs/FORUM-INSTALLATION-DE.md']:
++        for href in re.findall(r'\]\(([^)]+)\)',(repository/name).read_text(encoding='utf-8-sig')):
++            if href.startswith(('http:','https:','#')):continue
++            path=posixpath.normpath(posixpath.join(posixpath.dirname(name),href.split('#')[0]))
++            require((repository/path).exists(),'Broken review link: '+name+' -> '+href)
++    result={'anonymous_viewer_access':True,'main_commit_verified':True,'release_asset_sha256_verified':True,
++        'review_document_links_verified':True,'release_url':release['html_url']}
++    (R/'build/revision29-public-access.json').write_text(json.dumps(result,indent=2)+'\n',encoding='utf-8')
++    print(json.dumps(result,indent=2))
++
++if __name__=='__main__':main()

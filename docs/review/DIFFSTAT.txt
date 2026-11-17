@@ -1,5 +1,5 @@
  Keybinder.rc                              |    5 +
- Keybinder.vcxproj                         |   41 +-
+ Keybinder.vcxproj                         |   44 +-
  browser/CMakeLists.txt                    |   24 +
  browser/ForumBrowserHost.cpp              |  301 +++++
  include/ActionExecutor.h                  |   22 +-
@@ -15,7 +15,7 @@
  include/ForumBrowser.h                    |   34 +
  include/ForumBrowserProtocol.h            |   51 +
  include/ForumKeyboardInput.h              |   75 ++
- include/GpsManager.h                      |   63 +
+ include/GpsManager.h                      |   70 +
  include/GpsRadarOwnership.h               |   19 +
  include/ImGuiOverlay.h                    |   12 +
  include/IncomingDamageDetector.h          |  248 +++-
@@ -55,6 +55,8 @@
  include/SpeedTicketFlow.h                 |   54 +
  include/SpeedometerManager.h              |   19 +-
  include/SpeedometerUI.h                   |    1 +
+ include/SpraySpots.h                      |  120 ++
+ include/SpraysNavigator.h                 |   60 +
  include/StaminaGauge.h                    |   60 +
  include/StatsDialogRPCAdapter.h           |   51 +
  include/TextDrawAdapter.h                 |    5 +
@@ -70,7 +72,7 @@
  src/DeathMessageRPCAdapter.cpp            |    7 +
  src/ForumBrowser.cpp                      |  729 +++++++++++
  src/GpsGameAdapter.cpp                    |  120 ++
- src/GpsManager.cpp                        |  175 +++
+ src/GpsManager.cpp                        |  196 +++
  src/ImGuiOverlay.cpp                      |  111 +-
  src/InterfaceEditor.cpp                   |  301 ++---
  src/InterfaceEditorUI.cpp                 |  111 +-
@@ -83,7 +85,7 @@
  src/KillTracker.cpp                       |   56 +-
  src/KillTrackerUI.cpp                     |  104 +-
  src/KillfeedAdapter.cpp                   |   34 +-
- src/Main.cpp                              |  267 +++-
+ src/Main.cpp                              |  303 ++++-
  src/MainWindowUI.cpp                      |  216 +++-
  src/NativeHudEditor.cpp                   |  274 ++++
  src/NearbyWantedLabels.cpp                |  242 ++++
@@ -100,6 +102,7 @@
  src/SpeedTicketFlow.cpp                   |  245 ++++
  src/SpeedometerManager.cpp                |  104 +-
  src/SpeedometerUI.cpp                     |   24 +-
+ src/SpraysNavigator.cpp                   |  220 ++++
  src/SquareMap.cpp                         |    2 +-
  src/StartupStatsSync.cpp                  |  448 +++++++
  src/StatsDialogRPCAdapter.cpp             |  117 ++
@@ -115,6 +118,7 @@
  tests/ForumKeyboardInputTests.cpp         |  157 +++
  tests/ForumKeyboardProbe.cpp              |  139 ++
  tests/GpsNativeAdapterTests.cpp           |   62 +
+ tests/GpsTemporaryTests.cpp               |  207 +++
  tests/ImGuiOverlayTests.cpp               |  104 ++
  tests/InterfaceEditorTests.cpp            |  157 +++
  tests/InterfaceLayoutSettingsTests.cpp    |  114 ++
@@ -125,7 +129,7 @@
  tests/JobSkillsSnapshotTests.cpp          |  114 ++
  tests/JobTrackerLifecycleTests.cpp        |   47 +
  tests/JobsUITests.cpp                     |    2 +-
- tests/KeybindTests.cpp                    |   56 +-
+ tests/KeybindTests.cpp                    |   60 +-
  tests/KillMessageTestTests.cpp            |   59 +
  tests/LocalFactionAccessTests.cpp         |   32 +
  tests/LocationVariableTests.cpp           |  112 ++
@@ -146,6 +150,7 @@
  tests/SourceContractTests.cpp             |   22 +-
  tests/SpeedTicketFlowTests.cpp            |  201 +++
  tests/SpeedometerFocusedTests.cpp         |  160 ++-
+ tests/SpraysNavigatorTests.cpp            |  255 ++++
  tests/StartupStatsSyncTests.cpp           |  957 ++++++++++++++
  tests/StatsDialogRPCAdapterTests.cpp      |  114 ++
  tests/WeaponIconManagerTests.cpp          |  181 +++
@@ -175,6 +180,7 @@
  tools/document_revision26.py              |  126 ++
  tools/document_revision27.py              |  146 +++
  tools/document_revision28.py              |  132 ++
+ tools/document_revision29.py              |  138 ++
  tools/export_forum_installation_review.py |  189 +++
  tools/export_full_changelog.py            |   34 +
  tools/export_full_changelog_revision23.py |   34 +
@@ -183,6 +189,7 @@
  tools/export_full_changelog_revision26.py |   34 +
  tools/export_full_changelog_revision27.py |   34 +
  tools/export_full_changelog_revision28.py |   34 +
+ tools/export_full_changelog_revision29.py |   34 +
  tools/export_source_bundle.py             |  185 +++
  tools/export_source_bundle_revision19.py  |  185 +++
  tools/export_source_bundle_revision20.py  |  192 +++
@@ -194,6 +201,7 @@
  tools/export_source_bundle_revision26.py  |  193 +++
  tools/export_source_bundle_revision27.py  |  193 +++
  tools/export_source_bundle_revision28.py  |  196 +++
+ tools/export_source_bundle_revision29.py  |  197 +++
  tools/fetch_cef_runtime.py                |   55 +
  tools/finalize_revision16.py              |   56 +
  tools/finalize_revision17.py              |   54 +
@@ -208,6 +216,7 @@
  tools/finalize_revision26.py              |   58 +
  tools/finalize_revision27.py              |   58 +
  tools/finalize_revision28.py              |   58 +
+ tools/finalize_revision29.py              |   58 +
  tools/install_revision18.py               |   48 +
  tools/install_revision19.py               |   47 +
  tools/install_revision20.py               |   48 +
@@ -232,6 +241,7 @@
  tools/package_revision26.py               |  194 +++
  tools/package_revision27.py               |  198 +++
  tools/package_revision28.py               |  205 +++
+ tools/package_revision29.py               |  216 ++++
  tools/package_revision4.ps1               |   97 ++
  tools/package_revision5.ps1               |   96 ++
  tools/package_revision6.ps1               |   93 ++
@@ -255,6 +265,7 @@
  tools/publish_revision26.py               |  286 ++++
  tools/publish_revision27.py               |  286 ++++
  tools/publish_revision28.py               |  299 +++++
+ tools/publish_revision29.py               |  294 +++++
  tools/record_gps_native_test.py           |   11 +
  tools/report_revision16_log.py            |   10 +
  tools/report_revision17_log.py            |   10 +
@@ -269,7 +280,9 @@
  tools/report_revision26_log.py            |   10 +
  tools/report_revision27_log.py            |   10 +
  tools/report_revision28_log.py            |   10 +
+ tools/report_revision29_log.py            |   10 +
  tools/revision28_scope.py                 |   20 +
+ tools/revision29_scope.py                 |   16 +
  tools/run_revision16.bat                  |   87 ++
  tools/run_revision17.bat                  |   71 +
  tools/run_revision18.bat                  |   76 ++
@@ -283,7 +296,8 @@
  tools/run_revision26.bat                  |   69 +
  tools/run_revision27.bat                  |   69 +
  tools/run_revision28.bat                  |   69 +
- tools/run_tests.bat                       |   60 +-
+ tools/run_revision29.bat                  |   69 +
+ tools/run_tests.bat                       |   63 +-
  tools/setup_msvc.bat                      |   16 +
  tools/test_browser_restart.py             |   57 +
  tools/test_browser_setup.py               |   81 ++
@@ -320,10 +334,12 @@
  tools/verify_revision27_public.py         |   35 +
  tools/verify_revision28_artifact.py       |   63 +
  tools/verify_revision28_public.py         |   35 +
+ tools/verify_revision29_artifact.py       |   63 +
+ tools/verify_revision29_public.py         |   35 +
  tools/verify_revision4_artifact.py        |  115 ++
  tools/verify_revision5_artifact.py        |  115 ++
  tools/verify_revision6_artifact.py        |  115 ++
  tools/verify_revision7_artifact.py        |  115 ++
  tools/verify_revision8_artifact.py        |  115 ++
  tools/verify_revision9_artifact.py        |  115 ++
- 328 files changed, 39440 insertions(+), 1519 deletions(-)
+ 344 files changed, 41506 insertions(+), 1519 deletions(-)

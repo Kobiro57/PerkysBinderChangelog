@@ -1,6 +1,10 @@
 # Hinweise zur Prüfung durch die Projektleitung
 
-## Aktueller Stand v0.1.2 / r28 – 17. November 2026
+## Aktueller Stand v0.1.2 / r29 – 17. November 2026
+
+Spraytag-Navigation: [Prüfumfang](r29-PRUEFUNG-DE.md), [Ergebnisse](r29-validation.json).
+
+## Vorheriger Stand v0.1.2 / r28 – 17. November 2026
 
 Automatische Ortung vollständig entfernt: [Prüfumfang](r28-PRUEFUNG-DE.md), [Ergebnisse](r28-validation.json).
 

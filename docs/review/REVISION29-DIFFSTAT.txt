@@ -1,0 +1,23 @@
+ Keybinder.vcxproj                         |   3 +
+ include/GpsManager.h                      |   7 +
+ include/SpraySpots.h                      | 120 ++++++++++++
+ include/SpraysNavigator.h                 |  60 ++++++
+ src/GpsManager.cpp                        |  27 ++-
+ src/Main.cpp                              |  54 +++++-
+ src/SpraysNavigator.cpp                   | 220 ++++++++++++++++++++++
+ tests/GpsTemporaryTests.cpp               | 207 +++++++++++++++++++++
+ tests/KeybindTests.cpp                    |   4 +
+ tests/SpraysNavigatorTests.cpp            | 255 ++++++++++++++++++++++++++
+ tools/document_revision29.py              | 138 ++++++++++++++
+ tools/export_full_changelog_revision29.py |  34 ++++
+ tools/export_source_bundle_revision29.py  | 197 ++++++++++++++++++++
+ tools/finalize_revision29.py              |  58 ++++++
+ tools/package_revision29.py               | 216 ++++++++++++++++++++++
+ tools/publish_revision29.py               | 294 ++++++++++++++++++++++++++++++
+ tools/report_revision29_log.py            |  10 +
+ tools/revision29_scope.py                 |  16 ++
+ tools/run_revision29.bat                  |  69 +++++++
+ tools/run_tests.bat                       |   3 +
+ tools/verify_revision29_artifact.py       |  63 +++++++
+ tools/verify_revision29_public.py         |  35 ++++
+ 22 files changed, 2078 insertions(+), 12 deletions(-)
